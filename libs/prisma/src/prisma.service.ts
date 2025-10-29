@@ -1,11 +1,12 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
+import { LoggerService } from '@heidi/logger';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(PrismaService.name);
+  private readonly logger: LoggerService;
 
-  constructor() {
+  constructor(logger: LoggerService) {
     super({
       log: [
         { emit: 'event', level: 'query' },
@@ -15,7 +16,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       ],
       errorFormat: 'colorless',
     });
-
+    this.logger = logger;
+    this.logger.setContext(PrismaService.name);
     // Log queries in development
     if (process.env.NODE_ENV === 'development') {
       this.$on('query' as never, (e: any) => {

@@ -4,6 +4,7 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtTokenService } from './jwt.service';
 import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { LoggerModule } from '@heidi/logger';
 
 @Global()
 @Module({})
@@ -12,6 +13,7 @@ export class JwtModule {
     return {
       module: JwtModule,
       imports: [
+        LoggerModule,
         PassportModule.register({ defaultStrategy: 'jwt' }),
         NestJwtModule.register({
           secret: process.env.JWT_SECRET || 'default-secret-change-in-production',

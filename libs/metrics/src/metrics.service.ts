@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { LoggerService } from '@heidi/logger';
 import * as promClient from 'prom-client';
 
 @Injectable()
 export class MetricsService {
-  private readonly logger = new Logger(MetricsService.name);
+  private readonly logger: LoggerService;
   private readonly register: promClient.Registry;
   private readonly serviceName: string;
 
@@ -13,7 +14,9 @@ export class MetricsService {
   public readonly httpRequestErrors: promClient.Counter;
   public readonly activeConnections: promClient.Gauge;
 
-  constructor() {
+  constructor(logger: LoggerService) {
+    this.logger = logger;
+    this.logger.setContext(MetricsService.name);
     this.serviceName = process.env.SERVICE_NAME || 'heidi-service';
     this.register = new promClient.Registry();
 

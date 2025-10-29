@@ -1,4 +1,5 @@
-import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { LoggerService } from '@heidi/logger';
 import { ClientProxy, ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { firstValueFrom, timeout } from 'rxjs';
 
@@ -14,11 +15,11 @@ export interface RabbitMQConfig {
 
 @Injectable()
 export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
-  private readonly logger = new Logger(RabbitMQService.name);
   private client: ClientProxy;
   private config: RabbitMQConfig;
 
-  constructor() {
+  constructor(private readonly logger: LoggerService) {
+    this.logger.setContext(RabbitMQService.name);
     this.config = {
       url: process.env.RABBITMQ_URL || 'amqp://localhost:5672',
       queue: process.env.RABBITMQ_QUEUE || 'heidi_queue',
