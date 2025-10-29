@@ -1,0 +1,116 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: heidi-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: heidi
+      POSTGRES_PASSWORD: heidi_password
+      POSTGRES_DB: heidi_db
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U heidi']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - heidi-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: heidi-redis-dev
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data_dev:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - heidi-network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: heidi-rabbitmq-dev
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: heidi
+      RABBITMQ_DEFAULT_PASS: heidi_password
+      RABBITMQ_DEFAULT_VHOST: /
+    ports:
+      - '5672:5672'
+      - '15672:15672'
+    volumes:
+      - rabbitmq_data_dev:/var/lib/rabbitmq
+    healthcheck:
+      test: ['CMD', 'rabbitmq-diagnostics', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - heidi-network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: heidi-pgadmin-dev
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@heidi.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - '5050:80'
+    volumes:
+      - pgadmin_data_dev:/var/lib/pgadmin
+    depends_on:
+      - postgres
+    networks:
+      - heidi-network
+
+  # Example service running in dev mode with hot-reload
+  # Uncomment to run services in Docker instead of locally
+  # auth:
+  #   build:
+  #     context: .
+  #     dockerfile: apps/Dockerfile
+  #     target: development
+  #     args:
+  #       APP_NAME: auth
+  #   container_name: heidi-auth-dev
+  #   restart: unless-stopped
+  #   environment:
+  #     NODE_ENV: development
+  #     SERVICE_NAME: auth
+  #     SERVICE_PORT: 3001
+  #     DATABASE_URL: postgresql://heidi:heidi_password@postgres:5432/heidi_db?schema=public
+  #     REDIS_URL: redis://redis:6379
+  #     RABBITMQ_URL: amqp://heidi:heidi_password@rabbitmq:5672
+  #   ports:
+  #     - '3001:3001'
+  #   volumes:
+  #     - .:/app
+  #     - /app/node_modules
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #     - rabbitmq
+  #   networks:
+  #     - heidi-network
+  #   command: yarn workspace @heidi/auth start:dev
+
+volumes:
+  postgres_data_dev:
+  redis_data_dev:
+  rabbitmq_data_dev:
+  pgadmin_data_dev:
+
+networks:
+  heidi-network:
+    driver: bridge

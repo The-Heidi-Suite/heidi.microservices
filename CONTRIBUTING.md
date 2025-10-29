@@ -275,7 +275,7 @@ cp -r apps/users/src/app.module.ts apps/new-service/src/
 
 # Update package.json and imports
 # Add to nest-cli.json
-# Add to docker-compose files
+# Add to docker compose files
 ```
 
 ### 3. New Shared Library
