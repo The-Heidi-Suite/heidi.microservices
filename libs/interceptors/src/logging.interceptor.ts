@@ -1,16 +1,17 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  Logger,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
+import { LoggerService, ChildLogger } from '@heidi/logger';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
-  private readonly logger = new Logger('HTTP');
+  private readonly structuredLogger: ChildLogger;
+
+  constructor(loggerService: LoggerService) {
+    this.structuredLogger = loggerService.createChildLogger({
+      operation: 'http-request',
+    });
+  }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
@@ -19,8 +20,7 @@ export class LoggingInterceptor implements NestInterceptor {
     const startTime = Date.now();
 
     // Log incoming request
-    this.logger.log({
-      message: 'Incoming request',
+    this.structuredLogger.log('Incoming request', {
       service: serviceName,
       method,
       url,
@@ -31,31 +31,30 @@ export class LoggingInterceptor implements NestInterceptor {
 
     return next.handle().pipe(
       tap({
-        next: (data) => {
+        next: (_data) => {
           const response = context.switchToHttp().getResponse();
           const duration = Date.now() - startTime;
 
           // Log successful response
-          this.logger.log({
-            message: 'Request completed',
+          this.structuredLogger.log('Request completed', {
             service: serviceName,
             method,
             url,
             statusCode: response.statusCode,
-            duration: `${duration}ms`,
+            duration,
+            durationMs: `${duration}ms`,
           });
         },
         error: (error) => {
           const duration = Date.now() - startTime;
 
           // Log error response
-          this.logger.error({
-            message: 'Request failed',
+          this.structuredLogger.error('Request failed', error, {
             service: serviceName,
             method,
             url,
-            error: error.message,
-            duration: `${duration}ms`,
+            duration,
+            durationMs: `${duration}ms`,
           });
         },
       }),
