@@ -1,0 +1,71 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "forceConsistentCasingInFileNames": false,
+    "noFallthroughCasesInSwitch": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "@heidi/prisma": [
+        "libs/prisma/src"
+      ],
+      "@heidi/prisma/*": [
+        "libs/prisma/src/*"
+      ],
+      "@heidi/logger": [
+        "libs/logger/src"
+      ],
+      "@heidi/logger/*": [
+        "libs/logger/src/*"
+      ],
+      "@heidi/rabbitmq": [
+        "libs/rabbitmq/src"
+      ],
+      "@heidi/rabbitmq/*": [
+        "libs/rabbitmq/src/*"
+      ],
+      "@heidi/redis": [
+        "libs/redis/src"
+      ],
+      "@heidi/redis/*": [
+        "libs/redis/src/*"
+      ],
+      "@heidi/jwt": [
+        "libs/jwt/src"
+      ],
+      "@heidi/jwt/*": [
+        "libs/jwt/src/*"
+      ],
+      "@heidi/interceptors": [
+        "libs/interceptors/src"
+      ],
+      "@heidi/interceptors/*": [
+        "libs/interceptors/src/*"
+      ],
+      "@heidi/metrics": [
+        "libs/metrics/src"
+      ],
+      "@heidi/metrics/*": [
+        "libs/metrics/src/*"
+      ]
+    }
+  },
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}
