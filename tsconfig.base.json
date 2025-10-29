@@ -67,6 +67,24 @@
       ],
       "@heidi/config/*": [
         "libs/config/src/*"
+      ],
+      "@heidi/monitoring": [
+        "libs/monitoring/src"
+      ],
+      "@heidi/monitoring/*": [
+        "libs/monitoring/src/*"
+      ],
+      "@heidi/health": [
+        "libs/health/src"
+      ],
+      "@heidi/health/*": [
+        "libs/health/src/*"
+      ],
+      "@heidi/errors": [
+        "libs/errors/src"
+      ],
+      "@heidi/errors/*": [
+        "libs/errors/src/*"
       ]
     }
   },
