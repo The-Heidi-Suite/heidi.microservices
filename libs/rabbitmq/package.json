@@ -1,0 +1,15 @@
+{
+  "name": "@heidi/rabbitmq",
+  "version": "1.0.0",
+  "description": "RabbitMQ messaging shared library",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.3.0",
+    "@nestjs/microservices": "^10.3.0",
+    "amqplib": "^0.10.3",
+    "amqp-connection-manager": "^4.1.14"
+  }
+}
