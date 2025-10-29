@@ -1,11 +1,24 @@
 import { Injectable, LoggerService as NestLoggerService, Scope } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as winston from 'winston';
 import { AsyncLocalStorage } from 'async_hooks';
+import { writeFile, mkdir } from 'fs/promises';
+import { join } from 'path';
 
-interface LogContext {
+export interface LogContext {
   requestId?: string;
   userId?: string;
-  serviceName?: string;
+  jobId?: string;
+  queueName?: string;
+  operation?: string;
+  duration?: number;
+  errorId?: string;
+  alertId?: string;
+  ruleId?: string;
+  severity?: string;
+  message?: string;
+  updates?: any;
+  metadata?: Record<string, any>;
   [key: string]: any;
 }
 
@@ -17,10 +30,23 @@ export class LoggerService implements NestLoggerService {
   private logger: winston.Logger;
   private context?: string;
   private serviceName: string;
+  private environment: string;
+  private version: string;
+  private enableFileLogging: boolean;
+  private logDir: string;
 
-  constructor() {
-    this.serviceName = process.env.SERVICE_NAME || 'heidi-service';
+  constructor(private readonly configService?: ConfigService) {
+    this.serviceName = this.configService?.get<string>('SERVICE_NAME') || process.env.SERVICE_NAME || 'heidi-service';
+    this.environment = this.configService?.get<string>('NODE_ENV') || process.env.NODE_ENV || 'development';
+    this.version = this.configService?.get<string>('SERVICE_VERSION') || process.env.SERVICE_VERSION || '1.0.0';
+    this.enableFileLogging = this.configService?.get<boolean>('ENABLE_FILE_LOGGING') || process.env.ENABLE_FILE_LOGGING === 'true' || false;
+    this.logDir = this.configService?.get<string>('LOG_DIR') || process.env.LOG_DIR || './logs';
+
     this.logger = this.createLogger();
+
+    if (this.enableFileLogging) {
+      this.ensureLogDirectory();
+    }
   }
 
   /**
@@ -34,8 +60,8 @@ export class LoggerService implements NestLoggerService {
    * Create Winston logger instance
    */
   private createLogger(): winston.Logger {
-    const logLevel = process.env.LOG_LEVEL || 'info';
-    const isDevelopment = process.env.NODE_ENV !== 'production';
+    const logLevel = this.configService?.get<string>('LOG_LEVEL') || process.env.LOG_LEVEL || 'info';
+    const isDevelopment = this.environment !== 'production';
 
     return winston.createLogger({
       level: logLevel,
@@ -47,36 +73,80 @@ export class LoggerService implements NestLoggerService {
       ),
       defaultMeta: {
         service: this.serviceName,
-        environment: process.env.NODE_ENV || 'development'
+        environment: this.environment,
+        version: this.version,
       },
       transports: [
-        // Console transport with colorization in development
         new winston.transports.Console({
           format: isDevelopment
             ? winston.format.combine(
-                winston.format.colorize(),
                 winston.format.printf(({ timestamp, level, message, context, service, ...meta }) => {
-                  const ctx = context || this.context || 'Application';
-                  const metaStr = Object.keys(meta).length ? JSON.stringify(meta) : '';
-                  return `${timestamp} [${service}] ${level} [${ctx}]: ${message} ${metaStr}`;
+                  return this.formatNestJSLog(level, message, context, meta);
                 }),
               )
             : winston.format.json(),
         }),
       ],
     });
+  }
 
-    // Add file transport in production
-    // if (!isDevelopment) {
-    //   this.logger.add(
-    //     new winston.transports.DailyRotateFile({
-    //       filename: `${process.env.LOG_DIR || './logs'}/${this.serviceName}-%DATE%.log`,
-    //       datePattern: 'YYYY-MM-DD',
-    //       maxSize: '20m',
-    //       maxFiles: '14d',
-    //     }),
-    //   );
-    // }
+  /**
+   * Format logs in NestJS style
+   */
+  private formatNestJSLog(level: string, message: string, context?: string, meta?: any): string {
+    const now = new Date();
+    const timestamp = now.toLocaleString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
+    const pid = process.pid;
+
+    // Color codes for different log levels
+    const colors = {
+      error: '\x1b[31m',   // Red
+      warn: '\x1b[33m',    // Yellow
+      info: '\x1b[32m',    // Green
+      debug: '\x1b[35m',   // Magenta
+      verbose: '\x1b[36m', // Cyan
+    };
+    const reset = '\x1b[0m';
+
+    const levelColor = colors[level] || '';
+    const levelText = level.toUpperCase().padStart(7);
+
+    // Service name in yellow
+    const serviceStr = `${colors["warn"]}[${this.serviceName}]${reset}`;
+
+    // Context info
+    const ctx = context || this.context || '';
+    let contextInfo = '';
+    if (meta) {
+      const contextParts: string[] = [];
+      if (meta.requestId) contextParts.push(`req:${meta.requestId}`);
+      if (meta.userId) contextParts.push(`user:${meta.userId}`);
+      if (meta.jobId) contextParts.push(`job:${meta.jobId}`);
+      if (meta.queueName) contextParts.push(`queue:${meta.queueName}`);
+      if (meta.operation) contextParts.push(`op:${meta.operation}`);
+      if (meta.duration !== undefined) contextParts.push(`${meta.duration}ms`);
+
+      if (contextParts.length > 0) {
+        contextInfo = ` (${contextParts.join(', ')})`;
+      }
+    }
+
+    let fullMessage = message + contextInfo;
+
+    // Add error info if present
+    if (meta?.trace) {
+      fullMessage += `\n${meta.trace}`;
+    }
+
+    return `[Nest] ${pid}  - ${timestamp}   ${levelColor}${levelText}${reset} ${serviceStr} ${ctx ? '[' + ctx + '] ' : ''}${fullMessage}`;
   }
 
   /**
@@ -99,47 +169,264 @@ export class LoggerService implements NestLoggerService {
   }
 
   /**
-   * Log methods
+   * Basic log methods
    */
-  log(message: any, context?: string, meta?: any) {
-    const logContext = context || this.context;
-    this.logger.info(message, this.buildMeta({ context: logContext, ...meta }));
+  log(message: any, context?: string | LogContext, meta?: any) {
+    let logContext: string | undefined;
+    let logMeta: any;
+
+    if (typeof context === 'string') {
+      logContext = context;
+      logMeta = meta;
+    } else {
+      logContext = this.context;
+      logMeta = { ...context, ...meta };
+    }
+
+    this.logger.info(message, this.buildMeta({ context: logContext, ...logMeta }));
+
+    // Write to file if enabled
+    if (this.enableFileLogging) {
+      this.writeToFile('log', message, logMeta);
+    }
   }
 
-  error(message: any, trace?: string, context?: string, meta?: any) {
-    const logContext = context || this.context;
+  error(message: any, trace?: string | Error, context?: string | LogContext, meta?: any) {
+    let logContext: string | undefined;
+    let logMeta: any;
+    let errorTrace: string | undefined;
+
+    if (typeof trace === 'string') {
+      errorTrace = trace;
+    } else if (trace instanceof Error) {
+      errorTrace = trace.stack;
+      logMeta = { errorName: trace.name, ...logMeta };
+    }
+
+    if (typeof context === 'string') {
+      logContext = context;
+      logMeta = { ...logMeta, ...meta };
+    } else {
+      logContext = this.context;
+      logMeta = { ...logMeta, ...context, ...meta };
+    }
+
     this.logger.error(message, this.buildMeta({
       context: logContext,
-      trace,
-      ...meta
+      trace: errorTrace,
+      ...logMeta
     }));
+
+    // Write to file if enabled
+    if (this.enableFileLogging) {
+      this.writeToFile('error', message, { ...logMeta, trace: errorTrace });
+    }
   }
 
-  warn(message: any, context?: string, meta?: any) {
-    const logContext = context || this.context;
-    this.logger.warn(message, this.buildMeta({ context: logContext, ...meta }));
+  warn(message: any, context?: string | LogContext, meta?: any) {
+    let logContext: string | undefined;
+    let logMeta: any;
+
+    if (typeof context === 'string') {
+      logContext = context;
+      logMeta = meta;
+    } else {
+      logContext = this.context;
+      logMeta = { ...context, ...meta };
+    }
+
+    this.logger.warn(message, this.buildMeta({ context: logContext, ...logMeta }));
+
+    // Write to file if enabled
+    if (this.enableFileLogging) {
+      this.writeToFile('warn', message, logMeta);
+    }
   }
 
-  debug(message: any, context?: string, meta?: any) {
-    const logContext = context || this.context;
-    this.logger.debug(message, this.buildMeta({ context: logContext, ...meta }));
+  debug(message: any, context?: string | LogContext, meta?: any) {
+    let logContext: string | undefined;
+    let logMeta: any;
+
+    if (typeof context === 'string') {
+      logContext = context;
+      logMeta = meta;
+    } else {
+      logContext = this.context;
+      logMeta = { ...context, ...meta };
+    }
+
+    this.logger.debug(message, this.buildMeta({ context: logContext, ...logMeta }));
+
+    // Write to file if enabled
+    if (this.enableFileLogging) {
+      this.writeToFile('debug', message, logMeta);
+    }
   }
 
-  verbose(message: any, context?: string, meta?: any) {
-    const logContext = context || this.context;
-    this.logger.verbose(message, this.buildMeta({ context: logContext, ...meta }));
+  verbose(message: any, context?: string | LogContext, meta?: any) {
+    let logContext: string | undefined;
+    let logMeta: any;
+
+    if (typeof context === 'string') {
+      logContext = context;
+      logMeta = meta;
+    } else {
+      logContext = this.context;
+      logMeta = { ...context, ...meta };
+    }
+
+    this.logger.verbose(message, this.buildMeta({ context: logContext, ...logMeta }));
+
+    // Write to file if enabled
+    if (this.enableFileLogging) {
+      this.writeToFile('verbose', message, logMeta);
+    }
   }
 
   /**
-   * Convenience methods for structured logging
+   * Performance logging
+   */
+  logPerformance(operation: string, duration: number, context?: LogContext): void {
+    const performanceContext: LogContext = {
+      ...context,
+      operation,
+      duration,
+    };
+
+    if (duration > 5000) {
+      this.warn(`Slow operation detected: ${operation} took ${duration}ms`, performanceContext);
+    } else if (duration > 1000) {
+      this.log(`Operation completed: ${operation} took ${duration}ms`, performanceContext);
+    } else {
+      this.debug(`Operation completed: ${operation} took ${duration}ms`, performanceContext);
+    }
+  }
+
+  /**
+   * Job-specific logging
+   */
+  logJobEvent(
+    jobId: string,
+    event: 'created' | 'started' | 'completed' | 'failed' | 'paused' | 'resumed',
+    message: string,
+    context?: LogContext,
+  ): void {
+    const jobContext: LogContext = {
+      ...context,
+      jobId,
+      operation: `job_${event}`,
+    };
+
+    switch (event) {
+      case 'failed':
+        this.error(`Job ${jobId}: ${message}`, undefined, jobContext);
+        break;
+      case 'completed':
+        this.log(`Job ${jobId}: ${message}`, jobContext);
+        break;
+      default:
+        this.log(`Job ${jobId}: ${message}`, jobContext);
+    }
+  }
+
+  /**
+   * Queue-specific logging
+   */
+  logQueueEvent(
+    queueName: string,
+    event: 'job_added' | 'job_completed' | 'job_failed' | 'queue_paused' | 'queue_resumed',
+    message: string,
+    context?: LogContext,
+  ): void {
+    const queueContext: LogContext = {
+      ...context,
+      queueName,
+      operation: `queue_${event}`,
+    };
+
+    this.log(`Queue ${queueName}: ${message}`, queueContext);
+  }
+
+  /**
+   * Database operation logging
+   */
+  logDatabaseOperation(
+    operation: string,
+    table: string,
+    duration: number,
+    recordCount?: number,
+    context?: LogContext,
+  ): void {
+    const dbContext: LogContext = {
+      ...context,
+      operation: `db_${operation}`,
+      duration,
+      metadata: {
+        table,
+        recordCount,
+      },
+    };
+
+    this.logPerformance(`Database ${operation} on ${table}`, duration, dbContext);
+  }
+
+  /**
+   * HTTP request logging
+   */
+  logHttpRequest(
+    method: string,
+    url: string,
+    statusCode: number,
+    duration: number,
+    context?: LogContext,
+  ): void {
+    const httpContext: LogContext = {
+      ...context,
+      operation: 'http_request',
+      duration,
+      metadata: {
+        method,
+        url,
+        statusCode,
+      },
+    };
+
+    const message = `${method} ${url} - ${statusCode} (${duration}ms)`;
+
+    if (statusCode >= 500) {
+      this.error(message, undefined, httpContext);
+    } else if (statusCode >= 400) {
+      this.warn(message, httpContext);
+    } else {
+      this.log(message, httpContext);
+    }
+  }
+
+  /**
+   * Security event logging
+   */
+  logSecurityEvent(
+    event: 'auth_success' | 'auth_failure' | 'permission_denied' | 'suspicious_activity',
+    message: string,
+    context?: LogContext,
+  ): void {
+    const securityContext: LogContext = {
+      ...context,
+      operation: `security_${event}`,
+    };
+
+    if (event === 'auth_failure' || event === 'permission_denied' || event === 'suspicious_activity') {
+      this.warn(`Security Event - ${event}: ${message}`, securityContext);
+    } else {
+      this.log(`Security Event - ${event}: ${message}`, securityContext);
+    }
+  }
+
+  /**
+   * Convenience methods for structured logging (legacy support)
    */
   logRequest(method: string, url: string, statusCode: number, duration: number) {
-    this.log('HTTP Request', this.context, {
-      method,
-      url,
-      statusCode,
-      duration,
-    });
+    this.logHttpRequest(method, url, statusCode, duration);
   }
 
   logError(error: Error, context?: string) {
@@ -149,9 +436,129 @@ export class LoggerService implements NestLoggerService {
   }
 
   /**
+   * Utility method to create a child logger with default context
+   */
+  createChildLogger(defaultContext: LogContext): ChildLogger {
+    return new ChildLogger(this, defaultContext);
+  }
+
+  /**
    * Get the underlying Winston logger
    */
   getWinstonLogger(): winston.Logger {
     return this.logger;
+  }
+
+  /**
+   * Ensure log directory exists
+   */
+  private async ensureLogDirectory(): Promise<void> {
+    try {
+      await mkdir(this.logDir, { recursive: true });
+    } catch (error) {
+      console.warn(`Failed to create log directory: ${error.message}. File logging disabled.`);
+    }
+  }
+
+  /**
+   * Write log entry to file
+   */
+  private async writeToFile(level: string, message: string, context?: LogContext): Promise<void> {
+    try {
+      const logEntry = {
+        timestamp: new Date().toISOString(),
+        level,
+        message,
+        context,
+        service: this.serviceName,
+        environment: this.environment,
+        version: this.version,
+      };
+      const logLine = JSON.stringify(logEntry) + '\n';
+      const logFile = join(this.logDir, `${this.serviceName.toLowerCase()}.log`);
+      await writeFile(logFile, logLine, { flag: 'a' });
+    } catch (error) {
+      // Don't throw errors for file logging failures to avoid breaking the application
+    }
+  }
+}
+
+/**
+ * Child logger class for context-specific logging
+ */
+export class ChildLogger {
+  constructor(
+    private readonly parent: LoggerService,
+    private readonly defaultContext: LogContext,
+  ) {}
+
+  log(message: string, context?: LogContext): void {
+    this.parent.log(message, { ...this.defaultContext, ...context });
+  }
+
+  error(message: string, error?: Error | string, context?: LogContext): void {
+    this.parent.error(message, error, { ...this.defaultContext, ...context });
+  }
+
+  warn(message: string, context?: LogContext): void {
+    this.parent.warn(message, { ...this.defaultContext, ...context });
+  }
+
+  debug(message: string, context?: LogContext): void {
+    this.parent.debug(message, { ...this.defaultContext, ...context });
+  }
+
+  verbose(message: string, context?: LogContext): void {
+    this.parent.verbose(message, { ...this.defaultContext, ...context });
+  }
+
+  logPerformance(operation: string, duration: number, context?: LogContext): void {
+    this.parent.logPerformance(operation, duration, { ...this.defaultContext, ...context });
+  }
+
+  logJobEvent(
+    jobId: string,
+    event: 'created' | 'started' | 'completed' | 'failed' | 'paused' | 'resumed',
+    message: string,
+    context?: LogContext,
+  ): void {
+    this.parent.logJobEvent(jobId, event, message, { ...this.defaultContext, ...context });
+  }
+
+  logQueueEvent(
+    queueName: string,
+    event: 'job_added' | 'job_completed' | 'job_failed' | 'queue_paused' | 'queue_resumed',
+    message: string,
+    context?: LogContext,
+  ): void {
+    this.parent.logQueueEvent(queueName, event, message, { ...this.defaultContext, ...context });
+  }
+
+  logDatabaseOperation(
+    operation: string,
+    table: string,
+    duration: number,
+    recordCount?: number,
+    context?: LogContext,
+  ): void {
+    this.parent.logDatabaseOperation(operation, table, duration, recordCount, { ...this.defaultContext, ...context });
+  }
+
+  logHttpRequest(
+    method: string,
+    url: string,
+    statusCode: number,
+    duration: number,
+    context?: LogContext,
+  ): void {
+    this.parent.logHttpRequest(method, url, statusCode, duration, { ...this.defaultContext, ...context });
+  }
+
+  logSecurityEvent(
+    event: 'auth_success' | 'auth_failure' | 'permission_denied' | 'suspicious_activity',
+    message: string,
+    context?: LogContext,
+  ): void {
+    this.parent.logSecurityEvent(event, message, { ...this.defaultContext, ...context });
   }
 }
