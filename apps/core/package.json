@@ -9,10 +9,11 @@
     "start:prod": "node dist/main"
   },
   "dependencies": {
-    "@heidi/logger": "workspace:*",
-    "@heidi/rabbitmq": "workspace:*",
-    "@heidi/redis": "workspace:*",
+    "@heidi/config": "workspace:*",
     "@heidi/interceptors": "workspace:*",
-    "@heidi/metrics": "workspace:*"
+    "@heidi/logger": "workspace:*",
+    "@heidi/metrics": "workspace:*",
+    "@heidi/rabbitmq": "workspace:*",
+    "@heidi/redis": "workspace:*"
   }
 }

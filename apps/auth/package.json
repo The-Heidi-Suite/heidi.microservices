@@ -14,12 +14,13 @@
     "test:cov": "jest --coverage"
   },
   "dependencies": {
-    "@heidi/prisma": "workspace:*",
-    "@heidi/logger": "workspace:*",
-    "@heidi/rabbitmq": "workspace:*",
-    "@heidi/redis": "workspace:*",
-    "@heidi/jwt": "workspace:*",
+    "@heidi/config": "workspace:*",
     "@heidi/interceptors": "workspace:*",
-    "@heidi/metrics": "workspace:*"
+    "@heidi/jwt": "workspace:*",
+    "@heidi/logger": "workspace:*",
+    "@heidi/metrics": "workspace:*",
+    "@heidi/prisma": "workspace:*",
+    "@heidi/rabbitmq": "workspace:*",
+    "@heidi/redis": "workspace:*"
   }
 }
