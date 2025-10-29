@@ -4,7 +4,10 @@ import { PrismaService } from '@heidi/prisma';
 
 @Controller('healthz')
 export class HealthController {
-  constructor(private health: HealthCheckService, private prisma: PrismaService) {}
+  constructor(
+    private health: HealthCheckService,
+    private prisma: PrismaService,
+  ) {}
 
   @Get()
   @HealthCheck()

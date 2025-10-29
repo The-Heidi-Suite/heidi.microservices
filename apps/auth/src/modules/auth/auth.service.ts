@@ -62,11 +62,7 @@ export class AuthService {
     });
 
     // Generate tokens
-    const tokens = await this.jwtService.generateTokenPair(
-      user.id,
-      user.email,
-      user.role,
-    );
+    const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role);
 
     // Store refresh token in Redis
     await this.redis.set(
@@ -105,11 +101,7 @@ export class AuthService {
     }
 
     // Generate tokens
-    const tokens = await this.jwtService.generateTokenPair(
-      user.id,
-      user.email,
-      user.role,
-    );
+    const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role);
 
     // Store refresh token in Redis
     await this.redis.set(
@@ -173,11 +165,7 @@ export class AuthService {
       }
 
       // Generate new tokens
-      const tokens = await this.jwtService.generateTokenPair(
-        user.id,
-        user.email,
-        user.role,
-      );
+      const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role);
 
       // Update refresh token in Redis
       await this.redis.set(

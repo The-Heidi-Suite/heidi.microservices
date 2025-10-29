@@ -12,10 +12,7 @@ export class NotificationController {
   }
 
   @Get(':userId')
-  async getUserNotifications(
-    @Param('userId') userId: string,
-    @Query('status') status?: string,
-  ) {
+  async getUserNotifications(@Param('userId') userId: string, @Query('status') status?: string) {
     return this.notificationService.getUserNotifications(userId, status);
   }
 }
