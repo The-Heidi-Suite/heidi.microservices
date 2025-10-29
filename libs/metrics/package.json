@@ -1,0 +1,13 @@
+{
+  "name": "@heidi/metrics",
+  "version": "1.0.0",
+  "description": "Prometheus metrics shared library",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.3.0",
+    "prom-client": "^15.1.0"
+  }
+}
