@@ -1,6 +1,7 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { LoggerService } from '@heidi/logger';
+import { ConfigService } from '@heidi/config';
 
 export interface TokenPayload {
   sub: string; // user id
@@ -25,12 +26,13 @@ export class JwtTokenService {
   constructor(
     private readonly jwtService: NestJwtService,
     private readonly logger: LoggerService,
+    private readonly configService: ConfigService,
   ) {
     this.logger.setContext(JwtTokenService.name);
-    this.accessTokenSecret = process.env.JWT_SECRET || 'default-secret-change-in-production';
-    this.refreshTokenSecret = process.env.JWT_REFRESH_SECRET || 'default-refresh-secret-change-in-production';
-    this.accessTokenExpiry = process.env.JWT_EXPIRES_IN || '15m';
-    this.refreshTokenExpiry = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
+    this.accessTokenSecret = this.configService.jwtSecret;
+    this.refreshTokenSecret = this.configService.jwtRefreshSecret;
+    this.accessTokenExpiry = this.configService.jwtExpiresIn;
+    this.refreshTokenExpiry = this.configService.jwtRefreshExpiresIn;
   }
 
   /**

@@ -1,5 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { LoggerService } from '@heidi/logger';
+import { ConfigService } from '@heidi/config';
 import Redis, { RedisOptions } from 'ioredis';
 
 @Injectable()
@@ -7,10 +8,15 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   private client: Redis;
   private subscriber: Redis;
 
-  constructor(private readonly logger: LoggerService) {
+  constructor(
+    private readonly logger: LoggerService,
+    private readonly configService: ConfigService,
+  ) {
     this.logger.setContext(RedisService.name);
-    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    const redisConfig = this.configService.redisConfig;
+    const redisUrl = `redis://${redisConfig.host}:${redisConfig.port}`;
     const config: RedisOptions = {
+      password: redisConfig.password || undefined,
       retryStrategy: (times: number) => {
         const delay = Math.min(times * 50, 2000);
         this.logger.warn(`Redis connection retry attempt ${times}`);

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { LoggerService } from '@heidi/logger';
+import { ConfigService } from '@heidi/config';
 import * as promClient from 'prom-client';
 
 @Injectable()
@@ -14,16 +15,19 @@ export class MetricsService {
   public readonly httpRequestErrors: promClient.Counter;
   public readonly activeConnections: promClient.Gauge;
 
-  constructor(logger: LoggerService) {
+  constructor(
+    logger: LoggerService,
+    private readonly configService: ConfigService,
+  ) {
     this.logger = logger;
     this.logger.setContext(MetricsService.name);
-    this.serviceName = process.env.SERVICE_NAME || 'heidi-service';
+    this.serviceName = this.configService.get<string>('SERVICE_NAME', 'heidi-service');
     this.register = new promClient.Registry();
 
     // Set default labels
     this.register.setDefaultLabels({
       service: this.serviceName,
-      environment: process.env.NODE_ENV || 'development',
+      environment: this.configService.get<string>('NODE_ENV', 'development'),
     });
 
     // Collect default metrics (CPU, memory, etc.)

@@ -1,12 +1,16 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { LoggerService } from '@heidi/logger';
+import { ConfigService } from '@heidi/config';
 
 @Injectable()
 export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger: LoggerService;
 
-  constructor(logger: LoggerService) {
+  constructor(
+    logger: LoggerService,
+    private readonly configService: ConfigService,
+  ) {
     super({
       log: [
         { emit: 'event', level: 'query' },
@@ -19,7 +23,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     this.logger = logger;
     this.logger.setContext(PrismaService.name);
     // Log queries in development
-    if (process.env.NODE_ENV === 'development') {
+    const isDevelopment = this.configService.get<string>('NODE_ENV', 'development') === 'development';
+    if (isDevelopment) {
       this.$on('query' as never, (e: any) => {
         this.logger.debug(`Query: ${e.query}`);
         this.logger.debug(`Duration: ${e.duration}ms`);
@@ -64,7 +69,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
    * Clean database (useful for testing)
    */
   async cleanDatabase() {
-    if (process.env.NODE_ENV === 'production') {
+    const isProduction = this.configService.get<string>('NODE_ENV', 'development') === 'production';
+    if (isProduction) {
       throw new Error('Cannot clean database in production');
     }
 

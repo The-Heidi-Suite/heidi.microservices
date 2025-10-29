@@ -5,6 +5,7 @@ import { JwtTokenService } from './jwt.service';
 import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { LoggerModule } from '@heidi/logger';
+import { ConfigModule, ConfigService } from '@heidi/config';
 
 @Global()
 @Module({})
@@ -13,13 +14,18 @@ export class JwtModule {
     return {
       module: JwtModule,
       imports: [
+        ConfigModule,
         LoggerModule,
         PassportModule.register({ defaultStrategy: 'jwt' }),
-        NestJwtModule.register({
-          secret: process.env.JWT_SECRET || 'default-secret-change-in-production',
-          signOptions: {
-            expiresIn: process.env.JWT_EXPIRES_IN || '15m',
-          },
+        NestJwtModule.registerAsync({
+          imports: [ConfigModule],
+          inject: [ConfigService],
+          useFactory: (configService: ConfigService) => ({
+            secret: configService.jwtSecret,
+            signOptions: {
+              expiresIn: configService.jwtExpiresIn,
+            },
+          }),
         }),
       ],
       providers: [JwtTokenService, JwtStrategy, JwtAuthGuard],

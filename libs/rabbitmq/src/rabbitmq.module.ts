@@ -1,6 +1,7 @@
 import { DynamicModule, Global, Module } from '@nestjs/common';
 import { ClientsModule, Transport } from '@nestjs/microservices';
 import { LoggerModule } from '@heidi/logger';
+import { ConfigModule } from '@heidi/config';
 import { RabbitMQService } from './rabbitmq.service';
 
 export interface RabbitMQModuleOptions {
@@ -20,6 +21,7 @@ export class RabbitMQModule {
     return {
       module: RabbitMQModule,
       imports: [
+        ConfigModule,
         LoggerModule,
         ClientsModule.register([
           {
