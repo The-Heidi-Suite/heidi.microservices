@@ -1,0 +1,13 @@
+{
+  "name": "@heidi/interceptors",
+  "version": "1.0.0",
+  "description": "Common interceptors shared library",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.3.0",
+    "rxjs": "^7.8.1"
+  }
+}
