@@ -1,0 +1,29 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { TerminusModule } from '@nestjs/terminus';
+import { PrismaModule } from '@heidi/prisma';
+import { LoggerModule } from '@heidi/logger';
+import { RabbitMQModule } from '@heidi/rabbitmq';
+import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
+import { LoggingInterceptor } from '@heidi/interceptors';
+import { NotificationModule } from './modules/notification/notification.module';
+import { HealthController } from './health.controller';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    TerminusModule,
+    PrismaModule,
+    LoggerModule,
+    RabbitMQModule.register(),
+    MetricsModule,
+    NotificationModule,
+  ],
+  controllers: [HealthController],
+  providers: [
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
+  ],
+})
+export class AppModule {}
