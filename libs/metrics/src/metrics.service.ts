@@ -75,11 +75,7 @@ export class MetricsService {
   /**
    * Create a custom counter
    */
-  createCounter(
-    name: string,
-    help: string,
-    labelNames: string[] = [],
-  ): promClient.Counter {
+  createCounter(name: string, help: string, labelNames: string[] = []): promClient.Counter {
     return new promClient.Counter({
       name: `heidi_${name}`,
       help,
@@ -91,11 +87,7 @@ export class MetricsService {
   /**
    * Create a custom gauge
    */
-  createGauge(
-    name: string,
-    help: string,
-    labelNames: string[] = [],
-  ): promClient.Gauge {
+  createGauge(name: string, help: string, labelNames: string[] = []): promClient.Gauge {
     return new promClient.Gauge({
       name: `heidi_${name}`,
       help,
@@ -125,11 +117,7 @@ export class MetricsService {
   /**
    * Create a custom summary
    */
-  createSummary(
-    name: string,
-    help: string,
-    labelNames: string[] = [],
-  ): promClient.Summary {
+  createSummary(name: string, help: string, labelNames: string[] = []): promClient.Summary {
     return new promClient.Summary({
       name: `heidi_${name}`,
       help,

@@ -36,10 +36,18 @@ export class LoggerService implements NestLoggerService {
   private logDir: string;
 
   constructor(private readonly configService?: ConfigService) {
-    this.serviceName = this.configService?.get<string>('SERVICE_NAME') || process.env.SERVICE_NAME || 'heidi-service';
-    this.environment = this.configService?.get<string>('NODE_ENV') || process.env.NODE_ENV || 'development';
-    this.version = this.configService?.get<string>('SERVICE_VERSION') || process.env.SERVICE_VERSION || '1.0.0';
-    this.enableFileLogging = this.configService?.get<boolean>('ENABLE_FILE_LOGGING') || process.env.ENABLE_FILE_LOGGING === 'true' || false;
+    this.serviceName =
+      this.configService?.get<string>('SERVICE_NAME') ||
+      process.env.SERVICE_NAME ||
+      'heidi-service';
+    this.environment =
+      this.configService?.get<string>('NODE_ENV') || process.env.NODE_ENV || 'development';
+    this.version =
+      this.configService?.get<string>('SERVICE_VERSION') || process.env.SERVICE_VERSION || '1.0.0';
+    this.enableFileLogging =
+      this.configService?.get<boolean>('ENABLE_FILE_LOGGING') ||
+      process.env.ENABLE_FILE_LOGGING === 'true' ||
+      false;
     this.logDir = this.configService?.get<string>('LOG_DIR') || process.env.LOG_DIR || './logs';
 
     this.logger = this.createLogger();
@@ -60,7 +68,8 @@ export class LoggerService implements NestLoggerService {
    * Create Winston logger instance
    */
   private createLogger(): winston.Logger {
-    const logLevel = this.configService?.get<string>('LOG_LEVEL') || process.env.LOG_LEVEL || 'info';
+    const logLevel =
+      this.configService?.get<string>('LOG_LEVEL') || process.env.LOG_LEVEL || 'info';
     const isDevelopment = this.environment !== 'production';
 
     return winston.createLogger({
@@ -80,9 +89,23 @@ export class LoggerService implements NestLoggerService {
         new winston.transports.Console({
           format: isDevelopment
             ? winston.format.combine(
-                winston.format.printf(({ timestamp, level, message, context, service, ...meta }) => {
-                  return this.formatNestJSLog(level, message, context, meta);
-                }),
+                winston.format.printf(
+                  ({
+                    _timestamp,
+                    level,
+                    message,
+                    context,
+                    _service,
+                    ...meta
+                  }: winston.Logform.TransformableInfo & { context?: string }) => {
+                    return this.formatNestJSLog(
+                      String(level),
+                      String(message),
+                      context as string | undefined,
+                      meta,
+                    );
+                  },
+                ),
               )
             : winston.format.json(),
         }),
@@ -102,16 +125,16 @@ export class LoggerService implements NestLoggerService {
       hour: 'numeric',
       minute: '2-digit',
       second: '2-digit',
-      hour12: true
+      hour12: true,
     });
     const pid = process.pid;
 
     // Color codes for different log levels
     const colors = {
-      error: '\x1b[31m',   // Red
-      warn: '\x1b[33m',    // Yellow
-      info: '\x1b[32m',    // Green
-      debug: '\x1b[35m',   // Magenta
+      error: '\x1b[31m', // Red
+      warn: '\x1b[33m', // Yellow
+      info: '\x1b[32m', // Green
+      debug: '\x1b[35m', // Magenta
       verbose: '\x1b[36m', // Cyan
     };
     const reset = '\x1b[0m';
@@ -120,7 +143,7 @@ export class LoggerService implements NestLoggerService {
     const levelText = level.toUpperCase().padStart(7);
 
     // Service name in yellow
-    const serviceStr = `${colors["warn"]}[${this.serviceName}]${reset}`;
+    const serviceStr = `${colors['warn']}[${this.serviceName}]${reset}`;
 
     // Context info
     const ctx = context || this.context || '';
@@ -211,11 +234,14 @@ export class LoggerService implements NestLoggerService {
       logMeta = { ...logMeta, ...context, ...meta };
     }
 
-    this.logger.error(message, this.buildMeta({
-      context: logContext,
-      trace: errorTrace,
-      ...logMeta
-    }));
+    this.logger.error(
+      message,
+      this.buildMeta({
+        context: logContext,
+        trace: errorTrace,
+        ...logMeta,
+      }),
+    );
 
     // Write to file if enabled
     if (this.enableFileLogging) {
@@ -415,7 +441,11 @@ export class LoggerService implements NestLoggerService {
       operation: `security_${event}`,
     };
 
-    if (event === 'auth_failure' || event === 'permission_denied' || event === 'suspicious_activity') {
+    if (
+      event === 'auth_failure' ||
+      event === 'permission_denied' ||
+      event === 'suspicious_activity'
+    ) {
       this.warn(`Security Event - ${event}: ${message}`, securityContext);
     } else {
       this.log(`Security Event - ${event}: ${message}`, securityContext);
@@ -541,7 +571,10 @@ export class ChildLogger {
     recordCount?: number,
     context?: LogContext,
   ): void {
-    this.parent.logDatabaseOperation(operation, table, duration, recordCount, { ...this.defaultContext, ...context });
+    this.parent.logDatabaseOperation(operation, table, duration, recordCount, {
+      ...this.defaultContext,
+      ...context,
+    });
   }
 
   logHttpRequest(
@@ -551,7 +584,10 @@ export class ChildLogger {
     duration: number,
     context?: LogContext,
   ): void {
-    this.parent.logHttpRequest(method, url, statusCode, duration, { ...this.defaultContext, ...context });
+    this.parent.logHttpRequest(method, url, statusCode, duration, {
+      ...this.defaultContext,
+      ...context,
+    });
   }
 
   logSecurityEvent(
