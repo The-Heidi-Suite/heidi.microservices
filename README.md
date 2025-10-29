@@ -83,7 +83,7 @@ cp .env.example .env
 
 ```bash
 # Start PostgreSQL, Redis, RabbitMQ using Docker
-docker-compose -f docker-compose.dev.yml up -d postgres redis rabbitmq
+docker compose -f docker-compose.dev.yml up -d postgres redis rabbitmq
 
 # Wait for services to be ready (~10 seconds)
 ```
@@ -111,7 +111,7 @@ yarn workspace @heidi/users dev
 
 ```bash
 # Start all services with infrastructure
-docker-compose -f docker-compose.dev.yml up
+docker compose -f docker-compose.dev.yml up
 ```
 
 ### 6. Verify
@@ -223,35 +223,35 @@ heidi.microservices/
 
 ```bash
 # Start all infrastructure services
-docker-compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml up -d
 
 # View logs
-docker-compose -f docker-compose.dev.yml logs -f
+docker compose -f docker-compose.dev.yml logs -f
 
 # Stop all services
-docker-compose -f docker-compose.dev.yml down
+docker compose -f docker-compose.dev.yml down
 
 # Stop and remove volumes (reset database)
-docker-compose -f docker-compose.dev.yml down -v
+docker compose -f docker-compose.dev.yml down -v
 ```
 
 ### Production
 
 ```bash
 # Build all service images
-docker-compose build
+docker compose build
 
 # Start production environment
-docker-compose up -d
+docker compose up -d
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Scale a specific service
-docker-compose up -d --scale users=3
+docker compose up -d --scale users=3
 
 # Stop production environment
-docker-compose down
+docker compose down
 ```
 
 ## API Examples
@@ -396,10 +396,10 @@ Log levels: `error`, `warn`, `info`, `debug`, `verbose`
 
 ```bash
 # View logs for all services
-docker-compose logs -f
+docker compose logs -f
 
 # View logs for specific service
-docker-compose logs -f auth
+docker compose logs -f auth
 ```
 
 ## Production Deployment Checklist
@@ -469,17 +469,17 @@ Before deploying to production:
 lsof -i :3001-3007
 
 # Check Docker services
-docker-compose -f docker-compose.dev.yml ps
+docker compose -f docker-compose.dev.yml ps
 
 # View service logs
-docker-compose -f docker-compose.dev.yml logs
+docker compose -f docker-compose.dev.yml logs
 ```
 
 ### Database connection errors
 
 ```bash
 # Verify PostgreSQL is running
-docker-compose -f docker-compose.dev.yml ps postgres
+docker compose -f docker-compose.dev.yml ps postgres
 
 # Test connection
 docker exec -it heidi-postgres-dev psql -U heidi -d heidi_db
