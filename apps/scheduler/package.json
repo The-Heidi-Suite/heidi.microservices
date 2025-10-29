@@ -1,0 +1,19 @@
+{
+  "name": "@heidi/scheduler",
+  "version": "1.0.0",
+  "description": "Scheduler service",
+  "scripts": {
+    "build": "nest build scheduler",
+    "dev": "nest start scheduler --watch",
+    "start:dev": "nest start scheduler --watch",
+    "start:prod": "node dist/main"
+  },
+  "dependencies": {
+    "@heidi/prisma": "workspace:*",
+    "@heidi/logger": "workspace:*",
+    "@heidi/rabbitmq": "workspace:*",
+    "@heidi/redis": "workspace:*",
+    "@heidi/interceptors": "workspace:*",
+    "@heidi/metrics": "workspace:*"
+  }
+}

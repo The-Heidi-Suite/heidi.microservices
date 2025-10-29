@@ -1,0 +1,33 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TerminusModule } from '@nestjs/terminus';
+import { PrismaModule } from '@heidi/prisma';
+import { LoggerModule } from '@heidi/logger';
+import { RabbitMQModule } from '@heidi/rabbitmq';
+import { RedisModule } from '@heidi/redis';
+import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
+import { LoggingInterceptor } from '@heidi/interceptors';
+import { TasksModule } from './modules/tasks/tasks.module';
+import { HealthController } from './health.controller';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    ScheduleModule.forRoot(),
+    TerminusModule,
+    PrismaModule,
+    LoggerModule,
+    RabbitMQModule.register(),
+    RedisModule,
+    MetricsModule,
+    TasksModule,
+  ],
+  controllers: [HealthController],
+  providers: [
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
+  ],
+})
+export class AppModule {}
