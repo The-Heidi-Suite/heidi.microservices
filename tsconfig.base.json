@@ -61,6 +61,12 @@
       ],
       "@heidi/metrics/*": [
         "libs/metrics/src/*"
+      ],
+      "@heidi/config": [
+        "libs/config/src"
+      ],
+      "@heidi/config/*": [
+        "libs/config/src/*"
       ]
     }
   },
