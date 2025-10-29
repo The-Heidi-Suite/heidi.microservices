@@ -23,7 +23,8 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
     this.logger = logger;
     this.logger.setContext(PrismaService.name);
     // Log queries in development
-    const isDevelopment = this.configService.get<string>('NODE_ENV', 'development') === 'development';
+    const isDevelopment =
+      this.configService.get<string>('NODE_ENV', 'development') === 'development';
     if (isDevelopment) {
       this.$on('query' as never, (e: any) => {
         this.logger.debug(`Query: ${e.query}`);
@@ -74,9 +75,7 @@ export class PrismaService extends PrismaClient implements OnModuleInit, OnModul
       throw new Error('Cannot clean database in production');
     }
 
-    const models = Reflect.ownKeys(this).filter(
-      (key) => key[0] !== '_' && key[0] !== '$',
-    );
+    const models = Reflect.ownKeys(this).filter((key) => key[0] !== '_' && key[0] !== '$');
 
     return Promise.all(
       models.map((modelKey) => {
