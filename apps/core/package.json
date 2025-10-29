@@ -1,0 +1,18 @@
+{
+  "name": "@heidi/core",
+  "version": "1.0.0",
+  "description": "Core service",
+  "scripts": {
+    "build": "nest build core",
+    "dev": "nest start core --watch",
+    "start:dev": "nest start core --watch",
+    "start:prod": "node dist/main"
+  },
+  "dependencies": {
+    "@heidi/logger": "workspace:*",
+    "@heidi/rabbitmq": "workspace:*",
+    "@heidi/redis": "workspace:*",
+    "@heidi/interceptors": "workspace:*",
+    "@heidi/metrics": "workspace:*"
+  }
+}
