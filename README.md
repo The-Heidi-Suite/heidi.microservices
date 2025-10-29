@@ -1,0 +1,549 @@
+# HEIDI Microservices
+
+A production-ready NestJS microservices monorepo with Docker, Prisma ORM, RabbitMQ messaging, Redis caching, and comprehensive observability.
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     HEIDI Platform                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                               │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐   │
+│  │   Auth   │  │  Users   │  │   City   │  │   Core   │   │
+│  │  :3001   │  │  :3002   │  │  :3003   │  │  :3004   │   │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘   │
+│       │             │              │             │          │
+│  ┌────┴─────────────┴──────────────┴─────────────┴─────┐   │
+│  │                Shared Libraries                       │   │
+│  │  - Prisma  - Logger  - RabbitMQ  - Redis  - JWT     │   │
+│  │  - Metrics - Interceptors                            │   │
+│  └───────────────────────────────────────────────────────┘   │
+│       │             │              │             │          │
+│  ┌────┴─────┐  ┌───┴──────┐  ┌───┴──────┐  ┌───┴──────┐   │
+│  │Notification│ │Scheduler│ │Integration│  │          │   │
+│  │  :3005   │  │  :3006   │  │  :3007   │  │          │   │
+│  └──────────┘  └──────────┘  └──────────┘  └──────────┘   │
+│                                                               │
+├─────────────────────────────────────────────────────────────┤
+│              Infrastructure Layer                             │
+│  ┌────────────┐  ┌──────────┐  ┌────────────────────┐      │
+│  │ PostgreSQL │  │  Redis   │  │     RabbitMQ       │      │
+│  │   :5432    │  │  :6379   │  │  :5672  :15672     │      │
+│  └────────────┘  └──────────┘  └────────────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Services
+
+| Service | Port | Description |
+|---------|------|-------------|
+| **auth** | 3001 | JWT authentication, login, logout, token refresh |
+| **users** | 3002 | User CRUD operations with soft deletes |
+| **city** | 3003 | City data management with geolocation |
+| **core** | 3004 | Core business logic orchestration |
+| **notification** | 3005 | Multi-channel notifications (email, SMS, push) |
+| **scheduler** | 3006 | Cron jobs and scheduled tasks |
+| **integration** | 3007 | External API integrations and webhooks |
+
+## Quick Start
+
+> 📖 **New to the project?** Check out [`docs/GETTING_STARTED.md`](docs/GETTING_STARTED.md) for a detailed 3-minute setup guide!
+
+### Prerequisites
+
+- Node.js >= 20.0.0
+- Yarn >= 1.22.0
+- Docker & Docker Compose
+
+### 1. Clone and Install
+
+```bash
+git clone <repository-url>
+cd heidi.microservices
+
+# Install dependencies and generate Prisma client
+yarn bootstrap
+```
+
+### 2. Environment Setup
+
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit .env with your configuration
+# At minimum, update:
+# - JWT_SECRET
+# - JWT_REFRESH_SECRET
+# - Database credentials (if not using Docker defaults)
+```
+
+### 3. Start Infrastructure
+
+```bash
+# Start PostgreSQL, Redis, RabbitMQ using Docker
+docker-compose -f docker-compose.dev.yml up -d postgres redis rabbitmq
+
+# Wait for services to be ready (~10 seconds)
+```
+
+### 4. Run Database Migrations
+
+```bash
+yarn prisma:migrate
+```
+
+### 5. Start Services
+
+#### Option A: Run all services locally (hot-reload)
+
+```bash
+# Run all services concurrently
+yarn dev
+
+# Or run individual services
+yarn workspace @heidi/auth dev
+yarn workspace @heidi/users dev
+```
+
+#### Option B: Run services in Docker
+
+```bash
+# Start all services with infrastructure
+docker-compose -f docker-compose.dev.yml up
+```
+
+### 6. Verify
+
+Visit service endpoints:
+- Auth: http://localhost:3001/healthz
+- Users: http://localhost:3002/healthz
+- City: http://localhost:3003/healthz
+- Metrics: http://localhost:3001/metrics
+
+## Development Workflow
+
+### Running Individual Services
+
+```bash
+# Start a specific service with hot-reload
+cd apps/auth
+yarn start:dev
+
+# Or from root
+yarn workspace @heidi/auth start:dev
+```
+
+### Database Management
+
+```bash
+# Create a new migration
+yarn prisma:migrate
+
+# Generate Prisma client after schema changes
+yarn prisma:generate
+
+# Open Prisma Studio (DB GUI)
+yarn prisma:studio
+
+# Seed database (if seed script exists)
+yarn prisma:seed
+```
+
+### Testing
+
+```bash
+# Run all tests
+yarn test:all
+
+# Run tests for a specific service
+yarn workspace @heidi/auth test
+
+# Run tests with coverage
+yarn test:cov
+```
+
+### Linting & Formatting
+
+```bash
+# Lint all code
+yarn lint:all
+
+# Format all code
+yarn format
+```
+
+## Project Structure
+
+```
+heidi.microservices/
+├── apps/                      # Microservices
+│   ├── auth/                  # Authentication service
+│   │   ├── src/
+│   │   │   ├── main.ts
+│   │   │   ├── app.module.ts
+│   │   │   └── modules/
+│   │   │       └── auth/
+│   │   ├── package.json
+│   │   └── tsconfig.app.json
+│   ├── users/                 # User management service
+│   ├── city/                  # City data service
+│   ├── core/                  # Core business logic service
+│   ├── notification/          # Notification service
+│   ├── scheduler/             # Scheduled tasks service
+│   ├── integration/           # External integrations service
+│   └── Dockerfile             # Multi-stage Dockerfile for all services
+│
+├── libs/                      # Shared libraries
+│   ├── prisma/                # Database ORM
+│   │   ├── prisma/
+│   │   │   └── schema.prisma
+│   │   └── src/
+│   │       ├── prisma.module.ts
+│   │       └── prisma.service.ts
+│   ├── logger/                # Winston logger
+│   ├── rabbitmq/              # Message queue
+│   ├── redis/                 # Caching
+│   ├── jwt/                   # Authentication
+│   ├── interceptors/          # Common interceptors
+│   └── metrics/               # Prometheus metrics
+│
+├── docker-compose.dev.yml     # Development environment
+├── docker-compose.yml         # Production environment
+├── package.json               # Root workspace config
+├── tsconfig.base.json         # Base TypeScript config
+├── nest-cli.json              # NestJS CLI config
+└── .env.example               # Environment variables template
+```
+
+## Docker Commands
+
+### Development
+
+```bash
+# Start all infrastructure services
+docker-compose -f docker-compose.dev.yml up -d
+
+# View logs
+docker-compose -f docker-compose.dev.yml logs -f
+
+# Stop all services
+docker-compose -f docker-compose.dev.yml down
+
+# Stop and remove volumes (reset database)
+docker-compose -f docker-compose.dev.yml down -v
+```
+
+### Production
+
+```bash
+# Build all service images
+docker-compose build
+
+# Start production environment
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Scale a specific service
+docker-compose up -d --scale users=3
+
+# Stop production environment
+docker-compose down
+```
+
+## API Examples
+
+### Authentication
+
+```bash
+# Register a new user
+curl -X POST http://localhost:3001/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "securePassword123",
+    "firstName": "John",
+    "lastName": "Doe"
+  }'
+
+# Login
+curl -X POST http://localhost:3001/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "password": "securePassword123"
+  }'
+
+# Use the returned accessToken in subsequent requests
+TOKEN="your-access-token-here"
+
+# Validate token
+curl -X POST http://localhost:3001/auth/validate \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+### Users Service
+
+```bash
+# Get all users (paginated)
+curl http://localhost:3002/users?page=1&limit=10 \
+  -H "Authorization: Bearer $TOKEN"
+
+# Get specific user
+curl http://localhost:3002/users/user-id-here \
+  -H "Authorization: Bearer $TOKEN"
+
+# Update user
+curl -X PATCH http://localhost:3002/users/user-id-here \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "firstName": "Jane" }'
+```
+
+### City Service
+
+```bash
+# Create a city
+curl -X POST http://localhost:3003/cities \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "San Francisco",
+    "country": "USA",
+    "state": "California",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "population": 884363
+  }'
+
+# Find nearby cities
+curl "http://localhost:3003/cities/search/nearby?lat=37.7749&lng=-122.4194&radius=50"
+```
+
+### Notifications
+
+```bash
+# Send notification
+curl -X POST http://localhost:3005/notifications/notify \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": "user-id-here",
+    "type": "INFO",
+    "channel": "EMAIL",
+    "subject": "Welcome!",
+    "content": "Welcome to HEIDI platform!"
+  }'
+
+# Get user notifications
+curl http://localhost:3005/notifications/user-id-here \
+  -H "Authorization: Bearer $TOKEN"
+```
+
+## Environment Variables
+
+Key environment variables (see `.env.example` for complete list):
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `NODE_ENV` | Environment | `development` |
+| `DATABASE_URL` | PostgreSQL connection string | See .env.example |
+| `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
+| `RABBITMQ_URL` | RabbitMQ connection string | `amqp://localhost:5672` |
+| `JWT_SECRET` | JWT access token secret | **CHANGE IN PRODUCTION** |
+| `JWT_REFRESH_SECRET` | JWT refresh token secret | **CHANGE IN PRODUCTION** |
+| `JWT_EXPIRES_IN` | Access token expiry | `15m` |
+| `JWT_REFRESH_EXPIRES_IN` | Refresh token expiry | `7d` |
+| `LOG_LEVEL` | Logging level | `debug` |
+| `SERVICE_NAME` | Service identifier | `heidi-service` |
+
+## Monitoring & Observability
+
+### Metrics
+
+Each service exposes Prometheus-compatible metrics at `/metrics`:
+
+```bash
+# View auth service metrics
+curl http://localhost:3001/metrics
+```
+
+**Available Metrics:**
+- `heidi_http_request_duration_seconds` - HTTP request duration histogram
+- `heidi_http_requests_total` - Total HTTP requests counter
+- `heidi_http_request_errors_total` - HTTP errors counter
+- `heidi_active_connections` - Active connections gauge
+- Plus default Node.js metrics (memory, CPU, etc.)
+
+### Health Checks
+
+Each service has a health endpoint:
+
+```bash
+# Check service health
+curl http://localhost:3001/healthz
+```
+
+Response includes database, Redis, and RabbitMQ status.
+
+### Logging
+
+Logs are output to console in structured JSON format (production) or colorized format (development).
+
+Log levels: `error`, `warn`, `info`, `debug`, `verbose`
+
+```bash
+# View logs for all services
+docker-compose logs -f
+
+# View logs for specific service
+docker-compose logs -f auth
+```
+
+## Production Deployment Checklist
+
+Before deploying to production:
+
+### 1. Security
+- [ ] Change all default secrets (`JWT_SECRET`, `JWT_REFRESH_SECRET`)
+- [ ] Use strong database passwords
+- [ ] Enable HTTPS/TLS
+- [ ] Configure CORS appropriately
+- [ ] Enable helmet security headers (already configured)
+- [ ] Implement rate limiting per endpoint (ThrottlerModule configured)
+- [ ] Use secrets management (AWS Secrets Manager, HashiCorp Vault)
+- [ ] Rotate secrets regularly (recommended: every 90 days)
+
+### 2. Database
+- [ ] Configure automated backups (daily recommended)
+- [ ] Set up point-in-time recovery
+- [ ] Enable connection pooling
+- [ ] Configure read replicas for scaling
+- [ ] Set appropriate retention policies
+
+### 3. Caching & Message Queue
+- [ ] Configure Redis persistence (AOF + RDS)
+- [ ] Set up Redis cluster for high availability
+- [ ] Configure RabbitMQ clustering
+- [ ] Enable RabbitMQ message persistence
+- [ ] Set up dead letter queues
+
+### 4. Monitoring & Alerting
+- [ ] Set up Prometheus for metrics collection
+- [ ] Configure Grafana dashboards
+- [ ] Set up log aggregation (ELK Stack, Loki, or CloudWatch)
+- [ ] Create alerts for critical metrics:
+  - High error rates (>5%)
+  - Slow response times (>500ms p95)
+  - High memory usage (>80%)
+  - Database connection failures
+- [ ] Define SLOs (e.g., 99.9% availability)
+
+### 5. Infrastructure
+- [ ] Use container orchestration (Kubernetes, ECS)
+- [ ] Configure auto-scaling
+- [ ] Set up load balancers
+- [ ] Configure CDN for static assets
+- [ ] Enable distributed tracing (Jaeger, OpenTelemetry)
+
+### 6. CI/CD
+- [ ] Automated testing in pipeline
+- [ ] Automated security scanning
+- [ ] Blue-green or canary deployments
+- [ ] Rollback strategy defined
+
+### 7. Documentation
+- [ ] API documentation (Swagger/OpenAPI)
+- [ ] Runbook for common issues
+- [ ] Disaster recovery procedures
+- [ ] On-call rotation setup
+
+## Troubleshooting
+
+### Services won't start
+
+```bash
+# Check if ports are in use
+lsof -i :3001-3007
+
+# Check Docker services
+docker-compose -f docker-compose.dev.yml ps
+
+# View service logs
+docker-compose -f docker-compose.dev.yml logs
+```
+
+### Database connection errors
+
+```bash
+# Verify PostgreSQL is running
+docker-compose -f docker-compose.dev.yml ps postgres
+
+# Test connection
+docker exec -it heidi-postgres-dev psql -U heidi -d heidi_db
+
+# Check DATABASE_URL in .env
+```
+
+### Prisma migration errors
+
+```bash
+# Reset database (⚠️ destroys all data)
+yarn workspace @heidi/prisma prisma migrate reset
+
+# Generate client
+yarn prisma:generate
+```
+
+### Hot-reload not working
+
+```bash
+# Clear dist and node_modules
+rm -rf dist node_modules apps/*/node_modules libs/*/node_modules
+
+# Reinstall
+yarn bootstrap
+```
+
+## Documentation
+
+### Getting Started
+- **[Getting Started Guide](docs/GETTING_STARTED.md)** - 3-minute quick start guide
+- **[Project Overview](docs/PROJECT_OVERVIEW.md)** - Architecture deep dive and design patterns
+- **[Project Structure](docs/STRUCTURE.md)** - Complete file tree and organization reference
+- **[Implementation Complete](docs/IMPLEMENTATION_COMPLETE.md)** - Feature summary and next steps
+
+### Contributing & Community
+- **[Contributing Guidelines](CONTRIBUTING.md)** - Development workflow, code style, and PR process
+- **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community guidelines and standards
+- **[Security Policy](SECURITY.md)** - Reporting vulnerabilities and security best practices
+- **[Changelog](CHANGELOG.md)** - Version history and changes
+
+## Contributing
+
+Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) for detailed guidelines.
+
+**Quick Summary:**
+1. Create a feature branch: `git checkout -b feature/my-feature`
+2. Make changes and test thoroughly
+3. Run linting: `yarn lint:all`
+4. Run tests: `yarn test:all`
+5. Commit with conventional commits: `git commit -m "feat: add new feature"`
+6. Push and create a pull request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Support
+
+For issues and questions:
+- Create an issue in the repository
+- Check existing documentation
+- Review troubleshooting section above
+
+---
+
+**Built with** ❤️ **using NestJS, Prisma, Docker, RabbitMQ, and Redis**
