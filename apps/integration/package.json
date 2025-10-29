@@ -1,0 +1,18 @@
+{
+  "name": "@heidi/integration",
+  "version": "1.0.0",
+  "description": "Integration service",
+  "scripts": {
+    "build": "nest build integration",
+    "dev": "nest start integration --watch",
+    "start:dev": "nest start integration --watch",
+    "start:prod": "node dist/main"
+  },
+  "dependencies": {
+    "@heidi/prisma": "workspace:*",
+    "@heidi/logger": "workspace:*",
+    "@heidi/rabbitmq": "workspace:*",
+    "@heidi/interceptors": "workspace:*",
+    "@heidi/metrics": "workspace:*"
+  }
+}
