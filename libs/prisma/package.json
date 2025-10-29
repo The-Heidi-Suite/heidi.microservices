@@ -1,0 +1,18 @@
+{
+  "name": "@heidi/prisma",
+  "version": "1.0.0",
+  "description": "Prisma ORM shared library",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "prisma:generate": "prisma generate --schema=./prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=./prisma/schema.prisma",
+    "prisma:migrate:prod": "prisma migrate deploy --schema=./prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=./prisma/schema.prisma",
+    "prisma:seed": "ts-node prisma/seed.ts"
+  },
+  "peerDependencies": {
+    "@nestjs/common": "^10.3.0",
+    "@prisma/client": "^5.8.0"
+  }
+}
