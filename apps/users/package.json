@@ -1,0 +1,19 @@
+{
+  "name": "@heidi/users",
+  "version": "1.0.0",
+  "description": "Users service",
+  "scripts": {
+    "build": "nest build users",
+    "dev": "nest start users --watch",
+    "start:dev": "nest start users --watch",
+    "start:debug": "nest start users --debug --watch",
+    "start:prod": "node dist/main"
+  },
+  "dependencies": {
+    "@heidi/prisma": "workspace:*",
+    "@heidi/logger": "workspace:*",
+    "@heidi/rabbitmq": "workspace:*",
+    "@heidi/interceptors": "workspace:*",
+    "@heidi/metrics": "workspace:*"
+  }
+}
