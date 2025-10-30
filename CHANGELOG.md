@@ -1,28 +1,20 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
-See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
+### 1.0.1 (2025-10-30)
 
-This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+### 📚 Documentation
 
-### Added
+* add Commit Quick Reference and Contribution Guidelines 2626c65
+* **env:** add .env.example, env.template and ENVIRONMENT_VARIABLES guide 373fa0b
 
-- Initial project scaffold with NestJS microservices architecture
-- 7 microservices: auth, users, city, core, notification, scheduler, integration
-- 7 shared libraries: prisma, logger, rabbitmq, redis, jwt, interceptors, metrics
-- Docker development and production environments
-- PostgreSQL database with Prisma ORM
-- Redis caching and session storage
-- RabbitMQ message queue integration
-- JWT authentication with refresh tokens
-- Winston structured logging
-- Prometheus metrics on all services
-- Health check endpoints
-- VSCode debugging configuration
-- Comprehensive documentation
+
+### 🔧 Chores
+
+* add configuration files for Commitizen and standard-version 97beb2c
+* update .gitignore and CHANGELOG.md 4122914
 
 ## [1.0.0] - 2025-01-29
 
