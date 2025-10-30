@@ -330,10 +330,35 @@ export class MonitoringService {
     }
   }
 
-  private calculateThroughput(_queueName: string): number {
-    // Simple throughput calculation based on recent metrics
-    // In a real implementation, you'd track job completion events
-    return 0;
+  private calculateThroughput(queueName: 'scraping' | 'cleanup'): number {
+    // Estimate jobs/min using the delta of completed jobs between the last two samples
+    if (this.metricsHistory.length < 2) return 0;
+
+    // Find last two entries that have queue metrics defined
+    const history = [...this.metricsHistory].reverse();
+    let prev: SystemMetrics | undefined;
+    let curr: SystemMetrics | undefined;
+
+    for (const entry of history) {
+      if (!entry?.queues?.[queueName]) continue;
+      if (!curr) {
+        curr = entry;
+      } else if (!prev) {
+        prev = entry;
+        break;
+      }
+    }
+
+    if (!prev || !curr) return 0;
+
+    const completedDelta =
+      (curr.queues[queueName]?.completed ?? 0) - (prev.queues[queueName]?.completed ?? 0);
+    const timeDeltaMs = new Date(curr.timestamp).getTime() - new Date(prev.timestamp).getTime();
+    if (timeDeltaMs <= 0) return 0;
+
+    const minutes = timeDeltaMs / 60000;
+    const throughput = completedDelta / minutes;
+    return throughput > 0 && Number.isFinite(throughput) ? throughput : 0;
   }
 
   private async collectSystemMetrics() {
@@ -349,13 +374,30 @@ export class MonitoringService {
   }
 
   private async collectDatabaseMetrics() {
-    // Simple database metrics - in production you'd use more sophisticated monitoring
-    return {
-      connectionCount: 1, // Prisma connection pool size
-      queryCount: 0, // Would need query interceptor
-      averageQueryTime: 0, // Would need query timing
-      slowQueries: 0, // Would need slow query log analysis
-    };
+    try {
+      // Attempt to read active connection count for Postgres
+      // Falls back gracefully if not supported
+      const result: Array<{ count: number }> = await this.prismaService
+        .$queryRaw`SELECT COUNT(*)::int as count FROM pg_stat_activity WHERE datname = current_database()`;
+
+      const connectionCount = (result?.[0]?.count as number) ?? 1;
+
+      return {
+        connectionCount,
+        // Query count and timing would require Prisma middleware; keep as 0 for now
+        queryCount: 0,
+        averageQueryTime: 0,
+        slowQueries: 0,
+      };
+    } catch (_err) {
+      // Minimal fallback - DB reachable check
+      try {
+        await this.prismaService.$queryRaw`SELECT 1`;
+        return { connectionCount: 1, queryCount: 0, averageQueryTime: 0, slowQueries: 0 };
+      } catch (_err2) {
+        return { connectionCount: 0, queryCount: 0, averageQueryTime: 0, slowQueries: 0 };
+      }
+    }
   }
 
   private async collectErrorMetrics() {
