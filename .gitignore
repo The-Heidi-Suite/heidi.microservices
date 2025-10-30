@@ -53,6 +53,9 @@ lerna-debug.log*
 *.temp
 .cache
 
+# Personal
+TODO.md
+
 # Docker
 docker-compose.override.yml
 
