@@ -1,85 +1,87 @@
 export default () => ({
+  // Shared PostgreSQL server configuration
+  // All microservices use the same PostgreSQL server but different databases
+  postgres: {
+    host: process.env.POSTGRES_HOST || 'localhost',
+    port: parseInt(process.env.POSTGRES_PORT || '5432', 10),
+    user: process.env.POSTGRES_USER || 'heidi',
+    password: process.env.POSTGRES_PASSWORD || 'heidi_password',
+  },
+
   // Auth microservice configuration
   auth: {
-    port: process.env.AUTH_TCP_PORT,
+    port: parseInt(process.env.AUTH_PORT || '3001', 10),
     database: {
-      host: process.env.MONGODB_HOST || 'localhost',
-      port: parseInt(process.env.MONGODB_PORT, 10) || 27017,
-      user: process.env.AUTH_MONGODB_USER || '',
-      password: process.env.AUTH_MONGODB_PASSWORD || '',
-      dbName: process.env.AUTH_MONGODB_DBNAME || 'heidi_suite',
+      name: process.env.AUTH_DB_NAME || 'heidi_auth',
+      url:
+        process.env.AUTH_DATABASE_URL ||
+        `postgresql://${process.env.POSTGRES_USER || 'heidi'}:${process.env.POSTGRES_PASSWORD || 'heidi_password'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.AUTH_DB_NAME || 'heidi_auth'}`,
     },
   },
 
   // Users microservice configuration
   users: {
-    port: process.env.USERS_TCP_PORT,
+    port: parseInt(process.env.USERS_PORT || '3002', 10),
     database: {
-      host: process.env.MONGODB_HOST || 'localhost',
-      port: parseInt(process.env.MONGODB_PORT, 10) || 27017,
-      user: process.env.USERS_MONGODB_USER || '',
-      password: process.env.USERS_MONGODB_PASSWORD || '',
-      dbName: process.env.USERS_MONGODB_DBNAME || 'heidi_suite',
-    },
-  },
-
-  // Core microservice configuration
-  core: {
-    port: process.env.CORE_TCP_PORT,
-    database: {
-      host: process.env.MONGODB_HOST || 'localhost',
-      port: parseInt(process.env.MONGODB_PORT, 10) || 27017,
-      user: process.env.CORE_MONGODB_USER || '',
-      password: process.env.CORE_MONGODB_PASSWORD || '',
-      dbName: process.env.CORE_MONGODB_DBNAME || 'heidi_suite',
+      name: process.env.USERS_DB_NAME || 'heidi_users',
+      url:
+        process.env.USERS_DATABASE_URL ||
+        `postgresql://${process.env.POSTGRES_USER || 'heidi'}:${process.env.POSTGRES_PASSWORD || 'heidi_password'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.USERS_DB_NAME || 'heidi_users'}`,
     },
   },
 
   // City microservice configuration
   city: {
-    port: process.env.CITY_TCP_PORT,
+    port: parseInt(process.env.CITY_PORT || '3003', 10),
     database: {
-      host: process.env.MONGODB_HOST || 'localhost',
-      port: parseInt(process.env.MONGODB_PORT, 10) || 27017,
-      user: process.env.CITY_MONGODB_USER || '',
-      password: process.env.CITY_MONGODB_PASSWORD || '',
-      dbName: process.env.CITY_MONGODB_DBNAME || 'heidi_suite',
+      name: process.env.CITY_DB_NAME || 'heidi_city',
+      url:
+        process.env.CITY_DATABASE_URL ||
+        `postgresql://${process.env.POSTGRES_USER || 'heidi'}:${process.env.POSTGRES_PASSWORD || 'heidi_password'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.CITY_DB_NAME || 'heidi_city'}`,
+    },
+  },
+
+  // Core microservice configuration
+  core: {
+    port: parseInt(process.env.CORE_PORT || '3004', 10),
+    database: {
+      name: process.env.CORE_DB_NAME || 'heidi_core',
+      url:
+        process.env.CORE_DATABASE_URL ||
+        `postgresql://${process.env.POSTGRES_USER || 'heidi'}:${process.env.POSTGRES_PASSWORD || 'heidi_password'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.CORE_DB_NAME || 'heidi_core'}`,
     },
   },
 
   // Notification microservice configuration
   notification: {
-    port: process.env.NOTIFICATION_TCP_PORT,
+    port: parseInt(process.env.NOTIFICATION_PORT || '3005', 10),
     database: {
-      host: process.env.MONGODB_HOST || 'localhost',
-      port: parseInt(process.env.MONGODB_PORT, 10) || 27017,
-      user: process.env.NOTIFICATION_MONGODB_USER || '',
-      password: process.env.NOTIFICATION_MONGODB_PASSWORD || '',
-      dbName: process.env.NOTIFICATION_MONGODB_DBNAME || 'heidi_suite',
+      name: process.env.NOTIFICATION_DB_NAME || 'heidi_notification',
+      url:
+        process.env.NOTIFICATION_DATABASE_URL ||
+        `postgresql://${process.env.POSTGRES_USER || 'heidi'}:${process.env.POSTGRES_PASSWORD || 'heidi_password'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.NOTIFICATION_DB_NAME || 'heidi_notification'}`,
     },
   },
 
   // Scheduler microservice configuration
   scheduler: {
-    port: process.env.SCHEDULER_TCP_PORT,
+    port: parseInt(process.env.SCHEDULER_PORT || '3006', 10),
     database: {
-      host: process.env.MONGODB_HOST || 'localhost',
-      port: parseInt(process.env.MONGODB_PORT, 10) || 27017,
-      user: process.env.SCHEDULER_MONGODB_USER || '',
-      password: process.env.SCHEDULER_MONGODB_PASSWORD || '',
-      dbName: process.env.SCHEDULER_MONGODB_DBNAME || 'heidi_suite',
+      name: process.env.SCHEDULER_DB_NAME || 'heidi_scheduler',
+      url:
+        process.env.SCHEDULER_DATABASE_URL ||
+        `postgresql://${process.env.POSTGRES_USER || 'heidi'}:${process.env.POSTGRES_PASSWORD || 'heidi_password'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.SCHEDULER_DB_NAME || 'heidi_scheduler'}`,
     },
   },
 
   // Integration microservice configuration
   integration: {
-    port: process.env.INTEGRATION_TCP_PORT,
+    port: parseInt(process.env.INTEGRATION_PORT || '3007', 10),
     database: {
-      host: process.env.MONGODB_HOST || 'localhost',
-      port: parseInt(process.env.MONGODB_PORT, 10) || 27017,
-      user: process.env.INTEGRATION_MONGODB_USER || '',
-      password: process.env.INTEGRATION_MONGODB_PASSWORD || '',
-      dbName: process.env.INTEGRATION_MONGODB_DBNAME || 'heidi_suite',
+      name: process.env.INTEGRATION_DB_NAME || 'heidi_integration',
+      url:
+        process.env.INTEGRATION_DATABASE_URL ||
+        `postgresql://${process.env.POSTGRES_USER || 'heidi'}:${process.env.POSTGRES_PASSWORD || 'heidi_password'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.INTEGRATION_DB_NAME || 'heidi_integration'}`,
     },
   },
 
@@ -104,7 +106,7 @@ export default () => ({
   // RabbitMQ configuration
   rabbitmq: {
     host: process.env.RABBITMQ_HOST || 'localhost',
-    port: parseInt(process.env.RABBITMQ_PORT, 10) || 5672,
+    port: parseInt(process.env.RABBITMQ_PORT || '5672', 10),
     user: process.env.RABBITMQ_USER || 'guest',
     password: process.env.RABBITMQ_PASSWORD || 'guest',
     vhost: process.env.RABBITMQ_VHOST || '/',
@@ -113,7 +115,7 @@ export default () => ({
   // Redis configuration
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT, 10) || 6379,
+    port: parseInt(process.env.REDIS_PORT || '6379', 10),
     password: process.env.REDIS_PASSWORD || '',
   },
 
