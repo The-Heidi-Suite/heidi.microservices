@@ -4,6 +4,89 @@ This directory contains helper scripts for setting up and managing the HEIDI mic
 
 ## 📋 Available Scripts
 
+### 🗃️ Prisma & Database Migration Scripts
+
+#### `prisma-generate-all.sh`
+
+Generate Prisma clients for all microservices.
+
+**Usage:**
+
+```bash
+./scripts/prisma-generate-all.sh
+```
+
+**What it does:**
+
+- Generates Prisma clients for all 7 microservices (auth, users, city, core, notification, scheduler, integration)
+- Each client is generated to a separate output directory in `node_modules/.prisma/client-<service>`
+- Must be run after any schema changes
+
+**When to use:**
+
+- After modifying any Prisma schema
+- After initial project setup
+- Before running migrations
+
+---
+
+#### `prisma-migrate-all.sh`
+
+Run database migrations for all microservice databases in development.
+
+**Usage:**
+
+```bash
+./scripts/prisma-migrate-all.sh
+```
+
+**What it does:**
+
+- Applies schema migrations to all microservice databases
+- Creates migration files in each Prisma library
+- Interactive - asks for confirmation before proceeding
+
+**Prerequisites:**
+
+- PostgreSQL server must be running
+- All databases must exist (run `create-databases.sh` first)
+- `.env` file must contain all `*_DATABASE_URL` variables
+
+**When to use:**
+
+- After schema changes in development
+- Initial database setup
+
+---
+
+#### `prisma-migrate-prod.sh`
+
+Deploy migrations to production for all microservice databases.
+
+**Usage:**
+
+```bash
+./scripts/prisma-migrate-prod.sh
+```
+
+**What it does:**
+
+- Deploys existing migration files to production databases
+- Non-interactive (for CI/CD pipelines)
+- Fails fast if any migration fails
+
+**Prerequisites:**
+
+- All migrations must already exist in `libs/prisma-*/prisma/migrations/`
+- Production database URLs must be set in environment
+
+**When to use:**
+
+- Production deployments
+- CI/CD pipelines
+
+---
+
 ### 🔧 `setup-env.sh`
 
 Creates `.env` and `.env.example` files with all required environment variables.
@@ -144,12 +227,16 @@ docker exec -i heidi-postgres psql -U heidi < scripts/init-databases.sql
    ./scripts/create-databases.sh
    ```
 
-5. **Run Prisma migrations** (after schema split):
+5. **Generate Prisma clients:**
+
    ```bash
-   # For each service
-   cd libs/prisma-auth && npx prisma migrate dev
-   cd libs/prisma-users && npx prisma migrate dev
-   # ... etc
+   ./scripts/prisma-generate-all.sh
+   ```
+
+6. **Run Prisma migrations:**
+
+   ```bash
+   ./scripts/prisma-migrate-all.sh
    ```
 
 ---
