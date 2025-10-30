@@ -19,6 +19,7 @@ docker compose version
 ```
 
 If any are missing, install them:
+
 - **Node.js**: https://nodejs.org/ (use LTS version 20.x)
 - **Yarn**: `npm install -g yarn`
 - **Docker**: https://docs.docker.com/get-docker/
@@ -60,11 +61,13 @@ yarn prisma:migrate
 Choose one option:
 
 **Option A: All services at once (easiest)**
+
 ```bash
 yarn dev
 ```
 
 **Option B: Specific services**
+
 ```bash
 # In separate terminals:
 yarn workspace @heidi/auth dev
@@ -73,6 +76,7 @@ yarn workspace @heidi/users dev
 ```
 
 **Option C: Everything in Docker**
+
 ```bash
 docker compose -f docker-compose.dev.yml up
 ```
@@ -96,6 +100,7 @@ All should return `{"status":"ok",...}`
 ### Check Metrics
 
 View Prometheus metrics:
+
 - http://localhost:3001/metrics
 
 ### Check Infrastructure
@@ -232,6 +237,7 @@ Now that everything is running:
 ## What You Just Built
 
 You now have:
+
 - ✅ 7 microservices running
 - ✅ PostgreSQL database with migrations
 - ✅ Redis caching layer

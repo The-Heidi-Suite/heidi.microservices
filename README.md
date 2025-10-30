@@ -36,15 +36,15 @@ A production-ready NestJS microservices monorepo with Docker, Prisma ORM, Rabbit
 
 ## Services
 
-| Service | Port | Description |
-|---------|------|-------------|
-| **auth** | 3001 | JWT authentication, login, logout, token refresh |
-| **users** | 3002 | User CRUD operations with soft deletes |
-| **city** | 3003 | City data management with geolocation |
-| **core** | 3004 | Core business logic orchestration |
-| **notification** | 3005 | Multi-channel notifications (email, SMS, push) |
-| **scheduler** | 3006 | Cron jobs and scheduled tasks |
-| **integration** | 3007 | External API integrations and webhooks |
+| Service          | Port | Description                                      |
+| ---------------- | ---- | ------------------------------------------------ |
+| **auth**         | 3001 | JWT authentication, login, logout, token refresh |
+| **users**        | 3002 | User CRUD operations with soft deletes           |
+| **city**         | 3003 | City data management with geolocation            |
+| **core**         | 3004 | Core business logic orchestration                |
+| **notification** | 3005 | Multi-channel notifications (email, SMS, push)   |
+| **scheduler**    | 3006 | Cron jobs and scheduled tasks                    |
+| **integration**  | 3007 | External API integrations and webhooks           |
 
 ## Quick Start
 
@@ -117,6 +117,7 @@ docker compose -f docker-compose.dev.yml up
 ### 6. Verify
 
 Visit service endpoints:
+
 - Auth: http://localhost:3001/healthz
 - Users: http://localhost:3002/healthz
 - City: http://localhost:3003/healthz
@@ -346,18 +347,18 @@ curl http://localhost:3005/notifications/user-id-here \
 
 Key environment variables (see `.env.example` for complete list):
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NODE_ENV` | Environment | `development` |
-| `DATABASE_URL` | PostgreSQL connection string | See .env.example |
-| `REDIS_URL` | Redis connection string | `redis://localhost:6379` |
-| `RABBITMQ_URL` | RabbitMQ connection string | `amqp://localhost:5672` |
-| `JWT_SECRET` | JWT access token secret | **CHANGE IN PRODUCTION** |
-| `JWT_REFRESH_SECRET` | JWT refresh token secret | **CHANGE IN PRODUCTION** |
-| `JWT_EXPIRES_IN` | Access token expiry | `15m` |
-| `JWT_REFRESH_EXPIRES_IN` | Refresh token expiry | `7d` |
-| `LOG_LEVEL` | Logging level | `debug` |
-| `SERVICE_NAME` | Service identifier | `heidi-service` |
+| Variable                 | Description                  | Default                  |
+| ------------------------ | ---------------------------- | ------------------------ |
+| `NODE_ENV`               | Environment                  | `development`            |
+| `DATABASE_URL`           | PostgreSQL connection string | See .env.example         |
+| `REDIS_URL`              | Redis connection string      | `redis://localhost:6379` |
+| `RABBITMQ_URL`           | RabbitMQ connection string   | `amqp://localhost:5672`  |
+| `JWT_SECRET`             | JWT access token secret      | **CHANGE IN PRODUCTION** |
+| `JWT_REFRESH_SECRET`     | JWT refresh token secret     | **CHANGE IN PRODUCTION** |
+| `JWT_EXPIRES_IN`         | Access token expiry          | `15m`                    |
+| `JWT_REFRESH_EXPIRES_IN` | Refresh token expiry         | `7d`                     |
+| `LOG_LEVEL`              | Logging level                | `debug`                  |
+| `SERVICE_NAME`           | Service identifier           | `heidi-service`          |
 
 ## Monitoring & Observability
 
@@ -371,6 +372,7 @@ curl http://localhost:3001/metrics
 ```
 
 **Available Metrics:**
+
 - `heidi_http_request_duration_seconds` - HTTP request duration histogram
 - `heidi_http_requests_total` - Total HTTP requests counter
 - `heidi_http_request_errors_total` - HTTP errors counter
@@ -407,6 +409,7 @@ docker compose logs -f auth
 Before deploying to production:
 
 ### 1. Security
+
 - [ ] Change all default secrets (`JWT_SECRET`, `JWT_REFRESH_SECRET`)
 - [ ] Use strong database passwords
 - [ ] Enable HTTPS/TLS
@@ -417,6 +420,7 @@ Before deploying to production:
 - [ ] Rotate secrets regularly (recommended: every 90 days)
 
 ### 2. Database
+
 - [ ] Configure automated backups (daily recommended)
 - [ ] Set up point-in-time recovery
 - [ ] Enable connection pooling
@@ -424,6 +428,7 @@ Before deploying to production:
 - [ ] Set appropriate retention policies
 
 ### 3. Caching & Message Queue
+
 - [ ] Configure Redis persistence (AOF + RDS)
 - [ ] Set up Redis cluster for high availability
 - [ ] Configure RabbitMQ clustering
@@ -431,6 +436,7 @@ Before deploying to production:
 - [ ] Set up dead letter queues
 
 ### 4. Monitoring & Alerting
+
 - [ ] Set up Prometheus for metrics collection
 - [ ] Configure Grafana dashboards
 - [ ] Set up log aggregation (ELK Stack, Loki, or CloudWatch)
@@ -442,6 +448,7 @@ Before deploying to production:
 - [ ] Define SLOs (e.g., 99.9% availability)
 
 ### 5. Infrastructure
+
 - [ ] Use container orchestration (Kubernetes, ECS)
 - [ ] Configure auto-scaling
 - [ ] Set up load balancers
@@ -449,12 +456,14 @@ Before deploying to production:
 - [ ] Enable distributed tracing (Jaeger, OpenTelemetry)
 
 ### 6. CI/CD
+
 - [ ] Automated testing in pipeline
 - [ ] Automated security scanning
 - [ ] Blue-green or canary deployments
 - [ ] Rollback strategy defined
 
 ### 7. Documentation
+
 - [ ] API documentation (Swagger/OpenAPI)
 - [ ] Runbook for common issues
 - [ ] Disaster recovery procedures
@@ -510,11 +519,13 @@ yarn bootstrap
 ## Documentation
 
 ### Getting Started
+
 - **[Getting Started Guide](docs/GETTING_STARTED.md)** - 3-minute quick start guide
 - **[Project Overview](docs/PROJECT_OVERVIEW.md)** - Architecture deep dive and design patterns
 - **[Project Structure](docs/STRUCTURE.md)** - Complete file tree and organization reference
 
 ### Contributing & Community
+
 - **[Contributing Guidelines](CONTRIBUTING.md)** - Development workflow, code style, and PR process
 - **[Code of Conduct](CODE_OF_CONDUCT.md)** - Community guidelines and standards
 - **[Security Policy](SECURITY.md)** - Reporting vulnerabilities and security best practices
@@ -525,6 +536,7 @@ yarn bootstrap
 Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) for detailed guidelines.
 
 **Quick Summary:**
+
 1. Create a feature branch: `git checkout -b feature/my-feature`
 2. Make changes and test thoroughly
 3. Run linting: `yarn lint:all`
@@ -539,6 +551,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 For issues and questions:
+
 - Create an issue in the repository
 - Check existing documentation
 - Review troubleshooting section above

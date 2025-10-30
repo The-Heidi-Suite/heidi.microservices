@@ -36,19 +36,16 @@
       "mode": "auto"
     }
   ],
-  "eslint.validate": [
-    "javascript",
-    "typescript"
-  ],
+  "eslint.validate": ["javascript", "typescript"],
   "jest.autoRun": "off",
   "jest.showCoverageOnLoad": false,
   "typescript.preferences.importModuleSpecifier": "non-relative",
-  "editor.rulers": [
-    80,
-    120
-  ],
+  "editor.rulers": [80, 120],
   "files.eol": "\n",
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-  "prisma.fileWatcher": true
+  "prisma.fileWatcher": true,
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  }
 }

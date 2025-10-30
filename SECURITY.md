@@ -42,12 +42,14 @@ Please include the following information:
 When deploying HEIDI microservices in production, please ensure:
 
 #### Authentication & Authorization
+
 - [ ] Changed all default secrets (JWT_SECRET, JWT_REFRESH_SECRET)
 - [ ] Using strong, unique passwords for all services
 - [ ] Implemented proper RBAC (Role-Based Access Control)
 - [ ] Enabled MFA where applicable
 
 #### Infrastructure
+
 - [ ] All services running behind HTTPS/TLS
 - [ ] Secrets stored in secure vault (AWS Secrets Manager, HashiCorp Vault)
 - [ ] Regular security patches applied to all dependencies
@@ -56,6 +58,7 @@ When deploying HEIDI microservices in production, please ensure:
 - [ ] RabbitMQ secured with proper credentials
 
 #### Network Security
+
 - [ ] Firewall rules configured to restrict access
 - [ ] Services not directly exposed to the internet
 - [ ] Using API Gateway or Load Balancer
@@ -63,6 +66,7 @@ When deploying HEIDI microservices in production, please ensure:
 - [ ] Rate limiting configured on all endpoints
 
 #### Application Security
+
 - [ ] Input validation on all endpoints
 - [ ] SQL injection protection (Prisma ORM handles this)
 - [ ] XSS protection headers enabled (Helmet middleware)
@@ -71,6 +75,7 @@ When deploying HEIDI microservices in production, please ensure:
 - [ ] Error messages don't leak sensitive information
 
 #### Monitoring & Logging
+
 - [ ] Security event logging enabled
 - [ ] Audit logs for authentication and authorization
 - [ ] Anomaly detection configured
@@ -78,6 +83,7 @@ When deploying HEIDI microservices in production, please ensure:
 - [ ] Alerting on suspicious activities
 
 #### Data Protection
+
 - [ ] PII (Personally Identifiable Information) encrypted
 - [ ] Regular database backups with encryption
 - [ ] Data retention policies implemented
@@ -85,6 +91,7 @@ When deploying HEIDI microservices in production, please ensure:
 - [ ] Secure data deletion procedures
 
 #### Dependencies
+
 - [ ] Regular dependency updates
 - [ ] Automated vulnerability scanning (Snyk, Dependabot)
 - [ ] No known vulnerabilities in production dependencies
@@ -93,28 +100,33 @@ When deploying HEIDI microservices in production, please ensure:
 ### Known Security Considerations
 
 #### JWT Token Management
+
 - Access tokens expire in 15 minutes (configurable)
 - Refresh tokens expire in 7 days (configurable)
 - Tokens stored in Redis with TTL
 - Consider implementing token rotation for enhanced security
 
 #### Password Security
+
 - Passwords hashed with bcrypt (10 rounds)
 - Minimum password length: 6 characters (increase in production)
 - Consider implementing password complexity requirements
 - Consider implementing password history
 
 #### Session Management
+
 - Sessions stored in Redis
 - Session hijacking protection via token fingerprinting (to be implemented)
 - Consider implementing IP-based session validation
 
 #### Rate Limiting
+
 - Default: 100 requests per minute per IP
 - Configured via ThrottlerModule
 - Adjust based on your traffic patterns
 
 #### CORS Configuration
+
 - Default: Allow all origins in development
 - **Production**: Configure specific allowed origins
 - Set appropriate headers for credentials
@@ -152,6 +164,7 @@ Security updates will be released as patch versions (e.g., 1.0.1, 1.0.2) and wil
 ## Contact
 
 For any security-related questions or concerns:
+
 - Email: [INSERT SECURITY EMAIL]
 - Do not use public channels (GitHub Issues, Discord, etc.) for security issues
 

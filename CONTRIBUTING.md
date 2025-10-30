@@ -79,6 +79,7 @@ git commit -m "test(auth): add unit tests for login"
 ```
 
 **Commit Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation only
@@ -103,6 +104,7 @@ git push origin feature/your-feature-name
 ### PR Title
 
 Use conventional commit format:
+
 ```
 feat(service): description of change
 ```
@@ -110,6 +112,7 @@ feat(service): description of change
 ### PR Description
 
 Include:
+
 - **What**: What does this PR do?
 - **Why**: Why is this change needed?
 - **How**: How does it work?
@@ -117,23 +120,29 @@ Include:
 - **Screenshots**: If applicable
 
 **Template:**
+
 ```markdown
 ## What
+
 Brief description of the change
 
 ## Why
+
 Reason for the change
 
 ## How
+
 Technical details
 
 ## Testing
+
 - [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
 - [ ] Manual testing performed
 - [ ] All tests passing
 
 ## Checklist
+
 - [ ] Code follows project style guidelines
 - [ ] Self-review completed
 - [ ] Comments added for complex code

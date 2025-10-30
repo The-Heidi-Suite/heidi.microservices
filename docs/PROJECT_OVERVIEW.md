@@ -3,6 +3,7 @@
 ## Summary
 
 A production-ready NestJS microservices monorepo featuring:
+
 - 7 microservices (auth, users, city, core, notification, scheduler, integration)
 - 7 shared libraries (prisma, logger, rabbitmq, redis, jwt, interceptors, metrics)
 - Docker development and production environments
@@ -12,31 +13,37 @@ A production-ready NestJS microservices monorepo featuring:
 ## Tech Stack
 
 ### Core Framework
+
 - **NestJS** 10.x - Progressive Node.js framework
 - **TypeScript** 5.x - Type-safe JavaScript
 - **Node.js** 20 LTS - JavaScript runtime
 
 ### Database & ORM
+
 - **PostgreSQL** 16 - Primary database
 - **Prisma** 5.x - Type-safe ORM with migrations
 
 ### Messaging & Caching
+
 - **RabbitMQ** 3.x - Message broker for async communication
 - **Redis** 7.x - Caching and session storage
 - **@nestjs/microservices** - NestJS microservices transport
 
 ### Authentication & Security
+
 - **JWT** - Token-based authentication
 - **bcrypt** - Password hashing
 - **Helmet** - Security headers
 - **@nestjs/throttler** - Rate limiting
 
 ### Observability
+
 - **Winston** - Structured logging
 - **prom-client** - Prometheus metrics
 - **@nestjs/terminus** - Health checks
 
 ### Development Tools
+
 - **Yarn Workspaces** - Monorepo management
 - **ESLint** - Code linting
 - **Prettier** - Code formatting
@@ -46,18 +53,23 @@ A production-ready NestJS microservices monorepo featuring:
 ## Architecture Patterns
 
 ### 1. Microservices Architecture
+
 Each service is independent, has its own domain, and communicates via:
+
 - **HTTP/REST** - Synchronous API calls
 - **RabbitMQ** - Asynchronous event-driven messaging
 - **Shared Database** - Single PostgreSQL instance (can be split)
 
 ### 2. Monorepo Structure
+
 - **apps/** - Individual microservices
 - **libs/** - Shared, reusable libraries
 - Benefits: Code reuse, atomic changes, simplified dependency management
 
 ### 3. Layered Architecture
+
 Each service follows:
+
 ```
 Controller (HTTP Layer)
     ↓
@@ -67,14 +79,18 @@ Repository (Data Access via Prisma)
 ```
 
 ### 4. Event-Driven Communication
+
 Services emit events via RabbitMQ for:
+
 - User lifecycle (created, updated, deleted)
 - Notifications (queued, sent, failed)
 - Scheduled tasks (executed, completed)
 - Integrations (webhook received, sync completed)
 
 ### 5. Shared Library Pattern
+
 Common functionality extracted to reusable libraries:
+
 - **@heidi/prisma** - Database access
 - **@heidi/logger** - Structured logging
 - **@heidi/rabbitmq** - Message queue client
@@ -86,9 +102,11 @@ Common functionality extracted to reusable libraries:
 ## Service Details
 
 ### Auth Service (Port 3001)
+
 **Purpose:** User authentication and authorization
 
 **Key Features:**
+
 - User registration with password hashing
 - JWT-based login/logout
 - Access and refresh token management
@@ -102,9 +120,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### Users Service (Port 3002)
+
 **Purpose:** User management and CRUD operations
 
 **Key Features:**
+
 - User CRUD operations
 - Pagination support
 - Soft delete functionality
@@ -117,9 +137,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### City Service (Port 3003)
+
 **Purpose:** Geographic data management
 
 **Key Features:**
+
 - City CRUD operations
 - Geolocation search (nearby cities)
 - Country filtering
@@ -130,9 +152,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### Core Service (Port 3004)
+
 **Purpose:** Business logic orchestration and cross-service operations
 
 **Key Features:**
+
 - Aggregated operations across services
 - Event listener for cross-service coordination
 - Caching for frequently accessed data
@@ -144,9 +168,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### Notification Service (Port 3005)
+
 **Purpose:** Multi-channel notification delivery
 
 **Key Features:**
+
 - Multi-channel support (Email, SMS, Push, In-App)
 - Notification queuing via RabbitMQ
 - Delivery tracking and status management
@@ -161,9 +187,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### Scheduler Service (Port 3006)
+
 **Purpose:** Cron jobs and scheduled task execution
 
 **Key Features:**
+
 - Cron-based task scheduling (@nestjs/schedule)
 - Task management API
 - Distributed locking via Redis
@@ -176,9 +204,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### Integration Service (Port 3007)
+
 **Purpose:** External API integrations and webhook handling
 
 **Key Features:**
+
 - Webhook receiver for multiple providers
 - HTTP client for external API calls
 - Integration logging and monitoring
@@ -191,15 +221,18 @@ Common functionality extracted to reusable libraries:
 ## Shared Libraries
 
 ### @heidi/prisma
+
 **Purpose:** Database access layer
 
 **Features:**
+
 - Prisma client wrapper
 - Connection lifecycle management
 - Health checks
 - Query logging (development)
 
 **Schema Models:**
+
 - User (authentication and profiles)
 - City (geographic data)
 - Notification (notification records)
@@ -210,9 +243,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### @heidi/logger
+
 **Purpose:** Structured logging
 
 **Features:**
+
 - Winston-based logger
 - Async context tracking (request IDs)
 - Service name injection
@@ -222,9 +257,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### @heidi/rabbitmq
+
 **Purpose:** Message queue client
 
 **Features:**
+
 - NestJS microservices ClientProxy wrapper
 - Publish/subscribe helpers
 - Request-response pattern support
@@ -234,9 +271,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### @heidi/redis
+
 **Purpose:** Caching and session storage
 
 **Features:**
+
 - ioredis wrapper
 - Get/set/delete operations
 - TTL support
@@ -247,9 +286,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### @heidi/jwt
+
 **Purpose:** JWT authentication
 
 **Features:**
+
 - Token generation (access + refresh)
 - Token verification
 - Passport JWT strategy
@@ -260,9 +301,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### @heidi/interceptors
+
 **Purpose:** Common request/response interceptors
 
 **Interceptors:**
+
 - **LoggingInterceptor** - Request/response logging with timing
 - **TimeoutInterceptor** - Request timeout (30s default)
 - **TransformInterceptor** - Response wrapper with metadata
@@ -271,9 +314,11 @@ Common functionality extracted to reusable libraries:
 ---
 
 ### @heidi/metrics
+
 **Purpose:** Prometheus metrics collection
 
 **Features:**
+
 - prom-client integration
 - HTTP request metrics (duration, count, errors)
 - Custom metric creation (counter, gauge, histogram)
@@ -283,6 +328,7 @@ Common functionality extracted to reusable libraries:
 ## Data Models
 
 ### User
+
 ```prisma
 id          String
 email       String   @unique
@@ -297,6 +343,7 @@ deletedAt   DateTime? (soft delete)
 ```
 
 ### City
+
 ```prisma
 id          String
 name        String
@@ -313,6 +360,7 @@ updatedAt   DateTime
 ```
 
 ### Notification
+
 ```prisma
 id        String
 userId    String
@@ -329,6 +377,7 @@ updatedAt DateTime
 ```
 
 ### Schedule
+
 ```prisma
 id             String
 name           String
@@ -345,6 +394,7 @@ updatedAt      DateTime
 ```
 
 ### Integration
+
 ```prisma
 id          String
 userId      String
@@ -362,34 +412,41 @@ updatedAt   DateTime
 ## Event Patterns
 
 ### User Events
+
 - `user.created` - New user registered
 - `user.updated` - User profile updated
 - `user.deleted` - User soft deleted
 
 ### Notification Events
+
 - `notification.send` - Request to send notification
 - `notification.sent` - Notification successfully sent
 - `notification.failed` - Notification delivery failed
 
 ### City Events
+
 - `city.created` - New city added
 - `city.updated` - City data updated
 - `city.deleted` - City deactivated
 
 ### Schedule Events
+
 - `schedule.execute` - Task execution triggered
 - `schedule.completed` - Task execution finished
 
 ### Integration Events
+
 - `integration.webhook` - Webhook received from provider
 - `integration.sync` - Synchronization requested
 
 ### Core Events
+
 - `core.operation` - Cross-service operation initiated
 
 ## Security Considerations
 
 ### Implemented
+
 - ✅ Password hashing with bcrypt (10 rounds)
 - ✅ JWT with short-lived access tokens (15min)
 - ✅ Refresh tokens with longer expiry (7 days)
@@ -401,6 +458,7 @@ updatedAt   DateTime
 - ✅ SQL injection protection (Prisma)
 
 ### Recommended for Production
+
 - 🔲 HTTPS/TLS everywhere
 - 🔲 Secrets management (Vault, AWS Secrets Manager)
 - 🔲 API key authentication for service-to-service
@@ -413,22 +471,26 @@ updatedAt   DateTime
 ## Scalability Strategy
 
 ### Horizontal Scaling
+
 - Each service can be scaled independently
 - Stateless design (except for in-memory caching)
 - Load balancer distributes traffic
 
 ### Database Scaling
+
 - Connection pooling (Prisma)
 - Read replicas for read-heavy queries
 - Sharding for very large datasets
 - Separate databases per service (future)
 
 ### Caching Strategy
+
 - Redis for frequently accessed data
 - TTL-based cache invalidation
 - Cache-aside pattern
 
 ### Message Queue Scaling
+
 - RabbitMQ clustering
 - Message persistence
 - Dead letter queues for failed messages
@@ -437,6 +499,7 @@ updatedAt   DateTime
 ## Monitoring Strategy
 
 ### Metrics (Prometheus)
+
 - HTTP request duration (p50, p95, p99)
 - Request count by endpoint
 - Error rate
@@ -445,17 +508,20 @@ updatedAt   DateTime
 - CPU usage
 
 ### Logging (Winston)
+
 - Structured JSON logs
 - Request/response logging
 - Error logging with stack traces
 - Context tracking (request IDs)
 
 ### Health Checks
+
 - Liveness checks (is service running?)
 - Readiness checks (can service handle traffic?)
 - Dependency checks (DB, Redis, RabbitMQ)
 
 ### Alerting (Recommended)
+
 - Error rate > 5%
 - Response time p95 > 500ms
 - Memory usage > 80%
@@ -474,10 +540,12 @@ updatedAt   DateTime
 ## Deployment Options
 
 ### Option 1: Docker Compose (Simple)
+
 - Single host deployment
 - Suitable for: Small-scale, development, staging
 
 ### Option 2: Kubernetes (Recommended for Production)
+
 - Multi-host deployment
 - Auto-scaling
 - Self-healing
@@ -485,6 +553,7 @@ updatedAt   DateTime
 - Suitable for: Production, high-scale
 
 ### Option 3: Managed Services
+
 - AWS ECS/Fargate
 - Google Cloud Run
 - Azure Container Instances
@@ -493,17 +562,20 @@ updatedAt   DateTime
 ## Performance Characteristics
 
 ### Expected Performance (Single Instance)
+
 - Auth Service: ~500 req/s
 - Users Service: ~1000 req/s (read-heavy)
 - City Service: ~2000 req/s (read-heavy)
 - Notification Service: ~100 req/s (write-heavy)
 
 ### Bottlenecks
+
 - Database connections (pool size: 10)
 - RabbitMQ throughput
 - Redis memory
 
 ### Optimization Tips
+
 - Use Redis caching aggressively
 - Batch database operations
 - Async operations via RabbitMQ
@@ -513,12 +585,14 @@ updatedAt   DateTime
 ## Future Enhancements
 
 ### Short Term
+
 - [ ] Swagger/OpenAPI documentation
 - [ ] E2E test suite
 - [ ] CI/CD pipeline (GitHub Actions)
 - [ ] Database seeding scripts
 
 ### Medium Term
+
 - [ ] Separate databases per service
 - [ ] GraphQL API gateway
 - [ ] WebSocket support
@@ -526,6 +600,7 @@ updatedAt   DateTime
 - [ ] Email templates (Handlebars)
 
 ### Long Term
+
 - [ ] Multi-region deployment
 - [ ] gRPC inter-service communication
 - [ ] Kafka for event streaming
@@ -535,12 +610,14 @@ updatedAt   DateTime
 ## Maintenance
 
 ### Regular Tasks
+
 - **Daily**: Monitor logs and metrics
 - **Weekly**: Review error rates, optimize slow queries
 - **Monthly**: Dependency updates, security patches
 - **Quarterly**: Performance testing, capacity planning
 
 ### Backup Strategy
+
 - **Database**: Daily automated backups, 30-day retention
 - **Redis**: AOF persistence, hourly snapshots
 - **RabbitMQ**: Message persistence enabled
@@ -549,6 +626,7 @@ updatedAt   DateTime
 ## Support & Resources
 
 ### Documentation
+
 - `../README.md` - Main documentation (root)
 - `../CONTRIBUTING.md` - Contribution guidelines (root)
 - `../CODE_OF_CONDUCT.md` - Community standards (root)
@@ -559,6 +637,7 @@ updatedAt   DateTime
 - `STRUCTURE.md` - Project structure
 
 ### Tools
+
 - Prisma Studio - Database GUI
 - RabbitMQ Management - Queue monitoring
 - Grafana - Metrics visualization

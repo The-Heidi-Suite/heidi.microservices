@@ -568,6 +568,26 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@heidi/errors@workspace:libs/errors":
+  version: 0.0.0-use.local
+  resolution: "@heidi/errors@workspace:libs/errors"
+  peerDependencies:
+    "@nestjs/common": ^10.3.0
+    "@nestjs/config": ^3.1.1
+    "@nestjs/core": ^10.3.0
+    "@prisma/client": ^5.8.0
+  languageName: unknown
+  linkType: soft
+
+"@heidi/health@workspace:libs/health":
+  version: 0.0.0-use.local
+  resolution: "@heidi/health@workspace:libs/health"
+  peerDependencies:
+    "@nestjs/common": ^10.3.0
+    "@nestjs/config": ^3.1.1
+  languageName: unknown
+  linkType: soft
+
 "@heidi/integration@workspace:apps/integration":
   version: 0.0.0-use.local
   resolution: "@heidi/integration@workspace:apps/integration"
@@ -618,6 +638,25 @@ __metadata:
   peerDependencies:
     "@nestjs/common": ^10.3.0
     prom-client: ^15.1.0
+  languageName: unknown
+  linkType: soft
+
+"@heidi/monitoring@workspace:libs/monitoring":
+  version: 0.0.0-use.local
+  resolution: "@heidi/monitoring@workspace:libs/monitoring"
+  peerDependencies:
+    "@heidi/config": "workspace:*"
+    "@heidi/errors": "workspace:*"
+    "@heidi/interceptors": "workspace:*"
+    "@heidi/jwt": "workspace:*"
+    "@heidi/logger": "workspace:*"
+    "@heidi/metrics": "workspace:*"
+    "@heidi/prisma": "workspace:*"
+    "@heidi/rabbitmq": "workspace:*"
+    "@heidi/redis": "workspace:*"
+    "@nestjs/common": ^10.3.0
+    "@nestjs/config": ^3.1.1
+    "@nestjs/schedule": ^4.0.0
   languageName: unknown
   linkType: soft
 

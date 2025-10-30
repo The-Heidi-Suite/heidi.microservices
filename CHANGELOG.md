@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Initial project scaffold with NestJS microservices architecture
 - 7 microservices: auth, users, city, core, notification, scheduler, integration
 - 7 shared libraries: prisma, logger, rabbitmq, redis, jwt, interceptors, metrics
@@ -25,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.0] - 2025-01-29
 
 ### Added
+
 - Initial release of HEIDI microservices platform
 - Complete monorepo structure with Yarn workspaces
 - Production-ready infrastructure setup
@@ -48,17 +50,21 @@ When making changes, add them under the `[Unreleased]` section using these categ
 - **Security** for vulnerability fixes
 
 Example:
+
 ```markdown
 ## [Unreleased]
 
 ### Added
+
 - New email notification templates
 
 ### Fixed
+
 - User registration validation bug
 ```
 
 When releasing a new version:
+
 1. Move items from `[Unreleased]` to a new version section
 2. Add the version number and date
 3. Update the version in `package.json`

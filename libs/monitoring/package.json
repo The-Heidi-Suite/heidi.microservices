@@ -7,17 +7,17 @@
     "build": "tsc"
   },
   "peerDependencies": {
+    "@heidi/config": "workspace:*",
     "@heidi/errors": "workspace:*",
+    "@heidi/interceptors": "workspace:*",
+    "@heidi/jwt": "workspace:*",
+    "@heidi/logger": "workspace:*",
+    "@heidi/metrics": "workspace:*",
+    "@heidi/prisma": "workspace:*",
+    "@heidi/rabbitmq": "workspace:*",
+    "@heidi/redis": "workspace:*",
     "@nestjs/common": "^10.3.0",
     "@nestjs/config": "^3.1.1",
-    "@nestjs/schedule": "^4.0.0",
-    "@heidi/logger": "workspace:*",
-    "@heidi/prisma": "workspace:*",
-    "@heidi/redis": "workspace:*",
-    "@heidi/rabbitmq": "workspace:*",
-    "@heidi/jwt": "workspace:*",
-    "@heidi/interceptors": "workspace:*",
-    "@heidi/metrics": "workspace:*",
-    "@heidi/config": "workspace:*"
+    "@nestjs/schedule": "^4.0.0"
   }
 }

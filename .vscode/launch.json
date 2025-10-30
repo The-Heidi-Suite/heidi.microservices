@@ -6,14 +6,8 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "workspace",
-        "@heidi/auth",
-        "start:debug"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["workspace", "@heidi/auth", "start:debug"],
+      "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "restart": true,
       "env": {
@@ -25,14 +19,8 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "workspace",
-        "@heidi/users",
-        "start:debug"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["workspace", "@heidi/users", "start:debug"],
+      "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "restart": true,
       "env": {
@@ -44,14 +32,8 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "workspace",
-        "@heidi/city",
-        "start:debug"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["workspace", "@heidi/city", "start:debug"],
+      "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "restart": true,
       "env": {
@@ -63,14 +45,8 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "workspace",
-        "@heidi/core",
-        "start:debug"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["workspace", "@heidi/core", "start:debug"],
+      "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "restart": true,
       "env": {
@@ -82,14 +58,8 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "workspace",
-        "@heidi/notification",
-        "start:debug"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["workspace", "@heidi/notification", "start:debug"],
+      "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "restart": true,
       "env": {
@@ -101,14 +71,8 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "workspace",
-        "@heidi/scheduler",
-        "start:debug"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["workspace", "@heidi/scheduler", "start:debug"],
+      "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "restart": true,
       "env": {
@@ -120,14 +84,8 @@
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "yarn",
-      "runtimeArgs": [
-        "workspace",
-        "@heidi/integration",
-        "start:debug"
-      ],
-      "skipFiles": [
-        "<node_internals>/**"
-      ],
+      "runtimeArgs": ["workspace", "@heidi/integration", "start:debug"],
+      "skipFiles": ["<node_internals>/**"],
       "console": "integratedTerminal",
       "restart": true,
       "env": {
@@ -139,11 +97,7 @@
       "type": "node",
       "request": "launch",
       "program": "${workspaceFolder}/node_modules/.bin/jest",
-      "args": [
-        "${fileBasename}",
-        "--config",
-        "${workspaceFolder}/jest.config.js"
-      ],
+      "args": ["${fileBasename}", "--config", "${workspaceFolder}/jest.config.js"],
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen"
     },
@@ -153,9 +107,7 @@
       "request": "attach",
       "port": 9229,
       "restart": true,
-      "skipFiles": [
-        "<node_internals>/**"
-      ]
+      "skipFiles": ["<node_internals>/**"]
     }
   ],
   "compounds": [
@@ -174,11 +126,7 @@
     },
     {
       "name": "Debug Core Services",
-      "configurations": [
-        "Debug Auth Service",
-        "Debug Users Service",
-        "Debug Core Service"
-      ],
+      "configurations": ["Debug Auth Service", "Debug Users Service", "Debug Core Service"],
       "stopAll": true
     }
   ]

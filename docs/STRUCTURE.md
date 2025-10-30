@@ -335,16 +335,19 @@ libs/metrics/
 ## File Count Summary
 
 ### Root Files: 15
+
 - **Documentation**: 5 (README.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, CHANGELOG.md, LICENSE)
 - **Configuration**: 8 (package.json, tsconfig, nest-cli, eslint, prettier, editorconfig, etc.)
 - **Docker**: 2 (docker-compose.dev.yml, docker-compose.yml)
 
 ### Documentation (docs/): 4 files
+
 - GETTING_STARTED.md - Quick start guide
 - PROJECT_OVERVIEW.md - Architecture deep dive
 - STRUCTURE.md - Project structure reference
 
 ### Apps (7 services): ~120 files
+
 - **auth**: 13 files (main, app, health, module, controller, service, 3 DTOs, etc.)
 - **users**: 13 files (similar structure)
 - **city**: 13 files (similar structure)
@@ -354,6 +357,7 @@ libs/metrics/
 - **integration**: 9 files
 
 ### Libs (7 libraries): ~35 files
+
 - **prisma**: 4 files (module, service, schema, index)
 - **logger**: 3 files (module, service, index)
 - **rabbitmq**: 3 files (module, service, index)
@@ -392,27 +396,32 @@ export class MyService {
 ## Key Configuration Files
 
 ### package.json (Root)
-- Defines workspaces (apps/*, libs/*)
+
+- Defines workspaces (apps/_, libs/_)
 - Root-level scripts (bootstrap, dev, build:all, test:all, etc.)
 - Common dependencies and devDependencies
 
 ### tsconfig.base.json
+
 - Base TypeScript configuration
-- Path mappings for @heidi/* imports
+- Path mappings for @heidi/\* imports
 - Compiler options shared across all projects
 
 ### nest-cli.json
+
 - Monorepo configuration
 - All apps and libs registered
 - Build and compilation settings
 
 ### docker-compose.dev.yml
+
 - PostgreSQL (port 5432)
 - Redis (port 6379)
 - RabbitMQ (ports 5672, 15672)
 - pgAdmin (port 5050)
 
 ### docker-compose.yml (Production)
+
 - All infrastructure services
 - All 7 microservices
 - Health checks and restart policies
@@ -437,20 +446,20 @@ heidi.microservices/
 
 ## Port Allocation
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| auth | 3001 | Authentication service |
-| users | 3002 | User management service |
-| city | 3003 | City data service |
-| core | 3004 | Core business logic service |
-| notification | 3005 | Notification service |
-| scheduler | 3006 | Scheduler service |
-| integration | 3007 | Integration service |
-| PostgreSQL | 5432 | Database |
-| pgAdmin | 5050 | Database GUI |
-| Redis | 6379 | Cache |
-| RabbitMQ | 5672 | Message queue |
-| RabbitMQ Management | 15672 | Queue management UI |
+| Service             | Port  | Purpose                     |
+| ------------------- | ----- | --------------------------- |
+| auth                | 3001  | Authentication service      |
+| users               | 3002  | User management service     |
+| city                | 3003  | City data service           |
+| core                | 3004  | Core business logic service |
+| notification        | 3005  | Notification service        |
+| scheduler           | 3006  | Scheduler service           |
+| integration         | 3007  | Integration service         |
+| PostgreSQL          | 5432  | Database                    |
+| pgAdmin             | 5050  | Database GUI                |
+| Redis               | 6379  | Cache                       |
+| RabbitMQ            | 5672  | Message queue               |
+| RabbitMQ Management | 15672 | Queue management UI         |
 
 ## Environment Variables
 
@@ -479,6 +488,7 @@ USERS_SERVICE_PORT=3002
 ## Development Tools
 
 ### Makefile Commands
+
 ```bash
 make help          # Show all commands
 make install       # Install dependencies
@@ -490,6 +500,7 @@ make clean         # Clean artifacts
 ```
 
 ### Yarn Workspace Commands
+
 ```bash
 yarn bootstrap     # Install + generate Prisma
 yarn dev           # Run all services
@@ -500,6 +511,7 @@ yarn workspace @heidi/auth dev  # Run specific service
 ```
 
 ### VSCode Debugging
+
 - F5 to start debugging
 - Multiple debug configurations available
 - Compound configurations to debug multiple services
@@ -508,6 +520,7 @@ yarn workspace @heidi/auth dev  # Run specific service
 ---
 
 **Note:** This structure is optimized for:
+
 - ✅ Maintainability (clear separation of concerns)
 - ✅ Scalability (independent services)
 - ✅ Developer Experience (hot reload, debugging, tooling)
