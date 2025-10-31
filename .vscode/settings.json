@@ -44,7 +44,6 @@
   "files.eol": "\n",
   "files.insertFinalNewline": true,
   "files.trimTrailingWhitespace": true,
-  "prisma.fileWatcher": true,
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
