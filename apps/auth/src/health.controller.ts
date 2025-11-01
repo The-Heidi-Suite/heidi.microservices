@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { HealthCheck, HealthCheckService, HealthCheckResult } from '@nestjs/terminus';
-import { PrismaService } from '@heidi/prisma';
+import { PrismaAuthService } from '@heidi/prisma';
 import { RedisService } from '@heidi/redis';
 import { RabbitMQService } from '@heidi/rabbitmq';
 import { Public } from '@heidi/jwt';
@@ -9,7 +9,7 @@ import { Public } from '@heidi/jwt';
 export class HealthController {
   constructor(
     private health: HealthCheckService,
-    private prisma: PrismaService,
+    private prisma: PrismaAuthService,
     private redis: RedisService,
     private rabbitmq: RabbitMQService,
   ) {}

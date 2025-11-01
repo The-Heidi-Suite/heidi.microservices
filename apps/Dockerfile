@@ -13,8 +13,6 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json yarn.lock ./
-COPY apps/${APP_NAME}/package.json ./apps/${APP_NAME}/
-COPY libs/*/package.json ./libs/
 
 # Install dependencies
 RUN yarn install --frozen-lockfile
@@ -29,7 +27,7 @@ RUN yarn prisma:generate
 EXPOSE 3000
 
 # Start in watch mode for hot-reload
-CMD ["sh", "-c", "yarn workspace @heidi/${APP_NAME} start:dev"]
+CMD ["sh", "-c", "nest start ${APP_NAME} --watch"]
 
 
 # Build stage
@@ -42,8 +40,6 @@ WORKDIR /app
 
 # Copy package files
 COPY package.json yarn.lock ./
-COPY apps/${APP_NAME}/package.json ./apps/${APP_NAME}/
-COPY libs/*/package.json ./libs/
 
 # Install all dependencies (including dev dependencies for building)
 RUN yarn install --frozen-lockfile
@@ -55,7 +51,7 @@ COPY . .
 RUN yarn prisma:generate
 
 # Build the specific app
-RUN yarn workspace @heidi/${APP_NAME} build
+RUN nest build ${APP_NAME}
 
 # Remove dev dependencies
 RUN yarn install --frozen-lockfile --production && yarn cache clean
@@ -82,7 +78,7 @@ COPY --chown=nestjs:nodejs --from=builder /app/dist ./dist
 COPY --chown=nestjs:nodejs --from=builder /app/libs ./libs
 
 # Copy Prisma schema and generated client
-COPY --chown=nestjs:nodejs --from=builder /app/libs/prisma/prisma ./libs/prisma/prisma
+COPY --chown=nestjs:nodejs --from=builder /app/libs/prisma/schema ./libs/prisma/schema
 COPY --chown=nestjs:nodejs --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --chown=nestjs:nodejs --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 

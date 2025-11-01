@@ -1,6 +1,6 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '@heidi/prisma';
+import { PrismaSchedulerService } from '@heidi/prisma';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
 import { RedisService } from '@heidi/redis';
 import { CreateTaskDto } from './dto';
@@ -10,7 +10,7 @@ export class TasksService implements OnModuleInit {
   private readonly logger = new Logger(TasksService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaSchedulerService,
     private readonly rabbitmq: RabbitMQService,
     private readonly redis: RedisService,
   ) {}

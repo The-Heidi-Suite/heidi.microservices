@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
-import { PrismaModule } from '@heidi/prisma';
+import { PrismaCityModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
 import { LoggingInterceptor } from '@heidi/interceptors';
@@ -13,7 +13,7 @@ import { HealthController } from './health.controller';
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     TerminusModule,
-    PrismaModule,
+    PrismaCityModule,
     LoggerModule,
     MetricsModule,
     CityModule,

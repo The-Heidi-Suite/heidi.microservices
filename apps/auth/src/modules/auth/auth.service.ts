@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException, ConflictException, Logger } from '@nestjs/common';
-import { PrismaService } from '@heidi/prisma';
+import { PrismaAuthService } from '@heidi/prisma';
 import { JwtTokenService } from '@heidi/jwt';
 import { RedisService } from '@heidi/redis';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
@@ -11,7 +11,7 @@ export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaAuthService,
     private readonly jwtService: JwtTokenService,
     private readonly redis: RedisService,
     private readonly rabbitmq: RabbitMQService,

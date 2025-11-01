@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { PrismaService } from '@heidi/prisma';
+import { PrismaCityService } from '@heidi/prisma';
 import { CreateCityDto, UpdateCityDto } from './dto';
 
 @Injectable()
 export class CityService {
   private readonly logger = new Logger(CityService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaCityService) {}
 
   async findAll(country?: string) {
     return this.prisma.city.findMany({

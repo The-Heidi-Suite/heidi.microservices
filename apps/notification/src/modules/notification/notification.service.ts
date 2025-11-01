@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { PrismaService } from '@heidi/prisma';
+import { PrismaNotificationService } from '@heidi/prisma';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
 import { SendNotificationDto } from './dto';
 
@@ -8,7 +8,7 @@ export class NotificationService implements OnModuleInit {
   private readonly logger = new Logger(NotificationService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaNotificationService,
     private readonly rabbitmq: RabbitMQService,
   ) {}
 

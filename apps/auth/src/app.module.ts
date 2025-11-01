@@ -5,7 +5,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 // Shared libraries
-import { PrismaModule } from '@heidi/prisma';
+import { PrismaAuthModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { RabbitMQModule } from '@heidi/rabbitmq';
 import { RedisModule } from '@heidi/redis';
@@ -37,7 +37,7 @@ import { HealthController } from './health.controller';
     TerminusModule,
 
     // Shared libraries
-    PrismaModule,
+    PrismaAuthModule,
     LoggerModule,
     RabbitMQModule.register(),
     RedisModule,

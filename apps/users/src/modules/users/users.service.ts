@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { PrismaService } from '@heidi/prisma';
+import { PrismaUsersService } from '@heidi/prisma';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
 import { CreateUserDto, UpdateUserDto } from './dto';
 
@@ -8,7 +8,7 @@ export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaUsersService,
     private readonly rabbitmq: RabbitMQService,
   ) {}
 

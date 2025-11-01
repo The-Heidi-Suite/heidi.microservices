@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { PrismaService } from '@heidi/prisma';
+import { PrismaIntegrationService } from '@heidi/prisma';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
 import { firstValueFrom } from 'rxjs';
 
@@ -9,7 +9,7 @@ export class IntegrationService {
   private readonly logger = new Logger(IntegrationService.name);
 
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly prisma: PrismaIntegrationService,
     private readonly rabbitmq: RabbitMQService,
     private readonly http: HttpService,
   ) {}
@@ -17,7 +17,6 @@ export class IntegrationService {
   async findAll() {
     return this.prisma.integration.findMany({
       where: { isActive: true },
-      include: { user: { select: { id: true, email: true } } },
     });
   }
 

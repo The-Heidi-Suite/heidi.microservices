@@ -3,7 +3,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TerminusModule } from '@nestjs/terminus';
-import { PrismaModule } from '@heidi/prisma';
+import { PrismaSchedulerModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { RabbitMQModule } from '@heidi/rabbitmq';
 import { RedisModule } from '@heidi/redis';
@@ -17,7 +17,7 @@ import { HealthController } from './health.controller';
     ConfigModule.forRoot({ isGlobal: true }),
     ScheduleModule.forRoot(),
     TerminusModule,
-    PrismaModule,
+    PrismaSchedulerModule,
     LoggerModule,
     RabbitMQModule.register(),
     RedisModule,
