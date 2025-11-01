@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](///compare/v1.3.0...v1.4.0) (2025-11-01)
+
+
+### ✨ Features
+
+* add admin service configuration and database initialization 9a234fb
+* add admin service to Docker Compose and environment configuration 8145f50
+* add Prisma Admin module and service for admin management 25b5b49
+* implement admin service with health checks and admin management f24ea43
+* update Prisma scripts to include admin service 88c094a
+
 ## [1.3.0](///compare/v1.2.0...v1.3.0) (2025-11-01)
 
 
