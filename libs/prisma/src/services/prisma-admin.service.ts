@@ -1,13 +1,10 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaClient as PrismaSchedulerClient } from '@prisma/client-scheduler';
+import { PrismaClient as PrismaAdminClient } from '@prisma/client-admin';
 import { LoggerService } from '@heidi/logger';
 
 @Injectable()
-export class PrismaSchedulerService
-  extends PrismaSchedulerClient
-  implements OnModuleInit, OnModuleDestroy
-{
+export class PrismaAdminService extends PrismaAdminClient implements OnModuleInit, OnModuleDestroy {
   private readonly logger: LoggerService;
 
   constructor(logger: LoggerService, configService: ConfigService) {
@@ -21,7 +18,7 @@ export class PrismaSchedulerService
       errorFormat: 'colorless',
     });
     this.logger = logger;
-    this.logger.setContext('PrismaSchedulerService');
+    this.logger.setContext('PrismaAdminService');
     // Development query logging
     const isDevelopment = configService.get<string>('NODE_ENV', 'development') === 'development';
     if (isDevelopment) {
@@ -38,9 +35,9 @@ export class PrismaSchedulerService
   async onModuleInit() {
     try {
       await this.$connect();
-      this.logger.log('PrismaSchedulerService: Connected to database');
+      this.logger.log('PrismaAdminService: Connected to database');
     } catch (error) {
-      this.logger.error('PrismaSchedulerService: Failed to connect to database', error);
+      this.logger.error('PrismaAdminService: Failed to connect to database', error);
       throw error;
     }
   }
@@ -48,9 +45,9 @@ export class PrismaSchedulerService
   async onModuleDestroy() {
     try {
       await this.$disconnect();
-      this.logger.log('PrismaSchedulerService: Disconnected from database');
+      this.logger.log('PrismaAdminService: Disconnected from database');
     } catch (error) {
-      this.logger.error('PrismaSchedulerService: Error disconnecting from database', error);
+      this.logger.error('PrismaAdminService: Error disconnecting from database', error);
     }
   }
 
@@ -59,7 +56,7 @@ export class PrismaSchedulerService
       await this.$queryRaw`SELECT 1`;
       return true;
     } catch (error) {
-      this.logger.error('PrismaSchedulerService: Health check failed', error);
+      this.logger.error('PrismaAdminService: Health check failed', error);
       return false;
     }
   }
