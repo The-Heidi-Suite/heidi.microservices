@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '@heidi/prisma';
+import { PrismaClient } from '@prisma/client';
 import { RedisService } from '@heidi/redis';
 import { LoggerService, ChildLogger } from '@heidi/logger';
 
@@ -43,7 +43,7 @@ export class HealthCheckService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly prismaService: PrismaService,
+    @Optional() @Inject('PRISMA_SERVICE') private readonly prismaService?: PrismaClient,
     private readonly redisService: RedisService,
     loggerService: LoggerService,
   ) {
@@ -95,6 +95,14 @@ export class HealthCheckService {
 
   private async checkDatabase(): Promise<HealthCheck> {
     const startTime = Date.now();
+
+    if (!this.prismaService) {
+      return {
+        status: 'degraded',
+        message: 'Database service not configured',
+        lastChecked: new Date().toISOString(),
+      };
+    }
 
     try {
       await this.prismaService.$queryRaw`SELECT 1`;
@@ -301,18 +309,9 @@ export class HealthCheckService {
   }
 
   private async getJobCount(): Promise<{ total: number; active: number; failed: number }> {
-    try {
-      const [total, active, failed] = await Promise.all([
-        this.prismaService.job.count(),
-        this.prismaService.job.count({ where: { status: 'ACTIVE' } }),
-        this.prismaService.job.count({ where: { status: 'FAILED' } }),
-      ]);
-
-      return { total, active, failed };
-    } catch (error) {
-      this.structuredLogger.error('Failed to get job count', error);
-      return { total: 0, active: 0, failed: 0 };
-    }
+    // Job model not available in current schema
+    // This can be implemented when a job/schedule model is available
+    return { total: 0, active: 0, failed: 0 };
   }
 
   private getQueueHealthStatus(stats: any): string {

@@ -38,21 +38,21 @@ dev:
 
 dev-auth:
 	@echo "🚀 Starting auth service..."
-	yarn workspace @heidi/auth dev
+	yarn dev:auth
 
 dev-users:
 	@echo "🚀 Starting users service..."
-	yarn workspace @heidi/users dev
+	yarn dev:terminal
 
 # Build
 build:
 	@echo "🔨 Building all services..."
-	yarn build:all
+	yarn build
 
 # Testing
 test:
 	@echo "🧪 Running all tests..."
-	yarn test:all
+	yarn test
 
 test-watch:
 	@echo "🧪 Running tests in watch mode..."
@@ -65,7 +65,7 @@ test-cov:
 # Linting
 lint:
 	@echo "🔍 Running linter..."
-	yarn lint:all
+	yarn lint
 
 format:
 	@echo "💅 Formatting code..."
@@ -127,6 +127,38 @@ migrate:
 	@echo "🗄️  Running database migrations..."
 	yarn prisma:migrate
 
+migrate-all:
+	@echo "🗄️  Running migrations for all services..."
+	yes | ./scripts/prisma-migrate-all.sh
+
+migrate-auth:
+	@echo "🗄️  Running migrations for auth..."
+	npx prisma migrate dev --schema=libs/prisma/schema/auth.prisma
+
+migrate-users:
+	@echo "🗄️  Running migrations for users..."
+	npx prisma migrate dev --schema=libs/prisma/schema/users.prisma
+
+migrate-city:
+	@echo "🗄️  Running migrations for city..."
+	npx prisma migrate dev --schema=libs/prisma/schema/city.prisma
+
+migrate-core:
+	@echo "🗄️  Running migrations for core..."
+	npx prisma migrate dev --schema=libs/prisma/schema/core.prisma
+
+migrate-notification:
+	@echo "🗄️  Running migrations for notification..."
+	npx prisma migrate dev --schema=libs/prisma/schema/notification.prisma
+
+migrate-scheduler:
+	@echo "🗄️  Running migrations for scheduler..."
+	npx prisma migrate dev --schema=libs/prisma/schema/scheduler.prisma
+
+migrate-integration:
+	@echo "🗄️  Running migrations for integration..."
+	npx prisma migrate dev --schema=libs/prisma/schema/integration.prisma
+
 migrate-prod:
 	@echo "🗄️  Deploying migrations to production..."
 	yarn prisma:migrate:prod
@@ -138,7 +170,7 @@ prisma:
 db-reset:
 	@echo "⚠️  Resetting database (this will delete all data)..."
 	@read -p "Are you sure? Type 'yes' to continue: " confirm && [ "$$confirm" = "yes" ]
-	yarn workspace @heidi/prisma prisma migrate reset
+	npx prisma migrate reset
 
 # Complete setup
 setup: install docker-up
@@ -181,7 +213,7 @@ health:
 
 # Logs
 logs-auth:
-	yarn workspace @heidi/auth start:dev
+	yarn dev:auth
 
 logs-docker:
 	docker compose -f docker-compose.dev.yml logs -f

@@ -42,13 +42,10 @@ git checkout -b docs/update-readme
 
 ```bash
 # Run linter
-yarn lint:all
+yarn lint
 
 # Run tests
-yarn test:all
-
-# Test specific service
-yarn workspace @heidi/auth test
+yarn test
 
 # Run with coverage
 yarn test:cov
@@ -295,7 +292,7 @@ mkdir -p libs/new-lib/src
 
 # Create package.json, tsconfig.lib.json, module, service, index.ts
 # Follow structure of existing libs
-# Update tsconfig.base.json paths
+# Update tsconfig.json paths
 # Update nest-cli.json projects
 ```
 

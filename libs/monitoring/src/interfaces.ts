@@ -33,6 +33,9 @@ export interface SystemMetrics {
   // Database metrics
   database: {
     connectionCount: number;
+    healthyDatabases?: number;
+    totalDatabases?: number;
+    databaseStatuses?: Record<string, { connections: number; healthy: boolean }>;
     queryCount: number;
     averageQueryTime: number;
     slowQueries: number;

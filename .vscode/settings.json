@@ -14,12 +14,11 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
   "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.preferences.useAliasesForRenames": false,
+  "typescript.suggest.autoImports": true,
+  "typescript.preferences.importModuleSpecifier": "non-relative",
   "typescript.enablePromptUseWorkspaceTsdk": true,
-  "files.exclude": {
-    "**/node_modules": true,
-    "**/dist": true,
-    "**/.git": true
-  },
+  "typescript.preferences.includePackageJsonAutoImports": "on",
   "search.exclude": {
     "**/node_modules": true,
     "**/dist": true,
@@ -37,13 +36,7 @@
     }
   ],
   "eslint.validate": ["javascript", "typescript"],
-  "jest.autoRun": "off",
-  "jest.showCoverageOnLoad": false,
-  "typescript.preferences.importModuleSpecifier": "non-relative",
   "editor.rulers": [80, 120],
-  "files.eol": "\n",
-  "files.insertFinalNewline": true,
-  "files.trimTrailingWhitespace": true,
   "[jsonc]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   }

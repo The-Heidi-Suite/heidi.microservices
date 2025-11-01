@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "module": "commonjs",
+    "moduleResolution": "node",
     "declaration": true,
     "removeComments": true,
     "emitDecoratorMetadata": true,
@@ -22,6 +23,13 @@
     "paths": {
       "@heidi/prisma": ["libs/prisma/src"],
       "@heidi/prisma/*": ["libs/prisma/src/*"],
+      "@heidi/prisma-auth": ["libs/prisma/src/aliases/prisma-auth.ts"],
+      "@heidi/prisma-users": ["libs/prisma/src/aliases/prisma-users.ts"],
+      "@heidi/prisma-city": ["libs/prisma/src/aliases/prisma-city.ts"],
+      "@heidi/prisma-core": ["libs/prisma/src/aliases/prisma-core.ts"],
+      "@heidi/prisma-notification": ["libs/prisma/src/aliases/prisma-notification.ts"],
+      "@heidi/prisma-scheduler": ["libs/prisma/src/aliases/prisma-scheduler.ts"],
+      "@heidi/prisma-integration": ["libs/prisma/src/aliases/prisma-integration.ts"],
       "@heidi/logger": ["libs/logger/src"],
       "@heidi/logger/*": ["libs/logger/src/*"],
       "@heidi/rabbitmq": ["libs/rabbitmq/src"],
@@ -41,8 +49,16 @@
       "@heidi/health": ["libs/health/src"],
       "@heidi/health/*": ["libs/health/src/*"],
       "@heidi/errors": ["libs/errors/src"],
-      "@heidi/errors/*": ["libs/errors/src/*"]
+      "@heidi/errors/*": ["libs/errors/src/*"],
+      "@prisma/client-auth": ["./node_modules/.prisma/client-auth"],
+      "@prisma/client-users": ["./node_modules/.prisma/client-users"],
+      "@prisma/client-city": ["./node_modules/.prisma/client-city"],
+      "@prisma/client-core": ["./node_modules/.prisma/client-core"],
+      "@prisma/client-notification": ["./node_modules/.prisma/client-notification"],
+      "@prisma/client-scheduler": ["./node_modules/.prisma/client-scheduler"],
+      "@prisma/client-integration": ["./node_modules/.prisma/client-integration"]
     }
   },
+  "include": ["apps/**/*", "libs/**/*"],
   "exclude": ["node_modules", "dist"]
 }

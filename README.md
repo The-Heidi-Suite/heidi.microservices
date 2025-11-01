@@ -103,8 +103,8 @@ yarn prisma:migrate
 yarn dev
 
 # Or run individual services
-yarn workspace @heidi/auth dev
-yarn workspace @heidi/users dev
+yarn dev:auth
+yarn dev:terminal
 ```
 
 #### Option B: Run services in Docker
@@ -128,12 +128,8 @@ Visit service endpoints:
 ### Running Individual Services
 
 ```bash
-# Start a specific service with hot-reload
-cd apps/auth
-yarn start:dev
-
-# Or from root
-yarn workspace @heidi/auth start:dev
+# Start a specific service with hot-reload from root
+yarn dev:auth
 ```
 
 ### Database Management
@@ -156,10 +152,7 @@ yarn prisma:seed
 
 ```bash
 # Run all tests
-yarn test:all
-
-# Run tests for a specific service
-yarn workspace @heidi/auth test
+yarn test
 
 # Run tests with coverage
 yarn test:cov
@@ -169,7 +162,7 @@ yarn test:cov
 
 ```bash
 # Lint all code
-yarn lint:all
+yarn lint
 
 # Format all code
 yarn format
@@ -186,7 +179,6 @@ heidi.microservices/
 │   │   │   ├── app.module.ts
 │   │   │   └── modules/
 │   │   │       └── auth/
-│   │   ├── package.json
 │   │   └── tsconfig.app.json
 │   ├── users/                 # User management service
 │   ├── city/                  # City data service
@@ -212,8 +204,8 @@ heidi.microservices/
 │
 ├── docker-compose.dev.yml     # Development environment
 ├── docker-compose.yml         # Production environment
-├── package.json               # Root workspace config
-├── tsconfig.base.json         # Base TypeScript config
+├── package.json               # Root package config
+├── tsconfig.json              # TypeScript config
 ├── nest-cli.json              # NestJS CLI config
 └── .env.example               # Environment variables template
 ```
@@ -500,7 +492,7 @@ docker exec -it heidi-postgres-dev psql -U heidi -d heidi_db
 
 ```bash
 # Reset database (⚠️ destroys all data)
-yarn workspace @heidi/prisma prisma migrate reset
+npx prisma migrate reset
 
 # Generate client
 yarn prisma:generate

@@ -4,24 +4,22 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### 1.0.1 (2025-10-30)
 
-
 ### 📚 Documentation
 
-* add Commit Quick Reference and Contribution Guidelines 2626c65
-* **env:** add .env.example, env.template and ENVIRONMENT_VARIABLES guide 373fa0b
-
+- add Commit Quick Reference and Contribution Guidelines 2626c65
+- **env:** add .env.example, env.template and ENVIRONMENT_VARIABLES guide 373fa0b
 
 ### 🔧 Chores
 
-* add configuration files for Commitizen and standard-version 97beb2c
-* update .gitignore and CHANGELOG.md 4122914
+- add configuration files for Commitizen and standard-version 97beb2c
+- update .gitignore and CHANGELOG.md 4122914
 
 ## [1.0.0] - 2025-01-29
 
 ### Added
 
 - Initial release of HEIDI microservices platform
-- Complete monorepo structure with Yarn workspaces
+- Complete monorepo structure with NestJS CLI
 - Production-ready infrastructure setup
 - Developer tooling and hot-reload support
 

@@ -1,10 +1,18 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { PrismaService } from '@heidi/prisma';
 import { LoggerService, ChildLogger } from '@heidi/logger';
 import { ErrorReportingService } from '@heidi/errors';
 import { HealthCheckService } from '@heidi/health';
+import {
+  PrismaAuthService,
+  PrismaUsersService,
+  PrismaCityService,
+  PrismaCoreService,
+  PrismaNotificationService,
+  PrismaSchedulerService,
+  PrismaIntegrationService,
+} from '@heidi/prisma';
 import { AlertingService } from './alerting.service';
 import { SystemMetrics, Alert, AlertRule } from './interfaces';
 
@@ -42,12 +50,18 @@ export class MonitoringService {
 
   constructor(
     private readonly configService: ConfigService,
-    private readonly prismaService: PrismaService,
     private readonly alertingService: AlertingService,
     loggerService: LoggerService,
     private readonly healthCheckService: HealthCheckService,
     private readonly errorReportingService: ErrorReportingService,
-    private readonly queueService?: any, // Optional: QueueService, if available
+    @Optional() private readonly prismaAuth?: PrismaAuthService,
+    @Optional() private readonly prismaUsers?: PrismaUsersService,
+    @Optional() private readonly prismaCity?: PrismaCityService,
+    @Optional() private readonly prismaCore?: PrismaCoreService,
+    @Optional() private readonly prismaNotification?: PrismaNotificationService,
+    @Optional() private readonly prismaScheduler?: PrismaSchedulerService,
+    @Optional() private readonly prismaIntegration?: PrismaIntegrationService,
+    @Optional() private readonly queueService?: any, // Optional: QueueService, if available
   ) {
     this.structuredLogger = loggerService.createChildLogger({
       operation: 'monitoring',
@@ -170,82 +184,18 @@ export class MonitoringService {
   }
 
   private async collectJobMetrics() {
-    if (!this.prismaService) {
-      return {
-        total: 0,
-        active: 0,
-        paused: 0,
-        failed: 0,
-        completed: 0,
-        averageExecutionTime: 0,
-        successRate: 0,
-        failureRate: 0,
-      };
-    }
-
-    try {
-      const [totalJobs, activeJobs, pausedJobs, failedJobs, completedJobs, recentRuns] =
-        await Promise.all([
-          this.prismaService.job.count(),
-          this.prismaService.job.count({ where: { status: 'ACTIVE' } }),
-          this.prismaService.job.count({ where: { status: 'PAUSED' } }),
-          this.prismaService.job.count({ where: { status: 'FAILED' } }),
-          this.prismaService.jobRun.count({ where: { status: 'COMPLETED' } }),
-          this.prismaService.jobRun.findMany({
-            where: {
-              startedAt: {
-                gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
-              },
-            },
-            select: {
-              status: true,
-              startedAt: true,
-              completedAt: true,
-            },
-          }),
-        ]);
-
-      // Calculate execution times and success rate
-      const completedRuns = recentRuns.filter(
-        (run) => run.status === 'COMPLETED' && run.completedAt,
-      );
-      const failedRuns = recentRuns.filter((run) => run.status === 'FAILED');
-
-      const averageExecutionTime =
-        completedRuns.length > 0
-          ? completedRuns.reduce((sum, run) => {
-              const duration = run.completedAt!.getTime() - run.startedAt.getTime();
-              return sum + duration;
-            }, 0) / completedRuns.length
-          : 0;
-
-      const totalRecentRuns = recentRuns.length;
-      const successRate = totalRecentRuns > 0 ? completedRuns.length / totalRecentRuns : 1;
-      const failureRate = totalRecentRuns > 0 ? failedRuns.length / totalRecentRuns : 0;
-
-      return {
-        total: totalJobs,
-        active: activeJobs,
-        paused: pausedJobs,
-        failed: failedJobs,
-        completed: completedJobs,
-        averageExecutionTime,
-        successRate,
-        failureRate,
-      };
-    } catch (error) {
-      this.structuredLogger.error('Failed to collect job metrics', error);
-      return {
-        total: 0,
-        active: 0,
-        paused: 0,
-        failed: 0,
-        completed: 0,
-        averageExecutionTime: 0,
-        successRate: 0,
-        failureRate: 0,
-      };
-    }
+    // Job models not available in current schemas
+    // Return default values - can be implemented when job/schedule models are available
+    return {
+      total: 0,
+      active: 0,
+      paused: 0,
+      failed: 0,
+      completed: 0,
+      averageExecutionTime: 0,
+      successRate: 0,
+      failureRate: 0,
+    };
   }
 
   private async collectQueueMetrics() {
@@ -374,30 +324,59 @@ export class MonitoringService {
   }
 
   private async collectDatabaseMetrics() {
-    try {
-      // Attempt to read active connection count for Postgres
-      // Falls back gracefully if not supported
-      const result: Array<{ count: number }> = await this.prismaService
-        .$queryRaw`SELECT COUNT(*)::int as count FROM pg_stat_activity WHERE datname = current_database()`;
+    // Collect metrics from all available Prisma services
+    const prismaServices = [
+      { name: 'auth', service: this.prismaAuth },
+      { name: 'users', service: this.prismaUsers },
+      { name: 'city', service: this.prismaCity },
+      { name: 'core', service: this.prismaCore },
+      { name: 'notification', service: this.prismaNotification },
+      { name: 'scheduler', service: this.prismaScheduler },
+      { name: 'integration', service: this.prismaIntegration },
+    ].filter((p) => p.service !== undefined);
 
-      const connectionCount = (result?.[0]?.count as number) ?? 1;
+    if (prismaServices.length === 0) {
+      return { connectionCount: 0, queryCount: 0, averageQueryTime: 0, slowQueries: 0 };
+    }
 
-      return {
-        connectionCount,
-        // Query count and timing would require Prisma middleware; keep as 0 for now
-        queryCount: 0,
-        averageQueryTime: 0,
-        slowQueries: 0,
-      };
-    } catch (_err) {
-      // Minimal fallback - DB reachable check
+    // Aggregate metrics from all databases
+    let totalConnections = 0;
+    let healthyConnections = 0;
+    const databaseStatuses: Record<string, { connections: number; healthy: boolean }> = {};
+
+    for (const { name, service } of prismaServices) {
       try {
-        await this.prismaService.$queryRaw`SELECT 1`;
-        return { connectionCount: 1, queryCount: 0, averageQueryTime: 0, slowQueries: 0 };
-      } catch (_err2) {
-        return { connectionCount: 0, queryCount: 0, averageQueryTime: 0, slowQueries: 0 };
+        // Attempt to read active connection count for Postgres
+        const result: Array<{ count: number }> = await service!
+          .$queryRaw`SELECT COUNT(*)::int as count FROM pg_stat_activity WHERE datname = current_database()`;
+
+        const connectionCount = (result?.[0]?.count as number) ?? 1;
+        totalConnections += connectionCount;
+        healthyConnections++;
+        databaseStatuses[name] = { connections: connectionCount, healthy: true };
+      } catch (_err) {
+        // Minimal fallback - DB reachable check
+        try {
+          await service!.$queryRaw`SELECT 1`;
+          totalConnections += 1;
+          healthyConnections++;
+          databaseStatuses[name] = { connections: 1, healthy: true };
+        } catch (_err2) {
+          databaseStatuses[name] = { connections: 0, healthy: false };
+        }
       }
     }
+
+    return {
+      connectionCount: totalConnections,
+      healthyDatabases: healthyConnections,
+      totalDatabases: prismaServices.length,
+      databaseStatuses,
+      // Query count and timing would require Prisma middleware; keep as 0 for now
+      queryCount: 0,
+      averageQueryTime: 0,
+      slowQueries: 0,
+    };
   }
 
   private async collectErrorMetrics() {
@@ -442,7 +421,6 @@ export class MonitoringService {
   /**
    * Check alert rules and trigger alerts if conditions are met
    */
-  // @ts-expect-error - Cron decorator has typing inconsistencies with async methods
   @Cron(CronExpression.EVERY_MINUTE)
   async checkAlerts(): Promise<void> {
     try {
