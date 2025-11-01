@@ -70,8 +70,8 @@ yarn dev
 
 ```bash
 # In separate terminals:
-yarn workspace @heidi/auth dev
-yarn workspace @heidi/users dev
+yarn dev:auth
+yarn dev:terminal
 # ... etc
 ```
 
@@ -179,7 +179,7 @@ docker compose -f docker-compose.dev.yml logs -f postgres
 
 ```bash
 # ⚠️ This deletes all data!
-yarn workspace @heidi/prisma prisma migrate reset
+npx prisma migrate reset
 ```
 
 ## Common Issues

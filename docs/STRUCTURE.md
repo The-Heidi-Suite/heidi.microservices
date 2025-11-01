@@ -19,9 +19,9 @@ heidi.microservices/
 │   ├── PROJECT_OVERVIEW.md        # Architecture and design
 │   └── STRUCTURE.md               # This file
 │
-├── package.json                   # Root workspace configuration
+├── package.json                   # Root package configuration
 ├── yarn.lock                      # Dependency lock file
-├── tsconfig.base.json             # Base TypeScript configuration
+├── tsconfig.json                  # TypeScript configuration
 ├── nest-cli.json                  # NestJS CLI configuration
 │
 ├── .env.example                   # Environment variables template
@@ -36,7 +36,7 @@ heidi.microservices/
 │
 ├── .vscode/                       # VSCode configuration
 │   ├── launch.json                # Debug configurations
-│   ├── settings.json              # Workspace settings
+│   ├── settings.json              # Editor settings
 │   └── extensions.json            # Recommended extensions
 │
 ├── apps/                          # Microservices
@@ -397,13 +397,13 @@ export class MyService {
 
 ### package.json (Root)
 
-- Defines workspaces (apps/_, libs/_)
-- Root-level scripts (bootstrap, dev, build:all, test:all, etc.)
+- Root-level scripts (bootstrap, dev, build, test, etc.)
 - Common dependencies and devDependencies
+- Single source of truth for all packages
 
-### tsconfig.base.json
+### tsconfig.json
 
-- Base TypeScript configuration
+- TypeScript configuration
 - Path mappings for @heidi/\* imports
 - Compiler options shared across all projects
 
@@ -499,15 +499,16 @@ make test          # Run tests
 make clean         # Clean artifacts
 ```
 
-### Yarn Workspace Commands
+### Yarn Commands
 
 ```bash
-yarn bootstrap     # Install + generate Prisma
-yarn dev           # Run all services
-yarn build:all     # Build all
-yarn test:all      # Test all
-yarn lint:all      # Lint all
-yarn workspace @heidi/auth dev  # Run specific service
+yarn bootstrap      # Install + generate Prisma
+yarn dev            # Run all services
+yarn dev:auth       # Run specific service
+yarn build          # Build all services
+yarn build:auth     # Build specific service
+yarn test           # Test all
+yarn lint           # Lint all
 ```
 
 ### VSCode Debugging

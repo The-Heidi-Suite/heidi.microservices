@@ -44,7 +44,7 @@ A production-ready NestJS microservices monorepo featuring:
 
 ### Development Tools
 
-- **Yarn Workspaces** - Monorepo management
+- **NestJS CLI** - Monorepo management
 - **ESLint** - Code linting
 - **Prettier** - Code formatting
 - **Jest** - Testing framework
