@@ -347,7 +347,7 @@ export class MonitoringService {
     for (const { name, service } of prismaServices) {
       try {
         // Attempt to read active connection count for Postgres
-        const result: Array<{ count: number }> = await service!
+        const result: Array<{ count: number }> = await (service as any)
           .$queryRaw`SELECT COUNT(*)::int as count FROM pg_stat_activity WHERE datname = current_database()`;
 
         const connectionCount = (result?.[0]?.count as number) ?? 1;
@@ -357,7 +357,7 @@ export class MonitoringService {
       } catch (_err) {
         // Minimal fallback - DB reachable check
         try {
-          await service!.$queryRaw`SELECT 1`;
+          await (service as any).$queryRaw`SELECT 1`;
           totalConnections += 1;
           healthyConnections++;
           databaseStatuses[name] = { connections: 1, healthy: true };
