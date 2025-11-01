@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](///compare/v1.2.0...v1.3.0) (2025-11-01)
+
+
+### ✨ Features
+
+* add PostgreSQL auto-initialization and configuration documentation 77f3821
+* add Redis Commander and monitoring exporters to Docker setup bfcd0eb
+* enhance Docker Compose configuration for PostgreSQL initialization 32419ef
+* enhance Grafana dashboards and Prometheus configuration 75f7242
+* enhance production setup with initialization script and documentation updates fc2be4b
+* update environment configuration for monitoring and administration tools 593e2f1
+
 ## [1.2.0](///compare/v1.1.0...v1.2.0) (2025-11-01)
 
 
