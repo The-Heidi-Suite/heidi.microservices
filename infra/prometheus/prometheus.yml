@@ -82,6 +82,15 @@ scrape_configs:
           service: 'integration'
           type: 'microservice'
 
+  # Microservices - Admin
+  - job_name: 'admin'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['admin:3008']
+        labels:
+          service: 'admin'
+          type: 'microservice'
+
   # PostgreSQL Exporter
   - job_name: 'postgres'
     static_configs:
