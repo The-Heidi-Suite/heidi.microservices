@@ -20,26 +20,26 @@ for service in "${SERVICES[@]}"; do
   echo ""
   echo "📦 Deploying migration for: $service"
 
-  cd "libs/prisma-$service"
-
   # Check if database URL is set
   DB_URL_VAR="${service^^}_DATABASE_URL"
   if [ -z "${!DB_URL_VAR}" ]; then
     echo "❌ Error: $DB_URL_VAR not set in environment"
-    cd ../..
     exit 1
   fi
 
-  # Deploy migration
-  if npx prisma migrate deploy --schema=./prisma/schema.prisma; then
+  # Deploy migration from centralized schema path
+  SCHEMA_PATH="libs/prisma/src/schemas/$service.prisma"
+  if [ ! -f "$SCHEMA_PATH" ]; then
+    echo "❌ Error: schema not found at $SCHEMA_PATH"
+    exit 1
+  fi
+
+  if npx prisma migrate deploy --schema="$SCHEMA_PATH"; then
     echo "✅ Migration for $service deployed successfully"
   else
     echo "❌ Migration deployment for $service failed"
-    cd ../..
     exit 1
   fi
-
-  cd ../..
 done
 
 echo ""
