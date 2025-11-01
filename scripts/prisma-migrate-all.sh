@@ -4,7 +4,7 @@
 # This script must be run from the project root directory
 # Prerequisites:
 # 1. PostgreSQL server must be running
-# 2. All databases must be created (run scripts/create-databases.sh first)
+# 2. All databases must exist (created automatically by Docker via infra/postgres/init-databases.sh)
 # 3. .env file must be configured with all database URLs
 
 set -e

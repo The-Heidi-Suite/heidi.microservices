@@ -4,6 +4,16 @@ This directory contains helper scripts for setting up and managing the HEIDI mic
 
 ## 📋 Available Scripts
 
+### 📁 Script Organization
+
+- **General scripts** (`scripts/`): Application-level scripts for development and operations
+- **Infrastructure scripts** (`infra/`): Infrastructure-specific configuration and initialization
+  - `infra/postgres/init-databases.sh` - Auto-creates databases on Docker container startup
+  - `infra/rabbitmq/` - RabbitMQ configuration
+  - `infra/prometheus/` - Prometheus configuration
+  - `infra/nginx/` - Nginx configuration
+  - etc.
+
 ### 🗃️ Prisma & Database Migration Scripts
 
 #### `prisma-generate-all.sh`
@@ -49,7 +59,7 @@ Run database migrations for all microservice databases in development.
 **Prerequisites:**
 
 - PostgreSQL server must be running
-- All databases must exist (run `create-databases.sh` first)
+- All databases must exist (created automatically by Docker via `infra/postgres/init-databases.sh`)
 - `.env` file must contain all `*_DATABASE_URL` variables
 
 **When to use:**
@@ -142,63 +152,42 @@ Generates cryptographically secure random secrets for JWT and other sensitive co
 
 ---
 
-### 🗄️ `create-databases.sh`
+### 🚀 `init-production.sh`
 
-Creates all PostgreSQL databases for the microservices.
+Production initialization script for first-time setup.
 
 **Usage:**
 
 ```bash
-./scripts/create-databases.sh
+./scripts/init-production.sh
 ```
 
 **What it does:**
 
-- Checks PostgreSQL connection
-- Creates 7 databases (one per microservice):
-  - `heidi_auth`
-  - `heidi_users`
-  - `heidi_city`
-  - `heidi_core`
-  - `heidi_notification`
-  - `heidi_scheduler`
-  - `heidi_integration`
-- Skips databases that already exist
-- Shows color-coded status messages
+- Validates environment configuration
+- Generates Prisma clients
+- Deploys database migrations
+- Verifies setup completion
+
+**Note:** Databases are created automatically by Docker via `infra/postgres/init-databases.sh` on first container startup.
 
 **Prerequisites:**
 
-- PostgreSQL must be running
-- `.env` file must exist with correct credentials
-- `psql` command must be available
+- `.env` file with production values
+- PostgreSQL server accessible
+- Secure secrets (warns if using defaults)
 
----
+**When to use:**
 
-### 📊 `init-databases.sql`
-
-SQL script to create all databases at once.
-
-**Usage:**
-
-```bash
-# Option 1: Using psql
-psql -h localhost -U heidi -f scripts/init-databases.sql
-
-# Option 2: Using docker
-docker exec -i heidi-postgres psql -U heidi < scripts/init-databases.sql
-```
-
-**What it does:**
-
-- Creates all 7 microservice databases
-- Optional: Grants privileges
-- Lists created databases
+- First production deployment
+- Setting up new production environment
+- After infrastructure changes
 
 ---
 
 ## 🚀 Quick Start Guide
 
-### Initial Setup
+### Development Setup (Docker)
 
 1. **Set up environment variables:**
 
@@ -221,10 +210,11 @@ docker exec -i heidi-postgres psql -U heidi < scripts/init-databases.sql
    code .env
    ```
 
-4. **Create databases:**
+4. **Start infrastructure (databases auto-created):**
 
    ```bash
-   ./scripts/create-databases.sh
+   docker compose -f docker-compose.dev.yml up -d postgres redis rabbitmq
+   # Databases are automatically created on first startup via infra/postgres/init-databases.sh
    ```
 
 5. **Generate Prisma clients:**
@@ -238,6 +228,43 @@ docker exec -i heidi-postgres psql -U heidi < scripts/init-databases.sql
    ```bash
    ./scripts/prisma-migrate-all.sh
    ```
+
+### Development Setup (Local PostgreSQL)
+
+If running PostgreSQL locally (not Docker):
+
+1. **Set up environment variables** (same as above)
+2. **Generate secure secrets** (same as above)
+3. **Create databases manually:**
+
+   ```bash
+   # Connect to PostgreSQL and create databases
+   psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_auth;"
+   psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_users;"
+   psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_city;"
+   psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_core;"
+   psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_notification;"
+   psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_scheduler;"
+   psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_integration;"
+   ```
+
+4. **Generate Prisma clients and run migrations** (same as above)
+
+### Production Initialization
+
+For first-time production setup:
+
+```bash
+# 1. Set up .env with production values
+./scripts/setup-env.sh
+# Edit .env with production credentials
+
+# 2. Generate secure production secrets
+./scripts/generate-secrets.sh
+
+# 3. Run production initialization (creates DBs, generates clients, deploys migrations)
+./scripts/init-production.sh
+```
 
 ---
 
@@ -258,7 +285,8 @@ cp .env .env.old
 # Recreate databases (drops existing!)
 # WARNING: This will delete all data
 psql -h localhost -U heidi -c "DROP DATABASE IF EXISTS heidi_auth;"
-./scripts/create-databases.sh
+psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_auth;"
+# Repeat for other databases as needed
 ```
 
 ### Update Secrets Only
@@ -323,14 +351,15 @@ cp env.template .env
 
 ### Database Already Exists
 
-The `create-databases.sh` script will skip existing databases. To recreate:
+Databases are created automatically on first Docker container startup. To recreate:
 
 ```bash
 # Drop database (WARNING: Deletes all data!)
-psql -h localhost -U heidi -c "DROP DATABASE heidi_auth;"
+psql -h localhost -U heidi -d postgres -c "DROP DATABASE IF EXISTS heidi_auth;"
 
-# Then run create script
-./scripts/create-databases.sh
+# Recreate
+psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_auth;"
+# Repeat for other databases as needed
 ```
 
 ---
@@ -394,4 +423,34 @@ See `docs/ENVIRONMENT_VARIABLES.md` for complete documentation.
 
 ---
 
-**Last Updated:** 2025-10-30
+## 🏗️ Infrastructure Scripts
+
+Infrastructure-specific scripts are located in the `infra/` directory:
+
+- **PostgreSQL**: `infra/postgres/init-databases.sh` - Auto-creates databases on first container startup
+- **RabbitMQ**: Configuration files in `infra/rabbitmq/`
+- **Prometheus/Grafana**: Configuration files in `infra/prometheus/` and `infra/grafana/`
+- **Nginx**: Configuration files in `infra/nginx/`
+
+See individual README files in each infrastructure directory for details.
+
+---
+
+## 🔄 Development vs Production
+
+### Development (Docker)
+
+- **Auto-setup**: Databases created automatically via `infra/postgres/init-databases.sh`
+- **Hot-reload**: Services run locally with file watching
+- **Dev databases**: Separate volume (`postgres_data_dev`)
+
+### Production
+
+- **Manual setup**: Use `init-production.sh` for first-time initialization
+- **Containerized**: All services run in Docker containers
+- **Persistent volumes**: Production data volumes
+- **Health checks**: All services have health checks and restart policies
+
+---
+
+**Last Updated:** 2025-01-02

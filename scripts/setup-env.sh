@@ -29,11 +29,12 @@ cat > .env.example << 'EOF'
 NODE_ENV=development
 SERVICE_VERSION=1.0.0
 
-# PostgreSQL Server (Shared)
+# PostgreSQL Server (Shared Instance)
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
 POSTGRES_USER=heidi
 POSTGRES_PASSWORD=heidi_password
+POSTGRES_DB=heidi_db
 
 # Auth Service
 AUTH_PORT=3001

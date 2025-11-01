@@ -86,15 +86,22 @@ cp .env.example .env
 docker compose -f docker-compose.dev.yml up -d postgres redis rabbitmq
 
 # Wait for services to be ready (~10 seconds)
+# Note: Databases are automatically created on first startup via infra/postgres/init-databases.sh
 ```
 
-### 4. Run Database Migrations
+### 4. Generate Prisma Clients
+
+```bash
+yarn prisma:generate
+```
+
+### 5. Run Database Migrations
 
 ```bash
 yarn prisma:migrate
 ```
 
-### 5. Start Services
+### 6. Start Services
 
 #### Option A: Run all services locally (hot-reload)
 
