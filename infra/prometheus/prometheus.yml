@@ -98,13 +98,22 @@ scrape_configs:
           service: 'redis'
           type: 'cache'
 
-  # RabbitMQ Exporter
+  # RabbitMQ Exporter (built-in Prometheus endpoint)
   - job_name: 'rabbitmq'
+    metrics_path: '/metrics'
     static_configs:
-      - targets: ['rabbitmq-exporter:9419']
+      - targets: ['rabbitmq:15692']
         labels:
           service: 'rabbitmq'
           type: 'message-queue'
+
+  # Node Exporter (Host System Metrics)
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          service: 'node'
+          type: 'infrastructure'
 
   # Prometheus self-monitoring
   - job_name: 'prometheus'
