@@ -28,7 +28,7 @@ Generate Prisma clients for all microservices.
 
 **What it does:**
 
-- Generates Prisma clients for all 7 microservices (auth, users, city, core, notification, scheduler, integration)
+- Generates Prisma clients for all 8 microservices (auth, users, city, core, notification, scheduler, integration, admin)
 - Each client is generated to a separate output directory in `node_modules/.prisma/client-<service>`
 - Must be run after any schema changes
 
@@ -246,6 +246,7 @@ If running PostgreSQL locally (not Docker):
    psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_notification;"
    psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_scheduler;"
    psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_integration;"
+   psql -h localhost -U heidi -d postgres -c "CREATE DATABASE heidi_admin;"
    ```
 
 4. **Generate Prisma clients and run migrations** (same as above)

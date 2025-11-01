@@ -71,6 +71,11 @@ INTEGRATION_PORT=3007
 INTEGRATION_DB_NAME=heidi_integration
 INTEGRATION_DATABASE_URL=postgresql://heidi:heidi_password@localhost:5432/heidi_integration
 
+# Admin Service
+ADMIN_SERVICE_PORT=3008
+ADMIN_DB_NAME=heidi_admin
+ADMIN_DATABASE_URL=postgresql://heidi:heidi_password@localhost:5432/heidi_admin
+
 # Redis (Shared Cache)
 REDIS_HOST=localhost
 REDIS_PORT=6379
