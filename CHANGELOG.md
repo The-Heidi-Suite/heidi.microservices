@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.1.0](///compare/v1.0.1...v1.1.0) (2025-11-01)
+
+
+### ✨ Features
+
+* add Prisma client generation and migration scripts d7c352e
+
+
+### 🔧 Chores
+
+* remove unused package.json files and update VSCode settings 1911f0e
+
+
+### ♻️ Code Refactoring
+
+* restructure Prisma service modules and schemas 503f3aa
+* update Prisma scripts and package.json for improved service management d26e974
+* update Prisma service imports and restructure Dockerfile 1ac9f46
+* update TypeScript configuration and service imports 0f15af1
+
+
+### 🐛 Bug Fixes
+
+* update type assertion for Prisma service connections 068822b
+
+
+### 📚 Documentation
+
+* add comprehensive release workflow guide f1a8f2d
+* update getting started and project structure documentation 06198b2
+
 ### 1.0.1 (2025-10-30)
 
 ### 📚 Documentation
