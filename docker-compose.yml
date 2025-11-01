@@ -62,7 +62,7 @@ services:
   auth:
     build:
       context: .
-      dockerfile: apps/Dockerfile
+      dockerfile: infra/shared/Dockerfile
       target: production
       args:
         APP_NAME: auth
@@ -98,7 +98,7 @@ services:
   users:
     build:
       context: .
-      dockerfile: apps/Dockerfile
+      dockerfile: infra/shared/Dockerfile
       target: production
       args:
         APP_NAME: users
@@ -132,7 +132,7 @@ services:
   city:
     build:
       context: .
-      dockerfile: apps/Dockerfile
+      dockerfile: infra/shared/Dockerfile
       target: production
       args:
         APP_NAME: city
@@ -166,7 +166,7 @@ services:
   core:
     build:
       context: .
-      dockerfile: apps/Dockerfile
+      dockerfile: infra/shared/Dockerfile
       target: production
       args:
         APP_NAME: core
@@ -200,7 +200,7 @@ services:
   notification:
     build:
       context: .
-      dockerfile: apps/Dockerfile
+      dockerfile: infra/shared/Dockerfile
       target: production
       args:
         APP_NAME: notification
@@ -238,7 +238,7 @@ services:
   scheduler:
     build:
       context: .
-      dockerfile: apps/Dockerfile
+      dockerfile: infra/shared/Dockerfile
       target: production
       args:
         APP_NAME: scheduler
@@ -273,7 +273,7 @@ services:
   integration:
     build:
       context: .
-      dockerfile: apps/Dockerfile
+      dockerfile: infra/shared/Dockerfile
       target: production
       args:
         APP_NAME: integration

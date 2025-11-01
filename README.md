@@ -52,7 +52,7 @@ A production-ready NestJS microservices monorepo with Docker, Prisma ORM, Rabbit
 
 ### Prerequisites
 
-- Node.js >= 20.0.0
+- Node.js >= 24.11.0
 - Yarn >= 1.22.0
 - Docker & Docker Compose
 
@@ -186,7 +186,6 @@ heidi.microservices/
 │   ├── notification/          # Notification service
 │   ├── scheduler/             # Scheduled tasks service
 │   ├── integration/           # External integrations service
-│   └── Dockerfile             # Multi-stage Dockerfile for all services
 │
 ├── libs/                      # Shared libraries
 │   ├── prisma/                # Database ORM

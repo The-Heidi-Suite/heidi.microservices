@@ -79,7 +79,7 @@ services:
   # auth:
   #   build:
   #     context: .
-  #     dockerfile: apps/Dockerfile
+  #     dockerfile: infra/shared/Dockerfile
   #     target: development
   #     args:
   #       APP_NAME: auth
