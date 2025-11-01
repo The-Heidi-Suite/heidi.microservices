@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: 'HEIDI Microservices'
+    orgId: 1
+    folder: 'HEIDI'
+    type: file
+    disableDeletion: false
+    editable: true
+    allowUiUpdates: true
+    options:
+      path: /var/lib/grafana/dashboards
+      foldersFromFilesStructure: true
