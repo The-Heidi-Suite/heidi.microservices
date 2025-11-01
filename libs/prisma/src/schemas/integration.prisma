@@ -1,0 +1,64 @@
+// Prisma schema for Integration microservice
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../../node_modules/.prisma/client-integration"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("INTEGRATION_DATABASE_URL")
+}
+
+// Integration model - for external service integrations
+// Note: userId is stored as String (foreign key to User in auth/users service)
+// Cross-service relationships are handled via IDs only (no FK constraints)
+model Integration {
+  id          String              @id @default(uuid())
+  userId      String              // Reference to User.id from auth/users service
+  provider    IntegrationProvider
+  name        String
+  credentials Json?               // Encrypted credentials
+  webhookUrl  String?
+  config      Json?
+  isActive    Boolean             @default(true)
+  lastSyncAt  DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  // Relations
+  logs IntegrationLog[]
+
+  @@index([userId])
+  @@index([provider])
+  @@index([isActive])
+  @@map("integrations")
+}
+
+enum IntegrationProvider {
+  STRIPE
+  SENDGRID
+  TWILIO
+  SLACK
+  WEBHOOK
+  CUSTOM
+}
+
+// Integration logs - for tracking integration activity
+model IntegrationLog {
+  id            String   @id @default(uuid())
+  integrationId String
+  event         String
+  payload       Json?
+  response      Json?
+  status        String
+  errorMessage  String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  integration Integration @relation(fields: [integrationId], references: [id], onDelete: Cascade)
+
+  @@index([integrationId])
+  @@index([createdAt])
+  @@index([status])
+  @@map("integration_logs")
+}

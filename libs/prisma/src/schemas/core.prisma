@@ -1,0 +1,27 @@
+// Prisma schema for Core microservice
+// This schema is intentionally minimal and can be extended with core business models
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../../node_modules/.prisma/client-core"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CORE_DATABASE_URL")
+}
+
+// Placeholder model for initial migration
+// TODO: Add core business models as needed
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  category  String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([isActive])
+  @@map("system_configs")
+}

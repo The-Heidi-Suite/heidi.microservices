@@ -1,0 +1,32 @@
+// Prisma schema for City microservice
+generator client {
+  provider = "prisma-client-js"
+  output   = "../../../../node_modules/.prisma/client-city"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("CITY_DATABASE_URL")
+}
+
+// City model - for geographic data management
+model City {
+  id          String   @id @default(uuid())
+  name        String
+  country     String
+  state       String?
+  latitude    Float
+  longitude   Float
+  population  Int?
+  timezone    String?
+  metadata    Json?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([name, country, state])
+  @@index([country])
+  @@index([latitude, longitude])
+  @@index([isActive])
+  @@map("cities")
+}
