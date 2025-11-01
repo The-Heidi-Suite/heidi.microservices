@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](///compare/v1.1.0...v1.2.0) (2025-11-01)
+
+
+### 🔧 Chores
+
+* add .yarnrc.yml for node-modules linker and update VSCode settings 6d2aa6f
+
+
+### ✨ Features
+
+* implement comprehensive monitoring setup for HEIDI Microservices b587067
+
+
+### ♻️ Code Refactoring
+
+* update Dockerfile paths and Node.js version in configuration cf727a0
+
+
+### 📚 Documentation
+
+* update Node.js version in getting started and project overview documentation 44f8fdd
+
 ## [1.1.0](///compare/v1.0.1...v1.1.0) (2025-11-01)
 
 
