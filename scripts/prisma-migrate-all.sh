@@ -26,7 +26,7 @@ if [[ -t 0 ]]; then
   fi
 fi
 
-SERVICES=("auth" "users" "city" "core" "notification" "scheduler" "integration")
+SERVICES=("auth" "users" "city" "core" "notification" "scheduler" "integration" "admin")
 
 for service in "${SERVICES[@]}"; do
   echo ""

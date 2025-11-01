@@ -8,7 +8,7 @@ set -e
 echo "🔧 Generating Prisma Clients for all microservices..."
 echo ""
 
-SERVICES=("auth" "users" "city" "core" "notification" "scheduler" "integration")
+SERVICES=("auth" "users" "city" "core" "notification" "scheduler" "integration" "admin")
 
 for service in "${SERVICES[@]}"; do
   echo "📦 Generating Prisma client for: $service"
