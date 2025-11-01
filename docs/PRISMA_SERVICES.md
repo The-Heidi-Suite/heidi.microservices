@@ -5,6 +5,7 @@ This guide explains how to use Prisma services in your NestJS microservices and 
 ## Overview
 
 Each microservice has its own dedicated Prisma service that connects to its specific database. All Prisma services are:
+
 - Injectable via NestJS dependency injection
 - Global modules (available across the entire application)
 - Auto-connected on module initialization
@@ -12,15 +13,16 @@ Each microservice has its own dedicated Prisma service that connects to its spec
 
 ## Available Prisma Services
 
-| Service | Module | Description |
-|---------|--------|-------------|
-| `PrismaAuthService` | `PrismaAuthModule` | Auth microservice database |
-| `PrismaUsersService` | `PrismaUsersModule` | Users microservice database |
-| `PrismaCityService` | `PrismaCityModule` | City microservice database |
-| `PrismaCoreService` | `PrismaCoreModule` | Core microservice database |
+| Service                     | Module                     | Description                        |
+| --------------------------- | -------------------------- | ---------------------------------- |
+| `PrismaAuthService`         | `PrismaAuthModule`         | Auth microservice database         |
+| `PrismaUsersService`        | `PrismaUsersModule`        | Users microservice database        |
+| `PrismaCityService`         | `PrismaCityModule`         | City microservice database         |
+| `PrismaCoreService`         | `PrismaCoreModule`         | Core microservice database         |
 | `PrismaNotificationService` | `PrismaNotificationModule` | Notification microservice database |
-| `PrismaSchedulerService` | `PrismaSchedulerModule` | Scheduler microservice database |
-| `PrismaIntegrationService` | `PrismaIntegrationModule` | Integration microservice database |
+| `PrismaSchedulerService`    | `PrismaSchedulerModule`    | Scheduler microservice database    |
+| `PrismaIntegrationService`  | `PrismaIntegrationModule`  | Integration microservice database  |
+| `PrismaAdminService`        | `PrismaAdminModule`        | Admin microservice database        |
 
 ## Usage in Microservices
 
@@ -133,6 +135,7 @@ import {
   PrismaNotificationModule,
   PrismaSchedulerModule,
   PrismaIntegrationModule,
+  PrismaAdminModule,
 } from '@heidi/prisma';
 import { MonitoringService } from './monitoring.service';
 
@@ -147,6 +150,7 @@ import { MonitoringService } from './monitoring.service';
     PrismaNotificationModule,
     PrismaSchedulerModule,
     PrismaIntegrationModule,
+    PrismaAdminModule,
   ],
   providers: [MonitoringService],
   exports: [MonitoringService],
@@ -165,6 +169,7 @@ import {
   PrismaNotificationService,
   PrismaSchedulerService,
   PrismaIntegrationService,
+  PrismaAdminService,
 } from '@heidi/prisma';
 
 @Injectable()
@@ -179,6 +184,7 @@ export class MonitoringService {
     @Optional() private readonly prismaNotification?: PrismaNotificationService,
     @Optional() private readonly prismaScheduler?: PrismaSchedulerService,
     @Optional() private readonly prismaIntegration?: PrismaIntegrationService,
+    @Optional() private readonly prismaAdmin?: PrismaAdminService,
   ) {}
 
   async collectDatabaseMetrics() {
@@ -190,6 +196,7 @@ export class MonitoringService {
       { name: 'notification', service: this.prismaNotification },
       { name: 'scheduler', service: this.prismaScheduler },
       { name: 'integration', service: this.prismaIntegration },
+      { name: 'admin', service: this.prismaAdmin },
     ].filter((p) => p.service !== undefined);
 
     // Collect metrics from all available databases
@@ -201,7 +208,7 @@ export class MonitoringService {
         } catch {
           return { name, healthy: false };
         }
-      })
+      }),
     );
 
     return metrics;
@@ -214,9 +221,12 @@ export class MonitoringService {
 You can import Prisma services using either:
 
 1. **Alias paths** (recommended):
+
    ```typescript
    import { PrismaAuthService } from '@heidi/prisma-auth';
    import { PrismaAuthModule } from '@heidi/prisma-auth';
+   import { PrismaAdminService } from '@heidi/prisma-admin';
+   import { PrismaAdminModule } from '@heidi/prisma-admin';
    ```
 
 2. **Main index** (also supported):
@@ -229,6 +239,7 @@ You can import Prisma services using either:
 ### Global Modules
 
 All Prisma modules are decorated with `@Global()`, which means:
+
 - Once imported in `AppModule`, they're available throughout the entire application
 - You don't need to re-import them in feature modules
 - Services can be injected anywhere in the application
@@ -236,6 +247,7 @@ All Prisma modules are decorated with `@Global()`, which means:
 ### Module Initialization
 
 Each Prisma service:
+
 - Automatically connects to the database on module initialization (`onModuleInit`)
 - Automatically disconnects on module destruction (`onModuleDestroy`)
 - Includes health check method: `healthCheck(): Promise<boolean>`
@@ -244,6 +256,7 @@ Each Prisma service:
 ### Optional Dependencies
 
 When using `@Optional()` decorator:
+
 - Services that aren't imported will be `undefined`
 - Always check for existence before using: `if (this.prismaAuth) { ... }`
 - Useful for shared libraries that may be used in different microservices
@@ -265,9 +278,7 @@ import { PrismaUsersService } from '@heidi/prisma-users';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private readonly prisma: PrismaUsersService,
-  ) {}
+  constructor(private readonly prisma: PrismaUsersService) {}
 
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({
@@ -320,6 +331,7 @@ export class UsersService {
 ### Issue: "Cannot find module '@heidi/prisma-auth'"
 
 **Solution**: Make sure you've run:
+
 ```bash
 yarn prisma:generate
 ```
@@ -327,6 +339,7 @@ yarn prisma:generate
 ### Issue: "PrismaService is not defined" or injection fails
 
 **Solution**: Ensure you've imported the Prisma module in your `AppModule`:
+
 ```typescript
 @Module({
   imports: [PrismaAuthModule], // Don't forget this!

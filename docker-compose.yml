@@ -287,6 +287,7 @@ services:
       - notification
       - scheduler
       - integration
+      - admin
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost/health']
       interval: 30s
@@ -548,6 +549,45 @@ services:
       - backend
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3007/healthz']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  admin:
+    build:
+      context: .
+      dockerfile: infra/shared/Dockerfile
+      target: production
+      args:
+        APP_NAME: admin
+    container_name: heidi-admin
+    restart: always
+    env_file:
+      - .env
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: admin
+      SERVICE_PORT: 3008
+      ADMIN_DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_admin?schema=public
+      DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_admin?schema=public
+      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
+      RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+    ports:
+      - '3008:3008'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - backend
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3008/healthz']
       interval: 30s
       timeout: 10s
       retries: 3
