@@ -7,7 +7,7 @@ This guide will help you get the HEIDI microservices platform up and running in 
 Before starting, ensure you have:
 
 ```bash
-# Check Node.js version (should be >= 20.0.0)
+# Check Node.js version (should be >= 24.11.0)
 node --version
 
 # Check Yarn (should be >= 1.22.0)
@@ -20,7 +20,7 @@ docker compose version
 
 If any are missing, install them:
 
-- **Node.js**: https://nodejs.org/ (use LTS version 20.x)
+- **Node.js**: https://nodejs.org/ (use LTS version 24.x)
 - **Yarn**: `npm install -g yarn`
 - **Docker**: https://docs.docker.com/get-docker/
 

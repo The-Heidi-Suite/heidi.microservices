@@ -16,7 +16,7 @@ A production-ready NestJS microservices monorepo featuring:
 
 - **NestJS** 10.x - Progressive Node.js framework
 - **TypeScript** 5.x - Type-safe JavaScript
-- **Node.js** 20 LTS - JavaScript runtime
+- **Node.js** 24 LTS - JavaScript runtime
 
 ### Database & ORM
 

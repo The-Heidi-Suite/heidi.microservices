@@ -34,13 +34,21 @@ heidi.microservices/
 ├── docker-compose.dev.yml         # Development Docker Compose
 ├── docker-compose.yml             # Production Docker Compose
 │
+├── infra/                         # Infrastructure configuration
+│   ├── shared/
+│   │   └── Dockerfile            # Shared multi-stage Dockerfile for all services
+│   ├── prometheus/               # Prometheus metrics configuration
+│   ├── grafana/                  # Grafana dashboard provisioning
+│   ├── alertmanager/             # Alertmanager configuration
+│   ├── nginx/                    # Nginx reverse proxy configuration
+│   └── rabbitmq/                 # RabbitMQ configuration
+│
 ├── .vscode/                       # VSCode configuration
 │   ├── launch.json                # Debug configurations
 │   ├── settings.json              # Editor settings
 │   └── extensions.json            # Recommended extensions
 │
 ├── apps/                          # Microservices
-│   ├── Dockerfile                 # Multi-stage Dockerfile (all services)
 │   ├── auth/                      # Authentication service
 │   ├── users/                     # User management service
 │   ├── city/                      # City data service
