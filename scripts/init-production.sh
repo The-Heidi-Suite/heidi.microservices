@@ -91,7 +91,16 @@ DB_PORT=${POSTGRES_PORT:-5432}
 DB_USER=${POSTGRES_USER:-heidi}
 DB_PASSWORD=${POSTGRES_PASSWORD}
 
-SERVICES=("auth" "users" "city" "core" "notification" "scheduler" "integration" "admin" "terminal")
+# Active microservices
+ACTIVE_SERVICES=("auth" "users" "city" "core" "notification" "scheduler" "integration" "admin")
+
+# FUTURE SERVICES - Uncomment to include when activating
+# FUTURE_SERVICES=("terminal")
+
+# Use ACTIVE_SERVICES by default, or combine if FUTURE_SERVICES are uncommented
+SERVICES=("${ACTIVE_SERVICES[@]}")
+# Uncomment below to include future services:
+# SERVICES=("${ACTIVE_SERVICES[@]}" "${FUTURE_SERVICES[@]}")
 
 for service in "${SERVICES[@]}"; do
     DB_NAME="heidi_$service"
