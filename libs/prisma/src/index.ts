@@ -15,6 +15,8 @@ export * from './modules/prisma-integration.module';
 export * from './services/prisma-integration.service';
 export * from './modules/prisma-admin.module';
 export * from './services/prisma-admin.service';
+export * from './modules/prisma-terminal.module';
+export * from './services/prisma-terminal.service';
 
 // Re-export Prisma types
 export * from '@prisma/client-auth';
@@ -25,3 +27,4 @@ export * from '@prisma/client-notification';
 export * from '@prisma/client-scheduler';
 export * from '@prisma/client-integration';
 export * from '@prisma/client-admin';
+export * from '@prisma/client-terminal';
