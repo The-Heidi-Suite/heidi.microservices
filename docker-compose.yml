@@ -288,7 +288,7 @@ services:
       - scheduler
       - integration
       - admin
-      - terminal
+      # - terminal  # FUTURE SERVICE - Uncomment when activating terminal service
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost/health']
       interval: 30s
@@ -594,7 +594,11 @@ services:
       retries: 3
       start_period: 40s
 
+  # FUTURE SERVICE - Terminal microservice for managing city terminals
+  # To activate: docker compose --profile future up terminal
+  # Or uncomment this profile line and include terminal in depends_on
   terminal:
+    profiles: ["future"]
     build:
       context: .
       dockerfile: infra/shared/Dockerfile
