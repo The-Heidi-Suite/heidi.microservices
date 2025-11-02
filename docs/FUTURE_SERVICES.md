@@ -71,6 +71,7 @@ Uncomment terminal in migration scripts:
 - `scripts/init-production.sh`
 
 In each file, uncomment:
+
 ```bash
 FUTURE_SERVICES=("terminal")
 # SERVICES=("${ACTIVE_SERVICES[@]}" "${FUTURE_SERVICES[@]}")

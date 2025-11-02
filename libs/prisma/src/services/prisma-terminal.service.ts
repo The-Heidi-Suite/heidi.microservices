@@ -4,7 +4,10 @@ import { PrismaClient as PrismaTerminalClient } from '@prisma/client-terminal';
 import { LoggerService } from '@heidi/logger';
 
 @Injectable()
-export class PrismaTerminalService extends PrismaTerminalClient implements OnModuleInit, OnModuleDestroy {
+export class PrismaTerminalService
+  extends PrismaTerminalClient
+  implements OnModuleInit, OnModuleDestroy
+{
   private readonly logger: LoggerService;
 
   constructor(logger: LoggerService, configService: ConfigService) {
