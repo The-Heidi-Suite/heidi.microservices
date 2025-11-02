@@ -14,7 +14,7 @@ fi
 echo "🚀 Deploying migrations to production for all microservice databases..."
 echo ""
 
-SERVICES=("auth" "users" "city" "core" "notification" "scheduler" "integration" "admin")
+SERVICES=("auth" "users" "city" "core" "notification" "scheduler" "integration" "admin" "terminal")
 
 for service in "${SERVICES[@]}"; do
   echo ""

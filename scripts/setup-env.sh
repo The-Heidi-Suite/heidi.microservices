@@ -76,6 +76,11 @@ ADMIN_SERVICE_PORT=3008
 ADMIN_DB_NAME=heidi_admin
 ADMIN_DATABASE_URL=postgresql://heidi:heidi_password@localhost:5432/heidi_admin
 
+# Terminal Service
+TERMINAL_SERVICE_PORT=3009
+TERMINAL_DB_NAME=heidi_terminal
+TERMINAL_DATABASE_URL=postgresql://heidi:heidi_password@localhost:5432/heidi_terminal
+
 # Redis (Shared Cache)
 REDIS_HOST=localhost
 REDIS_PORT=6379

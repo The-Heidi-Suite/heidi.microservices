@@ -91,7 +91,7 @@ DB_PORT=${POSTGRES_PORT:-5432}
 DB_USER=${POSTGRES_USER:-heidi}
 DB_PASSWORD=${POSTGRES_PASSWORD}
 
-SERVICES=("auth" "users" "city" "core" "notification" "scheduler" "integration" "admin")
+SERVICES=("auth" "users" "city" "core" "notification" "scheduler" "integration" "admin" "terminal")
 
 for service in "${SERVICES[@]}"; do
     DB_NAME="heidi_$service"
