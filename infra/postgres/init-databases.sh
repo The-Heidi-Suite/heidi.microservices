@@ -15,6 +15,7 @@ DATABASES=(
     "heidi_scheduler"
     "heidi_integration"
     "heidi_admin"
+    "heidi_terminal"
 )
 
 echo "========================================="
