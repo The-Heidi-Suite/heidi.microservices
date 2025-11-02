@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](///compare/v1.4.1...v1.5.0) (2025-11-02)
+
+
+### ✨ Features
+
+* add terminal module and service for terminal management 6980a85
+* add terminal service configuration and metrics scraping 148a13d
+* add terminal service configuration to Docker and environment setup c2b1ec8
+* implement terminal service with core functionality 93e7aaa
+* update scripts to include terminal service in production setup dd143f1
+
+
+### ♻️ Code Refactoring
+
+* comment out terminal service configurations in Nginx, Prometheus, and database initialization 32a75bd
+* comment out terminal service in Docker configuration and update development scripts e92fa11
+* update service configurations to exclude terminal service b7565a4
+* update terminal service implementation and documentation 699d867
+
 ### [1.4.1](///compare/v1.4.0...v1.4.1) (2025-11-01)
 
 
