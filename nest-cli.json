@@ -82,6 +82,15 @@
         "tsConfigPath": "apps/admin/tsconfig.app.json"
       }
     },
+    "terminal": {
+      "type": "application",
+      "root": "apps/terminal",
+      "entryFile": "main",
+      "sourceRoot": "apps/terminal/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/terminal/tsconfig.app.json"
+      }
+    },
     "prisma": {
       "type": "library",
       "root": "libs/prisma",
