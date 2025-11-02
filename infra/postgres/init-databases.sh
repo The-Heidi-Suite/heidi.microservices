@@ -6,6 +6,7 @@
 set -e
 
 # Database names for each microservice
+# Active services
 DATABASES=(
     "heidi_auth"
     "heidi_users"
@@ -15,7 +16,9 @@ DATABASES=(
     "heidi_scheduler"
     "heidi_integration"
     "heidi_admin"
-    "heidi_terminal"
+    # FUTURE SERVICE - Terminal microservice
+    # Uncomment when activating terminal service:
+    # "heidi_terminal"
 )
 
 echo "========================================="
