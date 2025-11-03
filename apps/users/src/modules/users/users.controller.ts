@@ -9,12 +9,21 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto, RegisterDto } from './dto';
-import { Public } from '@heidi/jwt';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  RegisterDto,
+  UpdateProfileDto,
+  ChangePasswordDto,
+} from '@heidi/contracts';
+import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
+import { AdminOnlyGuard } from '@heidi/rbac';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard, AdminOnlyGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -48,5 +57,23 @@ export class UsersController {
   @Delete(':id')
   async delete(@Param('id') id: string) {
     return this.usersService.delete(id);
+  }
+
+  @Get('profile/me')
+  @HttpCode(HttpStatus.OK)
+  async getProfile(@GetCurrentUser('userId') userId: string) {
+    return this.usersService.getProfile(userId);
+  }
+
+  @Patch('profile/me')
+  @HttpCode(HttpStatus.OK)
+  async updateProfile(@GetCurrentUser('userId') userId: string, @Body() dto: UpdateProfileDto) {
+    return this.usersService.updateProfile(userId, dto);
+  }
+
+  @Post('profile/me/change-password')
+  @HttpCode(HttpStatus.OK)
+  async changePassword(@GetCurrentUser('userId') userId: string, @Body() dto: ChangePasswordDto) {
+    return this.usersService.changePassword(userId, dto);
   }
 }

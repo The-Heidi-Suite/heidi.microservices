@@ -1,10 +1,22 @@
-import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  Logger,
+  ConflictException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PrismaUsersService, PrismaCoreService } from '@heidi/prisma';
 import { PermissionService } from '@heidi/rbac';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
 import { UserRole } from '@prisma/client-core';
 import * as bcrypt from 'bcrypt';
-import { CreateUserDto, UpdateUserDto, RegisterDto } from './dto';
+import {
+  CreateUserDto,
+  UpdateUserDto,
+  RegisterDto,
+  UpdateProfileDto,
+  ChangePasswordDto,
+} from '@heidi/contracts';
 
 @Injectable()
 export class UsersService {
@@ -184,5 +196,119 @@ export class UsersService {
 
     this.logger.log(`User deleted: ${id}`);
     return { message: 'User deleted successfully' };
+  }
+
+  /**
+   * Get current user profile
+   */
+  async getProfile(userId: string) {
+    this.logger.log(`Getting profile for user: ${userId}`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Get city assignments
+    const cityAssignments = await this.prismaCore.userCityAssignment.findMany({
+      where: { userId, isActive: true },
+      select: {
+        cityId: true,
+        role: true,
+        canManageAdmins: true,
+        createdAt: true,
+      },
+    });
+
+    return {
+      ...user,
+      cityAssignments,
+    };
+  }
+
+  /**
+   * Update current user profile
+   */
+  async updateProfile(userId: string, dto: UpdateProfileDto) {
+    this.logger.log(`Updating profile for user: ${userId}`);
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        updatedAt: true,
+      },
+    });
+
+    await this.rabbitmq.emit(RabbitMQPatterns.USER_UPDATED, {
+      userId: user.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Profile updated for user: ${userId}`);
+    return user;
+  }
+
+  /**
+   * Change user password
+   */
+  async changePassword(userId: string, dto: ChangePasswordDto) {
+    this.logger.log(`Changing password for user: ${userId}`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        password: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+
+    // Update password
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    await this.rabbitmq.emit(RabbitMQPatterns.USER_UPDATED, {
+      userId: user.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Password changed for user: ${userId}`);
+    return { message: 'Password changed successfully' };
   }
 }

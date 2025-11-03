@@ -5,6 +5,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { PrismaUsersModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { RabbitMQModule } from '@heidi/rabbitmq';
+import { JwtModule } from '@heidi/jwt';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
 import { LoggingInterceptor, TimeoutInterceptor } from '@heidi/interceptors';
 import { UsersModule } from './modules/users/users.module';
@@ -17,6 +18,7 @@ import { HealthController } from './health.controller';
     PrismaUsersModule,
     LoggerModule,
     RabbitMQModule.register(),
+    JwtModule.register(),
     MetricsModule,
     UsersModule,
   ],
