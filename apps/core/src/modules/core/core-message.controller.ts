@@ -23,10 +23,17 @@ export class CoreMessageController {
     );
 
     try {
-      return await this.coreService.getUserAssignments(data.userId, data.role);
+      const result = await this.coreService.getUserAssignments(data.userId, data.role);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS} for userId: ${data.userId} (will ACK)`,
+      );
+      return result;
     } catch (error) {
-      this.logger.error(`Error getting user assignments for userId: ${data.userId}`, error);
-      throw error;
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
     }
   }
 
@@ -37,10 +44,17 @@ export class CoreMessageController {
     );
 
     try {
-      return await this.coreService.getUserCities(data.userId);
+      const result = await this.coreService.getUserCities(data.userId);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.CORE_GET_USER_CITIES} for userId: ${data.userId} (will ACK)`,
+      );
+      return result;
     } catch (error) {
-      this.logger.error(`Error getting user cities for userId: ${data.userId}`, error);
-      throw error;
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.CORE_GET_USER_CITIES} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
     }
   }
 
@@ -53,13 +67,21 @@ export class CoreMessageController {
     );
 
     try {
-      return await this.coreService.createUserCityAssignment(data.userId, data.cityId, data.role);
+      const result = await this.coreService.createUserCityAssignment(
+        data.userId,
+        data.cityId,
+        data.role,
+      );
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.CORE_CREATE_USER_CITY_ASSIGNMENT} for userId: ${data.userId}, cityId: ${data.cityId} (will ACK)`,
+      );
+      return result;
     } catch (error) {
       this.logger.error(
-        `Error creating user city assignment for userId: ${data.userId}, cityId: ${data.cityId}`,
+        `Error processing message: ${RabbitMQPatterns.CORE_CREATE_USER_CITY_ASSIGNMENT} for userId: ${data.userId}, cityId: ${data.cityId} (will NACK)`,
         error,
       );
-      throw error;
+      throw error; // Throwing error causes NestJS to NACK the message
     }
   }
 
@@ -70,13 +92,17 @@ export class CoreMessageController {
     );
 
     try {
-      return await this.coreService.assignCityAdmin(data.userId, data.cityId);
+      const result = await this.coreService.assignCityAdmin(data.userId, data.cityId);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN} for userId: ${data.userId}, cityId: ${data.cityId} (will ACK)`,
+      );
+      return result;
     } catch (error) {
       this.logger.error(
-        `Error assigning city admin for userId: ${data.userId}, cityId: ${data.cityId}`,
+        `Error processing message: ${RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN} for userId: ${data.userId}, cityId: ${data.cityId} (will NACK)`,
         error,
       );
-      throw error;
+      throw error; // Throwing error causes NestJS to NACK the message
     }
   }
 }

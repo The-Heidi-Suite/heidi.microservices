@@ -1,4 +1,4 @@
-import { Injectable, OnModuleInit, NotFoundException } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
 import { RedisService } from '@heidi/redis';
 import { LoggerService } from '@heidi/logger';

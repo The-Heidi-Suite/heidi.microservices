@@ -25,10 +25,16 @@ export class UsersMessageController {
     try {
       // Note: Returns password for authentication purposes (internal RabbitMQ communication)
       const user = await this.usersService.findByEmail(data.email);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_FIND_BY_EMAIL} for email: ${data.email} (will ACK)`,
+      );
       return user; // Return user with password for auth service
     } catch (error) {
-      this.logger.error(`Error finding user by email: ${data.email}`, error);
-      throw error;
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_FIND_BY_EMAIL} for email: ${data.email} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
     }
   }
 
@@ -40,10 +46,16 @@ export class UsersMessageController {
       const user = await this.usersService.findOne(data.id);
       // Return user without password
       const { password, ...userWithoutPassword } = user as any;
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_FIND_BY_ID} for id: ${data.id} (will ACK)`,
+      );
       return userWithoutPassword;
     } catch (error) {
-      this.logger.error(`Error finding user by id: ${data.id}`, error);
-      throw error;
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_FIND_BY_ID} for id: ${data.id} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
     }
   }
 
@@ -54,10 +66,17 @@ export class UsersMessageController {
     );
 
     try {
-      return await this.usersService.getProfile(data.userId);
+      const result = await this.usersService.getProfile(data.userId);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_GET_PROFILE} for userId: ${data.userId} (will ACK)`,
+      );
+      return result;
     } catch (error) {
-      this.logger.error(`Error getting profile for userId: ${data.userId}`, error);
-      throw error;
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_GET_PROFILE} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
     }
   }
 }
