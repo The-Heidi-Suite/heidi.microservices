@@ -7,12 +7,16 @@ import {
   PrismaClientUnknownRequestError,
 } from '@prisma/client/runtime/library';
 import { LoggerService, ChildLogger } from '@heidi/logger';
+import { I18nService } from '@heidi/i18n';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly structuredLogger: ChildLogger;
 
-  constructor(loggerService: LoggerService) {
+  constructor(
+    loggerService: LoggerService,
+    private readonly i18nService: I18nService,
+  ) {
     this.structuredLogger = loggerService.createChildLogger({
       operation: 'exception-filter',
     });
@@ -52,10 +56,18 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Handle custom exceptions
     if (exception instanceof BaseCustomException) {
+      const translatedMessage = this.i18nService.translate(
+        `errors.${exception.errorCode}`,
+        exception.context,
+      );
+
       return {
         statusCode: exception.getStatus(),
         errorCode: exception.errorCode,
-        message: exception.message,
+        message:
+          translatedMessage !== `errors.${exception.errorCode}`
+            ? translatedMessage
+            : exception.message,
         timestamp,
         path,
         method,
@@ -68,14 +80,19 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
+      const errorCode = this.mapHttpStatusToErrorCode(status);
+
+      const originalMessage =
+        typeof exceptionResponse === 'string'
+          ? (exceptionResponse as string)
+          : (exceptionResponse as any).message;
+
+      const translatedMessage = this.i18nService.translate(`errors.${errorCode}`);
 
       return {
         statusCode: status,
-        errorCode: this.mapHttpStatusToErrorCode(status),
-        message:
-          typeof exceptionResponse === 'string'
-            ? (exceptionResponse as string)
-            : (exceptionResponse as any).message,
+        errorCode,
+        message: translatedMessage !== `errors.${errorCode}` ? translatedMessage : originalMessage,
         timestamp,
         path,
         method,
@@ -90,10 +107,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (exception instanceof PrismaClientUnknownRequestError) {
+      const translatedMessage = this.i18nService.translate('errors.DATABASE_QUERY_ERROR');
+
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         errorCode: ErrorCode.DATABASE_QUERY_ERROR,
-        message: 'Database operation failed',
+        message: translatedMessage,
         timestamp,
         path,
         method,
@@ -104,10 +123,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Handle Redis/IORedis errors
     if (this.isRedisError(exception)) {
+      const translatedMessage = this.i18nService.translate('errors.REDIS_CONNECTION_ERROR');
+
       return {
         statusCode: HttpStatus.SERVICE_UNAVAILABLE,
         errorCode: ErrorCode.REDIS_CONNECTION_ERROR,
-        message: 'Redis connection error',
+        message: translatedMessage,
         timestamp,
         path,
         method,
@@ -118,10 +139,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Handle validation errors
     if (this.isValidationError(exception)) {
+      const translatedMessage = this.i18nService.translate('errors.VALIDATION_ERROR');
+
       return {
         statusCode: HttpStatus.BAD_REQUEST,
         errorCode: ErrorCode.VALIDATION_ERROR,
-        message: 'Validation failed',
+        message: translatedMessage,
         timestamp,
         path,
         method,
@@ -132,10 +155,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Handle timeout errors
     if (this.isTimeoutError(exception)) {
+      const translatedMessage = this.i18nService.translate('errors.DATABASE_TIMEOUT_ERROR');
+
       return {
         statusCode: HttpStatus.REQUEST_TIMEOUT,
         errorCode: ErrorCode.DATABASE_TIMEOUT_ERROR,
-        message: 'Request timeout',
+        message: translatedMessage,
         timestamp,
         path,
         method,
@@ -145,10 +170,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // Handle unknown errors
+    const translatedMessage = this.i18nService.translate('errors.INTERNAL_SERVER_ERROR');
+
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       errorCode: ErrorCode.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error',
+      message: translatedMessage,
       timestamp,
       path,
       method,
@@ -172,32 +199,29 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   ) {
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     let errorCode = ErrorCode.DATABASE_QUERY_ERROR;
-    let message = 'Database operation failed';
 
     switch (exception.code) {
       case 'P2002':
         statusCode = HttpStatus.CONFLICT;
         errorCode = ErrorCode.DATABASE_CONSTRAINT_ERROR;
-        message = 'Unique constraint violation';
         break;
       case 'P2025':
         statusCode = HttpStatus.NOT_FOUND;
         errorCode = ErrorCode.NOT_FOUND;
-        message = 'Record not found';
         break;
       case 'P2003':
         statusCode = HttpStatus.BAD_REQUEST;
         errorCode = ErrorCode.DATABASE_CONSTRAINT_ERROR;
-        message = 'Foreign key constraint violation';
         break;
       case 'P2024':
         statusCode = HttpStatus.REQUEST_TIMEOUT;
         errorCode = ErrorCode.DATABASE_TIMEOUT_ERROR;
-        message = 'Database operation timeout';
         break;
-      default:
-        message = exception.message;
     }
+
+    const translatedMessage = this.i18nService.translate(`errors.${errorCode}`);
+    const message =
+      translatedMessage !== `errors.${errorCode}` ? translatedMessage : exception.message;
 
     return {
       statusCode,
