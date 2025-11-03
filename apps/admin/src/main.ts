@@ -10,7 +10,7 @@ async function bootstrap() {
   });
 
   // Use custom logger
-  const logger = app.get(LoggerService);
+  const logger = await app.resolve(LoggerService);
   logger.setContext('Admin-Service');
   app.useLogger(logger);
 

@@ -24,7 +24,13 @@ import { HealthController } from './health.controller';
   providers: [
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
     { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
-    { provide: APP_INTERCEPTOR, useClass: TimeoutInterceptor },
+    {
+      provide: APP_INTERCEPTOR,
+      useFactory: () => {
+        const timeoutMs = parseInt(process.env.REQUEST_TIMEOUT_MS || '30000', 10);
+        return new TimeoutInterceptor(timeoutMs);
+      },
+    },
   ],
 })
 export class AppModule {}

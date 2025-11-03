@@ -7,7 +7,7 @@ import { LoggerService } from '@heidi/logger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  const logger = app.get(LoggerService);
+  const logger = await app.resolve(LoggerService);
   logger.setContext('City-Service');
   app.useLogger(logger);
 

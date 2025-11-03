@@ -59,7 +59,10 @@ import { HealthController } from './health.controller';
     },
     {
       provide: APP_INTERCEPTOR,
-      useClass: TimeoutInterceptor,
+      useFactory: () => {
+        const timeoutMs = parseInt(process.env.REQUEST_TIMEOUT_MS || '30000', 10);
+        return new TimeoutInterceptor(timeoutMs);
+      },
     },
   ],
 })
