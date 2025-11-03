@@ -8,6 +8,9 @@ export interface TokenPayload {
   email: string;
   role: string;
   type: 'access' | 'refresh';
+  cityId?: string; // Current city ID
+  cityIds?: string[]; // All city IDs user has access to
+  permissions?: string[]; // User permissions (e.g., ['users:read', 'cities:write'])
 }
 
 export interface TokenPair {
@@ -38,12 +41,24 @@ export class JwtTokenService {
   /**
    * Generate access token
    */
-  async generateAccessToken(userId: string, email: string, role: string): Promise<string> {
+  async generateAccessToken(
+    userId: string,
+    email: string,
+    role: string,
+    options?: {
+      cityId?: string;
+      cityIds?: string[];
+      permissions?: string[];
+    },
+  ): Promise<string> {
     const payload: TokenPayload = {
       sub: userId,
       email,
       role,
       type: 'access',
+      ...(options?.cityId && { cityId: options.cityId }),
+      ...(options?.cityIds && { cityIds: options.cityIds }),
+      ...(options?.permissions && { permissions: options.permissions }),
     };
 
     return this.jwtService.sign(payload, {
@@ -55,12 +70,24 @@ export class JwtTokenService {
   /**
    * Generate refresh token
    */
-  async generateRefreshToken(userId: string, email: string, role: string): Promise<string> {
+  async generateRefreshToken(
+    userId: string,
+    email: string,
+    role: string,
+    options?: {
+      cityId?: string;
+      cityIds?: string[];
+      permissions?: string[];
+    },
+  ): Promise<string> {
     const payload: TokenPayload = {
       sub: userId,
       email,
       role,
       type: 'refresh',
+      ...(options?.cityId && { cityId: options.cityId }),
+      ...(options?.cityIds && { cityIds: options.cityIds }),
+      ...(options?.permissions && { permissions: options.permissions }),
     };
 
     return this.jwtService.sign(payload, {
@@ -72,10 +99,19 @@ export class JwtTokenService {
   /**
    * Generate both access and refresh tokens
    */
-  async generateTokenPair(userId: string, email: string, role: string): Promise<TokenPair> {
+  async generateTokenPair(
+    userId: string,
+    email: string,
+    role: string,
+    options?: {
+      cityId?: string;
+      cityIds?: string[];
+      permissions?: string[];
+    },
+  ): Promise<TokenPair> {
     const [accessToken, refreshToken] = await Promise.all([
-      this.generateAccessToken(userId, email, role),
-      this.generateRefreshToken(userId, email, role),
+      this.generateAccessToken(userId, email, role, options),
+      this.generateRefreshToken(userId, email, role, options),
     ]);
 
     // Parse expiry time to seconds
