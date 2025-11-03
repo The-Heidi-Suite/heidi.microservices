@@ -142,10 +142,20 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
  * Event patterns for the microservices
  */
 export const RabbitMQPatterns = {
-  // User events
+  // User events (fire and forget)
   USER_CREATED: 'user.created',
   USER_UPDATED: 'user.updated',
   USER_DELETED: 'user.deleted',
+
+  // User request-response patterns
+  USER_FIND_BY_EMAIL: 'user.findByEmail',
+  USER_FIND_BY_ID: 'user.findById',
+  USER_GET_PROFILE: 'user.getProfile',
+
+  // Core request-response patterns
+  CORE_GET_USER_CITIES: 'core.getUserCities',
+  CORE_GET_USER_ASSIGNMENTS: 'core.getUserAssignments',
+  CORE_ASSIGN_CITY_ADMIN: 'core.assignCityAdmin',
 
   // Notification events
   NOTIFICATION_SEND: 'notification.send',
@@ -165,6 +175,6 @@ export const RabbitMQPatterns = {
   SCHEDULE_EXECUTE: 'schedule.execute',
   SCHEDULE_COMPLETED: 'schedule.completed',
 
-  // Core events
+  // Core events (fire and forget)
   CORE_OPERATION: 'core.operation',
 };
