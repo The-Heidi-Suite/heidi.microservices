@@ -1,28 +1,22 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  ConflictException,
-  Logger,
-  ForbiddenException,
-} from '@nestjs/common';
-import { PrismaAuthService } from '@heidi/prisma';
-import { PrismaPermissionsService } from '@heidi/prisma-permissions';
+import { Injectable, UnauthorizedException, Logger, ForbiddenException } from '@nestjs/common';
+import { PrismaAuthService, PrismaUsersService, PrismaCoreService } from '@heidi/prisma';
 import { PermissionService } from '@heidi/rbac';
-import { JwtTokenService } from '@heidi/jwt';
+import { JwtTokenService, CityAssignment } from '@heidi/jwt';
 import { RedisService } from '@heidi/redis';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
-import { UserRole as PermissionsUserRole } from '@prisma/client-permissions';
-import { UserRole as AuthUserRole } from '@prisma/client-auth';
+import { UserRole } from '@prisma/client-core';
+import { AuthAction, AuthProvider, TokenType } from '@prisma/client-auth';
 import * as bcrypt from 'bcrypt';
-import { LoginDto, RegisterDto, AssignCityAdminDto } from './dto';
+import { LoginDto, AssignCityAdminDto } from './dto';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly prisma: PrismaAuthService,
-    private readonly prismaPermissions: PrismaPermissionsService,
+    private readonly prismaUsers: PrismaUsersService, // For reading users
+    private readonly prismaAuth: PrismaAuthService, // For sessions and audit logs
+    private readonly prismaCore: PrismaCoreService, // For UserCityAssignment and permissions
     private readonly permissionService: PermissionService,
     private readonly jwtService: JwtTokenService,
     private readonly redis: RedisService,
@@ -30,150 +24,176 @@ export class AuthService {
   ) {}
 
   /**
-   * Register a new user
+   * Create audit log entry
    */
-  async register(dto: RegisterDto) {
-    this.logger.log(`Registering user: ${dto.email}`);
-
-    // Check if user already exists
-    const existingUser = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-
-    if (existingUser) {
-      throw new ConflictException('User with this email already exists');
-    }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(dto.password, 10);
-
-    // Create user
-    const user = await this.prisma.user.create({
-      data: {
-        email: dto.email,
-        password: hashedPassword,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        role: AuthUserRole.USER,
-      },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-        firstName: true,
-        lastName: true,
-        createdAt: true,
-      },
-    });
-
-    // Create UserCityAssignment if cityId provided
-    let cityIds: string[] = [];
-    if (dto.cityId) {
-      await this.prismaPermissions.userCityAssignment.create({
+  private async createAuditLog(
+    userId: string | null,
+    action: AuthAction,
+    success: boolean,
+    failureReason?: string,
+    ipAddress?: string,
+    userAgent?: string,
+    metadata?: Record<string, any>,
+  ) {
+    try {
+      await this.prismaAuth.authAuditLog.create({
         data: {
-          userId: user.id,
-          cityId: dto.cityId,
-          role: PermissionsUserRole.CITIZEN,
+          userId,
+          action,
+          success,
+          failureReason,
+          ipAddress,
+          userAgent,
+          metadata: metadata ? metadata : undefined,
         },
       });
-      cityIds = [dto.cityId];
+    } catch (error) {
+      this.logger.error('Failed to create audit log', error);
+      // Don't throw - audit logging failure shouldn't break auth flow
     }
+  }
 
-    // Load user permissions - default to CITIZEN for new users
-    const permissions = await this.permissionService.getUserPermissions(
-      PermissionsUserRole.CITIZEN,
-    );
-
-    // Emit user created event
-    await this.rabbitmq.emit(RabbitMQPatterns.USER_CREATED, {
-      userId: user.id,
-      email: user.email,
-      timestamp: new Date().toISOString(),
-    });
-
-    // Generate tokens with city context and permissions
-    const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role, {
-      cityId: dto.cityId,
-      cityIds: cityIds.length > 0 ? cityIds : undefined,
-      permissions: permissions.length > 0 ? permissions : undefined,
-    });
-
-    // Store refresh token in Redis
-    await this.redis.set(
-      `refresh_token:${user.id}`,
-      tokens.refreshToken,
-      7 * 24 * 60 * 60, // 7 days
-    );
-
-    this.logger.log(`User registered successfully: ${user.id}`);
-
-    return {
-      user,
-      ...tokens,
-    };
+  /**
+   * Store session (for future OAuth/BIND_ID support)
+   */
+  private async storeSession(
+    userId: string,
+    tokenType: TokenType,
+    expiresAt: Date,
+    provider: AuthProvider = AuthProvider.LOCAL,
+    metadata?: Record<string, any>,
+  ) {
+    try {
+      await this.prismaAuth.session.create({
+        data: {
+          userId,
+          tokenType,
+          expiresAt,
+          provider,
+          metadata: metadata ? metadata : undefined,
+        },
+      });
+    } catch (error) {
+      this.logger.error('Failed to store session', error);
+      // Don't throw - session storage failure shouldn't break auth flow
+    }
   }
 
   /**
    * Login user
    */
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, ipAddress?: string, userAgent?: string) {
     this.logger.log(`Login attempt for: ${dto.email}`);
 
-    // Find user
-    const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
+    let user = null;
+    let loginSuccess = false;
+    let failureReason: string | undefined;
 
-    if (!user || !user.isActive) {
+    try {
+      // Find user from users database
+      user = await this.prismaUsers.user.findUnique({
+        where: { email: dto.email },
+      });
+
+      if (!user || !user.isActive) {
+        failureReason = 'User not found or inactive';
+        await this.createAuditLog(
+          null,
+          AuthAction.LOGIN,
+          false,
+          failureReason,
+          ipAddress,
+          userAgent,
+        );
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      // Verify password
+      const isPasswordValid = await bcrypt.compare(dto.password, user.password);
+      if (!isPasswordValid) {
+        failureReason = 'Invalid password';
+        await this.createAuditLog(
+          user.id,
+          AuthAction.LOGIN,
+          false,
+          failureReason,
+          ipAddress,
+          userAgent,
+        );
+        throw new UnauthorizedException('Invalid credentials');
+      }
+
+      loginSuccess = true;
+    } catch (error) {
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      failureReason = error instanceof Error ? error.message : 'Unknown error';
+      await this.createAuditLog(
+        user?.id || null,
+        AuthAction.LOGIN,
+        false,
+        failureReason,
+        ipAddress,
+        userAgent,
+      );
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // Verify password
-    const isPasswordValid = await bcrypt.compare(dto.password, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException('Invalid credentials');
-    }
-
-    // Load user's city assignments
-    const cityAssignments = await this.prismaPermissions.userCityAssignment.findMany({
-      where: { userId: user.id },
-      select: { cityId: true },
+    // Load user's city assignments with full details
+    const dbAssignments = await this.prismaCore.userCityAssignment.findMany({
+      where: { userId: user.id, isActive: true },
+      select: {
+        cityId: true,
+        role: true,
+        canManageAdmins: true,
+      },
     });
-    const cityIds = cityAssignments.map((a) => a.cityId);
 
-    // Load user permissions based on city assignments (use highest role from assignments, default to CITIZEN)
-    const assignments = await this.prismaPermissions.userCityAssignment.findMany({
-      where: { userId: user.id },
-      select: { role: true },
-    });
-    const highestRole =
-      assignments.length > 0
-        ? assignments.reduce((highest, assignment) => {
-            const roles = [
-              PermissionsUserRole.SUPER_ADMIN,
-              PermissionsUserRole.CITY_ADMIN,
-              PermissionsUserRole.CITIZEN,
-            ];
-            const currentIndex = roles.indexOf(assignment.role);
-            const highestIndex = roles.indexOf(highest);
-            return currentIndex < highestIndex ? assignment.role : highest;
-          }, assignments[0].role)
-        : PermissionsUserRole.CITIZEN;
-    const permissions = await this.permissionService.getUserPermissions(highestRole);
+    const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
+      cityId: a.cityId,
+      role: a.role,
+      canManageAdmins: a.canManageAdmins,
+    }));
+
+    // Determine highest role for permissions (use auth role or highest assignment role)
+    const roleHierarchy = [UserRole.SUPER_ADMIN, UserRole.CITY_ADMIN, UserRole.CITIZEN];
+    const userRoleIndex = roleHierarchy.indexOf(user.role as UserRole);
+    const assignmentRoles = dbAssignments.map((a) => a.role);
+    const highestAssignmentIndex =
+      assignmentRoles.length > 0
+        ? Math.min(...assignmentRoles.map((r) => roleHierarchy.indexOf(r)))
+        : roleHierarchy.length - 1;
+
+    const effectiveRole =
+      userRoleIndex >= 0 && userRoleIndex < highestAssignmentIndex
+        ? user.role
+        : assignmentRoles.length > 0
+          ? roleHierarchy[highestAssignmentIndex]
+          : UserRole.CITIZEN;
+
+    const permissions = await this.permissionService.getUserPermissions(effectiveRole as UserRole);
 
     // Generate tokens with city context and permissions
+    const selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
     const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role, {
-      cityId: cityIds.length > 0 ? cityIds[0] : undefined,
-      cityIds: cityIds.length > 0 ? cityIds : undefined,
+      selectedCityId,
+      cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
       permissions: permissions.length > 0 ? permissions : undefined,
     });
 
     // Store refresh token in Redis
-    await this.redis.set(
-      `refresh_token:${user.id}`,
-      tokens.refreshToken,
-      7 * 24 * 60 * 60, // 7 days
-    );
+    const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days
+    await this.redis.set(`refresh_token:${user.id}`, tokens.refreshToken, refreshTokenExpiry);
+
+    // Store session in auth database (for audit and future OAuth/BIND_ID)
+    const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
+    await this.storeSession(user.id, TokenType.JWT, expiresAt, AuthProvider.LOCAL);
+
+    // Create audit log for successful login
+    await this.createAuditLog(user.id, AuthAction.LOGIN, true, undefined, ipAddress, userAgent, {
+      tokenType: 'JWT',
+    });
 
     this.logger.log(`User logged in successfully: ${user.id}`);
 
@@ -192,11 +212,25 @@ export class AuthService {
   /**
    * Logout user
    */
-  async logout(userId: string) {
+  async logout(userId: string, ipAddress?: string, userAgent?: string) {
     this.logger.log(`Logging out user: ${userId}`);
 
     // Remove refresh token from Redis
     await this.redis.del(`refresh_token:${userId}`);
+
+    // Revoke active sessions
+    await this.prismaAuth.session.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    // Create audit log
+    await this.createAuditLog(userId, AuthAction.LOGOUT, true, undefined, ipAddress, userAgent);
 
     // Could also add access token to blacklist here
     // await this.redis.set(`blacklist:${accessToken}`, '1', tokenTtl);
@@ -220,55 +254,75 @@ export class AuthService {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Get user
-      const user = await this.prisma.user.findUnique({
+      // Get user from users database
+      const user = await this.prismaUsers.user.findUnique({
         where: { id: payload.sub },
       });
 
       if (!user || !user.isActive) {
+        await this.createAuditLog(
+          payload.sub,
+          AuthAction.TOKEN_REFRESH,
+          false,
+          'User not found or inactive',
+        );
         throw new UnauthorizedException('User not found or inactive');
       }
 
-      // Load user's city assignments
-      const cityAssignments = await this.prismaPermissions.userCityAssignment.findMany({
-        where: { userId: user.id },
-        select: { cityId: true },
+      // Load user's city assignments with full details
+      const dbAssignments = await this.prismaCore.userCityAssignment.findMany({
+        where: { userId: user.id, isActive: true },
+        select: {
+          cityId: true,
+          role: true,
+          canManageAdmins: true,
+        },
       });
-      const cityIds = cityAssignments.map((a) => a.cityId);
 
-      // Load user permissions based on city assignments (use highest role from assignments, default to CITIZEN)
-      const assignments = await this.prismaPermissions.userCityAssignment.findMany({
-        where: { userId: user.id },
-        select: { role: true },
-      });
-      const highestRole =
-        assignments.length > 0
-          ? assignments.reduce((highest, assignment) => {
-              const roles = [
-                PermissionsUserRole.SUPER_ADMIN,
-                PermissionsUserRole.CITY_ADMIN,
-                PermissionsUserRole.CITIZEN,
-              ];
-              const currentIndex = roles.indexOf(assignment.role);
-              const highestIndex = roles.indexOf(highest);
-              return currentIndex < highestIndex ? assignment.role : highest;
-            }, assignments[0].role)
-          : PermissionsUserRole.CITIZEN;
-      const permissions = await this.permissionService.getUserPermissions(highestRole);
+      const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
+        cityId: a.cityId,
+        role: a.role,
+        canManageAdmins: a.canManageAdmins,
+      }));
+
+      // Determine effective role for permissions
+      const roleHierarchy = [UserRole.SUPER_ADMIN, UserRole.CITY_ADMIN, UserRole.CITIZEN];
+      const userRoleIndex = roleHierarchy.indexOf(user.role as UserRole);
+      const assignmentRoles = dbAssignments.map((a) => a.role);
+      const highestAssignmentIndex =
+        assignmentRoles.length > 0
+          ? Math.min(...assignmentRoles.map((r) => roleHierarchy.indexOf(r)))
+          : roleHierarchy.length - 1;
+
+      const effectiveRole =
+        userRoleIndex >= 0 && userRoleIndex < highestAssignmentIndex
+          ? user.role
+          : assignmentRoles.length > 0
+            ? roleHierarchy[highestAssignmentIndex]
+            : UserRole.CITIZEN;
+
+      const permissions = await this.permissionService.getUserPermissions(
+        effectiveRole as UserRole,
+      );
 
       // Generate new tokens with city context and permissions
+      const selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
       const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role, {
-        cityId: cityIds.length > 0 ? cityIds[0] : undefined,
-        cityIds: cityIds.length > 0 ? cityIds : undefined,
+        selectedCityId,
+        cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
         permissions: permissions.length > 0 ? permissions : undefined,
       });
 
       // Update refresh token in Redis
-      await this.redis.set(
-        `refresh_token:${user.id}`,
-        tokens.refreshToken,
-        7 * 24 * 60 * 60, // 7 days
-      );
+      const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days
+      await this.redis.set(`refresh_token:${user.id}`, tokens.refreshToken, refreshTokenExpiry);
+
+      // Update session expiry
+      const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
+      await this.storeSession(user.id, TokenType.REFRESH, expiresAt, AuthProvider.LOCAL);
+
+      // Create audit log
+      await this.createAuditLog(user.id, AuthAction.TOKEN_REFRESH, true);
 
       this.logger.log(`Tokens refreshed for user: ${user.id}`);
 
@@ -280,26 +334,19 @@ export class AuthService {
   }
 
   /**
-   * Assign city admin (Super Admin only)
+   * Assign city admin (Super Admin or City Admin with canManageAdmins permission)
    */
   async assignCityAdmin(dto: AssignCityAdminDto, requesterId: string) {
     this.logger.log(`Assigning city admin: ${dto.userId} to city: ${dto.cityId}`);
 
-    // Verify requester is Super Admin by checking their city assignments
-    const requesterAssignments = await this.prismaPermissions.userCityAssignment.findMany({
-      where: { userId: requesterId },
-    });
-
-    const isSuperAdmin = requesterAssignments.some(
-      (assignment) => assignment.role === PermissionsUserRole.SUPER_ADMIN,
-    );
-
-    if (!isSuperAdmin) {
-      throw new ForbiddenException('Only Super Admins can assign city admins');
+    // Check if requester can manage city admins for this city
+    const canManage = await this.permissionService.canManageCityAdmins(requesterId, dto.cityId);
+    if (!canManage) {
+      throw new ForbiddenException('Insufficient permissions to assign city admins');
     }
 
-    // Verify user exists
-    const user = await this.prisma.user.findUnique({
+    // Verify user exists in users database
+    const user = await this.prismaUsers.user.findUnique({
       where: { id: dto.userId },
     });
 
@@ -307,8 +354,18 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
+    // Determine canManageAdmins based on requester's permissions and role being assigned
+    // Only CITY_ADMIN role can have canManageAdmins=true, and only if requester has that permission
+    const requesterAssignments = await this.permissionService.getUserCityAssignments(requesterId);
+    const requesterAssignment = requesterAssignments.find((a) => {
+      // Find assignment that covers this city (could be parent)
+      return a.cityId === dto.cityId || a.canManageAdmins;
+    });
+    const canGrantManageAdmins =
+      requesterAssignment?.canManageAdmins === true && dto.role === UserRole.CITY_ADMIN;
+
     // Create or update UserCityAssignment
-    const assignment = await this.prismaPermissions.userCityAssignment.upsert({
+    const assignment = await this.prismaCore.userCityAssignment.upsert({
       where: {
         userId_cityId: {
           userId: dto.userId,
@@ -317,11 +374,15 @@ export class AuthService {
       },
       update: {
         role: dto.role,
+        canManageAdmins: canGrantManageAdmins,
+        assignedBy: requesterId,
       },
       create: {
         userId: dto.userId,
         cityId: dto.cityId,
         role: dto.role,
+        canManageAdmins: canGrantManageAdmins,
+        assignedBy: requesterId,
       },
     });
 
@@ -336,15 +397,30 @@ export class AuthService {
   async getUserCities(userId: string) {
     this.logger.log(`Getting cities for user: ${userId}`);
 
-    const assignments = await this.prismaPermissions.userCityAssignment.findMany({
-      where: { userId },
+    const assignments = await this.prismaCore.userCityAssignment.findMany({
+      where: { userId, isActive: true },
       select: {
         cityId: true,
         role: true,
+        canManageAdmins: true,
         createdAt: true,
       },
     });
 
     return assignments;
+  }
+
+  /**
+   * Get user's managed cities (including child cities)
+   */
+  async getUserManagedCities(userId: string): Promise<string[]> {
+    const { UserContextService } = await import('@heidi/rbac');
+    // This would require injecting UserContextService, but for now return assignments
+    const assignments = await this.prismaCore.userCityAssignment.findMany({
+      where: { userId, isActive: true, role: UserRole.CITY_ADMIN },
+      select: { cityId: true },
+    });
+
+    return assignments.map((a) => a.cityId);
   }
 }

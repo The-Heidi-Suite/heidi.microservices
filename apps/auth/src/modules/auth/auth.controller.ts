@@ -1,6 +1,7 @@
-import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
+import { Request } from 'express';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, RefreshTokenDto, AssignCityAdminDto } from './dto';
+import { LoginDto, RefreshTokenDto, AssignCityAdminDto } from './dto';
 import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
 import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
 
@@ -9,24 +10,21 @@ import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('register')
-  @Public()
-  @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
-  }
-
   @Post('login')
   @Public()
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Body() dto: LoginDto, @Req() req: Request) {
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.login(dto, ipAddress as string, userAgent);
   }
 
   @Post('logout')
   @HttpCode(HttpStatus.OK)
-  async logout(@GetCurrentUser('userId') userId: string) {
-    return this.authService.logout(userId);
+  async logout(@GetCurrentUser('userId') userId: string, @Req() req: Request) {
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.logout(userId, ipAddress as string, userAgent);
   }
 
   @Post('refresh')
