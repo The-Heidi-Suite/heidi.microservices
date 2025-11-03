@@ -6,6 +6,7 @@ import { PrismaCityModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
 import { LoggingInterceptor } from '@heidi/interceptors';
+import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 import { CityModule } from './modules/city/city.module';
 import { HealthController } from './health.controller';
 
@@ -16,10 +17,12 @@ import { HealthController } from './health.controller';
     PrismaCityModule,
     LoggerModule,
     MetricsModule,
+    I18nModule,
     CityModule,
   ],
   controllers: [HealthController],
   providers: [
+    { provide: APP_INTERCEPTOR, useClass: LanguageInterceptor },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
     { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
   ],

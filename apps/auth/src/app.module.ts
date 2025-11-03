@@ -12,6 +12,7 @@ import { RedisModule } from '@heidi/redis';
 import { JwtModule } from '@heidi/jwt';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
 import { LoggingInterceptor, TimeoutInterceptor } from '@heidi/interceptors';
+import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 
 // Local modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -43,12 +44,17 @@ import { HealthController } from './health.controller';
     RedisModule,
     JwtModule.register(),
     MetricsModule,
+    I18nModule,
 
     // Feature modules
     AuthModule,
   ],
   controllers: [HealthController],
   providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LanguageInterceptor,
+    },
     {
       provide: APP_INTERCEPTOR,
       useClass: LoggingInterceptor,
