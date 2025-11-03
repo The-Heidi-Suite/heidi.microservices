@@ -1,7 +1,17 @@
-import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards, Req } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+  Req,
+  Param,
+} from '@nestjs/common';
 import { Request } from 'express';
 import { AuthService } from './auth.service';
-import { LoginDto, RefreshTokenDto, AssignCityAdminDto } from './dto';
+import { LoginDto, RefreshTokenDto, AssignCityAdminDto } from '@heidi/contracts';
 import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
 import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
 
@@ -57,5 +67,26 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async getUserCities(@GetCurrentUser('userId') userId: string) {
     return this.authService.getUserCities(userId);
+  }
+
+  @Get('sessions')
+  @HttpCode(HttpStatus.OK)
+  async getSessions(@GetCurrentUser('userId') userId: string) {
+    return this.authService.getSessions(userId);
+  }
+
+  @Post('sessions/:sessionId/revoke')
+  @HttpCode(HttpStatus.OK)
+  async revokeSession(
+    @GetCurrentUser('userId') userId: string,
+    @Param('sessionId') sessionId: string,
+  ) {
+    return this.authService.revokeSession(userId, sessionId);
+  }
+
+  @Post('sessions/revoke-all')
+  @HttpCode(HttpStatus.OK)
+  async revokeAllSessions(@GetCurrentUser('userId') userId: string) {
+    return this.authService.revokeAllSessions(userId);
   }
 }

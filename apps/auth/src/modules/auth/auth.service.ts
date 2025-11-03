@@ -1,13 +1,19 @@
-import { Injectable, UnauthorizedException, Logger, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  Logger,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaAuthService, PrismaUsersService, PrismaCoreService } from '@heidi/prisma';
 import { PermissionService } from '@heidi/rbac';
 import { JwtTokenService, CityAssignment } from '@heidi/jwt';
 import { RedisService } from '@heidi/redis';
-import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { RabbitMQService } from '@heidi/rabbitmq';
 import { UserRole } from '@prisma/client-core';
 import { AuthAction, AuthProvider, TokenType } from '@prisma/client-auth';
 import * as bcrypt from 'bcrypt';
-import { LoginDto, AssignCityAdminDto } from './dto';
+import { LoginDto, AssignCityAdminDto } from '@heidi/contracts';
 
 @Injectable()
 export class AuthService {
@@ -85,13 +91,11 @@ export class AuthService {
   async login(dto: LoginDto, ipAddress?: string, userAgent?: string) {
     this.logger.log(`Login attempt for: ${dto.email}`);
 
-    let user = null;
-    let loginSuccess = false;
     let failureReason: string | undefined;
 
     try {
       // Find user from users database
-      user = await this.prismaUsers.user.findUnique({
+      const user = await this.prismaUsers.user.findUnique({
         where: { email: dto.email },
       });
 
@@ -123,90 +127,83 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-      loginSuccess = true;
+      // Load user's city assignments with full details
+      const dbAssignments = await this.prismaCore.userCityAssignment.findMany({
+        where: { userId: user.id, isActive: true },
+        select: {
+          cityId: true,
+          role: true,
+          canManageAdmins: true,
+        },
+      });
+
+      const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
+        cityId: a.cityId,
+        role: a.role,
+        canManageAdmins: a.canManageAdmins,
+      }));
+
+      // Determine highest role for permissions (use auth role or highest assignment role)
+      const roleHierarchy = [UserRole.SUPER_ADMIN, UserRole.CITY_ADMIN, UserRole.CITIZEN];
+      const userRoleIndex = roleHierarchy.indexOf(user.role as UserRole);
+      const assignmentRoles = dbAssignments.map((a) => a.role);
+      const highestAssignmentIndex =
+        assignmentRoles.length > 0
+          ? Math.min(...assignmentRoles.map((r) => roleHierarchy.indexOf(r)))
+          : roleHierarchy.length - 1;
+
+      const effectiveRole =
+        userRoleIndex >= 0 && userRoleIndex < highestAssignmentIndex
+          ? user.role
+          : assignmentRoles.length > 0
+            ? roleHierarchy[highestAssignmentIndex]
+            : UserRole.CITIZEN;
+
+      const permissions = await this.permissionService.getUserPermissions(
+        effectiveRole as UserRole,
+      );
+
+      // Generate tokens with city context and permissions
+      const selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
+      const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role, {
+        selectedCityId,
+        cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
+        permissions: permissions.length > 0 ? permissions : undefined,
+      });
+
+      // Store refresh token in Redis
+      const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days
+      await this.redis.set(`refresh_token:${user.id}`, tokens.refreshToken, refreshTokenExpiry);
+
+      // Store session in auth database (for audit and future OAuth/BIND_ID)
+      const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
+      await this.storeSession(user.id, TokenType.JWT, expiresAt, AuthProvider.LOCAL);
+
+      // Create audit log for successful login
+      await this.createAuditLog(user.id, AuthAction.LOGIN, true, undefined, ipAddress, userAgent, {
+        tokenType: 'JWT',
+      });
+
+      this.logger.log(`User logged in successfully: ${user.id}`);
+
+      return {
+        user: {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        },
+        ...tokens,
+      };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
       failureReason = error instanceof Error ? error.message : 'Unknown error';
-      await this.createAuditLog(
-        user?.id || null,
-        AuthAction.LOGIN,
-        false,
-        failureReason,
-        ipAddress,
-        userAgent,
-      );
+      await this.createAuditLog(null, AuthAction.LOGIN, false, failureReason, ipAddress, userAgent);
       throw new UnauthorizedException('Invalid credentials');
     }
-
-    // Load user's city assignments with full details
-    const dbAssignments = await this.prismaCore.userCityAssignment.findMany({
-      where: { userId: user.id, isActive: true },
-      select: {
-        cityId: true,
-        role: true,
-        canManageAdmins: true,
-      },
-    });
-
-    const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
-      cityId: a.cityId,
-      role: a.role,
-      canManageAdmins: a.canManageAdmins,
-    }));
-
-    // Determine highest role for permissions (use auth role or highest assignment role)
-    const roleHierarchy = [UserRole.SUPER_ADMIN, UserRole.CITY_ADMIN, UserRole.CITIZEN];
-    const userRoleIndex = roleHierarchy.indexOf(user.role as UserRole);
-    const assignmentRoles = dbAssignments.map((a) => a.role);
-    const highestAssignmentIndex =
-      assignmentRoles.length > 0
-        ? Math.min(...assignmentRoles.map((r) => roleHierarchy.indexOf(r)))
-        : roleHierarchy.length - 1;
-
-    const effectiveRole =
-      userRoleIndex >= 0 && userRoleIndex < highestAssignmentIndex
-        ? user.role
-        : assignmentRoles.length > 0
-          ? roleHierarchy[highestAssignmentIndex]
-          : UserRole.CITIZEN;
-
-    const permissions = await this.permissionService.getUserPermissions(effectiveRole as UserRole);
-
-    // Generate tokens with city context and permissions
-    const selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
-    const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role, {
-      selectedCityId,
-      cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
-      permissions: permissions.length > 0 ? permissions : undefined,
-    });
-
-    // Store refresh token in Redis
-    const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days
-    await this.redis.set(`refresh_token:${user.id}`, tokens.refreshToken, refreshTokenExpiry);
-
-    // Store session in auth database (for audit and future OAuth/BIND_ID)
-    const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
-    await this.storeSession(user.id, TokenType.JWT, expiresAt, AuthProvider.LOCAL);
-
-    // Create audit log for successful login
-    await this.createAuditLog(user.id, AuthAction.LOGIN, true, undefined, ipAddress, userAgent, {
-      tokenType: 'JWT',
-    });
-
-    this.logger.log(`User logged in successfully: ${user.id}`);
-
-    return {
-      user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        firstName: user.firstName,
-        lastName: user.lastName,
-      },
-      ...tokens,
-    };
   }
 
   /**
@@ -414,7 +411,6 @@ export class AuthService {
    * Get user's managed cities (including child cities)
    */
   async getUserManagedCities(userId: string): Promise<string[]> {
-    const { UserContextService } = await import('@heidi/rbac');
     // This would require injecting UserContextService, but for now return assignments
     const assignments = await this.prismaCore.userCityAssignment.findMany({
       where: { userId, isActive: true, role: UserRole.CITY_ADMIN },
@@ -422,5 +418,107 @@ export class AuthService {
     });
 
     return assignments.map((a) => a.cityId);
+  }
+
+  /**
+   * Get user's active sessions
+   */
+  async getSessions(userId: string) {
+    this.logger.log(`Getting sessions for user: ${userId}`);
+
+    const sessions = await this.prismaAuth.session.findMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      select: {
+        id: true,
+        tokenType: true,
+        provider: true,
+        expiresAt: true,
+        createdAt: true,
+        metadata: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return sessions;
+  }
+
+  /**
+   * Revoke a specific session
+   */
+  async revokeSession(userId: string, sessionId: string) {
+    this.logger.log(`Revoking session ${sessionId} for user: ${userId}`);
+
+    // Verify session belongs to user
+    const session = await this.prismaAuth.session.findFirst({
+      where: {
+        id: sessionId,
+        userId,
+        revokedAt: null,
+      },
+    });
+
+    if (!session) {
+      throw new NotFoundException('Session not found or already revoked');
+    }
+
+    // Revoke session
+    await this.prismaAuth.session.update({
+      where: { id: sessionId },
+      data: { revokedAt: new Date() },
+    });
+
+    // If it's a refresh token session, remove from Redis
+    if (session.tokenType === TokenType.JWT || session.tokenType === TokenType.REFRESH) {
+      await this.redis.del(`refresh_token:${userId}`);
+    }
+
+    // Create audit log
+    await this.createAuditLog(userId, AuthAction.LOGOUT, true, undefined, undefined, undefined, {
+      sessionId,
+      action: 'session_revoked',
+    });
+
+    this.logger.log(`Session ${sessionId} revoked successfully`);
+
+    return { message: 'Session revoked successfully' };
+  }
+
+  /**
+   * Revoke all sessions for a user
+   */
+  async revokeAllSessions(userId: string) {
+    this.logger.log(`Revoking all sessions for user: ${userId}`);
+
+    // Revoke all active sessions
+    const result = await this.prismaAuth.session.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+      },
+      data: {
+        revokedAt: new Date(),
+      },
+    });
+
+    // Remove refresh token from Redis
+    await this.redis.del(`refresh_token:${userId}`);
+
+    // Create audit log
+    await this.createAuditLog(userId, AuthAction.LOGOUT, true, undefined, undefined, undefined, {
+      action: 'all_sessions_revoked',
+      sessionsRevoked: result.count,
+    });
+
+    this.logger.log(`Revoked ${result.count} sessions for user: ${userId}`);
+
+    return {
+      message: 'All sessions revoked successfully',
+      sessionsRevoked: result.count,
+    };
   }
 }
