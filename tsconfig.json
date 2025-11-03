@@ -60,6 +60,8 @@
       "@heidi/contracts/*": ["libs/contracts/src/*"],
       "@heidi/saga": ["libs/saga/src"],
       "@heidi/saga/*": ["libs/saga/src/*"],
+      "@heidi/i18n": ["libs/i18n/src"],
+      "@heidi/i18n/*": ["libs/i18n/src/*"],
       "@prisma/client-auth": ["./node_modules/.prisma/client-auth"],
       "@prisma/client-users": ["./node_modules/.prisma/client-users"],
       "@prisma/client-city": ["./node_modules/.prisma/client-city"],

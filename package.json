@@ -155,7 +155,8 @@
       "^@heidi/tenancy(|/.*)$": "<rootDir>/libs/tenancy/src/$1",
       "^@heidi/rbac(|/.*)$": "<rootDir>/libs/rbac/src/$1",
       "^@heidi/saga(|/.*)$": "<rootDir>/libs/saga/src/$1",
-      "^@heidi/contracts(|/.*)$": "<rootDir>/libs/contracts/src/$1"
+      "^@heidi/contracts(|/.*)$": "<rootDir>/libs/contracts/src/$1",
+      "^@heidi/i18n(|/.*)$": "<rootDir>/libs/i18n/src/$1"
     }
   },
   "engines": {
