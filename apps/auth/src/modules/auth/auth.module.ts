@@ -1,15 +1,15 @@
 import { Module } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { PrismaUsersModule, PrismaAuthModule, PrismaCoreModule } from '@heidi/prisma';
+import { PrismaAuthModule } from '@heidi/prisma';
 import { RBACModule } from '@heidi/rbac';
+import { SagaModule } from '@heidi/saga';
 
 @Module({
   imports: [
-    PrismaUsersModule, // For reading users from users database
-    PrismaCoreModule, // For UserCityAssignment and permissions
-    PrismaAuthModule, // For sessions and audit logs
+    PrismaAuthModule, // For sessions and audit logs (own database)
     RBACModule,
+    SagaModule, // Saga orchestrator for distributed transactions
   ],
   controllers: [AuthController],
   providers: [AuthService],

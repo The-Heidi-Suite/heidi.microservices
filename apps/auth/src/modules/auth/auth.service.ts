@@ -5,28 +5,28 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
-import { PrismaAuthService, PrismaUsersService, PrismaCoreService } from '@heidi/prisma';
+import { PrismaAuthService } from '@heidi/prisma';
 import { PermissionService } from '@heidi/rbac';
 import { JwtTokenService, CityAssignment } from '@heidi/jwt';
 import { RedisService } from '@heidi/redis';
-import { RabbitMQService } from '@heidi/rabbitmq';
+import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
 import { UserRole } from '@prisma/client-core';
 import { AuthAction, AuthProvider, TokenType } from '@prisma/client-auth';
 import * as bcrypt from 'bcrypt';
 import { LoginDto, AssignCityAdminDto } from '@heidi/contracts';
+import { SagaOrchestratorService } from '@heidi/saga';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly prismaUsers: PrismaUsersService, // For reading users
-    private readonly prismaAuth: PrismaAuthService, // For sessions and audit logs
-    private readonly prismaCore: PrismaCoreService, // For UserCityAssignment and permissions
+    private readonly prismaAuth: PrismaAuthService, // For sessions and audit logs (own database)
     private readonly permissionService: PermissionService,
     private readonly jwtService: JwtTokenService,
     private readonly redis: RedisService,
     private readonly rabbitmq: RabbitMQService,
+    private readonly sagaOrchestrator: SagaOrchestratorService,
   ) {}
 
   /**
@@ -86,7 +86,7 @@ export class AuthService {
   }
 
   /**
-   * Login user
+   * Login user - Using Saga pattern for distributed transaction
    */
   async login(dto: LoginDto, ipAddress?: string, userAgent?: string) {
     this.logger.log(`Login attempt for: ${dto.email}`);
@@ -94,10 +94,12 @@ export class AuthService {
     let failureReason: string | undefined;
 
     try {
-      // Find user from users database
-      const user = await this.prismaUsers.user.findUnique({
-        where: { email: dto.email },
-      });
+      // Step 1: Find user from users service via RabbitMQ
+      const user = await this.rabbitmq.send<any, { email: string }>(
+        RabbitMQPatterns.USER_FIND_BY_EMAIL,
+        { email: dto.email },
+        10000, // 10 second timeout
+      );
 
       if (!user || !user.isActive) {
         failureReason = 'User not found or inactive';
@@ -127,15 +129,11 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-      // Load user's city assignments with full details
-      const dbAssignments = await this.prismaCore.userCityAssignment.findMany({
-        where: { userId: user.id, isActive: true },
-        select: {
-          cityId: true,
-          role: true,
-          canManageAdmins: true,
-        },
-      });
+      // Step 2: Load user's city assignments from core service via RabbitMQ
+      const dbAssignments = await this.rabbitmq.send<
+        Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
+        { userId: string }
+      >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: user.id }, 10000);
 
       const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
         cityId: a.cityId,
@@ -251,10 +249,12 @@ export class AuthService {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      // Get user from users database
-      const user = await this.prismaUsers.user.findUnique({
-        where: { id: payload.sub },
-      });
+      // Get user from users service via RabbitMQ
+      const user = await this.rabbitmq.send<any, { id: string }>(
+        RabbitMQPatterns.USER_FIND_BY_ID,
+        { id: payload.sub },
+        10000,
+      );
 
       if (!user || !user.isActive) {
         await this.createAuditLog(
@@ -266,15 +266,11 @@ export class AuthService {
         throw new UnauthorizedException('User not found or inactive');
       }
 
-      // Load user's city assignments with full details
-      const dbAssignments = await this.prismaCore.userCityAssignment.findMany({
-        where: { userId: user.id, isActive: true },
-        select: {
-          cityId: true,
-          role: true,
-          canManageAdmins: true,
-        },
-      });
+      // Load user's city assignments from core service via RabbitMQ
+      const dbAssignments = await this.rabbitmq.send<
+        Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
+        { userId: string }
+      >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: user.id }, 10000);
 
       const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
         cityId: a.cityId,
@@ -342,46 +338,38 @@ export class AuthService {
       throw new ForbiddenException('Insufficient permissions to assign city admins');
     }
 
-    // Verify user exists in users database
-    const user = await this.prismaUsers.user.findUnique({
-      where: { id: dto.userId },
-    });
+    // Verify user exists via users service
+    const user = await this.rabbitmq.send<any, { id: string }>(
+      RabbitMQPatterns.USER_FIND_BY_ID,
+      { id: dto.userId },
+      10000,
+    );
 
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    // Determine canManageAdmins based on requester's permissions and role being assigned
-    // Only CITY_ADMIN role can have canManageAdmins=true, and only if requester has that permission
+    // Get requester's assignments for permission check
     const requesterAssignments = await this.permissionService.getUserCityAssignments(requesterId);
     const requesterAssignment = requesterAssignments.find((a) => {
-      // Find assignment that covers this city (could be parent)
       return a.cityId === dto.cityId || a.canManageAdmins;
     });
     const canGrantManageAdmins =
       requesterAssignment?.canManageAdmins === true && dto.role === UserRole.CITY_ADMIN;
 
-    // Create or update UserCityAssignment
-    const assignment = await this.prismaCore.userCityAssignment.upsert({
-      where: {
-        userId_cityId: {
-          userId: dto.userId,
-          cityId: dto.cityId,
-        },
-      },
-      update: {
-        role: dto.role,
-        canManageAdmins: canGrantManageAdmins,
+    // Assign city admin via core service
+    const assignment = await this.rabbitmq.send<
+      { id: string; userId: string; cityId: string; role: UserRole },
+      AssignCityAdminDto & { assignedBy: string; canGrantManageAdmins: boolean }
+    >(
+      RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN,
+      {
+        ...dto,
         assignedBy: requesterId,
+        canGrantManageAdmins,
       },
-      create: {
-        userId: dto.userId,
-        cityId: dto.cityId,
-        role: dto.role,
-        canManageAdmins: canGrantManageAdmins,
-        assignedBy: requesterId,
-      },
-    });
+      15000,
+    );
 
     this.logger.log(`City admin assigned successfully: ${assignment.id}`);
 
@@ -394,15 +382,11 @@ export class AuthService {
   async getUserCities(userId: string) {
     this.logger.log(`Getting cities for user: ${userId}`);
 
-    const assignments = await this.prismaCore.userCityAssignment.findMany({
-      where: { userId, isActive: true },
-      select: {
-        cityId: true,
-        role: true,
-        canManageAdmins: true,
-        createdAt: true,
-      },
-    });
+    // Get user cities from core service via RabbitMQ
+    const assignments = await this.rabbitmq.send<
+      Array<{ cityId: string; role: UserRole; canManageAdmins: boolean; createdAt: Date }>,
+      { userId: string }
+    >(RabbitMQPatterns.CORE_GET_USER_CITIES, { userId }, 10000);
 
     return assignments;
   }
@@ -411,11 +395,11 @@ export class AuthService {
    * Get user's managed cities (including child cities)
    */
   async getUserManagedCities(userId: string): Promise<string[]> {
-    // This would require injecting UserContextService, but for now return assignments
-    const assignments = await this.prismaCore.userCityAssignment.findMany({
-      where: { userId, isActive: true, role: UserRole.CITY_ADMIN },
-      select: { cityId: true },
-    });
+    // Get user cities from core service via RabbitMQ
+    const assignments = await this.rabbitmq.send<
+      Array<{ cityId: string }>,
+      { userId: string; role: UserRole }
+    >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId, role: UserRole.CITY_ADMIN }, 10000);
 
     return assignments.map((a) => a.cityId);
   }
