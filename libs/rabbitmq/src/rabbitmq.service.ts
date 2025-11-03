@@ -156,6 +156,7 @@ export const RabbitMQPatterns = {
   CORE_GET_USER_CITIES: 'core.getUserCities',
   CORE_GET_USER_ASSIGNMENTS: 'core.getUserAssignments',
   CORE_ASSIGN_CITY_ADMIN: 'core.assignCityAdmin',
+  CORE_CREATE_USER_CITY_ASSIGNMENT: 'core.createUserCityAssignment',
 
   // Notification events
   NOTIFICATION_SEND: 'notification.send',

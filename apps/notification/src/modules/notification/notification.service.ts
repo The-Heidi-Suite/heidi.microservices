@@ -1,16 +1,21 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaNotificationService } from '@heidi/prisma';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { LoggerService } from '@heidi/logger';
 import { SendNotificationDto } from './dto';
 
 @Injectable()
 export class NotificationService implements OnModuleInit {
-  private readonly logger = new Logger(NotificationService.name);
+  private readonly logger: LoggerService;
 
   constructor(
     private readonly prisma: PrismaNotificationService,
     private readonly rabbitmq: RabbitMQService,
-  ) {}
+    logger: LoggerService,
+  ) {
+    this.logger = logger;
+    this.logger.setContext(NotificationService.name);
+  }
 
   async onModuleInit() {
     // Listen to notification events

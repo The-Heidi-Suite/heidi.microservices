@@ -1,7 +1,6 @@
 import {
   Injectable,
   UnauthorizedException,
-  Logger,
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
@@ -10,6 +9,7 @@ import { PermissionService } from '@heidi/rbac';
 import { JwtTokenService, CityAssignment } from '@heidi/jwt';
 import { RedisService } from '@heidi/redis';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { LoggerService } from '@heidi/logger';
 import { UserRole } from '@prisma/client-core';
 import { AuthAction, AuthProvider, TokenType } from '@prisma/client-auth';
 import * as bcrypt from 'bcrypt';
@@ -18,7 +18,7 @@ import { SagaOrchestratorService } from '@heidi/saga';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
+  private readonly logger: LoggerService;
 
   constructor(
     private readonly prismaAuth: PrismaAuthService, // For sessions and audit logs (own database)
@@ -27,7 +27,11 @@ export class AuthService {
     private readonly redis: RedisService,
     private readonly rabbitmq: RabbitMQService,
     private readonly sagaOrchestrator: SagaOrchestratorService,
-  ) {}
+    logger: LoggerService,
+  ) {
+    this.logger = logger;
+    this.logger.setContext(AuthService.name);
+  }
 
   /**
    * Create audit log entry

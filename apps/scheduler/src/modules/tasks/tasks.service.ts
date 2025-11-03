@@ -1,19 +1,24 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaSchedulerService } from '@heidi/prisma';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
 import { RedisService } from '@heidi/redis';
+import { LoggerService } from '@heidi/logger';
 import { CreateTaskDto } from './dto';
 
 @Injectable()
 export class TasksService implements OnModuleInit {
-  private readonly logger = new Logger(TasksService.name);
+  private readonly logger: LoggerService;
 
   constructor(
     private readonly prisma: PrismaSchedulerService,
     private readonly rabbitmq: RabbitMQService,
     private readonly redis: RedisService,
-  ) {}
+    logger: LoggerService,
+  ) {
+    this.logger = logger;
+    this.logger.setContext(TasksService.name);
+  }
 
   async onModuleInit() {
     this.logger.log('Scheduler service initialized');

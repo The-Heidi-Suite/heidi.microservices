@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { PrismaCoreModule } from '@heidi/prisma';
 import { RBACModule } from '@heidi/rbac';
+import { SagaModule } from '@heidi/saga';
 
 @Module({
   imports: [
-    PrismaCoreModule, // For UserCityAssignment operations
     RBACModule, // For PermissionService
+    SagaModule, // Saga orchestrator for distributed transactions
   ],
   controllers: [UsersController],
   providers: [UsersService],

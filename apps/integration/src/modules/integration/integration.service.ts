@@ -1,18 +1,23 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { PrismaIntegrationService } from '@heidi/prisma';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { LoggerService } from '@heidi/logger';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class IntegrationService {
-  private readonly logger = new Logger(IntegrationService.name);
+  private readonly logger: LoggerService;
 
   constructor(
     private readonly prisma: PrismaIntegrationService,
     private readonly rabbitmq: RabbitMQService,
     private readonly http: HttpService,
-  ) {}
+    logger: LoggerService,
+  ) {
+    this.logger = logger;
+    this.logger.setContext(IntegrationService.name);
+  }
 
   async findAll() {
     return this.prisma.integration.findMany({

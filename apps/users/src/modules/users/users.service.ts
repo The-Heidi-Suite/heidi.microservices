@@ -1,13 +1,13 @@
 import {
   Injectable,
   NotFoundException,
-  Logger,
   ConflictException,
   UnauthorizedException,
 } from '@nestjs/common';
-import { PrismaUsersService, PrismaCoreService } from '@heidi/prisma';
+import { PrismaUsersService } from '@heidi/prisma';
 import { PermissionService } from '@heidi/rbac';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { LoggerService } from '@heidi/logger';
 import { UserRole } from '@prisma/client-core';
 import * as bcrypt from 'bcrypt';
 import {
@@ -17,20 +17,26 @@ import {
   UpdateProfileDto,
   ChangePasswordDto,
 } from '@heidi/contracts';
+import { SagaOrchestratorService } from '@heidi/saga';
 
 @Injectable()
 export class UsersService {
-  private readonly logger = new Logger(UsersService.name);
+  private readonly logger: LoggerService;
 
   constructor(
     private readonly prisma: PrismaUsersService,
-    private readonly prismaCore: PrismaCoreService, // For UserCityAssignment
     private readonly permissionService: PermissionService,
     private readonly rabbitmq: RabbitMQService,
-  ) {}
+    private readonly sagaOrchestrator: SagaOrchestratorService,
+    logger: LoggerService,
+  ) {
+    this.logger = logger;
+    this.logger.setContext(UsersService.name);
+  }
 
   /**
    * Register a new user (public endpoint)
+   * Uses Saga pattern if cityId is provided (multi-service transaction)
    */
   async register(dto: RegisterDto) {
     this.logger.log(`Registering user: ${dto.email}`);
@@ -47,7 +53,12 @@ export class UsersService {
     // Hash password
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // Create user with CITIZEN role by default
+    // If cityId is provided, use Saga pattern for distributed transaction
+    if (dto.cityId) {
+      return this.registerWithCity(dto, hashedPassword);
+    }
+
+    // Simple case: just create user (no city assignment)
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
@@ -66,17 +77,6 @@ export class UsersService {
       },
     });
 
-    // Create UserCityAssignment if cityId provided
-    if (dto.cityId) {
-      await this.prismaCore.userCityAssignment.create({
-        data: {
-          userId: user.id,
-          cityId: dto.cityId,
-          role: UserRole.CITIZEN,
-        },
-      });
-    }
-
     // Emit user created event
     await this.rabbitmq.emit(RabbitMQPatterns.USER_CREATED, {
       userId: user.id,
@@ -85,8 +85,132 @@ export class UsersService {
     });
 
     this.logger.log(`User registered successfully: ${user.id}`);
-
     return user;
+  }
+
+  /**
+   * Register user with city assignment using Saga pattern
+   */
+  private async registerWithCity(dto: RegisterDto, hashedPassword: string) {
+    const sagaId = await this.sagaOrchestrator.createSaga('USER_REGISTRATION', [
+      {
+        stepId: 'CREATE_USER',
+        service: 'users',
+        action: 'CREATE_LOCAL',
+        payload: {
+          email: dto.email,
+          password: hashedPassword,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          role: UserRole.CITIZEN,
+        },
+        compensation: {
+          action: 'DELETE_USER',
+          payload: { userId: '{{result.id}}' },
+        },
+      },
+      {
+        stepId: 'ASSIGN_CITY',
+        service: 'core',
+        action: 'CREATE_USER_CITY_ASSIGNMENT',
+        payload: {
+          userId: '{{steps.CREATE_USER.result.id}}',
+          cityId: dto.cityId,
+          role: UserRole.CITIZEN,
+        },
+        compensation: {
+          action: 'REMOVE_USER_CITY_ASSIGNMENT',
+          payload: {
+            userId: '{{steps.CREATE_USER.result.id}}',
+            cityId: dto.cityId,
+          },
+        },
+      },
+    ]);
+
+    try {
+      // Step 1: Create user (local operation)
+      const user = await this.prisma.user.create({
+        data: {
+          email: dto.email,
+          password: hashedPassword,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          role: UserRole.CITIZEN,
+        },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          firstName: true,
+          lastName: true,
+          createdAt: true,
+        },
+      });
+
+      const step1Result = await this.sagaOrchestrator.executeStep(sagaId, user);
+      if (step1Result.completed) {
+        throw new Error('Unexpected saga completion after step 1');
+      }
+
+      // Step 2: Assign city via core service
+      if (!dto.cityId) {
+        throw new Error('City ID is required for city assignment');
+      }
+
+      try {
+        await this.rabbitmq.send<
+          { id: string; userId: string; cityId: string },
+          { userId: string; cityId: string; role: UserRole }
+        >(
+          RabbitMQPatterns.CORE_CREATE_USER_CITY_ASSIGNMENT,
+          {
+            userId: user.id,
+            cityId: dto.cityId,
+            role: UserRole.CITIZEN,
+          },
+          10000,
+        );
+
+        await this.sagaOrchestrator.executeStep(sagaId, { success: true });
+      } catch (error) {
+        // Step 2 failed - compensate
+        this.logger.error(`City assignment failed for user ${user.id}, compensating...`, error);
+        await this.sagaOrchestrator.failStep(sagaId, error.message);
+
+        // Compensate: Delete user
+        const compensationSteps = await this.sagaOrchestrator.compensate(sagaId);
+        for (const compStep of compensationSteps) {
+          if (compStep.stepId === 'CREATE_USER') {
+            // Delete the created user
+            await this.prisma.user.delete({ where: { id: user.id } });
+          }
+        }
+
+        await this.sagaOrchestrator.markCompensated(sagaId);
+        throw new ConflictException('Failed to assign city. User registration rolled back.');
+      }
+
+      // Emit user created event
+      await this.rabbitmq.emit(RabbitMQPatterns.USER_CREATED, {
+        userId: user.id,
+        email: user.email,
+        timestamp: new Date().toISOString(),
+      });
+
+      this.logger.log(`User registered successfully with city assignment: ${user.id}`);
+      return user;
+    } catch (error) {
+      // If it's already been handled by compensation, rethrow
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+
+      // Unexpected error - try to compensate
+      this.logger.error(`User registration failed: ${error.message}`, error);
+      await this.sagaOrchestrator.failStep(sagaId, error.message);
+      throw error;
+    }
   }
 
   async findAll(page = 1, limit = 10) {
@@ -222,16 +346,11 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    // Get city assignments
-    const cityAssignments = await this.prismaCore.userCityAssignment.findMany({
-      where: { userId, isActive: true },
-      select: {
-        cityId: true,
-        role: true,
-        canManageAdmins: true,
-        createdAt: true,
-      },
-    });
+    // Get city assignments from core service via RabbitMQ
+    const cityAssignments = await this.rabbitmq.send<
+      Array<{ cityId: string; role: UserRole; canManageAdmins: boolean; createdAt: Date }>,
+      { userId: string }
+    >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId }, 10000);
 
     return {
       ...user,

@@ -1,15 +1,20 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit } from '@nestjs/common';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
 import { RedisService } from '@heidi/redis';
+import { LoggerService } from '@heidi/logger';
 
 @Injectable()
 export class CoreService implements OnModuleInit {
-  private readonly logger = new Logger(CoreService.name);
+  private readonly logger: LoggerService;
 
   constructor(
     private readonly rabbitmq: RabbitMQService,
     private readonly redis: RedisService,
-  ) {}
+    logger: LoggerService,
+  ) {
+    this.logger = logger;
+    this.logger.setContext(CoreService.name);
+  }
 
   async onModuleInit() {
     // Listen to events from other services
