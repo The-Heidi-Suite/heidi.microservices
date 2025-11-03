@@ -1,10 +1,11 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { Controller, Post, Get, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { LoginDto, RegisterDto, RefreshTokenDto } from './dto';
+import { LoginDto, RegisterDto, RefreshTokenDto, AssignCityAdminDto } from './dto';
 import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
+import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
 
 @Controller('auth')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, AdminOnlyGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
@@ -42,5 +43,21 @@ export class AuthController {
       valid: true,
       user,
     };
+  }
+
+  @Post('assign-city-admin')
+  @SuperAdminOnly()
+  @HttpCode(HttpStatus.CREATED)
+  async assignCityAdmin(
+    @Body() dto: AssignCityAdminDto,
+    @GetCurrentUser('userId') requesterId: string,
+  ) {
+    return this.authService.assignCityAdmin(dto, requesterId);
+  }
+
+  @Get('cities')
+  @HttpCode(HttpStatus.OK)
+  async getUserCities(@GetCurrentUser('userId') userId: string) {
+    return this.authService.getUserCities(userId);
   }
 }
