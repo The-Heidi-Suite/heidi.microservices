@@ -15,7 +15,9 @@ export * from './modules/prisma-integration.module';
 export * from './services/prisma-integration.service';
 export * from './modules/prisma-admin.module';
 export * from './services/prisma-admin.service';
-export * from './modules/prisma-terminal.module';
-export * from './services/prisma-terminal.service';
 export * from './modules/prisma-permissions.module';
 export * from './services/prisma-permissions.service';
+
+// FUTURE SERVICES - Uncomment to include when activating
+// export * from './modules/prisma-terminal.module';
+// export * from './services/prisma-terminal.service';
