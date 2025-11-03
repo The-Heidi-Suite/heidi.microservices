@@ -41,9 +41,10 @@ async function bootstrap() {
   // Swagger setup
   const configService = app.get(ConfigService);
   const swaggerConfig = configService.swaggerConfig;
+  const swaggerTitle = `Auth Service | ${swaggerConfig.title || 'HEIDI Microservices API'}`;
 
   const config = new DocumentBuilder()
-    .setTitle(swaggerConfig.title || 'HEIDI Auth Service API')
+    .setTitle(swaggerTitle)
     .setDescription(
       swaggerConfig.description || 'API documentation for HEIDI Authentication Service',
     )
