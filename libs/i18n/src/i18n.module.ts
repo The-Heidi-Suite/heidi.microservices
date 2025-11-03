@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule } from '@heidi/config';
 import { I18nService } from './i18n.service';
 import { LanguageDetectorService } from './language-detector.service';
 import { LanguageInterceptor } from './language.interceptor';

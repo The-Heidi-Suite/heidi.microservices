@@ -33,13 +33,13 @@ export class MetricsService {
   ) {
     this.logger = logger;
     this.logger.setContext(MetricsService.name);
-    this.serviceName = this.configService.get<string>('SERVICE_NAME', 'heidi-service');
+    this.serviceName = this.configService.get<string>('serviceName', 'heidi-service');
     this.register = new promClient.Registry();
 
     // Set default labels
     this.register.setDefaultLabels({
       service: this.serviceName,
-      environment: this.configService.get<string>('NODE_ENV', 'development'),
+      environment: this.configService.get<string>('nodeEnv', 'development'),
     });
 
     // Collect default metrics (CPU, memory, etc.)

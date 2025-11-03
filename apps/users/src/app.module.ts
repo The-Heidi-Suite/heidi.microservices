@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
-import { ConfigModule } from '@heidi/config';
+import { ConfigModule, ConfigService } from '@heidi/config';
 import { PrismaUsersModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { RabbitMQModule } from '@heidi/rabbitmq';
@@ -31,10 +31,11 @@ import { HealthController } from './health.controller';
     { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
     {
       provide: APP_INTERCEPTOR,
-      useFactory: () => {
-        const timeoutMs = parseInt(process.env.REQUEST_TIMEOUT_MS || '30000', 10);
+      useFactory: (configService: ConfigService) => {
+        const timeoutMs = configService.get<number>('requestTimeoutMs', 30000);
         return new TimeoutInterceptor(timeoutMs);
       },
+      inject: [ConfigService],
     },
   ],
 })

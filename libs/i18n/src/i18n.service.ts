@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@heidi/config';
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { i18nAsyncLocalStorage } from './i18n-async-storage';
@@ -12,10 +12,7 @@ export class I18nService implements OnModuleInit {
   private readonly translationsPath: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.defaultLanguage =
-      this.configService.get<string>('i18n.defaultLanguage') ||
-      process.env.I18N_DEFAULT_LANGUAGE ||
-      'en';
+    this.defaultLanguage = this.configService.get<string>('i18n.defaultLanguage', 'en');
     // Translations path relative to this service file
     this.translationsPath = join(__dirname, 'translations');
   }
@@ -162,9 +159,18 @@ export class I18nService implements OnModuleInit {
    */
   getSupportedLanguages(): string[] {
     return (
-      this.configService.get<string[]>('i18n.supportedLanguages') ||
-      process.env.I18N_SUPPORTED_LANGUAGES?.split(',') ||
-      ['de', 'en', 'dk', 'no', 'se', 'ar', 'fa', 'tr', 'ru', 'uk']
+      this.configService.get<string[]>('i18n.supportedLanguages') || [
+        'de',
+        'en',
+        'dk',
+        'no',
+        'se',
+        'ar',
+        'fa',
+        'tr',
+        'ru',
+        'uk',
+      ]
     );
   }
 }

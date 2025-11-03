@@ -18,8 +18,9 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+  const configService = app.get(ConfigService);
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: configService.get<string>('corsOrigin', '*'),
     credentials: true,
   });
 
@@ -39,7 +40,6 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   // Swagger setup
-  const configService = app.get(ConfigService);
   const swaggerConfig = configService.swaggerConfig;
   const swaggerTitle = `Auth Service | ${swaggerConfig.title || 'HEIDI Microservices API'}`;
 
@@ -70,7 +70,7 @@ async function bootstrap() {
     },
   });
 
-  const port = process.env.AUTH_SERVICE_PORT || 3001;
+  const port = configService.get<number>('auth.port', 3001);
   await app.listen(port);
 
   logger.log(`🚀 Auth service is running on: http://localhost:${port}`);

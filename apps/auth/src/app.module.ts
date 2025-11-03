@@ -4,7 +4,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule } from '@nestjs/throttler';
 
 // Shared libraries
-import { ConfigModule } from '@heidi/config';
+import { ConfigModule, ConfigService } from '@heidi/config';
 import { PrismaAuthModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { RabbitMQModule } from '@heidi/rabbitmq';
@@ -24,12 +24,15 @@ import { HealthController } from './health.controller';
     ConfigModule,
 
     // Rate limiting
-    ThrottlerModule.forRoot([
-      {
-        ttl: parseInt(process.env.THROTTLE_TTL || '60', 10) * 1000,
-        limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10),
-      },
-    ]),
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => [
+        {
+          ttl: configService.get<number>('throttle.ttl', 60) * 1000,
+          limit: configService.get<number>('throttle.limit', 100),
+        },
+      ],
+    }),
 
     // Health checks
     TerminusModule,
@@ -62,10 +65,11 @@ import { HealthController } from './health.controller';
     },
     {
       provide: APP_INTERCEPTOR,
-      useFactory: () => {
-        const timeoutMs = parseInt(process.env.REQUEST_TIMEOUT_MS || '30000', 10);
+      useFactory: (configService: ConfigService) => {
+        const timeoutMs = configService.get<number>('requestTimeoutMs', 30000);
         return new TimeoutInterceptor(timeoutMs);
       },
+      inject: [ConfigService],
     },
   ],
 })

@@ -8,18 +8,22 @@ import {
 } from '@prisma/client/runtime/library';
 import { LoggerService, ChildLogger } from '@heidi/logger';
 import { I18nService } from '@heidi/i18n';
+import { ConfigService } from '@heidi/config';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
   private readonly structuredLogger: ChildLogger;
+  private readonly isDevelopment: boolean;
 
   constructor(
     loggerService: LoggerService,
     private readonly i18nService: I18nService,
+    private readonly configService: ConfigService,
   ) {
     this.structuredLogger = loggerService.createChildLogger({
       operation: 'exception-filter',
     });
+    this.isDevelopment = this.configService.get<string>('nodeEnv', 'development') === 'development';
   }
 
   catch(exception: unknown, host: ArgumentsHost): void {
@@ -180,13 +184,12 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path,
       method,
       requestId,
-      details:
-        process.env.NODE_ENV === 'development'
-          ? {
-              error: (exception as Error).message,
-              stack: (exception as Error).stack,
-            }
-          : undefined,
+      details: this.isDevelopment
+        ? {
+            error: (exception as Error).message,
+            stack: (exception as Error).stack,
+          }
+        : undefined,
     };
   }
 

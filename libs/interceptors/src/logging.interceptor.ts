@@ -2,26 +2,31 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nes
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
 import { LoggerService, ChildLogger } from '@heidi/logger';
+import { ConfigService } from '@heidi/config';
 
 @Injectable()
 export class LoggingInterceptor implements NestInterceptor {
   private readonly structuredLogger: ChildLogger;
+  private readonly serviceName: string;
 
-  constructor(loggerService: LoggerService) {
+  constructor(
+    loggerService: LoggerService,
+    private readonly configService: ConfigService,
+  ) {
     this.structuredLogger = loggerService.createChildLogger({
       operation: 'http-request',
     });
+    this.serviceName = this.configService.get<string>('serviceName', 'heidi-service');
   }
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
     const request = context.switchToHttp().getRequest();
     const { method, url, body, headers } = request;
-    const serviceName = process.env.SERVICE_NAME || 'unknown-service';
     const startTime = Date.now();
 
     // Log incoming request
     this.structuredLogger.log('Incoming request', {
-      service: serviceName,
+      service: this.serviceName,
       method,
       url,
       body: this.sanitizeBody(body),
@@ -37,7 +42,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
           // Log successful response
           this.structuredLogger.log('Request completed', {
-            service: serviceName,
+            service: this.serviceName,
             method,
             url,
             statusCode: response.statusCode,
@@ -50,7 +55,7 @@ export class LoggingInterceptor implements NestInterceptor {
 
           // Log error response
           this.structuredLogger.error('Request failed', error, {
-            service: serviceName,
+            service: this.serviceName,
             method,
             url,
             duration,

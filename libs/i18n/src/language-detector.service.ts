@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@heidi/config';
 
 interface LanguagePreference {
   language: string;
@@ -12,14 +12,19 @@ export class LanguageDetectorService {
   private readonly supportedLanguages: string[];
 
   constructor(private readonly configService: ConfigService) {
-    this.defaultLanguage =
-      this.configService.get<string>('i18n.defaultLanguage') ||
-      process.env.I18N_DEFAULT_LANGUAGE ||
-      'en';
-    this.supportedLanguages =
-      this.configService.get<string[]>('i18n.supportedLanguages') ||
-      process.env.I18N_SUPPORTED_LANGUAGES?.split(',') ||
-      ['de', 'en', 'dk', 'no', 'se', 'ar', 'fa', 'tr', 'ru', 'uk'];
+    this.defaultLanguage = this.configService.get<string>('i18n.defaultLanguage', 'en');
+    this.supportedLanguages = this.configService.get<string[]>('i18n.supportedLanguages') || [
+      'de',
+      'en',
+      'dk',
+      'no',
+      'se',
+      'ar',
+      'fa',
+      'tr',
+      'ru',
+      'uk',
+    ];
   }
 
   /**

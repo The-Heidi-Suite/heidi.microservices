@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@heidi/config';
 import { BaseCustomException } from './custom-exceptions';
 import { ErrorCode } from './error-codes.enum';
 import { LoggerService, ChildLogger } from '@heidi/logger';
@@ -47,9 +47,9 @@ export class ErrorReportingService {
     private readonly configService: ConfigService,
     loggerService: LoggerService,
   ) {
-    this.serviceName = this.configService.get<string>('SERVICE_NAME', 'SchedulerService');
-    this.environment = this.configService.get<string>('NODE_ENV', 'development');
-    this.version = this.configService.get<string>('SERVICE_VERSION', '1.0.0');
+    this.serviceName = this.configService.get<string>('serviceName', 'ErrorReportingService');
+    this.environment = this.configService.get<string>('nodeEnv', 'development');
+    this.version = this.configService.get<string>('serviceVersion', '1.0.0');
     this.structuredLogger = loggerService.createChildLogger({
       operation: 'error-reporting',
     });

@@ -181,4 +181,43 @@ export class ConfigService {
   get clientURL(): string {
     return this.get<string>('clientURL');
   }
+
+  // Application configuration
+  get corsOrigin(): string {
+    return this.get<string>('corsOrigin', '*');
+  }
+
+  get enableFileLogging(): boolean {
+    return this.get<boolean>('enableFileLogging', false);
+  }
+
+  get requestTimeoutMs(): number {
+    return this.get<number>('requestTimeoutMs', 30000);
+  }
+
+  // Throttling configuration
+  get throttleConfig() {
+    return {
+      ttl: this.get<number>('throttle.ttl', 60),
+      limit: this.get<number>('throttle.limit', 100),
+    };
+  }
+
+  // RabbitMQ configuration helpers
+  get rabbitmqUrl(): string {
+    return this.get<string>('rabbitmq.url', 'amqp://localhost:5672');
+  }
+
+  get rabbitmqQueue(): string {
+    return this.get<string>('rabbitmq.queue', 'heidi_queue');
+  }
+
+  // Logging configuration
+  get logDir(): string {
+    return this.get<string>('logDir', './logs');
+  }
+
+  get logLevel(): string {
+    return this.get<string>('logLevel', 'info');
+  }
 }

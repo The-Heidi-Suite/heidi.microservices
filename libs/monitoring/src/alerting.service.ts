@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@heidi/config';
 import { LoggerService, ChildLogger } from '@heidi/logger';
 import { Alert, AlertChannel } from './interfaces';
 
@@ -127,8 +127,8 @@ export class AlertingService {
           message: alert.message,
           timestamp: alert.timestamp.toISOString(),
         },
-        service: this.configService.get<string>('SERVICE_NAME', 'MonitoringService'),
-        environment: this.configService.get<string>('NODE_ENV', 'development'),
+        service: this.configService.get<string>('serviceName', 'MonitoringService'),
+        environment: this.configService.get<string>('nodeEnv', 'development'),
       };
 
       const response = await fetch(config.url, {

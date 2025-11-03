@@ -4,17 +4,20 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { TokenPayload } from './jwt.service';
 import { PrismaCoreService } from '@heidi/prisma';
 import { PermissionService } from '@heidi/rbac';
+import { ConfigService } from '@heidi/config';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly prismaCore: PrismaCoreService,
     private readonly permissionService: PermissionService,
+    private readonly configService: ConfigService,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'default-secret-change-in-production',
+      secretOrKey:
+        configService.get<string>('jwt.secret') || 'default-secret-change-in-production',
     });
   }
 

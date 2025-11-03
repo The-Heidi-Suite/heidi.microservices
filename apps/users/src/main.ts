@@ -14,7 +14,8 @@ async function bootstrap() {
   app.useLogger(logger);
 
   app.use(helmet());
-  app.enableCors({ origin: process.env.CORS_ORIGIN || '*', credentials: true });
+  const configService = app.get(ConfigService);
+  app.enableCors({ origin: configService.get<string>('corsOrigin', '*'), credentials: true });
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -27,7 +28,6 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   // Swagger setup
-  const configService = app.get(ConfigService);
   const swaggerConfig = configService.swaggerConfig;
   const swaggerTitle = `Users Service | ${swaggerConfig.title || 'HEIDI Microservices API'}`;
 
@@ -56,7 +56,7 @@ async function bootstrap() {
     },
   });
 
-  const port = process.env.USERS_SERVICE_PORT || 3002;
+  const port = configService.get<number>('users.port', 3002);
   await app.listen(port);
 
   logger.log(`🚀 Users service is running on: http://localhost:${port}`);

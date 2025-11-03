@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
+import { ConfigService } from '@heidi/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -16,8 +17,9 @@ async function bootstrap() {
 
   // Security
   app.use(helmet());
+  const configService = app.get(ConfigService);
   app.enableCors({
-    origin: process.env.CORS_ORIGIN || '*',
+    origin: configService.get<string>('corsOrigin', '*'),
     credentials: true,
   });
 
@@ -36,7 +38,7 @@ async function bootstrap() {
   // Graceful shutdown
   app.enableShutdownHooks();
 
-  const port = process.env.ADMIN_SERVICE_PORT || 3008;
+  const port = configService.get<number>('admin.port', 3008);
   await app.listen(port);
 
   logger.log(`🚀 Admin service is running on: http://localhost:${port}`);

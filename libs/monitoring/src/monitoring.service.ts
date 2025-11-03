@@ -1,5 +1,5 @@
 import { Injectable, Optional } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@heidi/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { LoggerService, ChildLogger } from '@heidi/logger';
 import { ErrorReportingService } from '@heidi/errors';
@@ -161,8 +161,8 @@ export class MonitoringService {
       const metrics: SystemMetrics = {
         timestamp,
         uptime,
-        version: this.configService.get<string>('SERVICE_VERSION', '1.0.0'),
-        environment: this.configService.get<string>('NODE_ENV', 'development'),
+        version: this.configService.get<string>('serviceVersion', '1.0.0'),
+        environment: this.configService.get<string>('nodeEnv', 'development'),
         jobs: jobMetrics,
         queues: queueMetrics,
         system: systemMetrics,

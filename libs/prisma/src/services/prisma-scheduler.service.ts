@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@heidi/config';
 import { PrismaClient as PrismaSchedulerClient } from '@prisma/client-scheduler';
 import { LoggerService } from '@heidi/logger';
 
@@ -23,7 +23,7 @@ export class PrismaSchedulerService
     this.logger = logger;
     this.logger.setContext('PrismaSchedulerService');
     // Development query logging
-    const isDevelopment = configService.get<string>('NODE_ENV', 'development') === 'development';
+    const isDevelopment = configService.get<string>('nodeEnv', 'development') === 'development';
     if (isDevelopment) {
       this.$on('query' as never, (e: any) => {
         this.logger.debug(`Query: ${e.query} - Duration: ${e.duration}ms`);

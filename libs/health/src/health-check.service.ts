@@ -1,5 +1,5 @@
 import { Injectable, Inject, Optional } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@heidi/config';
 import { PrismaClient } from '@prisma/client';
 import { RedisService } from '@heidi/redis';
 import { LoggerService, ChildLogger } from '@heidi/logger';
@@ -82,8 +82,8 @@ export class HealthCheckService {
         status: overallStatus,
         timestamp,
         uptime,
-        version: this.configService.get<string>('SERVICE_VERSION', '1.0.0'),
-        environment: this.configService.get<string>('NODE_ENV', 'development'),
+        version: this.configService.get<string>('serviceVersion', '1.0.0'),
+        environment: this.configService.get<string>('nodeEnv', 'development'),
         checks,
         metrics: metricsResult,
       };
@@ -374,8 +374,8 @@ export class HealthCheckService {
       status: 'unhealthy',
       timestamp,
       uptime,
-      version: this.configService.get<string>('SERVICE_VERSION', '1.0.0'),
-      environment: this.configService.get<string>('NODE_ENV', 'development'),
+      version: this.configService.get<string>('serviceVersion', '1.0.0'),
+      environment: this.configService.get<string>('nodeEnv', 'development'),
       checks: {
         database: {
           status: 'unhealthy',

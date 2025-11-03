@@ -14,6 +14,8 @@ export interface RabbitMQModuleOptions {
 @Module({})
 export class RabbitMQModule {
   static register(options?: RabbitMQModuleOptions): DynamicModule {
+    // Note: ConfigService cannot be injected in static method, so we use options or env directly
+    // For dynamic configuration, prefer passing options explicitly
     const url = options?.url || process.env.RABBITMQ_URL || 'amqp://localhost:5672';
     const queue = options?.queue || process.env.RABBITMQ_QUEUE || 'heidi_queue';
     const name = options?.name || 'RABBITMQ_CLIENT';

@@ -1,5 +1,5 @@
 import { Injectable, LoggerService as NestLoggerService, Scope } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@heidi/config';
 import * as winston from 'winston';
 import { AsyncLocalStorage } from 'async_hooks';
 import { writeFile, mkdir } from 'fs/promises';
@@ -36,19 +36,11 @@ export class LoggerService implements NestLoggerService {
   private logDir: string;
 
   constructor(private readonly configService?: ConfigService) {
-    this.serviceName =
-      this.configService?.get<string>('SERVICE_NAME') ||
-      process.env.SERVICE_NAME ||
-      'heidi-service';
-    this.environment =
-      this.configService?.get<string>('NODE_ENV') || process.env.NODE_ENV || 'development';
-    this.version =
-      this.configService?.get<string>('SERVICE_VERSION') || process.env.SERVICE_VERSION || '1.0.0';
-    this.enableFileLogging =
-      this.configService?.get<boolean>('ENABLE_FILE_LOGGING') ||
-      process.env.ENABLE_FILE_LOGGING === 'true' ||
-      false;
-    this.logDir = this.configService?.get<string>('LOG_DIR') || process.env.LOG_DIR || './logs';
+    this.serviceName = this.configService?.get<string>('serviceName') || 'heidi-service';
+    this.environment = this.configService?.get<string>('nodeEnv') || 'development';
+    this.version = this.configService?.get<string>('serviceVersion') || '1.0.0';
+    this.enableFileLogging = this.configService?.get<boolean>('enableFileLogging', false) ?? false;
+    this.logDir = this.configService?.get<string>('logDir', './logs') ?? './logs';
 
     this.logger = this.createLogger();
 
@@ -68,8 +60,7 @@ export class LoggerService implements NestLoggerService {
    * Create Winston logger instance
    */
   private createLogger(): winston.Logger {
-    const logLevel =
-      this.configService?.get<string>('LOG_LEVEL') || process.env.LOG_LEVEL || 'info';
+    const logLevel = this.configService?.get<string>('logLevel', 'info');
     const isDevelopment = this.environment !== 'production';
 
     return winston.createLogger({

@@ -85,6 +85,34 @@ export default () => ({
     },
   },
 
+  // Admin microservice configuration
+  admin: {
+    port: parseInt(process.env.ADMIN_PORT || '3008', 10),
+  },
+
+  // Terminal microservice configuration
+  terminal: {
+    port: parseInt(process.env.TERMINAL_PORT || '3009', 10),
+  },
+
+  // Environment configuration
+  nodeEnv: process.env.NODE_ENV || 'development',
+  serviceName: process.env.SERVICE_NAME || 'heidi-service',
+  serviceVersion: process.env.SERVICE_VERSION || '1.0.0',
+
+  // Application configuration
+  corsOrigin: process.env.CORS_ORIGIN || '*',
+  enableFileLogging: process.env.ENABLE_FILE_LOGGING === 'true',
+  requestTimeoutMs: parseInt(process.env.REQUEST_TIMEOUT_MS || '30000', 10),
+  logDir: process.env.LOG_DIR || './logs',
+  logLevel: process.env.LOG_LEVEL || 'info',
+
+  // Throttling configuration
+  throttle: {
+    ttl: parseInt(process.env.THROTTLE_TTL || '60', 10),
+    limit: parseInt(process.env.THROTTLE_LIMIT || '100', 10),
+  },
+
   // API configuration
   apiPrefix: process.env.API_PREFIX || 'api',
 
@@ -127,6 +155,8 @@ export default () => ({
     user: process.env.RABBITMQ_USER || 'guest',
     password: process.env.RABBITMQ_PASSWORD || 'guest',
     vhost: process.env.RABBITMQ_VHOST || '/',
+    url: process.env.RABBITMQ_URL || 'amqp://localhost:5672',
+    queue: process.env.RABBITMQ_QUEUE || 'heidi_queue',
   },
 
   // Redis configuration

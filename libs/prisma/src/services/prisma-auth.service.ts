@@ -1,5 +1,5 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@heidi/config';
 import { PrismaClient as PrismaAuthClient } from '@prisma/client-auth';
 import { LoggerService } from '@heidi/logger';
 
@@ -20,7 +20,7 @@ export class PrismaAuthService extends PrismaAuthClient implements OnModuleInit,
     this.logger = logger;
     this.logger.setContext('PrismaAuthService');
     // Development query logging
-    const isDevelopment = configService.get<string>('NODE_ENV', 'development') === 'development';
+    const isDevelopment = configService.get<string>('nodeEnv', 'development') === 'development';
     if (isDevelopment) {
       this.$on('query' as never, (e: any) => {
         this.logger.debug(`Query: ${e.query} - Duration: ${e.duration}ms`);
