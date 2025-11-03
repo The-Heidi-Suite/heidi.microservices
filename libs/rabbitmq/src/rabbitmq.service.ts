@@ -53,10 +53,18 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
 
   async onModuleInit() {
     try {
+      // Log connection attempt (mask password)
+      const maskedUrl = this.config.url.replace(/:[^:@]+@/, ':****@');
+      this.logger.log(`Connecting to RabbitMQ: ${maskedUrl}`);
+      this.logger.log(`Queue: ${this.config.queue}`);
+
       await this.client.connect();
       this.logger.log('Successfully connected to RabbitMQ');
     } catch (error) {
-      this.logger.error('Failed to connect to RabbitMQ', error);
+      this.logger.error(
+        `Failed to connect to RabbitMQ. Please ensure RabbitMQ is running and accessible.`,
+        error,
+      );
       throw error;
     }
   }
@@ -92,12 +100,26 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
     timeoutMs: number = 5000,
   ): Promise<TResult> {
     try {
+      // Check if client is connected
+      if (!this.client) {
+        throw new Error('RabbitMQ client is not initialized');
+      }
+
       const response = await firstValueFrom(
         this.client.send<TResult>(pattern, data).pipe(timeout(timeoutMs)),
       );
       this.logger.debug(`Sent message: ${pattern}`);
       return response;
-    } catch (error) {
+    } catch (error: any) {
+      // Provide more meaningful error messages
+      if (error.name === 'TimeoutError' || error.message?.includes('timeout')) {
+        this.logger.error(
+          `Failed to send message: ${pattern} - Timeout after ${timeoutMs}ms. Is the message handler registered?`,
+        );
+        throw new Error(
+          `RabbitMQ timeout: No response for pattern '${pattern}' within ${timeoutMs}ms. Ensure the target service is running and has a message handler registered.`,
+        );
+      }
       this.logger.error(`Failed to send message: ${pattern}`, error);
       throw error;
     }

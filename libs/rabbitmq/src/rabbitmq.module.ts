@@ -20,22 +20,26 @@ export class RabbitMQModule {
     const queue = options?.queue || process.env.RABBITMQ_QUEUE || 'heidi_queue';
     const name = options?.name || 'RABBITMQ_CLIENT';
 
+    // Use registerAsync to avoid storing large config objects statically in module metadata
+    // This prevents slow serialization warnings
     return {
       module: RabbitMQModule,
       imports: [
         ConfigModule,
         LoggerModule,
-        ClientsModule.register([
+        ClientsModule.registerAsync([
           {
             name,
-            transport: Transport.RMQ,
-            options: {
-              urls: [url],
-              queue,
-              queueOptions: {
-                durable: true,
+            useFactory: () => ({
+              transport: Transport.RMQ,
+              options: {
+                urls: [url],
+                queue,
+                queueOptions: {
+                  durable: true,
+                },
               },
-            },
+            }),
           },
         ]),
       ],

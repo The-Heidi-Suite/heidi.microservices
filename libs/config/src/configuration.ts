@@ -88,11 +88,23 @@ export default () => ({
   // Admin microservice configuration
   admin: {
     port: parseInt(process.env.ADMIN_PORT || '3008', 10),
+    database: {
+      name: process.env.ADMIN_DB_NAME || 'heidi_admin',
+      url:
+        process.env.ADMIN_DATABASE_URL ||
+        `postgresql://${process.env.POSTGRES_USER || 'heidi'}:${process.env.POSTGRES_PASSWORD || 'heidi_password'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.ADMIN_DB_NAME || 'heidi_admin'}`,
+    },
   },
 
   // Terminal microservice configuration
   terminal: {
     port: parseInt(process.env.TERMINAL_PORT || '3009', 10),
+    database: {
+      name: process.env.TERMINAL_DB_NAME || 'heidi_terminal',
+      url:
+        process.env.TERMINAL_DATABASE_URL ||
+        `postgresql://${process.env.POSTGRES_USER || 'heidi'}:${process.env.POSTGRES_PASSWORD || 'heidi_password'}@${process.env.POSTGRES_HOST || 'localhost'}:${process.env.POSTGRES_PORT || '5432'}/${process.env.TERMINAL_DB_NAME || 'heidi_terminal'}`,
+    },
   },
 
   // Environment configuration
