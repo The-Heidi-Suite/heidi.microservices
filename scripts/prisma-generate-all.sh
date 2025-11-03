@@ -31,4 +31,13 @@ for service in "${SERVICES[@]}"; do
   echo ""
 done
 
+# Generate permissions schema (uses CORE_DATABASE_URL)
+echo "📦 Generating Prisma client for: permissions"
+SCHEMA_PATH="libs/prisma/src/schemas/permissions.prisma"
+if [ -f "$SCHEMA_PATH" ]; then
+  npx prisma generate --schema="$SCHEMA_PATH"
+  echo "✅ Prisma client for permissions generated successfully"
+  echo ""
+fi
+
 echo "🎉 All Prisma clients generated successfully!"
