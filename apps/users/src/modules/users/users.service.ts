@@ -256,6 +256,27 @@ export class UsersService {
     return user;
   }
 
+  /**
+   * Find user by email (for internal/RabbitMQ use)
+   * Returns user with password for authentication purposes
+   */
+  async findByEmail(email: string) {
+    return this.prisma.user.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
   async create(dto: CreateUserDto) {
     const user = await this.prisma.user.create({
       data: dto,
