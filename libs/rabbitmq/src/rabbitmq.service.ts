@@ -32,7 +32,7 @@ export class RabbitMQService implements OnModuleInit, OnModuleDestroy {
       queue: 'heidi_queue',
       queueOptions: {
         durable: true,
-        noAck: false,
+        noAck: false, // Manual acknowledgment - allows NACK for unmatched messages
         prefetchCount: 10,
       },
     };

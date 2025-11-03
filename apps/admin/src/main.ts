@@ -50,6 +50,8 @@ async function bootstrap() {
       queue: 'heidi_queue',
       queueOptions: {
         durable: true,
+        noAck: false, // Manual acknowledgment - allows NACK for unmatched messages
+        prefetchCount: 10,
       },
       socketOptions: {
         heartbeatIntervalInSeconds: 30,
