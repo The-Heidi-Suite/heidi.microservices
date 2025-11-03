@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.9.0](///compare/v1.8.0...v1.9.0) (2025-11-03)
+
+
+### 🐛 Bug Fixes
+
+* **errors:** improve error handling and messaging in GlobalExceptionFilter 34df8f7
+
+
+### ✨ Features
+
+* **config:** enhance service configuration with database settings and RabbitMQ improvements 6a87024
+* **core:** implement CoreMessageController for RabbitMQ message handling 7107478
+* **database:** implement database connection handling and logging for services d967f4a
+* **microservices:** integrate RabbitMQ microservice support across applications 021319e
+* **users:** add UsersMessageController for RabbitMQ message handling e9e2cee
+
+
+### 🔧 Chores
+
+* **dependencies:** update package.json and yarn.lock to include axios and @nestjs/axios 076c64e
+* **env:** update environment configuration and enhance security 982a133
+* **translations:** remove trailing whitespace in JSON translation files a90480d
+
 ## [1.8.0](///compare/v1.7.0...v1.8.0) (2025-11-03)
 
 
