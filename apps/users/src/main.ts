@@ -4,7 +4,7 @@ import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
-import { ConfigService } from '@nestjs/config';
+import { ConfigService } from '@heidi/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -28,18 +28,12 @@ async function bootstrap() {
 
   // Swagger setup
   const configService = app.get(ConfigService);
-  const swaggerConfig = {
-    title: configService.get<string>('SWAGGER_TITLE') || 'HEIDI Users Service API',
-    description:
-      configService.get<string>('SWAGGER_DESCRIPTION') ||
-      'API documentation for HEIDI Users Service',
-    version: configService.get<string>('SWAGGER_VERSION') || '1.0',
-  };
+  const swaggerConfig = configService.swaggerConfig;
 
   const config = new DocumentBuilder()
-    .setTitle(swaggerConfig.title)
-    .setDescription(swaggerConfig.description)
-    .setVersion(swaggerConfig.version)
+    .setTitle(swaggerConfig.title || 'HEIDI Users Service API')
+    .setDescription(swaggerConfig.description || 'API documentation for HEIDI Users Service')
+    .setVersion(swaggerConfig.version || '1.0')
     .addBearerAuth(
       {
         type: 'http',

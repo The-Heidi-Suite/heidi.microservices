@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
+import { ConfigModule } from '@heidi/config';
 import { PrismaNotificationModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { RabbitMQModule } from '@heidi/rabbitmq';
@@ -13,7 +13,7 @@ import { HealthController } from './health.controller';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule,
     TerminusModule,
     PrismaNotificationModule,
     LoggerModule,
