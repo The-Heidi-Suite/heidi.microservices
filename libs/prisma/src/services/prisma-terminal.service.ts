@@ -11,7 +11,19 @@ export class PrismaTerminalService
   private readonly logger: LoggerService;
 
   constructor(logger: LoggerService, configService: ConfigService) {
+    // Explicitly pass datasourceUrl to ensure we use the correct database connection
+    const databaseUrl = configService.get<string>('terminal.database.url');
+    if (!databaseUrl) {
+      throw new Error('TERMINAL_DATABASE_URL is not configured');
+    }
+
+    // Extract database name from URL for logging (mask password)
+    const urlWithoutPassword = databaseUrl.replace(/:[^:@]+@/, ':****@');
+    logger.setContext('PrismaTerminalService');
+    logger.log(`Connecting to database: ${urlWithoutPassword}`);
+
     super({
+      datasourceUrl: databaseUrl,
       log: [
         { emit: 'event', level: 'query' },
         { emit: 'event', level: 'error' },
@@ -29,16 +41,24 @@ export class PrismaTerminalService
         this.logger.debug(`Query: ${e.query} - Duration: ${e.duration}ms`);
       });
     }
-    // Log errors
+    // Log errors (only message, not full stack for known errors)
     this.$on('error' as never, (e: any) => {
-      this.logger.error(`Prisma Error: ${e.message}`);
+      this.logger.error(`Prisma Error: ${e.message}`, undefined, {
+        operation: 'database_error',
+        service: 'Terminal-Service',
+      });
     });
   }
 
   async onModuleInit() {
     try {
       await this.$connect();
-      this.logger.log('PrismaTerminalService: Connected to database');
+      // Verify which database we're connected to
+      const result = await this.$queryRaw<Array<{ current_database: string }>>`
+        SELECT current_database();
+      `;
+      const dbName = result[0]?.current_database;
+      this.logger.log(`PrismaTerminalService: Connected to database '${dbName}'`);
     } catch (error) {
       this.logger.error('PrismaTerminalService: Failed to connect to database', error);
       throw error;

@@ -8,7 +8,19 @@ export class PrismaCityService extends PrismaCityClient implements OnModuleInit,
   private readonly logger: LoggerService;
 
   constructor(logger: LoggerService, configService: ConfigService) {
+    // Explicitly pass datasourceUrl to ensure we use the correct database connection
+    const databaseUrl = configService.get<string>('city.database.url');
+    if (!databaseUrl) {
+      throw new Error('CITY_DATABASE_URL is not configured');
+    }
+
+    // Extract database name from URL for logging (mask password)
+    const urlWithoutPassword = databaseUrl.replace(/:[^:@]+@/, ':****@');
+    logger.setContext('PrismaCityService');
+    logger.log(`Connecting to database: ${urlWithoutPassword}`);
+
     super({
+      datasourceUrl: databaseUrl,
       log: [
         { emit: 'event', level: 'query' },
         { emit: 'event', level: 'error' },
@@ -26,16 +38,24 @@ export class PrismaCityService extends PrismaCityClient implements OnModuleInit,
         this.logger.debug(`Query: ${e.query} - Duration: ${e.duration}ms`);
       });
     }
-    // Log errors
+    // Log errors (only message, not full stack for known errors)
     this.$on('error' as never, (e: any) => {
-      this.logger.error(`Prisma Error: ${e.message}`);
+      this.logger.error(`Prisma Error: ${e.message}`, undefined, {
+        operation: 'database_error',
+        service: 'City-Service',
+      });
     });
   }
 
   async onModuleInit() {
     try {
       await this.$connect();
-      this.logger.log('PrismaCityService: Connected to database');
+      // Verify which database we're connected to
+      const result = await this.$queryRaw<Array<{ current_database: string }>>`
+        SELECT current_database();
+      `;
+      const dbName = result[0]?.current_database;
+      this.logger.log(`PrismaCityService: Connected to database '${dbName}'`);
     } catch (error) {
       this.logger.error('PrismaCityService: Failed to connect to database', error);
       throw error;

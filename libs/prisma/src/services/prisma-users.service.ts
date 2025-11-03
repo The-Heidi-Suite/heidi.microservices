@@ -8,7 +8,20 @@ export class PrismaUsersService extends PrismaUsersClient implements OnModuleIni
   private readonly logger: LoggerService;
 
   constructor(logger: LoggerService, configService: ConfigService) {
+    // Explicitly pass datasourceUrl to ensure we use the correct database connection
+    // This prevents Prisma from reading a wrong DATABASE_URL at runtime
+    const databaseUrl = configService.get<string>('users.database.url');
+    if (!databaseUrl) {
+      throw new Error('USERS_DATABASE_URL is not configured');
+    }
+
+    // Extract database name from URL for logging (mask password)
+    const urlWithoutPassword = databaseUrl.replace(/:[^:@]+@/, ':****@');
+    logger.setContext('PrismaUsersService');
+    logger.log(`Connecting to database: ${urlWithoutPassword}`);
+
     super({
+      datasourceUrl: databaseUrl,
       log: [
         { emit: 'event', level: 'query' },
         { emit: 'event', level: 'error' },
@@ -26,16 +39,25 @@ export class PrismaUsersService extends PrismaUsersClient implements OnModuleIni
         this.logger.debug(`Query: ${e.query} - Duration: ${e.duration}ms`);
       });
     }
-    // Log errors
+    // Log errors (only message, not full stack for known errors)
     this.$on('error' as never, (e: any) => {
-      this.logger.error(`Prisma Error: ${e.message}`);
+      // Prisma errors are usually known errors (constraints, etc.) - log message only
+      this.logger.error(`Prisma Error: ${e.message}`, undefined, {
+        operation: 'database_error',
+        service: 'Users-Service',
+      });
     });
   }
 
   async onModuleInit() {
     try {
       await this.$connect();
-      this.logger.log('PrismaUsersService: Connected to database');
+      // Verify which database we're connected to
+      const result = await this.$queryRaw<Array<{ current_database: string }>>`
+        SELECT current_database();
+      `;
+      const dbName = result[0]?.current_database;
+      this.logger.log(`PrismaUsersService: Connected to database '${dbName}'`);
     } catch (error) {
       this.logger.error('PrismaUsersService: Failed to connect to database', error);
       throw error;
