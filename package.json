@@ -142,6 +142,7 @@
       "^@heidi/prisma-integration$": "<rootDir>/libs/prisma/src/aliases/prisma-integration.ts",
       "^@heidi/prisma-admin$": "<rootDir>/libs/prisma/src/aliases/prisma-admin.ts",
       "^@heidi/prisma-terminal$": "<rootDir>/libs/prisma/src/aliases/prisma-terminal.ts",
+      "^@heidi/prisma-permissions$": "<rootDir>/libs/prisma/src/aliases/prisma-permissions.ts",
       "^@heidi/logger(|/.*)$": "<rootDir>/libs/logger/src/$1",
       "^@heidi/rabbitmq(|/.*)$": "<rootDir>/libs/rabbitmq/src/$1",
       "^@heidi/redis(|/.*)$": "<rootDir>/libs/redis/src/$1",
@@ -150,7 +151,9 @@
       "^@heidi/metrics(|/.*)$": "<rootDir>/libs/metrics/src/$1",
       "^@heidi/monitoring(|/.*)$": "<rootDir>/libs/monitoring/src/$1",
       "^@heidi/health(|/.*)$": "<rootDir>/libs/health/src/$1",
-      "^@heidi/errors(|/.*)$": "<rootDir>/libs/errors/src/$1"
+      "^@heidi/errors(|/.*)$": "<rootDir>/libs/errors/src/$1",
+      "^@heidi/tenancy(|/.*)$": "<rootDir>/libs/tenancy/src/$1",
+      "^@heidi/rbac(|/.*)$": "<rootDir>/libs/rbac/src/$1"
     }
   },
   "engines": {
