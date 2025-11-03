@@ -1,7 +1,10 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
-import { PrismaUsersService } from '@heidi/prisma';
+import { Injectable, NotFoundException, Logger, ConflictException } from '@nestjs/common';
+import { PrismaUsersService, PrismaCoreService } from '@heidi/prisma';
+import { PermissionService } from '@heidi/rbac';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
-import { CreateUserDto, UpdateUserDto } from './dto';
+import { UserRole } from '@prisma/client-core';
+import * as bcrypt from 'bcrypt';
+import { CreateUserDto, UpdateUserDto, RegisterDto } from './dto';
 
 @Injectable()
 export class UsersService {
@@ -9,8 +12,70 @@ export class UsersService {
 
   constructor(
     private readonly prisma: PrismaUsersService,
+    private readonly prismaCore: PrismaCoreService, // For UserCityAssignment
+    private readonly permissionService: PermissionService,
     private readonly rabbitmq: RabbitMQService,
   ) {}
+
+  /**
+   * Register a new user (public endpoint)
+   */
+  async register(dto: RegisterDto) {
+    this.logger.log(`Registering user: ${dto.email}`);
+
+    // Check if user already exists
+    const existingUser = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUser) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    // Create user with CITIZEN role by default
+    const user = await this.prisma.user.create({
+      data: {
+        email: dto.email,
+        password: hashedPassword,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        role: UserRole.CITIZEN,
+      },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        createdAt: true,
+      },
+    });
+
+    // Create UserCityAssignment if cityId provided
+    if (dto.cityId) {
+      await this.prismaCore.userCityAssignment.create({
+        data: {
+          userId: user.id,
+          cityId: dto.cityId,
+          role: UserRole.CITIZEN,
+        },
+      });
+    }
+
+    // Emit user created event
+    await this.rabbitmq.emit(RabbitMQPatterns.USER_CREATED, {
+      userId: user.id,
+      email: user.email,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`User registered successfully: ${user.id}`);
+
+    return user;
+  }
 
   async findAll(page = 1, limit = 10) {
     const skip = (page - 1) * limit;
