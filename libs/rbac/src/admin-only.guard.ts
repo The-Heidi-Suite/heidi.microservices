@@ -2,7 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { SUPER_ADMIN_ONLY_KEY } from './decorators/super-admin-only.decorator';
 import { CITY_ADMIN_ONLY_KEY } from './decorators/city-admin-only.decorator';
-import { UserRole } from '@prisma/client-permissions';
+import { UserRole } from '@prisma/client-core';
 
 @Injectable()
 export class AdminOnlyGuard implements CanActivate {

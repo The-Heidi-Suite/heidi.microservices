@@ -2,7 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from './decorators/permissions.decorator';
 import { PermissionService } from './permission.service';
-import { UserRole } from '@prisma/client-permissions';
+import { UserRole } from '@prisma/client-core';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -15,6 +15,7 @@ export class PermissionsGuard implements CanActivate {
     const permissionMetadata = this.reflector.getAllAndOverride<{
       resource: string;
       action: string;
+      cityId?: string;
     }>(PERMISSIONS_KEY, [context.getHandler(), context.getClass()]);
 
     if (!permissionMetadata) {
@@ -35,16 +36,25 @@ export class PermissionsGuard implements CanActivate {
       return true;
     }
 
-    // Check if user has the required permission
+    // Get cityId from metadata, request params, query, or body
+    const cityId =
+      permissionMetadata.cityId ||
+      request.params?.cityId ||
+      request.query?.cityId ||
+      request.body?.cityId;
+
+    // Check if user has the required permission (with optional city scope)
     const hasPermission = await this.permissionService.hasPermission(
       user.sub || user.userId,
       permissionMetadata.resource,
       permissionMetadata.action,
+      cityId,
     );
 
     if (!hasPermission) {
+      const scopeMsg = cityId ? ` for city ${cityId}` : '';
       throw new ForbiddenException(
-        `This route requires permission: ${permissionMetadata.resource}:${permissionMetadata.action}`,
+        `This route requires permission: ${permissionMetadata.resource}:${permissionMetadata.action}${scopeMsg}`,
       );
     }
 
