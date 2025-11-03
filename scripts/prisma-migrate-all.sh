@@ -59,24 +59,8 @@ for service in "${SERVICES[@]}"; do
   fi
 done
 
-# Run migration for permissions schema (uses CORE_DATABASE_URL)
-echo ""
-echo "📦 Running migration for: permissions"
-echo "Database: heidi_core (shared with core service)"
-
-if [ -z "$CORE_DATABASE_URL" ]; then
-  echo "⚠️  Warning: CORE_DATABASE_URL not set in environment"
-else
-  SCHEMA_PATH="libs/prisma/src/schemas/permissions.prisma"
-  if [ -f "$SCHEMA_PATH" ]; then
-    if npx prisma migrate dev --schema="$SCHEMA_PATH" --name init; then
-      echo "✅ Migration for permissions completed successfully"
-    else
-      echo "❌ Migration for permissions failed"
-      exit 1
-    fi
-  fi
-fi
+# Note: Permissions, Listings, and SystemConfig are now all in core.prisma
+# They will be migrated when the core service migration runs above
 
 echo ""
 echo "🎉 All migrations completed successfully!"
