@@ -2,6 +2,45 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0](///compare/v1.7.0...v1.8.0) (2025-11-03)
+
+
+### 🐛 Bug Fixes
+
+* improve context logging in LoggerService f9854a3
+
+
+### ♻️ Code Refactoring
+
+* enhance authentication flow with IP and user agent logging 95033aa
+* integrate Saga pattern into AuthService for distributed transactions a3e9ff2
+* replace Logger with LoggerService in multiple services for improved logging 80833f0
+* update ConfigModule imports across applications 42b25cc
+
+
+### ✨ Features
+
+* add contracts library configuration and path mappings 4b9f7a4
+* add DTOs for user and authentication management 8a4cd28
+* add internationalization support with language decorators and translation files d6b55d4
+* add JWT authentication and user profile management endpoints 36230c6
+* add saga DTOs for managing saga workflows 088954c
+* add saga library configuration and path mappings ea29786
+* add Swagger documentation to authentication DTOs c046e54
+* **config:** enhance configuration management and service ports 0cb937f
+* enhance session management with new endpoints and service methods d034e3d
+* enhance Swagger documentation for user management endpoints 2bc6e05
+* enhance user DTOs with Swagger documentation af8e848
+* **errors:** integrate I18nService into GlobalExceptionFilter for enhanced error messaging ab4e896
+* **i18n:** add i18n library configuration and update TypeScript paths babf1f1
+* **i18n:** add internationalization configuration and update documentation e780924
+* **i18n:** integrate I18nModule and LanguageInterceptor across multiple applications 1ecbd47
+* implement i18n module for internationalization support 23a88f9
+* integrate Swagger documentation for authentication endpoints d75aea1
+* introduce Saga Orchestrator library for managing distributed transactions 42d4524
+* **swagger:** update Swagger titles for Auth and Users services bda2ca6
+* **validation:** enhance ValidationInterceptor with I18nService for localized error messages b7838f1
+
 ## [1.7.0](///compare/v1.6.0...v1.7.0) (2025-11-03)
 
 
