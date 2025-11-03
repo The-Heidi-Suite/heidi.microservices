@@ -1,11 +1,18 @@
-import { Injectable, UnauthorizedException, ConflictException, Logger, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  Logger,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaAuthService } from '@heidi/prisma';
 import { PrismaPermissionsService } from '@heidi/prisma-permissions';
 import { PermissionService } from '@heidi/rbac';
 import { JwtTokenService } from '@heidi/jwt';
 import { RedisService } from '@heidi/redis';
 import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
-import { UserRole } from '@prisma/client-permissions';
+import { UserRole as PermissionsUserRole } from '@prisma/client-permissions';
+import { UserRole as AuthUserRole } from '@prisma/client-auth';
 import * as bcrypt from 'bcrypt';
 import { LoginDto, RegisterDto, AssignCityAdminDto } from './dto';
 
@@ -47,8 +54,7 @@ export class AuthService {
         password: hashedPassword,
         firstName: dto.firstName,
         lastName: dto.lastName,
-        role: 'CITIZEN',
-        cityId: dto.cityId || null,
+        role: AuthUserRole.USER,
       },
       select: {
         id: true,
@@ -56,7 +62,6 @@ export class AuthService {
         role: true,
         firstName: true,
         lastName: true,
-        cityId: true,
         createdAt: true,
       },
     });
@@ -68,15 +73,15 @@ export class AuthService {
         data: {
           userId: user.id,
           cityId: dto.cityId,
-          role: UserRole.CITIZEN,
+          role: PermissionsUserRole.CITIZEN,
         },
       });
       cityIds = [dto.cityId];
     }
 
-    // Load user permissions
+    // Load user permissions - default to CITIZEN for new users
     const permissions = await this.permissionService.getUserPermissions(
-      user.role as UserRole,
+      PermissionsUserRole.CITIZEN,
     );
 
     // Emit user created event
@@ -136,14 +141,29 @@ export class AuthService {
     });
     const cityIds = cityAssignments.map((a) => a.cityId);
 
-    // Load user permissions
-    const permissions = await this.permissionService.getUserPermissions(
-      user.role as UserRole,
-    );
+    // Load user permissions based on city assignments (use highest role from assignments, default to CITIZEN)
+    const assignments = await this.prismaPermissions.userCityAssignment.findMany({
+      where: { userId: user.id },
+      select: { role: true },
+    });
+    const highestRole =
+      assignments.length > 0
+        ? assignments.reduce((highest, assignment) => {
+            const roles = [
+              PermissionsUserRole.SUPER_ADMIN,
+              PermissionsUserRole.CITY_ADMIN,
+              PermissionsUserRole.CITIZEN,
+            ];
+            const currentIndex = roles.indexOf(assignment.role);
+            const highestIndex = roles.indexOf(highest);
+            return currentIndex < highestIndex ? assignment.role : highest;
+          }, assignments[0].role)
+        : PermissionsUserRole.CITIZEN;
+    const permissions = await this.permissionService.getUserPermissions(highestRole);
 
     // Generate tokens with city context and permissions
     const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role, {
-      cityId: user.cityId || (cityIds.length > 0 ? cityIds[0] : undefined),
+      cityId: cityIds.length > 0 ? cityIds[0] : undefined,
       cityIds: cityIds.length > 0 ? cityIds : undefined,
       permissions: permissions.length > 0 ? permissions : undefined,
     });
@@ -216,14 +236,29 @@ export class AuthService {
       });
       const cityIds = cityAssignments.map((a) => a.cityId);
 
-      // Load user permissions
-      const permissions = await this.permissionService.getUserPermissions(
-        user.role as UserRole,
-      );
+      // Load user permissions based on city assignments (use highest role from assignments, default to CITIZEN)
+      const assignments = await this.prismaPermissions.userCityAssignment.findMany({
+        where: { userId: user.id },
+        select: { role: true },
+      });
+      const highestRole =
+        assignments.length > 0
+          ? assignments.reduce((highest, assignment) => {
+              const roles = [
+                PermissionsUserRole.SUPER_ADMIN,
+                PermissionsUserRole.CITY_ADMIN,
+                PermissionsUserRole.CITIZEN,
+              ];
+              const currentIndex = roles.indexOf(assignment.role);
+              const highestIndex = roles.indexOf(highest);
+              return currentIndex < highestIndex ? assignment.role : highest;
+            }, assignments[0].role)
+          : PermissionsUserRole.CITIZEN;
+      const permissions = await this.permissionService.getUserPermissions(highestRole);
 
       // Generate new tokens with city context and permissions
       const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role, {
-        cityId: user.cityId || (cityIds.length > 0 ? cityIds[0] : undefined),
+        cityId: cityIds.length > 0 ? cityIds[0] : undefined,
         cityIds: cityIds.length > 0 ? cityIds : undefined,
         permissions: permissions.length > 0 ? permissions : undefined,
       });
@@ -250,12 +285,16 @@ export class AuthService {
   async assignCityAdmin(dto: AssignCityAdminDto, requesterId: string) {
     this.logger.log(`Assigning city admin: ${dto.userId} to city: ${dto.cityId}`);
 
-    // Verify requester is Super Admin
-    const requester = await this.prisma.user.findUnique({
-      where: { id: requesterId },
+    // Verify requester is Super Admin by checking their city assignments
+    const requesterAssignments = await this.prismaPermissions.userCityAssignment.findMany({
+      where: { userId: requesterId },
     });
 
-    if (!requester || requester.role !== 'SUPER_ADMIN') {
+    const isSuperAdmin = requesterAssignments.some(
+      (assignment) => assignment.role === PermissionsUserRole.SUPER_ADMIN,
+    );
+
+    if (!isSuperAdmin) {
       throw new ForbiddenException('Only Super Admins can assign city admins');
     }
 
