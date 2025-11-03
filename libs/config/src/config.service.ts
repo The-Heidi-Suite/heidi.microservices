@@ -6,7 +6,10 @@ export class ConfigService {
   constructor(private configService: NestConfigService) {}
 
   get<T = any>(key: string, defaultValue?: T): T {
-    return this.configService.get<T>(key, defaultValue);
+    if (defaultValue !== undefined) {
+      return this.configService.get<T>(key, defaultValue);
+    }
+    return this.configService.get<T>(key) ?? (defaultValue as T);
   }
 
   getOrThrow<T = any>(key: string): T {

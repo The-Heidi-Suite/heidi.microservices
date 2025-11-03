@@ -37,9 +37,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const cityIds = cityAssignments.map((assignment) => assignment.cityId);
 
     // Load user's permissions based on role
-    const permissions = await this.permissionService.getUserPermissions(
-      payload.role as any,
-    );
+    const permissions = await this.permissionService.getUserPermissions(payload.role as any);
 
     return {
       userId: payload.sub,

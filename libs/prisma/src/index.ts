@@ -19,15 +19,3 @@ export * from './modules/prisma-terminal.module';
 export * from './services/prisma-terminal.service';
 export * from './modules/prisma-permissions.module';
 export * from './services/prisma-permissions.service';
-
-// Re-export Prisma types
-export * from '@prisma/client-auth';
-export * from '@prisma/client-users';
-export * from '@prisma/client-city';
-export * from '@prisma/client-core';
-export * from '@prisma/client-notification';
-export * from '@prisma/client-scheduler';
-export * from '@prisma/client-integration';
-export * from '@prisma/client-admin';
-export * from '@prisma/client-terminal';
-export * from '@prisma/client-permissions';
