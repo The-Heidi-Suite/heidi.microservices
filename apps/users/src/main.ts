@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
@@ -26,6 +27,28 @@ async function bootstrap() {
   );
 
   app.enableShutdownHooks();
+
+  // Connect RabbitMQ microservice (for request-response patterns)
+  const rabbitConfig = configService.rabbitmqConfig;
+  const rabbitmqUrl = `amqp://${rabbitConfig.user}:${rabbitConfig.password}@${rabbitConfig.host}:${rabbitConfig.port}${rabbitConfig.vhost}`;
+
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [rabbitmqUrl],
+      queue: 'heidi_queue',
+      queueOptions: {
+        durable: true,
+      },
+      socketOptions: {
+        heartbeatIntervalInSeconds: 30,
+        reconnectTimeInSeconds: 5,
+      },
+    },
+  });
+
+  await app.startAllMicroservices();
+  logger.log('RabbitMQ microservice connected');
 
   // Swagger setup
   const swaggerConfig = configService.swaggerConfig;

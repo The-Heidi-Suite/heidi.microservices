@@ -13,6 +13,7 @@ import { JwtModule } from '@heidi/jwt';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
 import { LoggingInterceptor, TimeoutInterceptor } from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
+import { ErrorHandlingModule } from '@heidi/errors';
 
 // Local modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -45,6 +46,7 @@ import { HealthController } from './health.controller';
     JwtModule.register(),
     MetricsModule,
     I18nModule,
+    ErrorHandlingModule,
 
     // Feature modules
     AuthModule,

@@ -1,5 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
@@ -17,6 +18,28 @@ async function bootstrap() {
   app.enableCors({ origin: configService.get<string>('corsOrigin', '*'), credentials: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.enableShutdownHooks();
+
+  // Connect RabbitMQ microservice (for request-response patterns)
+  const rabbitConfig = configService.rabbitmqConfig;
+  const rabbitmqUrl = `amqp://${rabbitConfig.user}:${rabbitConfig.password}@${rabbitConfig.host}:${rabbitConfig.port}${rabbitConfig.vhost}`;
+
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: [rabbitmqUrl],
+      queue: 'heidi_queue',
+      queueOptions: {
+        durable: true,
+      },
+      socketOptions: {
+        heartbeatIntervalInSeconds: 30,
+        reconnectTimeInSeconds: 5,
+      },
+    },
+  });
+
+  await app.startAllMicroservices();
+  logger.log('RabbitMQ microservice connected');
 
   const port = configService.get<number>('integration.port', 3007);
   await app.listen(port);
