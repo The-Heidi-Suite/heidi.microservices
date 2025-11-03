@@ -2,13 +2,13 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { TokenPayload } from './jwt.service';
-import { PrismaPermissionsService } from '@heidi/prisma-permissions';
+import { PrismaCoreService } from '@heidi/prisma';
 import { PermissionService } from '@heidi/rbac';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private readonly prismaPermissions: PrismaPermissionsService,
+    private readonly prismaCore: PrismaCoreService,
     private readonly permissionService: PermissionService,
   ) {
     super({
@@ -23,29 +23,46 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Invalid token type');
     }
 
-    // Load user's city assignments from database
-    const cityAssignments = await this.prismaPermissions.userCityAssignment.findMany({
-      where: {
-        userId: payload.sub,
-      },
-      select: {
-        cityId: true,
-        role: true,
-      },
-    });
+    // Use cityAssignments from token if available, otherwise load from database
+    let cityAssignments = payload.cityAssignments;
+    if (!cityAssignments || cityAssignments.length === 0) {
+      const dbAssignments = await this.prismaCore.userCityAssignment.findMany({
+        where: {
+          userId: payload.sub,
+          isActive: true,
+        },
+        select: {
+          cityId: true,
+          role: true,
+          canManageAdmins: true,
+        },
+      });
+
+      cityAssignments = dbAssignments.map((a) => ({
+        cityId: a.cityId,
+        role: a.role,
+        canManageAdmins: a.canManageAdmins,
+      }));
+    }
 
     const cityIds = cityAssignments.map((assignment) => assignment.cityId);
 
-    // Load user's permissions based on role
-    const permissions = await this.permissionService.getUserPermissions(payload.role as any);
+    // Load user's permissions - use token permissions if available, otherwise fetch
+    let permissions = payload.permissions || [];
+    if (permissions.length === 0) {
+      permissions = await this.permissionService.getUserPermissions(payload.role as any);
+    }
 
     return {
       userId: payload.sub,
       email: payload.email,
       role: payload.role,
-      cityId: payload.cityId,
+      sub: payload.sub, // For compatibility
+      cityId: payload.selectedCityId || payload.cityId,
+      selectedCityId: payload.selectedCityId || payload.cityId,
       cityIds: cityIds.length > 0 ? cityIds : payload.cityIds || [],
-      permissions: permissions.length > 0 ? permissions : payload.permissions || [],
+      cityAssignments,
+      permissions: permissions.length > 0 ? permissions : [],
     };
   }
 }

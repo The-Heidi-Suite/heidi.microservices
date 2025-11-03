@@ -3,13 +3,21 @@ import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { LoggerService } from '@heidi/logger';
 import { ConfigService } from '@heidi/config';
 
+export interface CityAssignment {
+  cityId: string;
+  role: string;
+  canManageAdmins: boolean;
+}
+
 export interface TokenPayload {
   sub: string; // user id
   email: string;
   role: string;
   type: 'access' | 'refresh';
-  cityId?: string; // Current city ID
-  cityIds?: string[]; // All city IDs user has access to
+  cityId?: string; // Current/selected city ID (for UI)
+  cityIds?: string[]; // All city IDs user has access to (deprecated, use cityAssignments)
+  selectedCityId?: string; // Currently selected city in UI
+  cityAssignments?: CityAssignment[]; // User's city assignments with roles and permissions
   permissions?: string[]; // User permissions (e.g., ['users:read', 'cities:write'])
 }
 
@@ -48,6 +56,8 @@ export class JwtTokenService {
     options?: {
       cityId?: string;
       cityIds?: string[];
+      selectedCityId?: string;
+      cityAssignments?: CityAssignment[];
       permissions?: string[];
     },
   ): Promise<string> {
@@ -58,6 +68,8 @@ export class JwtTokenService {
       type: 'access',
       ...(options?.cityId && { cityId: options.cityId }),
       ...(options?.cityIds && { cityIds: options.cityIds }),
+      ...(options?.selectedCityId && { selectedCityId: options.selectedCityId }),
+      ...(options?.cityAssignments && { cityAssignments: options.cityAssignments }),
       ...(options?.permissions && { permissions: options.permissions }),
     };
 
@@ -77,6 +89,8 @@ export class JwtTokenService {
     options?: {
       cityId?: string;
       cityIds?: string[];
+      selectedCityId?: string;
+      cityAssignments?: CityAssignment[];
       permissions?: string[];
     },
   ): Promise<string> {
@@ -87,6 +101,8 @@ export class JwtTokenService {
       type: 'refresh',
       ...(options?.cityId && { cityId: options.cityId }),
       ...(options?.cityIds && { cityIds: options.cityIds }),
+      ...(options?.selectedCityId && { selectedCityId: options.selectedCityId }),
+      ...(options?.cityAssignments && { cityAssignments: options.cityAssignments }),
       ...(options?.permissions && { permissions: options.permissions }),
     };
 
@@ -106,6 +122,8 @@ export class JwtTokenService {
     options?: {
       cityId?: string;
       cityIds?: string[];
+      selectedCityId?: string;
+      cityAssignments?: CityAssignment[];
       permissions?: string[];
     },
   ): Promise<TokenPair> {

@@ -32,7 +32,6 @@
       "@heidi/prisma-integration": ["libs/prisma/src/aliases/prisma-integration.ts"],
       "@heidi/prisma-admin": ["libs/prisma/src/aliases/prisma-admin.ts"],
       "@heidi/prisma-terminal": ["libs/prisma/src/aliases/prisma-terminal.ts"],
-      "@heidi/prisma-permissions": ["libs/prisma/src/aliases/prisma-permissions.ts"],
       "@heidi/logger": ["libs/logger/src"],
       "@heidi/logger/*": ["libs/logger/src/*"],
       "@heidi/rabbitmq": ["libs/rabbitmq/src"],
@@ -65,10 +64,9 @@
       "@prisma/client-scheduler": ["./node_modules/.prisma/client-scheduler"],
       "@prisma/client-integration": ["./node_modules/.prisma/client-integration"],
       "@prisma/client-admin": ["./node_modules/.prisma/client-admin"],
-      "@prisma/client-terminal": ["./node_modules/.prisma/client-terminal"],
-      "@prisma/client-permissions": ["./node_modules/.prisma/client-permissions"]
+      "@prisma/client-terminal": ["./node_modules/.prisma/client-terminal"]
     }
   },
-  "include": ["apps/**/*", "libs/**/*"],
+  "include": ["apps/**/*", "libs/**/*", "scripts/**/*"],
   "exclude": ["node_modules", "dist"]
 }

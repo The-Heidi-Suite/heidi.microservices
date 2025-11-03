@@ -6,7 +6,7 @@ import { JwtStrategy } from './jwt.strategy';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { LoggerModule } from '@heidi/logger';
 import { ConfigModule, ConfigService } from '@heidi/config';
-import { PrismaPermissionsModule } from '@heidi/prisma-permissions';
+import { PrismaCoreModule } from '@heidi/prisma';
 import { RBACModule } from '@heidi/rbac';
 
 @Global()
@@ -18,7 +18,7 @@ export class JwtModule {
       imports: [
         ConfigModule,
         LoggerModule,
-        PrismaPermissionsModule,
+        PrismaCoreModule,
         forwardRef(() => RBACModule),
         PassportModule.register({ defaultStrategy: 'jwt' }),
         NestJwtModule.registerAsync({

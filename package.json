@@ -142,7 +142,6 @@
       "^@heidi/prisma-integration$": "<rootDir>/libs/prisma/src/aliases/prisma-integration.ts",
       "^@heidi/prisma-admin$": "<rootDir>/libs/prisma/src/aliases/prisma-admin.ts",
       "^@heidi/prisma-terminal$": "<rootDir>/libs/prisma/src/aliases/prisma-terminal.ts",
-      "^@heidi/prisma-permissions$": "<rootDir>/libs/prisma/src/aliases/prisma-permissions.ts",
       "^@heidi/logger(|/.*)$": "<rootDir>/libs/logger/src/$1",
       "^@heidi/rabbitmq(|/.*)$": "<rootDir>/libs/rabbitmq/src/$1",
       "^@heidi/redis(|/.*)$": "<rootDir>/libs/redis/src/$1",
