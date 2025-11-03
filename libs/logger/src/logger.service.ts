@@ -147,6 +147,7 @@ export class LoggerService implements NestLoggerService {
 
     // Context info
     const ctx = context || this.context || '';
+    const ctxStr = ctx ? `${colors['verbose']}[${ctx}]${reset} ` : '';
     let contextInfo = '';
     if (meta) {
       const contextParts: string[] = [];
@@ -169,7 +170,7 @@ export class LoggerService implements NestLoggerService {
       fullMessage += `\n${meta.trace}`;
     }
 
-    return `[Nest] ${pid}  - ${timestamp}   ${levelColor}${levelText}${reset} ${serviceStr} ${ctx ? '[' + ctx + '] ' : ''}${fullMessage}`;
+    return `[Nest] ${pid}  - ${timestamp}   ${levelColor}${levelText}${reset} ${serviceStr} ${ctxStr}${fullMessage}`;
   }
 
   /**
