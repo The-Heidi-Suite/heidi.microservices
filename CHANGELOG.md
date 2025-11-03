@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0](///compare/v1.5.0...v1.6.0) (2025-11-03)
+
+
+### ✨ Features
+
+* add permissions module and service for permissions management bb9e55c
+* add permissions schema generation and migration to scripts 7f0dc26
+* add tenancy and RBAC libraries to project configuration 0243329
+* add tenancy module with city context management and guards c4babec
+* enhance auth module with city admin assignment and user city retrieval c2d547d
+* enhance JWT module and service with city and permissions support 9b622b5
+* implement RBAC module with guards and services for role-based access control edf80b3
+
+
+### 🐛 Bug Fixes
+
+* downgrade @types/node version to 24.10.0 in package.json and update yarn.lock a53001e
+
+
+### 📚 Documentation
+
+* expand README with platform overview, user roles, and core features c41996f
+
 ## [1.5.0](///compare/v1.4.1...v1.5.0) (2025-11-02)
 
 
