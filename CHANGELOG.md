@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0](///compare/v1.6.0...v1.7.0) (2025-11-03)
+
+
+### ♻️ Code Refactoring
+
+* comment out unused terminal module exports in index.ts af25618
+* enhance ConfigService get method and clean up JWT strategy permissions retrieval d2628bc
+* improve user role handling and permissions retrieval in AuthService 42016bb
+* remove permissions generation and migration scripts 825900b
+* remove Prisma permissions module and update JWT handling 04fb440
+* remove unused permissions module and related exports f045cd3
+* simplify imports and formatting in RBAC-related files d6d6185
+* update interceptor and logger initialization across multiple modules 843a1fe
+
+
+### ✨ Features
+
+* add new Prisma aliases for admin, terminal, and permissions modules in tsconfig 938ad30
+* add user registration functionality and enhance user management 91fdc88
+* implement city management and access guards for RBAC 0d6a76b
+* introduce city hierarchy service and enhance RBAC with city management features 59c3582
+
 ## [1.6.0](///compare/v1.5.0...v1.6.0) (2025-11-03)
 
 
