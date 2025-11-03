@@ -112,6 +112,10 @@ SWAGGER_TITLE=HEIDI Microservices API
 SWAGGER_DESCRIPTION=API documentation for HEIDI microservices
 SWAGGER_VERSION=1.0
 
+# I18n
+I18N_DEFAULT_LANGUAGE=en
+I18N_SUPPORTED_LANGUAGES=de,en,dk,no,se,ar,fa,tr,ru,uk
+
 # Email/SMTP
 SYSTEM_EMAIL_ID=noreply@heidi.example.com
 SMTP_HOST=smtp.gmail.com

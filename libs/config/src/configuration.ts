@@ -95,6 +95,23 @@ export default () => ({
     version: process.env.SWAGGER_VERSION || '1.0',
   },
 
+  // I18n configuration
+  i18n: {
+    defaultLanguage: process.env.I18N_DEFAULT_LANGUAGE || 'en',
+    supportedLanguages: process.env.I18N_SUPPORTED_LANGUAGES?.split(',') || [
+      'de',
+      'en',
+      'dk',
+      'no',
+      'se',
+      'ar',
+      'fa',
+      'tr',
+      'ru',
+      'uk',
+    ],
+  },
+
   // JWT configuration
   jwt: {
     secret: process.env.JWT_SECRET,

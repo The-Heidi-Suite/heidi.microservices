@@ -180,6 +180,18 @@ SWAGGER_DESCRIPTION=API documentation for HEIDI microservices
 SWAGGER_VERSION=1.0
 ```
 
+### Internationalization (i18n) Configuration
+
+```bash
+# Default language code (ISO 639-1) used when Accept-Language header is missing
+I18N_DEFAULT_LANGUAGE=en
+
+# Supported languages (comma-separated ISO 639-1 codes)
+# Languages: de (German), en (English), dk (Danish), no (Norwegian), se (Swedish),
+#            ar (Arabic), fa (Persian/Farsi), tr (Turkish), ru (Russian), uk (Ukrainian)
+I18N_SUPPORTED_LANGUAGES=de,en,dk,no,se,ar,fa,tr,ru,uk
+```
+
 ### Email Configuration
 
 ```bash
