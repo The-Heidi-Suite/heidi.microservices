@@ -21,11 +21,7 @@ export class PermissionService {
    * @param resource Resource name (e.g., 'users', 'cities')
    * @param action Action name (e.g., 'read', 'write')
    */
-  async hasPermission(
-    userId: string,
-    resource: string,
-    action: string,
-  ): Promise<boolean> {
+  async hasPermission(userId: string, resource: string, action: string): Promise<boolean> {
     try {
       // Get user's role from UserCityAssignment or User table
       // For now, we'll need to pass role as parameter or fetch it
@@ -89,9 +85,7 @@ export class PermissionService {
         },
       });
 
-      return rolePermissions.map(
-        (rp) => `${rp.permission.resource}:${rp.permission.action}`,
-      );
+      return rolePermissions.map((rp) => `${rp.permission.resource}:${rp.permission.action}`);
     } catch (error) {
       this.logger.error('Error getting user permissions', error);
       return [];

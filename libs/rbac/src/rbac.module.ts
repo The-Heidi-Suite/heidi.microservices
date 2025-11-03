@@ -10,11 +10,6 @@ import { LoggerModule } from '@heidi/logger';
 @Module({
   imports: [PrismaPermissionsModule, LoggerModule],
   providers: [PermissionService, RolesGuard, PermissionsGuard, AdminOnlyGuard],
-  exports: [
-    PermissionService,
-    RolesGuard,
-    PermissionsGuard,
-    AdminOnlyGuard,
-  ],
+  exports: [PermissionService, RolesGuard, PermissionsGuard, AdminOnlyGuard],
 })
 export class RBACModule {}
