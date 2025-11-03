@@ -33,4 +33,3 @@
   "EXTERNAL_SERVICE_TIMEOUT": "Истекло время ожидания внешнего сервиса",
   "EXTERNAL_SERVICE_RATE_LIMIT": "Превышен лимит скорости внешнего сервиса"
 }
-

@@ -78,6 +78,7 @@ Use the Saga orchestrator when you need to:
 ### Step Structure
 
 Each step contains:
+
 - `stepId`: Unique identifier
 - `service`: Target microservice
 - `action`: Operation to perform
@@ -98,8 +99,8 @@ const sagaId = await sagaOrchestrator.createSaga('USER_REGISTRATION', [
     payload: { email, password, firstName, lastName },
     compensation: {
       action: 'DELETE',
-      payload: { userId: '{{result.userId}}' } // Uses result from CREATE_USER step
-    }
+      payload: { userId: '{{result.userId}}' }, // Uses result from CREATE_USER step
+    },
   },
   {
     stepId: 'ASSIGN_CITY',
@@ -108,8 +109,8 @@ const sagaId = await sagaOrchestrator.createSaga('USER_REGISTRATION', [
     payload: { userId: '{{steps.CREATE_USER.result.userId}}', cityId },
     compensation: {
       action: 'REMOVE_ASSIGNMENT',
-      payload: { userId: '{{steps.CREATE_USER.result.userId}}', cityId }
-    }
+      payload: { userId: '{{steps.CREATE_USER.result.userId}}', cityId },
+    },
   },
   {
     stepId: 'SEND_WELCOME_EMAIL',
@@ -117,7 +118,7 @@ const sagaId = await sagaOrchestrator.createSaga('USER_REGISTRATION', [
     action: 'SEND_EMAIL',
     payload: { userId: '{{steps.CREATE_USER.result.userId}}', template: 'WELCOME' },
     // No compensation - email already sent, can't unsend
-  }
+  },
 ]);
 
 // Execute steps
@@ -129,10 +130,7 @@ while (stepIndex < currentSaga.steps.length) {
 
   try {
     // Execute step via RabbitMQ
-    const result = await rabbitmq.send(
-      `${step.service}.${step.action}`,
-      step.payload
-    );
+    const result = await rabbitmq.send(`${step.service}.${step.action}`, step.payload);
 
     // Mark step as complete
     const { nextStep, completed } = await sagaOrchestrator.executeStep(sagaId, result);
@@ -153,7 +151,7 @@ while (stepIndex < currentSaga.steps.length) {
     for (const compStep of compensationSteps) {
       await rabbitmq.send(
         `${compStep.service}.${compStep.compensation.action}`,
-        compStep.compensation.payload
+        compStep.compensation.payload,
       );
     }
 
@@ -172,21 +170,24 @@ const sagaId = await sagaOrchestrator.createSaga('ORDER_PROCESSING', [
     service: 'orders',
     action: 'CREATE',
     payload: { userId, items },
-    compensation: { action: 'CANCEL_ORDER', payload: { orderId: '{{result.orderId}}' } }
+    compensation: { action: 'CANCEL_ORDER', payload: { orderId: '{{result.orderId}}' } },
   },
   {
     stepId: 'RESERVE_INVENTORY',
     service: 'inventory',
     action: 'RESERVE',
     payload: { orderId: '{{steps.CREATE_ORDER.result.orderId}}', items },
-    compensation: { action: 'RELEASE', payload: { orderId: '{{steps.CREATE_ORDER.result.orderId}}' } }
+    compensation: {
+      action: 'RELEASE',
+      payload: { orderId: '{{steps.CREATE_ORDER.result.orderId}}' },
+    },
   },
   {
     stepId: 'CHARGE_PAYMENT',
     service: 'payment',
     action: 'CHARGE',
     payload: { orderId: '{{steps.CREATE_ORDER.result.orderId}}', amount },
-    compensation: { action: 'REFUND', payload: { transactionId: '{{result.transactionId}}' } }
+    compensation: { action: 'REFUND', payload: { transactionId: '{{result.transactionId}}' } },
   },
   {
     stepId: 'SEND_CONFIRMATION',
@@ -194,7 +195,7 @@ const sagaId = await sagaOrchestrator.createSaga('ORDER_PROCESSING', [
     action: 'SEND_EMAIL',
     payload: { orderId: '{{steps.CREATE_ORDER.result.orderId}}' },
     // No compensation needed
-  }
+  },
 ]);
 ```
 
@@ -217,8 +218,8 @@ const sagaId = await sagaOrchestrator.createSaga('ASSIGN_CITY_ADMIN', [
     payload: { userId, cityId, role },
     compensation: {
       action: 'REMOVE_ASSIGNMENT',
-      payload: { userId, cityId }
-    }
+      payload: { userId, cityId },
+    },
   },
   {
     stepId: 'UPDATE_PERMISSIONS',
@@ -226,7 +227,7 @@ const sagaId = await sagaOrchestrator.createSaga('ASSIGN_CITY_ADMIN', [
     action: 'REFRESH_TOKEN',
     payload: { userId },
     // No compensation - token refresh is idempotent
-  }
+  },
 ]);
 ```
 
@@ -300,6 +301,7 @@ PENDING → COMPENSATING → COMPENSATED (failure path)
 ## Monitoring
 
 Monitor saga execution:
+
 - Track saga completion rates
 - Alert on stuck sagas (longer than expected)
 - Monitor compensation rates
