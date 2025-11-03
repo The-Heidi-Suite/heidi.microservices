@@ -112,16 +112,21 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     if (exception instanceof PrismaClientUnknownRequestError) {
       const translatedMessage = this.i18nService.translate('errors.DATABASE_QUERY_ERROR');
+      // Extract meaningful error from potentially verbose Prisma error
+      const errorMessage = exception.message.includes('does not exist')
+        ? 'Database table or schema not found. Please run migrations.'
+        : exception.message.split('\n')[0] || translatedMessage;
 
       return {
         statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
         errorCode: ErrorCode.DATABASE_QUERY_ERROR,
-        message: translatedMessage,
+        message:
+          translatedMessage !== 'errors.DATABASE_QUERY_ERROR' ? translatedMessage : errorMessage,
         timestamp,
         path,
         method,
         requestId,
-        details: { prismaError: exception.message },
+        details: this.isDevelopment ? { prismaError: exception.message } : undefined,
       };
     }
 
@@ -202,29 +207,46 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   ) {
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     let errorCode = ErrorCode.DATABASE_QUERY_ERROR;
+    let userMessage = '';
 
     switch (exception.code) {
       case 'P2002':
         statusCode = HttpStatus.CONFLICT;
         errorCode = ErrorCode.DATABASE_CONSTRAINT_ERROR;
+        // Extract field name from meta if available
+        const field = (exception.meta as any)?.target?.[0] || 'field';
+        userMessage = `A record with this ${field} already exists`;
         break;
       case 'P2025':
         statusCode = HttpStatus.NOT_FOUND;
         errorCode = ErrorCode.NOT_FOUND;
+        userMessage = exception.message || 'Record not found';
         break;
       case 'P2003':
         statusCode = HttpStatus.BAD_REQUEST;
         errorCode = ErrorCode.DATABASE_CONSTRAINT_ERROR;
+        userMessage = 'Invalid reference to related record';
         break;
       case 'P2024':
         statusCode = HttpStatus.REQUEST_TIMEOUT;
         errorCode = ErrorCode.DATABASE_TIMEOUT_ERROR;
+        userMessage = 'Database operation timed out';
         break;
+      default:
+        // For other errors, extract meaningful message
+        if (exception.message.includes('does not exist')) {
+          userMessage = 'Database table or schema not found. Please run migrations.';
+          statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
+        } else {
+          userMessage = exception.message.split('\n')[0]; // Get first line only
+        }
     }
 
     const translatedMessage = this.i18nService.translate(`errors.${errorCode}`);
     const message =
-      translatedMessage !== `errors.${errorCode}` ? translatedMessage : exception.message;
+      translatedMessage !== `errors.${errorCode}`
+        ? translatedMessage
+        : userMessage || exception.message;
 
     return {
       statusCode,
@@ -234,11 +256,13 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       path,
       method,
       requestId,
-      details: {
-        prismaCode: exception.code,
-        prismaMessage: exception.message,
-        meta: exception.meta,
-      },
+      details: this.isDevelopment
+        ? {
+            prismaCode: exception.code,
+            prismaMessage: exception.message,
+            meta: exception.meta,
+          }
+        : undefined,
     };
   }
 
@@ -321,12 +345,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Log with appropriate level based on status code
     if (statusCode >= 500) {
+      // For server errors, include exception details only in development
+      const exceptionError =
+        this.isDevelopment && exception instanceof Error ? exception : undefined;
       this.structuredLogger.error(
         `${method} ${url} - ${statusCode} ${errorCode}: ${message}`,
-        exception instanceof Error ? exception : undefined,
+        exceptionError,
         logContext,
       );
     } else if (statusCode >= 400) {
+      // For client errors (4xx), don't include stack traces - just log the message
       this.structuredLogger.warn(
         `${method} ${url} - ${statusCode} ${errorCode}: ${message}`,
         logContext,
