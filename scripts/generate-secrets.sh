@@ -85,10 +85,17 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     sed -i "s|^JWT_REFRESH_SECRET=.*|JWT_REFRESH_SECRET=$JWT_REFRESH_SECRET|" .env
     sed -i "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$POSTGRES_PASSWORD|" .env
     sed -i "s|^RABBITMQ_PASSWORD=.*|RABBITMQ_PASSWORD=$RABBITMQ_PASSWORD|" .env
+    sed -i "s|^REDIS_PASSWORD=.*|REDIS_PASSWORD=$REDIS_PASSWORD|" .env
 
     # Update DATABASE_URLs with new password
     sed -i "s|postgresql://heidi:[^@]*@|postgresql://heidi:$POSTGRES_PASSWORD@|g" .env
     sed -i "s|amqp://heidi:[^@]*@|amqp://heidi:$RABBITMQ_PASSWORD@|g" .env
+
+    # Update REDIS_URL with password if password is set (format: redis://:password@host:port)
+    if [ -n "$REDIS_PASSWORD" ]; then
+        sed -i "s|^REDIS_URL=redis://[^@]*@localhost:6379|REDIS_URL=redis://:$REDIS_PASSWORD@localhost:6379|" .env
+        sed -i "s|^REDIS_URL=redis://localhost:6379|REDIS_URL=redis://:$REDIS_PASSWORD@localhost:6379|" .env
+    fi
 
     echo -e "${GREEN}✓ Updated .env with new secrets${NC}"
     echo -e "${YELLOW}⚠ Remember to update your docker-compose files with the new passwords${NC}"
