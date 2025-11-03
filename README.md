@@ -2,6 +2,56 @@
 
 A production-ready NestJS microservices monorepo with Docker, Prisma ORM, RabbitMQ messaging, Redis caching, and comprehensive observability.
 
+## Overview
+
+HEIDI is a scalable microservice architecture built with distributed system design principles. The platform leverages core business logic, city services, notifications, scheduling, and authentication to deliver a comprehensive municipal management solution. The system is designed for high availability, scalability, and maintainability, supporting multi-tenant operations across different cities and jurisdictions.
+
+## Roles
+
+The HEIDI platform supports three primary user roles:
+
+- **Super Admin**: System administrators with full access to all features and configurations across all cities and services
+- **City Admins**: City-level administrators who manage operations, users, and services within their assigned city jurisdiction
+- **Citizens**: End users who interact with city services, receive notifications, and access public-facing features
+
+## Core Features
+
+### Authentication & Authorization
+
+- **JWT-based authentication** with secure token management
+- **Role-based access control (RBAC)** for fine-grained permissions
+- Support for access and refresh token workflows
+- Multi-tenant authentication with city-scoped access
+
+### Centralized Business Logic
+
+- **Core Service** orchestrates centralized business logic and workflows
+- Single source of truth for business rules and processes
+- Ensures consistency across all microservices
+- Handles complex business operations and state management
+
+### City Services
+
+- Comprehensive city data management with geolocation support
+- Multi-tenant architecture supporting multiple cities
+- City-scoped operations and data isolation
+- Geographic and administrative city management
+
+### Notifications & Scheduling
+
+- **Multi-channel notifications** (Email, SMS, Push notifications)
+- **Scheduled tasks and cron jobs** for automated operations
+- Event-driven notification system
+- Flexible scheduling for recurring and one-time tasks
+
+### Monitoring & Observability
+
+- **Comprehensive monitoring** with Prometheus metrics
+- **Application metrics** exposed at `/metrics` endpoints
+- **Alerts and notifications** via Alertmanager
+- Distributed tracing and logging capabilities
+- Health checks and service status monitoring
+
 ## Architecture
 
 ```
