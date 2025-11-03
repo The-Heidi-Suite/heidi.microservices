@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.10.0](///compare/v1.9.0...v1.10.0) (2025-11-03)
+
+
+### ✨ Features
+
+* **logging:** enhance logging for message processing in Core and Users controllers e52d3d4
+* **rabbitmq:** enhance RabbitMQ queue options across applications 16e3340
+
 ## [1.9.0](///compare/v1.8.0...v1.9.0) (2025-11-03)
 
 
