@@ -30,47 +30,20 @@ COPY tsconfig.json nest-cli.json ./
 RUN npm ci --omit=dev --legacy-peer-deps && \
     npm cache clean --force
 
-# Stage 3: Prisma generation (cached - runs once for all services)
-# This stage is cached separately and only rebuilt when Prisma schemas or script change
-FROM base AS prisma-generate
-
-# Install build dependencies for Prisma generation
-# Note: openssl, libc6-compat, ca-certificates are already in base stage
-RUN apk add --no-cache --virtual .build-deps \
-    python3 \
-    make \
-    g++ \
-    bash \
-    && rm -rf /var/cache/apk/*
-
-# Copy package files
-COPY package.json package-lock.json* ./
-
-# Install all dependencies (needed for Prisma CLI)
-RUN npm ci --legacy-peer-deps
-
-# Copy Prisma schemas and generation script
-# These files determine cache invalidation - only rebuild when they change
-COPY libs/prisma/src/schemas/ ./libs/prisma/src/schemas/
-COPY scripts/prisma-generate-all.sh ./scripts/prisma-generate-all.sh
-RUN chmod +x scripts/prisma-generate-all.sh
-
-# Generate all Prisma clients once (cached across all service builds)
-RUN bash scripts/prisma-generate-all.sh
-
-# Remove build dependencies (keep only Prisma generated files)
-RUN apk del .build-deps
-
-# Stage 4: Build stage
+# Stage 3: Build stage
 FROM base AS build
 
 # Install build dependencies (including bash for scripts)
-# Note: openssl, libc6-compat, ca-certificates are already in base stage
+# Prisma requires openssl, libc6-compat (glibc compatibility), and ca-certificates
+# Note: If libc6-compat package is not found, replace with gcompat (Alpine equivalent)
 RUN apk add --no-cache --virtual .build-deps \
     python3 \
     make \
     g++ \
     bash \
+    openssl \
+    libc6-compat \
+    ca-certificates \
     && rm -rf /var/cache/apk/*
 
 # Copy package files
@@ -86,9 +59,18 @@ RUN npm ci --legacy-peer-deps
 COPY apps/ ./apps/
 COPY libs/ ./libs/
 
+# Copy scripts directory (needed for prisma:generate)
+COPY scripts/ ./scripts/
+# Ensure scripts are executable and verify they exist
+RUN chmod +x scripts/*.sh
+
 # Build argument for service name
 ARG APP_NAME
 ENV APP_NAME=${APP_NAME}
+
+# Generate Prisma Client (required for build)
+# Script uses bash arrays, so we need bash (installed in build-deps)
+RUN bash scripts/prisma-generate-all.sh
 
 # Build the specific app
 # Limit Node.js memory to prevent resource exhaustion during builds
@@ -97,7 +79,7 @@ RUN npm run build:${APP_NAME}
 # Remove build dependencies to reduce image size
 RUN apk del .build-deps
 
-# Stage 5: Production runtime (minimal image)
+# Stage 4: Production runtime (minimal image)
 FROM base AS production
 
 WORKDIR /app
@@ -112,10 +94,9 @@ COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 # Copy built application from build stage
 COPY --from=build --chown=nestjs:nodejs /app/dist/apps/${APP_NAME} ./dist
 
-# Copy Prisma generated client directly from prisma-generate stage (required at runtime)
-# These are generated artifacts and don't change during build, so copy directly from source
-COPY --from=prisma-generate --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=prisma-generate --chown=nestjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+# Copy Prisma generated client (required at runtime)
+COPY --from=build --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=build --chown=nestjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
 # Copy necessary libs that might be needed at runtime (includes Prisma schemas at libs/prisma/src/schemas/)
 COPY --from=build --chown=nestjs:nodejs /app/libs ./libs
