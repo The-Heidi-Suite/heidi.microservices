@@ -13,7 +13,7 @@ import { AdminService } from './admin.service';
 import { CreateAdminDto, UpdateAdminDto } from './dto';
 import { JwtAuthGuard } from '@heidi/jwt';
 
-@Controller('admin')
+@Controller()
 @UseGuards(JwtAuthGuard)
 export class AdminController {
   constructor(private readonly adminService: AdminService) {}

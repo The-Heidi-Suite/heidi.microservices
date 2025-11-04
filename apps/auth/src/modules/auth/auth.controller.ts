@@ -29,7 +29,7 @@ import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
 import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
 
 @ApiTags('auth')
-@Controller('auth')
+@Controller()
 @UseGuards(JwtAuthGuard, AdminOnlyGuard)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}

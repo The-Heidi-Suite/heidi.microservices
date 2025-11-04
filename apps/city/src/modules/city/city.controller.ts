@@ -2,7 +2,7 @@ import { Controller, Get, Post, Patch, Delete, Body, Param, Query } from '@nestj
 import { CityService } from './city.service';
 import { CreateCityDto, UpdateCityDto } from './dto';
 
-@Controller('cities')
+@Controller()
 export class CityController {
   constructor(private readonly cityService: CityService) {}
 

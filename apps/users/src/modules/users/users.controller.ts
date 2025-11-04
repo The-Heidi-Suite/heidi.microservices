@@ -33,7 +33,7 @@ import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { AdminOnlyGuard } from '@heidi/rbac';
 
 @ApiTags('users')
-@Controller('users')
+@Controller()
 @UseGuards(JwtAuthGuard, AdminOnlyGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
