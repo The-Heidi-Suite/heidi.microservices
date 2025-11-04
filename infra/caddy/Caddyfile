@@ -8,18 +8,17 @@
 
 {
     # Let's Encrypt email (set LETSENCRYPT_EMAIL in .env)
-    email {env.LETSENCRYPT_EMAIL}
+    email $LETSENCRYPT_EMAIL
 
-    # Use staging CA for testing (set LETSENCRYPT_STAGING=true in .env)
-    # Caddy evaluates the condition - if LETSENCRYPT_STAGING is "true", use staging
-    {env.LETSENCRYPT_STAGING} {
-        acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
-    }
+    # Use staging CA for testing
+    # Uncomment the line below to use Let's Encrypt staging environment
+    # This is useful for testing to avoid rate limits
+    # acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
 }
 
 # Single domain with path-based routing
 # Caddy will automatically issue SSL certificate and redirect HTTP to HTTPS
-api.{env.DEV_IP}.nip.io {
+api.$DEV_IP.nip.io {
 
     # Health check endpoint
     handle /health {
@@ -28,9 +27,8 @@ api.{env.DEV_IP}.nip.io {
 
     # Root endpoint - API information
     handle / {
-        respond `{"message":"HEIDI Microservices API","version":"1.0","endpoints":["/api/auth","/api/users","/api/city","/api/core","/api/notification","/api/scheduler","/api/integration","/api/admin"],"health":"/health"}` 200 {
-            Content-Type application/json
-        }
+        header Content-Type application/json
+        respond `{"message":"HEIDI Microservices API","version":"1.0","endpoints":["/api/auth","/api/users","/api/city","/api/core","/api/notification","/api/scheduler","/api/integration","/api/admin"],"health":"/health"}` 200
     }
 
     # Health check endpoints for each service
@@ -75,46 +73,74 @@ api.{env.DEV_IP}.nip.io {
     }
 
     # Metrics endpoints (restrict to private networks)
-    @metrics_whitelist {
+    @auth_metrics {
+        path /api/auth/metrics
         remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
     }
-
-    handle /api/auth/metrics @metrics_whitelist {
+    handle @auth_metrics {
         uri strip_prefix /api/auth
         reverse_proxy auth:3001
     }
 
-    handle /api/users/metrics @metrics_whitelist {
+    @users_metrics {
+        path /api/users/metrics
+        remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    }
+    handle @users_metrics {
         uri strip_prefix /api/users
         reverse_proxy users:3002
     }
 
-    handle /api/city/metrics @metrics_whitelist {
+    @city_metrics {
+        path /api/city/metrics
+        remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    }
+    handle @city_metrics {
         uri strip_prefix /api/city
         reverse_proxy city:3003
     }
 
-    handle /api/core/metrics @metrics_whitelist {
+    @core_metrics {
+        path /api/core/metrics
+        remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    }
+    handle @core_metrics {
         uri strip_prefix /api/core
         reverse_proxy core:3004
     }
 
-    handle /api/notification/metrics @metrics_whitelist {
+    @notification_metrics {
+        path /api/notification/metrics
+        remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    }
+    handle @notification_metrics {
         uri strip_prefix /api/notification
         reverse_proxy notification:3005
     }
 
-    handle /api/scheduler/metrics @metrics_whitelist {
+    @scheduler_metrics {
+        path /api/scheduler/metrics
+        remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    }
+    handle @scheduler_metrics {
         uri strip_prefix /api/scheduler
         reverse_proxy scheduler:3006
     }
 
-    handle /api/integration/metrics @metrics_whitelist {
+    @integration_metrics {
+        path /api/integration/metrics
+        remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    }
+    handle @integration_metrics {
         uri strip_prefix /api/integration
         reverse_proxy integration:3007
     }
 
-    handle /api/admin/metrics @metrics_whitelist {
+    @admin_metrics {
+        path /api/admin/metrics
+        remote_ip 127.0.0.1 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16
+    }
+    handle @admin_metrics {
         uri strip_prefix /api/admin
         reverse_proxy admin:3008
     }
