@@ -291,9 +291,9 @@ api.$DEV_IP.nip.io {
         }
     }
 
-    # Auth service - strip /api prefix
+    # Auth service - strip /api/auth prefix
     handle /api/auth* {
-        uri strip_prefix /api
+        uri strip_prefix /api/auth
         reverse_proxy auth:3001 {
             header_up X-Forwarded-Proto https
             header_up X-Real-IP {remote_host}
@@ -301,9 +301,9 @@ api.$DEV_IP.nip.io {
         }
     }
 
-    # Users service - strip /api prefix
+    # Users service - strip /api/users prefix
     handle /api/users* {
-        uri strip_prefix /api
+        uri strip_prefix /api/users
         reverse_proxy users:3002 {
             header_up X-Forwarded-Proto https
             header_up X-Real-IP {remote_host}
@@ -311,9 +311,9 @@ api.$DEV_IP.nip.io {
         }
     }
 
-    # City service - strip /api prefix
+    # City service - strip /api/city prefix
     handle /api/city* {
-        uri strip_prefix /api
+        uri strip_prefix /api/city
         reverse_proxy city:3003 {
             header_up X-Forwarded-Proto https
             header_up X-Real-IP {remote_host}
@@ -331,9 +331,9 @@ api.$DEV_IP.nip.io {
         }
     }
 
-    # Notification service - strip /api prefix
+    # Notification service - strip /api/notification prefix
     handle /api/notification* {
-        uri strip_prefix /api
+        uri strip_prefix /api/notification
         reverse_proxy notification:3005 {
             header_up X-Forwarded-Proto https
             header_up X-Real-IP {remote_host}
@@ -341,9 +341,9 @@ api.$DEV_IP.nip.io {
         }
     }
 
-    # Scheduler service - strip /api prefix
+    # Scheduler service - strip /api/scheduler prefix
     handle /api/scheduler* {
-        uri strip_prefix /api
+        uri strip_prefix /api/scheduler
         reverse_proxy scheduler:3006 {
             header_up X-Forwarded-Proto https
             header_up X-Real-IP {remote_host}
@@ -361,9 +361,9 @@ api.$DEV_IP.nip.io {
         }
     }
 
-    # Admin service - strip /api prefix
+    # Admin service - strip /api/admin prefix
     handle /api/admin* {
-        uri strip_prefix /api
+        uri strip_prefix /api/admin
         reverse_proxy admin:3008 {
             header_up X-Forwarded-Proto https
             header_up X-Real-IP {remote_host}
