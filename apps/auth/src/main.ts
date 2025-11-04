@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
-import { ConfigService } from '@heidi/config';
+import { ConfigService, getSwaggerServerUrl } from '@heidi/config';
 import { getRabbitMQMicroserviceOptions } from '@heidi/rabbitmq';
 
 async function bootstrap() {
@@ -50,14 +50,21 @@ async function bootstrap() {
   // Swagger setup
   const swaggerConfig = configService.swaggerConfig;
   const swaggerTitle = `Auth Service | ${swaggerConfig.title || 'HEIDI Microservices API'}`;
+  const serverUrl = getSwaggerServerUrl(configService, 'auth');
 
-  const config = new DocumentBuilder()
+  const documentBuilder = new DocumentBuilder()
     .setTitle(swaggerTitle)
     .setDescription(
       swaggerConfig.description || 'API documentation for HEIDI Authentication Service',
     )
-    .setVersion(swaggerConfig.version || '1.0')
-    .addServer('/api/auth', 'API Gateway Path')
+    .setVersion(swaggerConfig.version || '1.0');
+
+  // Only add server URL if API gateway prefix is enabled (for production/server)
+  if (serverUrl) {
+    documentBuilder.addServer(serverUrl, 'API Gateway Path');
+  }
+
+  const config = documentBuilder
     .addBearerAuth(
       {
         type: 'http',

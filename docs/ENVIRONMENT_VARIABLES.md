@@ -169,6 +169,9 @@ ALERT_SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
 ```bash
 NODE_ENV=development
 API_PREFIX=api
+# Enable API gateway prefix for Swagger (set to 'true' for production/server)
+# When enabled, Swagger will show /api/{service} paths; when disabled (local dev), no prefix
+ENABLE_API_GATEWAY_PREFIX=false
 CLIENT_URL=http://localhost:4200
 ```
 
@@ -179,6 +182,10 @@ SWAGGER_TITLE=HEIDI Microservices API
 SWAGGER_DESCRIPTION=API documentation for HEIDI microservices
 SWAGGER_VERSION=1.0
 ```
+
+**Note:** The `ENABLE_API_GATEWAY_PREFIX` variable controls whether Swagger documentation includes the API gateway path prefix (`/api/{service}`).
+- Set to `false` for local development (default) - Swagger shows direct service paths
+- Set to `true` for production/server deployments - Swagger shows API gateway paths
 
 ### Internationalization (i18n) Configuration
 

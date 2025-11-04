@@ -127,6 +127,7 @@ export default () => ({
 
   // API configuration
   apiPrefix: process.env.API_PREFIX || 'api',
+  enableApiGatewayPrefix: process.env.ENABLE_API_GATEWAY_PREFIX === 'true',
 
   // Swagger configuration
   swagger: {

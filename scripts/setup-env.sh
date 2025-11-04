@@ -129,6 +129,9 @@ ENABLE_FILE_LOGGING=false
 # API Configuration
 # ============================================================================
 API_PREFIX=api
+# Enable API gateway prefix for Swagger (set to 'true' for production/server)
+# When enabled, Swagger will show /api/{service} paths; when disabled (local dev), no prefix
+ENABLE_API_GATEWAY_PREFIX=false
 CORS_ORIGIN=*
 REQUEST_TIMEOUT_MS=30000
 
