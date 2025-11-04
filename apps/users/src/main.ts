@@ -60,6 +60,7 @@ async function bootstrap() {
     .setTitle(swaggerTitle)
     .setDescription(swaggerConfig.description || 'API documentation for HEIDI Users Service')
     .setVersion(swaggerConfig.version || '1.0')
+    .addServer('/api/users', 'API Gateway Path')
     .addBearerAuth(
       {
         type: 'http',

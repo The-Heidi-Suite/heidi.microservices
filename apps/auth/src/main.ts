@@ -74,6 +74,7 @@ async function bootstrap() {
       swaggerConfig.description || 'API documentation for HEIDI Authentication Service',
     )
     .setVersion(swaggerConfig.version || '1.0')
+    .addServer('/api/auth', 'API Gateway Path')
     .addBearerAuth(
       {
         type: 'http',
