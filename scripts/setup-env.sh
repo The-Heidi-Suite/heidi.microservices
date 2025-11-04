@@ -227,7 +227,7 @@ REDIS_EXPORTER_PORT=9121
 # ============================================================================
 # pgAdmin
 PGADMIN_PORT=5050
-PGADMIN_EMAIL=admin@heidi.local
+PGADMIN_EMAIL=admin@heidi.com
 PGADMIN_PASSWORD=admin
 
 # Redis Commander

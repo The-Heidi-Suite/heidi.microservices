@@ -55,7 +55,7 @@ receivers:
   # Default receiver (fallback)
   - name: 'default'
     email_configs:
-      - to: 'admin@heidi.local'
+      - to: 'admin@heidi.com'
         headers:
           Subject: 'HEIDI Alert: {{ .GroupLabels.alertname }}'
         html: |
