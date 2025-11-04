@@ -171,6 +171,7 @@ export const RabbitMQPatterns = {
 
   // User request-response patterns
   USER_FIND_BY_EMAIL: 'user.findByEmail',
+  USER_FIND_BY_USERNAME: 'user.findByUsername',
   USER_FIND_BY_ID: 'user.findById',
   USER_GET_PROFILE: 'user.getProfile',
 
