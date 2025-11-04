@@ -76,6 +76,42 @@ services:
     networks:
       - backend
 
+  # Reverse Proxy with Auto SSL: Caddy (Default for Development)
+  caddy:
+    image: caddy:2.7-alpine
+    container_name: heidi-caddy
+    restart: always
+    env_file:
+      - .env
+    environment:
+      DEV_IP: ${DEV_IP:-localhost}
+      LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@heidi.local}
+      LETSENCRYPT_STAGING: ${LETSENCRYPT_STAGING:-false}
+    ports:
+      - '${CADDY_HTTP_PORT:-80}:80'
+      - '${CADDY_HTTPS_PORT:-443}:443'
+      - '${CADDY_HTTPS_PORT:-443}:443/udp'
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - backend
+    depends_on:
+      - auth
+      - users
+      - city
+      - core
+      - notification
+      - scheduler
+      - integration
+      - admin
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:2019/metrics']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   # Metrics Exporter: PostgreSQL
   postgres-exporter:
     profiles: ["monitoring"]
@@ -280,8 +316,9 @@ services:
       timeout: 10s
       retries: 3
 
-  # Reverse Proxy: Nginx
+  # Reverse Proxy: Nginx (Production)
   nginx:
+    profiles: ["production"]
     image: nginx:alpine
     container_name: heidi-nginx
     restart: always
@@ -624,6 +661,8 @@ volumes:
   alertmanager_data:
   grafana_data:
   pgadmin_data:
+  caddy_data:
+  caddy_config:
 
 networks:
   backend:
