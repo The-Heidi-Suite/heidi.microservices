@@ -8,8 +8,7 @@ ARG NODE_VERSION=24.11.0
 FROM node:${NODE_VERSION}-alpine AS base
 
 # Install essential runtime dependencies
-# openssl1.1-compat is required for Prisma query engine (linux-musl binary)
-RUN apk add --no-cache dumb-init curl wget openssl1.1-compat
+RUN apk add --no-cache dumb-init curl wget
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -100,9 +99,6 @@ COPY --from=build --chown=nestjs:nodejs /app/libs ./libs
 RUN mkdir -p /app/logs && chown -R nestjs:nodejs /app/logs
 
 USER nestjs
-
-# Expose port (will be overridden by environment variable)
-EXPOSE 3000
 
 # Health check (uses default port, actual port comes from SERVICE_PORT env var)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \

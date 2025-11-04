@@ -70,6 +70,7 @@ services:
 
   # Metrics Exporter: PostgreSQL
   postgres-exporter:
+    profiles: ["monitoring"]
     image: quay.io/prometheuscommunity/postgres-exporter:latest
     container_name: heidi-postgres-exporter
     restart: always
@@ -91,6 +92,7 @@ services:
 
   # Metrics Exporter: Redis
   redis-exporter:
+    profiles: ["monitoring"]
     image: oliver006/redis_exporter:latest
     container_name: heidi-redis-exporter
     restart: always
@@ -116,6 +118,7 @@ services:
 
   # Metrics Exporter: Node (Host System Metrics)
   node-exporter:
+    profiles: ["monitoring"]
     image: prom/node-exporter:latest
     container_name: heidi-node-exporter
     restart: always
@@ -140,6 +143,7 @@ services:
 
   # Monitoring: Prometheus
   prometheus:
+    profiles: ["monitoring"]
     image: prom/prometheus:latest
     container_name: heidi-prometheus
     restart: always
@@ -171,6 +175,7 @@ services:
 
   # Monitoring: Alertmanager
   alertmanager:
+    profiles: ["monitoring"]
     image: prom/alertmanager:latest
     container_name: heidi-alertmanager
     restart: always
@@ -195,6 +200,7 @@ services:
 
   # Monitoring: Grafana
   grafana:
+    profiles: ["monitoring"]
     image: grafana/grafana:latest
     container_name: heidi-grafana
     restart: always
@@ -310,11 +316,6 @@ services:
       NODE_ENV: production
       SERVICE_NAME: auth
       SERVICE_PORT: 3001
-      DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_auth?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
     ports:
       - '3001:3001'
     depends_on:
@@ -348,9 +349,6 @@ services:
       NODE_ENV: production
       SERVICE_NAME: users
       SERVICE_PORT: 3002
-      DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_users?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
     ports:
       - '3002:3002'
     depends_on:
@@ -384,9 +382,6 @@ services:
       NODE_ENV: production
       SERVICE_NAME: city
       SERVICE_PORT: 3003
-      DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_city?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
     ports:
       - '3003:3003'
     depends_on:
@@ -420,9 +415,6 @@ services:
       NODE_ENV: production
       SERVICE_NAME: core
       SERVICE_PORT: 3004
-      DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_core?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
     ports:
       - '3004:3004'
     depends_on:
@@ -456,13 +448,6 @@ services:
       NODE_ENV: production
       SERVICE_NAME: notification
       SERVICE_PORT: 3005
-      DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_notification?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASSWORD: ${SMTP_PASSWORD}
     ports:
       - '3005:3005'
     depends_on:
@@ -496,10 +481,6 @@ services:
       NODE_ENV: production
       SERVICE_NAME: scheduler
       SERVICE_PORT: 3006
-      DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_scheduler?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
-      SCHEDULER_ENABLED: ${SCHEDULER_ENABLED:-true}
     ports:
       - '3006:3006'
     depends_on:
@@ -533,10 +514,6 @@ services:
       NODE_ENV: production
       SERVICE_NAME: integration
       SERVICE_PORT: 3007
-      DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_integration?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
-      WEBHOOK_SECRET: ${WEBHOOK_SECRET}
     ports:
       - '3007:3007'
     depends_on:
@@ -570,12 +547,6 @@ services:
       NODE_ENV: production
       SERVICE_NAME: admin
       SERVICE_PORT: 3008
-      ADMIN_DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_admin?schema=public
-      DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_admin?schema=public
-      REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
-      RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
-      JWT_SECRET: ${JWT_SECRET}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
     ports:
       - '3008:3008'
     depends_on:
