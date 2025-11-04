@@ -1,10 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { MicroserviceOptions, Transport } from '@nestjs/microservices';
+import { MicroserviceOptions } from '@nestjs/microservices';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
 import { ConfigService } from '@heidi/config';
+import { getRabbitMQMicroserviceOptions } from '@heidi/rabbitmq';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -20,25 +21,9 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   // Connect RabbitMQ microservice (for request-response patterns)
-  const rabbitConfig = configService.rabbitmqConfig;
-  const rabbitmqUrl = `amqp://${rabbitConfig.user}:${rabbitConfig.password}@${rabbitConfig.host}:${rabbitConfig.port}${rabbitConfig.vhost}`;
-
-  app.connectMicroservice<MicroserviceOptions>({
-    transport: Transport.RMQ,
-    options: {
-      urls: [rabbitmqUrl],
-      queue: 'heidi_queue',
-      queueOptions: {
-        durable: true,
-        noAck: false, // Manual acknowledgment - allows NACK for unmatched messages
-        prefetchCount: 10,
-      },
-      socketOptions: {
-        heartbeatIntervalInSeconds: 30,
-        reconnectTimeInSeconds: 5,
-      },
-    },
-  });
+  app.connectMicroservice<MicroserviceOptions>(
+    getRabbitMQMicroserviceOptions(configService),
+  );
 
   await app.startAllMicroservices();
   logger.log('RabbitMQ microservice connected');
