@@ -1,0 +1,59 @@
+// Prisma schema for Notification microservice
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../../../../../node_modules/.prisma/client-notification"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("NOTIFICATION_DATABASE_URL")
+}
+
+// Notification model - for multi-channel notifications
+// Note: userId is stored as String (foreign key to User in auth/users service)
+// Cross-service relationships are handled via IDs only (no FK constraints)
+model Notification {
+  id        String             @id @default(uuid())
+  userId    String             // Reference to User.id from auth/users service
+  type      NotificationType
+  channel   NotificationChannel
+  subject   String?
+  content   String
+  metadata  Json?
+  status    NotificationStatus @default(PENDING)
+  sentAt    DateTime?
+  readAt    DateTime?
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([type])
+  @@index([channel])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+  ALERT
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PUSH
+  IN_APP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+  DELIVERED
+  READ
+}

@@ -1,0 +1,32 @@
+// Prisma schema for Scheduler microservice
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../../../../../node_modules/.prisma/client-scheduler"
+  binaryTargets = ["native", "linux-musl"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("SCHEDULER_DATABASE_URL")
+}
+
+// Schedule model - for cron jobs and scheduled tasks
+model Schedule {
+  id             String    @id @default(uuid())
+  name           String
+  description    String?
+  cronExpression String
+  payload        Json?
+  isEnabled      Boolean   @default(true)
+  lastRun        DateTime?
+  lastRunStatus  String?
+  nextRun        DateTime?
+  runCount       Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([isEnabled])
+  @@index([nextRun])
+  @@index([name])
+  @@map("schedules")
+}
