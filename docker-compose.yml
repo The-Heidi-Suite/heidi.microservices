@@ -1,3 +1,11 @@
+# Docker Compose configuration for HEIDI microservices
+#
+# BUILD MEMORY OPTIMIZATION:
+# If you encounter "cannot allocate memory" errors during builds:
+# 1. Use sequential builds: yarn docker:build:sequential (or npm run docker:build:sequential)
+# 2. Increase Docker Desktop memory allocation (Settings > Resources > Memory)
+# 3. Build services individually: docker compose build <service-name>
+#
 services:
   postgres:
     image: postgres:16-alpine
