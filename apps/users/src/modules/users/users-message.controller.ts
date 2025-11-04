@@ -38,6 +38,28 @@ export class UsersMessageController {
     }
   }
 
+  @MessagePattern(RabbitMQPatterns.USER_FIND_BY_USERNAME)
+  async findByUsername(@Payload() data: { username: string }) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_FIND_BY_USERNAME} for username: ${data.username}`,
+    );
+
+    try {
+      // Note: Returns password for authentication purposes (internal RabbitMQ communication)
+      const user = await this.usersService.findByUsername(data.username);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_FIND_BY_USERNAME} for username: ${data.username} (will ACK)`,
+      );
+      return user; // Return user with password for auth service
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_FIND_BY_USERNAME} for username: ${data.username} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
   @MessagePattern(RabbitMQPatterns.USER_FIND_BY_ID)
   async findById(@Payload() data: { id: string }) {
     this.logger.log(`Received message: ${RabbitMQPatterns.USER_FIND_BY_ID} for id: ${data.id}`);

@@ -52,6 +52,7 @@ export class UsersController {
       example: {
         id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'user@example.com',
+        username: 'johndoe',
         firstName: 'John',
         lastName: 'Doe',
         role: 'USER',
@@ -128,6 +129,7 @@ export class UsersController {
           {
             id: '123e4567-e89b-12d3-a456-426614174000',
             email: 'user@example.com',
+            username: 'johndoe',
             firstName: 'John',
             lastName: 'Doe',
             role: 'CITIZEN',
@@ -193,6 +195,7 @@ export class UsersController {
       example: {
         id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'user@example.com',
+        username: 'johndoe',
         firstName: 'John',
         lastName: 'Doe',
         role: 'USER',
@@ -232,6 +235,7 @@ export class UsersController {
       example: {
         id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'user@example.com',
+        username: 'johndoe',
         firstName: 'John',
         lastName: 'Doe',
         role: 'USER',
@@ -289,6 +293,7 @@ export class UsersController {
       example: {
         id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'user@example.com',
+        username: 'johndoe',
         firstName: 'Jane',
         lastName: 'Smith',
         role: 'ADMIN',
@@ -362,6 +367,7 @@ export class UsersController {
       example: {
         id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'user@example.com',
+        username: 'johndoe',
         firstName: 'John',
         lastName: 'Doe',
         role: 'CITIZEN',
@@ -414,6 +420,7 @@ export class UsersController {
       example: {
         id: '123e4567-e89b-12d3-a456-426614174000',
         email: 'user@example.com',
+        username: 'johndoe',
         firstName: 'Jane',
         lastName: 'Smith',
       },

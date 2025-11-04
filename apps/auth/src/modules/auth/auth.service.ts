@@ -99,11 +99,23 @@ export class AuthService {
 
     try {
       // Step 1: Find user from users service via RabbitMQ
-      const user = await this.rabbitmq.send<any, { email: string }>(
-        RabbitMQPatterns.USER_FIND_BY_EMAIL,
-        { email: dto.email },
-        10000, // 10 second timeout
-      );
+      // Determine if login identifier is email or username
+      const isEmail = dto.email.includes('@');
+      let user: any;
+
+      if (isEmail) {
+        user = await this.rabbitmq.send<any, { email: string }>(
+          RabbitMQPatterns.USER_FIND_BY_EMAIL,
+          { email: dto.email },
+          10000, // 10 second timeout
+        );
+      } else {
+        user = await this.rabbitmq.send<any, { username: string }>(
+          RabbitMQPatterns.USER_FIND_BY_USERNAME,
+          { username: dto.email },
+          10000, // 10 second timeout
+        );
+      }
 
       if (!user || !user.isActive) {
         failureReason = 'User not found or inactive';
@@ -192,6 +204,7 @@ export class AuthService {
         user: {
           id: user.id,
           email: user.email,
+          username: user.username,
           role: user.role,
           firstName: user.firstName,
           lastName: user.lastName,

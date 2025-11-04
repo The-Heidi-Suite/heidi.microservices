@@ -36,7 +36,10 @@ export class AuthController {
 
   @Post('login')
   @Public()
-  @ApiOperation({ summary: 'User login', description: 'Authenticate user with email and password' })
+  @ApiOperation({
+    summary: 'User login',
+    description: 'Authenticate user with email or username and password',
+  })
   @ApiBody({ type: LoginDto })
   @ApiResponse({
     status: 200,
@@ -48,6 +51,7 @@ export class AuthController {
         user: {
           id: '123e4567-e89b-12d3-a456-426614174000',
           email: 'user@example.com',
+          username: 'johndoe',
           role: 'USER',
         },
       },

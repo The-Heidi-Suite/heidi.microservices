@@ -41,13 +41,22 @@ export class UsersService {
   async register(dto: RegisterDto) {
     this.logger.log(`Registering user: ${dto.email}`);
 
-    // Check if user already exists
-    const existingUser = await this.prisma.user.findUnique({
+    // Check if user already exists by email
+    const existingUserByEmail = await this.prisma.user.findUnique({
       where: { email: dto.email },
     });
 
-    if (existingUser) {
+    if (existingUserByEmail) {
       throw new ConflictException('User with this email already exists');
+    }
+
+    // Check if username already exists
+    const existingUserByUsername = await this.prisma.user.findUnique({
+      where: { username: dto.username },
+    });
+
+    if (existingUserByUsername) {
+      throw new ConflictException('User with this username already exists');
     }
 
     // Hash password
@@ -62,6 +71,7 @@ export class UsersService {
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
+        username: dto.username,
         password: hashedPassword,
         firstName: dto.firstName,
         lastName: dto.lastName,
@@ -70,6 +80,7 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        username: true,
         role: true,
         firstName: true,
         lastName: true,
@@ -99,6 +110,7 @@ export class UsersService {
         action: 'CREATE_LOCAL',
         payload: {
           email: dto.email,
+          username: dto.username,
           password: hashedPassword,
           firstName: dto.firstName,
           lastName: dto.lastName,
@@ -133,6 +145,7 @@ export class UsersService {
       const user = await this.prisma.user.create({
         data: {
           email: dto.email,
+          username: dto.username,
           password: hashedPassword,
           firstName: dto.firstName,
           lastName: dto.lastName,
@@ -141,6 +154,7 @@ export class UsersService {
         select: {
           id: true,
           email: true,
+          username: true,
           role: true,
           firstName: true,
           lastName: true,
@@ -223,6 +237,7 @@ export class UsersService {
         select: {
           id: true,
           email: true,
+          username: true,
           role: true,
           firstName: true,
           lastName: true,
@@ -243,6 +258,7 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        username: true,
         role: true,
         firstName: true,
         lastName: true,
@@ -266,6 +282,29 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        username: true,
+        password: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
+  /**
+   * Find user by username (for internal/RabbitMQ use)
+   * Returns user with password for authentication purposes
+   */
+  async findByUsername(username: string) {
+    return this.prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        email: true,
+        username: true,
         password: true,
         role: true,
         firstName: true,
@@ -283,6 +322,7 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        username: true,
         role: true,
         firstName: true,
         lastName: true,
@@ -309,6 +349,7 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        username: true,
         role: true,
         firstName: true,
         lastName: true,
@@ -354,6 +395,7 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        username: true,
         role: true,
         firstName: true,
         lastName: true,
@@ -394,6 +436,7 @@ export class UsersService {
       select: {
         id: true,
         email: true,
+        username: true,
         role: true,
         firstName: true,
         lastName: true,
