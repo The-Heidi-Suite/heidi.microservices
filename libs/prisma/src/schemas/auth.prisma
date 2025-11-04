@@ -2,8 +2,9 @@
 // This schema handles sessions and audit logs only (not user data)
 // User data is stored in users.prisma (users database)
 generator client {
-  provider = "prisma-client-js"
-  output   = "../../../../node_modules/.prisma/client-auth"
+  provider      = "prisma-client-js"
+  output        = "../../../../node_modules/.prisma/client-auth"
+  binaryTargets = ["native", "linux-musl"]
 }
 
 datasource db {

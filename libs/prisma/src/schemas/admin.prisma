@@ -1,7 +1,8 @@
 // Prisma schema for Admin microservice
 generator client {
-  provider = "prisma-client-js"
-  output   = "../../../../node_modules/.prisma/client-admin"
+  provider      = "prisma-client-js"
+  output        = "../../../../node_modules/.prisma/client-admin"
+  binaryTargets = ["native", "linux-musl"]
 }
 
 datasource db {
