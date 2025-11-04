@@ -3,8 +3,18 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginDto {
   @ApiProperty({
-    description: 'User email address or username',
+    description: 'User email address or username for login',
     example: 'user@example.com',
+    examples: {
+      email: {
+        value: 'user@example.com',
+        description: 'Login with email address',
+      },
+      username: {
+        value: 'johndoe',
+        description: 'Login with username',
+      },
+    },
     oneOf: [
       { type: 'string', format: 'email' },
       { type: 'string', pattern: '^[a-zA-Z0-9_]+$' },

@@ -38,9 +38,28 @@ export class AuthController {
   @Public()
   @ApiOperation({
     summary: 'User login',
-    description: 'Authenticate user with email or username and password',
+    description:
+      'Authenticate user with email or username and password. You can use either email address (e.g., user@example.com) or username (e.g., johndoe) to login.',
   })
-  @ApiBody({ type: LoginDto })
+  @ApiBody({
+    type: LoginDto,
+    examples: {
+      emailLogin: {
+        summary: 'Login with email',
+        value: {
+          email: 'user@example.com',
+          password: 'password123',
+        },
+      },
+      usernameLogin: {
+        summary: 'Login with username',
+        value: {
+          email: 'johndoe',
+          password: 'password123',
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 200,
     description: 'Login successful',
