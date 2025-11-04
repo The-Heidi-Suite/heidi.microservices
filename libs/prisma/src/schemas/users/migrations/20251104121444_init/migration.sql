@@ -1,27 +1,5 @@
-/*
-  Warnings:
-
-  - You are about to drop the `auth_audit_logs` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `sessions` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'CITY_ADMIN', 'CITIZEN');
-
--- DropTable
-DROP TABLE "auth_audit_logs";
-
--- DropTable
-DROP TABLE "sessions";
-
--- DropEnum
-DROP TYPE "AuthAction";
-
--- DropEnum
-DROP TYPE "AuthProvider";
-
--- DropEnum
-DROP TYPE "TokenType";
 
 -- CreateTable
 CREATE TABLE "users" (

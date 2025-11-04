@@ -1,14 +1,5 @@
-/*
-  Warnings:
-
-  - You are about to drop the `schedules` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
 CREATE TYPE "IntegrationProvider" AS ENUM ('STRIPE', 'SENDGRID', 'TWILIO', 'SLACK', 'WEBHOOK', 'CUSTOM');
-
--- DropTable
-DROP TABLE "schedules";
 
 -- CreateTable
 CREATE TABLE "integrations" (

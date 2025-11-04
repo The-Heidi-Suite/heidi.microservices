@@ -1,24 +1,5 @@
-/*
-  Warnings:
-
-  - You are about to drop the `integration_logs` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `integrations` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
 CREATE TYPE "AdminRole" AS ENUM ('ADMIN', 'OPERATOR', 'VIEWER');
-
--- DropForeignKey
-ALTER TABLE "integration_logs" DROP CONSTRAINT "integration_logs_integrationId_fkey";
-
--- DropTable
-DROP TABLE "integration_logs";
-
--- DropTable
-DROP TABLE "integrations";
-
--- DropEnum
-DROP TYPE "IntegrationProvider";
 
 -- CreateTable
 CREATE TABLE "admin_users" (

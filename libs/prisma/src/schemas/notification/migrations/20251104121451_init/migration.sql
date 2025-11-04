@@ -1,13 +1,3 @@
-/*
-  Warnings:
-
-  - You are about to drop the `listings` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `permissions` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `role_permissions` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `system_configs` table. If the table is not empty, all the data it contains will be lost.
-  - You are about to drop the `user_city_assignments` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
 CREATE TYPE "NotificationType" AS ENUM ('INFO', 'WARNING', 'ERROR', 'SUCCESS', 'ALERT');
 
@@ -16,30 +6,6 @@ CREATE TYPE "NotificationChannel" AS ENUM ('EMAIL', 'SMS', 'PUSH', 'IN_APP');
 
 -- CreateEnum
 CREATE TYPE "NotificationStatus" AS ENUM ('PENDING', 'SENT', 'FAILED', 'DELIVERED', 'READ');
-
--- DropForeignKey
-ALTER TABLE "role_permissions" DROP CONSTRAINT "role_permissions_permissionId_fkey";
-
--- DropTable
-DROP TABLE "listings";
-
--- DropTable
-DROP TABLE "permissions";
-
--- DropTable
-DROP TABLE "role_permissions";
-
--- DropTable
-DROP TABLE "system_configs";
-
--- DropTable
-DROP TABLE "user_city_assignments";
-
--- DropEnum
-DROP TYPE "ListingStatus";
-
--- DropEnum
-DROP TYPE "UserRole";
 
 -- CreateTable
 CREATE TABLE "notifications" (

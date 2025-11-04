@@ -1,21 +1,3 @@
-/*
-  Warnings:
-
-  - You are about to drop the `notifications` table. If the table is not empty, all the data it contains will be lost.
-
-*/
--- DropTable
-DROP TABLE "notifications";
-
--- DropEnum
-DROP TYPE "NotificationChannel";
-
--- DropEnum
-DROP TYPE "NotificationStatus";
-
--- DropEnum
-DROP TYPE "NotificationType";
-
 -- CreateTable
 CREATE TABLE "schedules" (
     "id" TEXT NOT NULL,

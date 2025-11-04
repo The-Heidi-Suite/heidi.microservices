@@ -1,20 +1,8 @@
-/*
-  Warnings:
-
-  - You are about to drop the `cities` table. If the table is not empty, all the data it contains will be lost.
-
-*/
 -- CreateEnum
 CREATE TYPE "UserRole" AS ENUM ('SUPER_ADMIN', 'CITY_ADMIN', 'CITIZEN');
 
 -- CreateEnum
 CREATE TYPE "ListingStatus" AS ENUM ('PENDING', 'APPROVED', 'REJECTED', 'DELETED');
-
--- DropForeignKey
-ALTER TABLE "cities" DROP CONSTRAINT "cities_parentCityId_fkey";
-
--- DropTable
-DROP TABLE "cities";
 
 -- CreateTable
 CREATE TABLE "system_configs" (
