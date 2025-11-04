@@ -33,11 +33,16 @@ RUN npm ci --omit=dev --legacy-peer-deps && \
 FROM base AS build
 
 # Install build dependencies (including bash for scripts)
+# Prisma requires openssl, libc6-compat (glibc compatibility), and ca-certificates
+# Note: If libc6-compat package is not found, replace with gcompat (Alpine equivalent)
 RUN apk add --no-cache --virtual .build-deps \
     python3 \
     make \
     g++ \
     bash \
+    openssl \
+    libc6-compat \
+    ca-certificates \
     && rm -rf /var/cache/apk/*
 
 # Copy package files
@@ -68,7 +73,7 @@ RUN bash scripts/prisma-generate-all.sh
 
 # Build the specific app
 # Limit Node.js memory to prevent resource exhaustion during builds
-RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build:${APP_NAME}
+RUN npm run build:${APP_NAME}
 
 # Remove build dependencies to reduce image size
 RUN apk del .build-deps
