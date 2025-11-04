@@ -21,7 +21,7 @@ SERVICES=("${ACTIVE_SERVICES[@]}")
 
 for service in "${SERVICES[@]}"; do
   echo "📦 Generating Prisma client for: $service"
-  SCHEMA_PATH="libs/prisma/src/schemas/$service.prisma"
+  SCHEMA_PATH="libs/prisma/src/schemas/$service/schema.prisma"
   if [ ! -f "$SCHEMA_PATH" ]; then
     echo "⚠️  Skipping $service: schema not found at $SCHEMA_PATH"
     continue

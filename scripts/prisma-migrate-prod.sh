@@ -51,7 +51,7 @@ for service in "${SERVICES[@]}"; do
   fi
 
   # Deploy migration from centralized schema path
-  SCHEMA_PATH="libs/prisma/src/schemas/$service.prisma"
+  SCHEMA_PATH="libs/prisma/src/schemas/$service/schema.prisma"
   if [ ! -f "$SCHEMA_PATH" ]; then
     echo "❌ Error: schema not found at $SCHEMA_PATH"
     exit 1

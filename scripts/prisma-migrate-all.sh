@@ -50,7 +50,7 @@ for service in "${SERVICES[@]}"; do
   fi
 
   # Run migration
-  SCHEMA_PATH="libs/prisma/src/schemas/$service.prisma"
+  SCHEMA_PATH="libs/prisma/src/schemas/$service/schema.prisma"
   if npx prisma migrate dev --schema="$SCHEMA_PATH" --name init; then
     echo "✅ Migration for $service completed successfully"
   else
@@ -66,5 +66,5 @@ echo ""
 echo "🎉 All migrations completed successfully!"
 echo ""
 echo "💡 Next steps:"
-echo "   - Verify migrations: npx prisma studio --schema=libs/prisma/src/schemas/<service>.prisma"
+echo "   - Verify migrations: npx prisma studio --schema=libs/prisma/src/schemas/<service>/schema.prisma"
 echo "   - Start microservices: docker compose up"

@@ -133,31 +133,31 @@ migrate-all:
 
 migrate-auth:
 	@echo "🗄️  Running migrations for auth..."
-	npx prisma migrate dev --schema=libs/prisma/schema/auth.prisma
+	npx prisma migrate dev --schema=libs/prisma/src/schemas/auth/schema.prisma
 
 migrate-users:
 	@echo "🗄️  Running migrations for users..."
-	npx prisma migrate dev --schema=libs/prisma/schema/users.prisma
+	npx prisma migrate dev --schema=libs/prisma/src/schemas/users/schema.prisma
 
 migrate-city:
 	@echo "🗄️  Running migrations for city..."
-	npx prisma migrate dev --schema=libs/prisma/schema/city.prisma
+	npx prisma migrate dev --schema=libs/prisma/src/schemas/city/schema.prisma
 
 migrate-core:
 	@echo "🗄️  Running migrations for core..."
-	npx prisma migrate dev --schema=libs/prisma/schema/core.prisma
+	npx prisma migrate dev --schema=libs/prisma/src/schemas/core/schema.prisma
 
 migrate-notification:
 	@echo "🗄️  Running migrations for notification..."
-	npx prisma migrate dev --schema=libs/prisma/schema/notification.prisma
+	npx prisma migrate dev --schema=libs/prisma/src/schemas/notification/schema.prisma
 
 migrate-scheduler:
 	@echo "🗄️  Running migrations for scheduler..."
-	npx prisma migrate dev --schema=libs/prisma/schema/scheduler.prisma
+	npx prisma migrate dev --schema=libs/prisma/src/schemas/scheduler/schema.prisma
 
 migrate-integration:
 	@echo "🗄️  Running migrations for integration..."
-	npx prisma migrate dev --schema=libs/prisma/schema/integration.prisma
+	npx prisma migrate dev --schema=libs/prisma/src/schemas/integration/schema.prisma
 
 migrate-prod:
 	@echo "🗄️  Deploying migrations to production..."
