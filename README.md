@@ -131,9 +131,21 @@ cp .env.example .env
 
 ### 3. Start Infrastructure
 
+**Option A: Development (docker-compose.dev.yml)**
+
 ```bash
 # Start PostgreSQL, Redis, RabbitMQ using Docker
 docker compose -f docker-compose.dev.yml up -d postgres redis rabbitmq
+
+# Wait for services to be ready (~10 seconds)
+# Note: Databases are automatically created on first startup via infra/postgres/init-databases.sh
+```
+
+**Option B: Production with Profiles (Step-wise)**
+
+```bash
+# Start infrastructure first
+yarn docker:up:infra
 
 # Wait for services to be ready (~10 seconds)
 # Note: Databases are automatically created on first startup via infra/postgres/init-databases.sh
@@ -268,7 +280,66 @@ heidi.microservices/
 
 ## Docker Commands
 
-### Development
+> ⚠️ **Note**: Profile-based deployment is a temporary feature for development. For production, use the `full` profile or deploy all services together.
+
+### Profile-Based Deployment (Development)
+
+The project uses Docker Compose profiles to enable step-wise deployment during development:
+
+- **`infra`** - Infrastructure services (PostgreSQL, Redis, RabbitMQ, Nginx, pgAdmin, Redis Commander)
+- **`services`** - Microservices (auth, users, city, core, notification, scheduler, integration, admin)
+- **`full`** - All services (infra + services)
+- **`monitoring`** - Monitoring stack (Prometheus, Grafana, Alertmanager, exporters)
+
+#### Step-Wise Deployment (Recommended for Development)
+
+```bash
+# Step 1: Start infrastructure first
+yarn docker:up:infra
+# or
+docker compose --profile infra up -d
+
+# Step 2: Start microservices after infra is ready
+yarn docker:up:services
+# or
+docker compose --profile services up -d
+```
+
+#### Infrastructure Only
+
+```bash
+# Build infrastructure services
+yarn docker:build:infra
+
+# Start infrastructure
+yarn docker:up:infra
+
+# View infrastructure logs
+yarn docker:logs:infra
+
+# Stop infrastructure
+yarn docker:down:infra
+```
+
+#### Microservices Only
+
+```bash
+# Build microservices (requires infra to be running)
+yarn docker:build:services
+
+# Start microservices
+yarn docker:up:services
+
+# View microservices logs
+yarn docker:logs:services
+
+# Stop microservices
+yarn docker:down:services
+```
+
+### Full Deployment
+
+#### Development
 
 ```bash
 # Start all infrastructure services
@@ -284,24 +355,62 @@ docker compose -f docker-compose.dev.yml down
 docker compose -f docker-compose.dev.yml down -v
 ```
 
-### Production
+#### Production
 
 ```bash
-# Build all service images
-docker compose build
+# Build all service images (full profile)
+yarn docker:build
+# or
+docker compose --profile full build
 
-# Start production environment
-docker compose up -d
+# Start production environment (all services)
+yarn docker:up
+# or
+docker compose --profile full up -d
+
+# Start with monitoring stack
+yarn docker:up:prod
+# or
+docker compose --profile full --profile monitoring up -d
 
 # View logs
-docker compose logs -f
+yarn docker:logs
+# or
+docker compose --profile full logs -f
 
 # Scale a specific service
-docker compose up -d --scale users=3
+docker compose --profile full up -d --scale users=3
 
 # Stop production environment
-docker compose down
+yarn docker:down
+# or
+docker compose --profile full down
 ```
+
+### Available Scripts
+
+**Build Commands:**
+- `yarn docker:build` - Build all services (full profile)
+- `yarn docker:build:prod` - Build with full + monitoring
+- `yarn docker:build:infra` - Build only infrastructure
+- `yarn docker:build:services` - Build only microservices
+
+**Up Commands:**
+- `yarn docker:up` - Start all services (full profile)
+- `yarn docker:up:prod` - Start with full + monitoring
+- `yarn docker:up:infra` - Start only infrastructure
+- `yarn docker:up:services` - Start only microservices
+
+**Down Commands:**
+- `yarn docker:down` - Stop all services
+- `yarn docker:down:infra` - Stop only infrastructure
+- `yarn docker:down:services` - Stop only microservices
+
+**Logs Commands:**
+- `yarn docker:logs` - Logs for all services
+- `yarn docker:logs:prod` - Logs with monitoring
+- `yarn docker:logs:infra` - Logs for infrastructure
+- `yarn docker:logs:services` - Logs for microservices
 
 ## API Examples
 

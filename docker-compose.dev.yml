@@ -38,7 +38,7 @@ services:
       - heidi-network
 
   rabbitmq:
-    image: rabbitmq:3-management-alpine
+    image: rabbitmq:4.1.5-management-alpine
     container_name: heidi-rabbitmq-dev
     restart: unless-stopped
     environment:
@@ -48,13 +48,17 @@ services:
     ports:
       - '5672:5672'
       - '15672:15672'
+      - '15692:15692'
     volumes:
       - rabbitmq_data_dev:/var/lib/rabbitmq
+      - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', 'ping']
       interval: 30s
       timeout: 10s
       retries: 5
+      start_period: 30s
     networks:
       - heidi-network
 
