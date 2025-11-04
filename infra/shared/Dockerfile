@@ -8,7 +8,8 @@ ARG NODE_VERSION=24.11.0
 FROM node:${NODE_VERSION}-alpine AS base
 
 # Install essential runtime dependencies
-RUN apk add --no-cache dumb-init curl wget
+# openssl1.1-compat is required for Prisma query engine (linux-musl binary)
+RUN apk add --no-cache dumb-init curl wget openssl1.1-compat
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -20,43 +21,55 @@ WORKDIR /app
 FROM base AS deps
 
 # Copy package files for dependency installation
-COPY package.json yarn.lock ./
+COPY package.json package-lock.json* ./
 COPY tsconfig.json nest-cli.json ./
 
 # Install production dependencies only
-RUN yarn install --frozen-lockfile --production && \
-    yarn cache clean
+# npm ci is faster and more reliable than npm install for Docker builds
+# Using --legacy-peer-deps to match Yarn's peer dependency handling
+RUN npm ci --omit=dev --legacy-peer-deps && \
+    npm cache clean --force
 
 # Stage 3: Build stage
 FROM base AS build
 
-# Install build dependencies
+# Install build dependencies (including bash for scripts)
 RUN apk add --no-cache --virtual .build-deps \
     python3 \
     make \
     g++ \
+    bash \
     && rm -rf /var/cache/apk/*
 
 # Copy package files
-COPY package.json yarn.lock ./
+COPY package.json package-lock.json* ./
 COPY tsconfig.json nest-cli.json ./
 
 # Install all dependencies (including dev dependencies for building)
-RUN yarn install --frozen-lockfile
+# npm ci is faster and more reliable than npm install for Docker builds
+# Using --legacy-peer-deps to match Yarn's peer dependency handling
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY apps/ ./apps/
 COPY libs/ ./libs/
+
+# Copy scripts directory (needed for prisma:generate)
+COPY scripts/ ./scripts/
+# Ensure scripts are executable and verify they exist
+RUN chmod +x scripts/*.sh
 
 # Build argument for service name
 ARG APP_NAME
 ENV APP_NAME=${APP_NAME}
 
 # Generate Prisma Client (required for build)
-RUN yarn prisma:generate
+# Script uses bash arrays, so we need bash (installed in build-deps)
+RUN bash scripts/prisma-generate-all.sh
 
 # Build the specific app
-RUN yarn build:${APP_NAME}
+# Limit Node.js memory to prevent resource exhaustion during builds
+RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build:${APP_NAME}
 
 # Remove build dependencies to reduce image size
 RUN apk del .build-deps
@@ -76,12 +89,11 @@ COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 # Copy built application from build stage
 COPY --from=build --chown=nestjs:nodejs /app/dist/apps/${APP_NAME} ./dist
 
-# Copy Prisma schema and generated client (required at runtime)
-COPY --from=build --chown=nestjs:nodejs /app/libs/prisma/schema ./libs/prisma/schema
+# Copy Prisma generated client (required at runtime)
 COPY --from=build --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build --chown=nestjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy necessary libs that might be needed at runtime
+# Copy necessary libs that might be needed at runtime (includes Prisma schemas at libs/prisma/src/schemas/)
 COPY --from=build --chown=nestjs:nodejs /app/libs ./libs
 
 # Create logs directory
