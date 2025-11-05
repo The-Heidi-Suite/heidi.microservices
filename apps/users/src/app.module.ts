@@ -7,7 +7,7 @@ import { LoggerModule } from '@heidi/logger';
 import { RmqModule } from '@heidi/rabbitmq';
 import { JwtModule } from '@heidi/jwt';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
-import { LoggingInterceptor, TimeoutInterceptor } from '@heidi/interceptors';
+import { LoggingInterceptor, TimeoutInterceptor, TransformInterceptor } from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 import { ErrorHandlingModule } from '@heidi/errors';
 import { UsersModule } from './modules/users/users.module';
@@ -42,6 +42,10 @@ import { HealthController } from './health.controller';
         return new TimeoutInterceptor(timeoutMs);
       },
       inject: [ConfigService],
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformInterceptor,
     },
   ],
 })
