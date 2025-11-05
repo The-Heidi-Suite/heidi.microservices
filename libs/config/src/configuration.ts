@@ -184,4 +184,7 @@ export default () => ({
 
   // Client URL
   clientURL: process.env.CLIENT_URL,
+
+  // Frontend Base URL (for verification links)
+  frontendBaseUrl: process.env.CLIENT_URL || 'http://localhost:3000',
 });

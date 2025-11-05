@@ -150,6 +150,20 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
+      // Check email verification (fail fast if email exists and not verified)
+      if (user.email && !user.emailVerified) {
+        failureReason = 'Email not verified';
+        await this.createAuditLog(
+          user.id,
+          AuthAction.LOGIN,
+          false,
+          failureReason,
+          ipAddress,
+          userAgent,
+        );
+        throw new ForbiddenException('Please verify your email address before logging in');
+      }
+
       // Verify password
       const isPasswordValid = await bcrypt.compare(dto.password, user.password);
       if (!isPasswordValid) {

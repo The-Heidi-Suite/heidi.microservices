@@ -74,6 +74,13 @@ export const RabbitMQPatterns = {
   NOTIFICATION_SENT: 'notification.sent',
   NOTIFICATION_FAILED: 'notification.failed',
 
+  // Verification events
+  VERIFICATION_REQUIRED: 'verification.required',
+  VERIFICATION_SENT: 'verification.sent',
+  VERIFICATION_VERIFIED: 'verification.verified',
+  VERIFICATION_FAILED: 'verification.failed',
+  VERIFICATION_CANCELLED: 'verification.cancelled',
+
   // City events
   CITY_CREATED: 'city.created',
   CITY_UPDATED: 'city.updated',
