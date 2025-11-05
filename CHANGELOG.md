@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.12.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.11.0...v1.12.0) (2025-11-05)
+
+
+### 🔧 Chores
+
+* add .prettierignore to exclude CHANGELOG.md from formatting ([0de3cf7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0de3cf70cdb7eb517f704cfeea409fc039cde596))
+
+
+### ✨ Features
+
+* **auth, users:** add comprehensive error response DTOs for authentication and user management ([32f8524](https://github.com/The-Heidi-Suite/heidi.microservices/commit/32f85242dae314b382c6feab1262274a2ee75682))
+* **auth, users:** add new response DTOs for authentication and user management ([6cbafe7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/6cbafe76491f0c869b35435ecb1dfe479c927ff6))
+* **auth, users:** update API response types for improved clarity ([fe52172](https://github.com/The-Heidi-Suite/heidi.microservices/commit/fe521726970da8cfb188398dced24ff36ed7cca4))
+* **interceptors:** add TransformInterceptor to Auth and Users modules ([4f11c22](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4f11c225bbbd8dcb131e94791023fc1947f33544))
+
+
+### ♻️ Code Refactoring
+
+* **auth, users:** replace ApiErrorResponseDto with specific error response DTOs ([f13a9da](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f13a9dae0181c0ed226982dc55c99f6a27e09b79))
+
 ## [1.11.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.10.0...v1.11.0) (2025-11-05)
 
 
