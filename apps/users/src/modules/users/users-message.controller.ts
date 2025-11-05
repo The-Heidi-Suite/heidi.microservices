@@ -66,12 +66,10 @@ export class UsersMessageController {
 
     try {
       const user = await this.usersService.findOne(data.id);
-      // Return user without password
-      const { password, ...userWithoutPassword } = user as any;
       this.logger.debug(
         `Successfully processed message: ${RabbitMQPatterns.USER_FIND_BY_ID} for id: ${data.id} (will ACK)`,
       );
-      return userWithoutPassword;
+      return user;
     } catch (error) {
       this.logger.error(
         `Error processing message: ${RabbitMQPatterns.USER_FIND_BY_ID} for id: ${data.id} (will NACK)`,
@@ -186,6 +184,42 @@ export class UsersMessageController {
     } catch (error) {
       this.logger.error(
         `Error processing message: ${RabbitMQPatterns.USER_CONVERT_GUEST} for guestUserId: ${data.guestUserId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.VERIFICATION_VERIFIED)
+  async handleVerificationVerified(
+    @Payload()
+    data: {
+      userId: string;
+      type: string;
+      identifier: string;
+      verifiedAt: string;
+      timestamp: string;
+    },
+  ) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.VERIFICATION_VERIFIED} for userId: ${data.userId}`,
+    );
+
+    try {
+      // Only handle EMAIL verification
+      if (data.type === 'EMAIL') {
+        const result = await this.usersService.markEmailAsVerified(data.userId);
+        this.logger.debug(
+          `Successfully processed message: ${RabbitMQPatterns.VERIFICATION_VERIFIED} for userId: ${data.userId} (will ACK)`,
+        );
+        return result;
+      }
+
+      // For SMS or other types, just acknowledge
+      return { success: true, message: 'Verification acknowledged' };
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.VERIFICATION_VERIFIED} for userId: ${data.userId} (will NACK)`,
         error,
       );
       throw error; // Throwing error causes NestJS to NACK the message
