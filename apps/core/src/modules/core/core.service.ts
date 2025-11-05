@@ -187,4 +187,132 @@ export class CoreService implements OnModuleInit {
       assignment,
     };
   }
+
+  /**
+   * Add listing to user favorites
+   * Works for both guest and registered users
+   */
+  async addFavorite(userId: string, listingId: string) {
+    this.logger.log(`Adding favorite: userId=${userId}, listingId=${listingId}`);
+
+    try {
+      // Check if listing exists
+      const listing = await this.prisma.listing.findUnique({
+        where: { id: listingId },
+      });
+
+      if (!listing) {
+        throw new Error('Listing not found');
+      }
+
+      // Create favorite (upsert to handle duplicates gracefully)
+      const favorite = await this.prisma.userFavorite.upsert({
+        where: {
+          userId_listingId: {
+            userId,
+            listingId,
+          },
+        },
+        update: {
+          // Update if exists (though nothing to update)
+        },
+        create: {
+          userId,
+          listingId,
+        },
+        select: {
+          id: true,
+          userId: true,
+          listingId: true,
+          createdAt: true,
+        },
+      });
+
+      this.logger.log(`Favorite added successfully: ${favorite.id}`);
+      return favorite;
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        // Already favorited
+        throw new Error('Listing already in favorites');
+      }
+      this.logger.error('Failed to add favorite', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove listing from user favorites
+   * Works for both guest and registered users
+   */
+  async removeFavorite(userId: string, listingId: string) {
+    this.logger.log(`Removing favorite: userId=${userId}, listingId=${listingId}`);
+
+    try {
+      const favorite = await this.prisma.userFavorite.findUnique({
+        where: {
+          userId_listingId: {
+            userId,
+            listingId,
+          },
+        },
+      });
+
+      if (!favorite) {
+        throw new Error('Favorite not found');
+      }
+
+      await this.prisma.userFavorite.delete({
+        where: {
+          userId_listingId: {
+            userId,
+            listingId,
+          },
+        },
+      });
+
+      this.logger.log(`Favorite removed successfully`);
+      return { success: true, message: 'Favorite removed successfully' };
+    } catch (error: any) {
+      this.logger.error('Failed to remove favorite', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all favorites for a user
+   * Works for both guest and registered users
+   */
+  async getUserFavorites(userId: string) {
+    this.logger.log(`Getting favorites for userId: ${userId}`);
+
+    const favorites = await this.prisma.userFavorite.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        listing: {
+          select: {
+            id: true,
+            title: true,
+            content: true,
+            status: true,
+            category: true,
+            cityId: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return favorites.map((f) => ({
+      id: f.id,
+      listingId: f.listingId,
+      listing: f.listing,
+      createdAt: f.createdAt,
+    }));
+  }
 }
