@@ -27,6 +27,15 @@ import {
   RegisterDto,
   UpdateProfileDto,
   ChangePasswordDto,
+  RegisterResponseDto,
+  GetUsersResponseDto,
+  GetUserResponseDto,
+  CreateUserResponseDto,
+  UpdateUserResponseDto,
+  DeleteUserResponseDto,
+  GetProfileResponseDto,
+  UpdateProfileResponseDto,
+  ChangePasswordResponseDto,
   ApiErrorResponseDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
@@ -48,16 +57,7 @@ export class UsersController {
   @ApiResponse({
     status: 201,
     description: 'User registered successfully',
-    schema: {
-      example: {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        email: 'user@example.com',
-        username: 'johndoe',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'USER',
-      },
-    },
+    type: RegisterResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -123,27 +123,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'List of users retrieved successfully',
-    schema: {
-      example: {
-        users: [
-          {
-            id: '123e4567-e89b-12d3-a456-426614174000',
-            email: 'user@example.com',
-            username: 'johndoe',
-            firstName: 'John',
-            lastName: 'Doe',
-            role: 'CITIZEN',
-            isActive: true,
-            createdAt: '2024-01-01T00:00:00.000Z',
-            updatedAt: '2024-01-01T00:00:00.000Z',
-          },
-        ],
-        total: 100,
-        page: 1,
-        limit: 10,
-        pages: 10,
-      },
-    },
+    type: GetUsersResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -191,18 +171,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'User retrieved successfully',
-    schema: {
-      example: {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        email: 'user@example.com',
-        username: 'johndoe',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'USER',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00Z',
-      },
-    },
+    type: GetUserResponseDto,
   })
   @ApiResponse({
     status: 404,
@@ -231,16 +200,7 @@ export class UsersController {
   @ApiResponse({
     status: 201,
     description: 'User created successfully',
-    schema: {
-      example: {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        email: 'user@example.com',
-        username: 'johndoe',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'USER',
-      },
-    },
+    type: CreateUserResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -289,17 +249,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'User updated successfully',
-    schema: {
-      example: {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        email: 'user@example.com',
-        username: 'johndoe',
-        firstName: 'Jane',
-        lastName: 'Smith',
-        role: 'ADMIN',
-        isActive: true,
-      },
-    },
+    type: UpdateUserResponseDto,
   })
   @ApiResponse({
     status: 404,
@@ -328,11 +278,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'User deleted successfully',
-    schema: {
-      example: {
-        message: 'User deleted successfully',
-      },
-    },
+    type: DeleteUserResponseDto,
   })
   @ApiResponse({
     status: 404,
@@ -363,27 +309,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Profile retrieved successfully',
-    schema: {
-      example: {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        email: 'user@example.com',
-        username: 'johndoe',
-        firstName: 'John',
-        lastName: 'Doe',
-        role: 'CITIZEN',
-        isActive: true,
-        createdAt: '2024-01-01T00:00:00.000Z',
-        updatedAt: '2024-01-01T00:00:00.000Z',
-        cityAssignments: [
-          {
-            cityId: '123e4567-e89b-12d3-a456-426614174001',
-            role: 'CITIZEN',
-            canManageAdmins: false,
-            createdAt: '2024-01-01T00:00:00.000Z',
-          },
-        ],
-      },
-    },
+    type: GetProfileResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -416,15 +342,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Profile updated successfully',
-    schema: {
-      example: {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        email: 'user@example.com',
-        username: 'johndoe',
-        firstName: 'Jane',
-        lastName: 'Smith',
-      },
-    },
+    type: UpdateProfileResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async updateProfile(@GetCurrentUser('userId') userId: string, @Body() dto: UpdateProfileDto) {
@@ -441,11 +359,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Password changed successfully',
-    schema: {
-      example: {
-        message: 'Password changed successfully',
-      },
-    },
+    type: ChangePasswordResponseDto,
   })
   @ApiResponse({
     status: 400,

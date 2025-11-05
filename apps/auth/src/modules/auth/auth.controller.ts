@@ -21,8 +21,17 @@ import { Request } from 'express';
 import { AuthService } from './auth.service';
 import {
   LoginDto,
+  LoginResponseDto,
   RefreshTokenDto,
+  RefreshTokenResponseDto,
   AssignCityAdminDto,
+  AssignCityAdminResponseDto,
+  ValidateTokenResponseDto,
+  LogoutResponseDto,
+  GetUserCitiesResponseDto,
+  GetSessionsResponseDto,
+  RevokeSessionResponseDto,
+  RevokeAllSessionsResponseDto,
   ApiErrorResponseDto,
 } from '@heidi/contracts';
 import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
@@ -63,18 +72,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Login successful',
-    schema: {
-      example: {
-        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        user: {
-          id: '123e4567-e89b-12d3-a456-426614174000',
-          email: 'user@example.com',
-          username: 'johndoe',
-          role: 'USER',
-        },
-      },
-    },
+    type: LoginResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -108,11 +106,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Logout successful',
-    schema: {
-      example: {
-        message: 'Logged out successfully',
-      },
-    },
+    type: LogoutResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -147,12 +141,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Token refreshed successfully',
-    schema: {
-      example: {
-        accessToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-        refreshToken: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
-      },
-    },
+    type: RefreshTokenResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -181,16 +170,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Token is valid',
-    schema: {
-      example: {
-        valid: true,
-        user: {
-          id: '123e4567-e89b-12d3-a456-426614174000',
-          email: 'user@example.com',
-          role: 'USER',
-        },
-      },
-    },
+    type: ValidateTokenResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -227,14 +207,7 @@ export class AuthController {
   @ApiResponse({
     status: 201,
     description: 'City admin assigned successfully',
-    schema: {
-      example: {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        userId: '123e4567-e89b-12d3-a456-426614174001',
-        cityId: '123e4567-e89b-12d3-a456-426614174002',
-        role: 'CITY_ADMIN',
-      },
-    },
+    type: AssignCityAdminResponseDto,
   })
   @ApiResponse({
     status: 403,
@@ -285,16 +258,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'List of user cities',
-    schema: {
-      example: [
-        {
-          cityId: '123e4567-e89b-12d3-a456-426614174000',
-          role: 'CITY_ADMIN',
-          canManageAdmins: true,
-          createdAt: '2024-01-01T00:00:00.000Z',
-        },
-      ],
-    },
+    type: GetUserCitiesResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -326,18 +290,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'List of user sessions',
-    schema: {
-      example: [
-        {
-          id: '123e4567-e89b-12d3-a456-426614174000',
-          tokenType: 'JWT',
-          provider: 'LOCAL',
-          expiresAt: '2024-01-02T00:00:00.000Z',
-          createdAt: '2024-01-01T00:00:00.000Z',
-          metadata: null,
-        },
-      ],
-    },
+    type: GetSessionsResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -367,11 +320,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'Session revoked successfully',
-    schema: {
-      example: {
-        message: 'Session revoked successfully',
-      },
-    },
+    type: RevokeSessionResponseDto,
   })
   @ApiResponse({
     status: 404,
@@ -406,12 +355,7 @@ export class AuthController {
   @ApiResponse({
     status: 200,
     description: 'All sessions revoked successfully',
-    schema: {
-      example: {
-        message: 'All sessions revoked successfully',
-        sessionsRevoked: 3,
-      },
-    },
+    type: RevokeAllSessionsResponseDto,
   })
   @ApiResponse({
     status: 401,
