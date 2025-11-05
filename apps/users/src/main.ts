@@ -6,7 +6,7 @@ import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
 import { ConfigService, getSwaggerServerUrl } from '@heidi/config';
-import { getRabbitMQMicroserviceOptions } from '@heidi/rabbitmq';
+import { getRmqConsumerOptions } from '@heidi/rabbitmq';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -30,7 +30,8 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   // Connect RabbitMQ microservice (for request-response patterns)
-  app.connectMicroservice<MicroserviceOptions>(getRabbitMQMicroserviceOptions(configService));
+  // Uses service-specific queue with topic exchange routing
+  app.connectMicroservice<MicroserviceOptions>(getRmqConsumerOptions(configService, 'users'));
 
   await app.startAllMicroservices();
   logger.log('RabbitMQ microservice connected');

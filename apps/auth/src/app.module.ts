@@ -7,7 +7,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
 import { ConfigModule, ConfigService } from '@heidi/config';
 import { PrismaAuthModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
-import { RabbitMQModule } from '@heidi/rabbitmq';
+import { RmqModule } from '@heidi/rabbitmq';
 import { RedisModule } from '@heidi/redis';
 import { JwtModule } from '@heidi/jwt';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
@@ -41,7 +41,11 @@ import { HealthController } from './health.controller';
     // Shared libraries
     PrismaAuthModule,
     LoggerModule,
-    RabbitMQModule.register(),
+    RmqModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: () => ({ serviceName: 'auth' }),
+    }),
     RedisModule,
     JwtModule.register(),
     MetricsModule,

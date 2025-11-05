@@ -3,10 +3,12 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
+  Inject,
 } from '@nestjs/common';
+import { firstValueFrom, timeout } from 'rxjs';
 import { PrismaUsersService } from '@heidi/prisma';
 import { PermissionService } from '@heidi/rbac';
-import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { UserRole } from '@prisma/client-core';
 import * as bcrypt from 'bcrypt';
@@ -26,7 +28,7 @@ export class UsersService {
   constructor(
     private readonly prisma: PrismaUsersService,
     private readonly permissionService: PermissionService,
-    private readonly rabbitmq: RabbitMQService,
+    @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly sagaOrchestrator: SagaOrchestratorService,
     logger: LoggerService,
   ) {
@@ -89,7 +91,7 @@ export class UsersService {
     });
 
     // Emit user created event
-    await this.rabbitmq.emit(RabbitMQPatterns.USER_CREATED, {
+    this.client.emit(RabbitMQPatterns.USER_CREATED, {
       userId: user.id,
       email: user.email,
       timestamp: new Date().toISOString(),
@@ -173,17 +175,17 @@ export class UsersService {
       }
 
       try {
-        await this.rabbitmq.send<
-          { id: string; userId: string; cityId: string },
-          { userId: string; cityId: string; role: UserRole }
-        >(
-          RabbitMQPatterns.CORE_CREATE_USER_CITY_ASSIGNMENT,
-          {
-            userId: user.id,
-            cityId: dto.cityId,
-            role: UserRole.CITIZEN,
-          },
-          10000,
+        await firstValueFrom(
+          this.client
+            .send<
+              { id: string; userId: string; cityId: string },
+              { userId: string; cityId: string; role: UserRole }
+            >(RabbitMQPatterns.CORE_CREATE_USER_CITY_ASSIGNMENT, {
+              userId: user.id,
+              cityId: dto.cityId,
+              role: UserRole.CITIZEN,
+            })
+            .pipe(timeout(10000)),
         );
 
         await this.sagaOrchestrator.executeStep(sagaId, { success: true });
@@ -206,7 +208,7 @@ export class UsersService {
       }
 
       // Emit user created event
-      await this.rabbitmq.emit(RabbitMQPatterns.USER_CREATED, {
+      this.client.emit(RabbitMQPatterns.USER_CREATED, {
         userId: user.id,
         email: user.email,
         timestamp: new Date().toISOString(),
@@ -330,7 +332,7 @@ export class UsersService {
       },
     });
 
-    await this.rabbitmq.emit(RabbitMQPatterns.USER_CREATED, {
+    this.client.emit(RabbitMQPatterns.USER_CREATED, {
       userId: user.id,
       email: user.email,
       timestamp: new Date().toISOString(),
@@ -357,7 +359,7 @@ export class UsersService {
       },
     });
 
-    await this.rabbitmq.emit(RabbitMQPatterns.USER_UPDATED, {
+    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
       userId: user.id,
       timestamp: new Date().toISOString(),
     });
@@ -375,7 +377,7 @@ export class UsersService {
       data: { deletedAt: new Date(), isActive: false },
     });
 
-    await this.rabbitmq.emit(RabbitMQPatterns.USER_DELETED, {
+    this.client.emit(RabbitMQPatterns.USER_DELETED, {
       userId: id,
       timestamp: new Date().toISOString(),
     });
@@ -410,10 +412,14 @@ export class UsersService {
     }
 
     // Get city assignments from core service via RabbitMQ
-    const cityAssignments = await this.rabbitmq.send<
-      Array<{ cityId: string; role: UserRole; canManageAdmins: boolean; createdAt: Date }>,
-      { userId: string }
-    >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId }, 10000);
+    const cityAssignments = await firstValueFrom(
+      this.client
+        .send<
+          Array<{ cityId: string; role: UserRole; canManageAdmins: boolean; createdAt: Date }>,
+          { userId: string }
+        >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId })
+        .pipe(timeout(10000)),
+    );
 
     return {
       ...user,
@@ -444,7 +450,7 @@ export class UsersService {
       },
     });
 
-    await this.rabbitmq.emit(RabbitMQPatterns.USER_UPDATED, {
+    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
       userId: user.id,
       timestamp: new Date().toISOString(),
     });
@@ -486,7 +492,7 @@ export class UsersService {
       data: { password: hashedPassword },
     });
 
-    await this.rabbitmq.emit(RabbitMQPatterns.USER_UPDATED, {
+    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
       userId: user.id,
       timestamp: new Date().toISOString(),
     });

@@ -1,5 +1,5 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { RedisService } from '@heidi/redis';
 import { LoggerService } from '@heidi/logger';
 import { PrismaCoreService } from '@heidi/prisma';
@@ -10,7 +10,7 @@ export class CoreService implements OnModuleInit {
   private readonly logger: LoggerService;
 
   constructor(
-    private readonly rabbitmq: RabbitMQService,
+    @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly redis: RedisService,
     private readonly prisma: PrismaCoreService,
     logger: LoggerService,
@@ -45,7 +45,7 @@ export class CoreService implements OnModuleInit {
     this.logger.log(`Executing operation: ${JSON.stringify(payload)}`);
 
     // Example: Orchestrate operations across services
-    await this.rabbitmq.emit(RabbitMQPatterns.CORE_OPERATION, {
+    this.client.emit(RabbitMQPatterns.CORE_OPERATION, {
       ...payload,
       timestamp: new Date().toISOString(),
     });

@@ -1,7 +1,7 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaSchedulerService } from '@heidi/prisma';
-import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { RedisService } from '@heidi/redis';
 import { LoggerService } from '@heidi/logger';
 import { CreateTaskDto } from './dto';
@@ -12,7 +12,7 @@ export class TasksService implements OnModuleInit {
 
   constructor(
     private readonly prisma: PrismaSchedulerService,
-    private readonly rabbitmq: RabbitMQService,
+    @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly redis: RedisService,
     logger: LoggerService,
   ) {
@@ -78,7 +78,7 @@ export class TasksService implements OnModuleInit {
     this.logger.log(`Executing task: ${task.name}`);
 
     try {
-      await this.rabbitmq.emit(RabbitMQPatterns.SCHEDULE_EXECUTE, {
+      this.client.emit(RabbitMQPatterns.SCHEDULE_EXECUTE, {
         taskId: task.id,
         name: task.name,
         payload: task.payload,
@@ -94,7 +94,7 @@ export class TasksService implements OnModuleInit {
         },
       });
 
-      await this.rabbitmq.emit(RabbitMQPatterns.SCHEDULE_COMPLETED, {
+      this.client.emit(RabbitMQPatterns.SCHEDULE_COMPLETED, {
         taskId: task.id,
         status: 'SUCCESS',
         timestamp: new Date().toISOString(),

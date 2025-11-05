@@ -3,12 +3,14 @@ import {
   UnauthorizedException,
   ForbiddenException,
   NotFoundException,
+  Inject,
 } from '@nestjs/common';
+import { firstValueFrom, timeout } from 'rxjs';
 import { PrismaAuthService } from '@heidi/prisma';
 import { PermissionService } from '@heidi/rbac';
 import { JwtTokenService, CityAssignment } from '@heidi/jwt';
 import { RedisService } from '@heidi/redis';
-import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { UserRole } from '@prisma/client-core';
 import { AuthAction, AuthProvider, TokenType } from '@prisma/client-auth';
@@ -25,7 +27,7 @@ export class AuthService {
     private readonly permissionService: PermissionService,
     private readonly jwtService: JwtTokenService,
     private readonly redis: RedisService,
-    private readonly rabbitmq: RabbitMQService,
+    @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly sagaOrchestrator: SagaOrchestratorService,
     logger: LoggerService,
   ) {
@@ -104,17 +106,31 @@ export class AuthService {
       let user: any;
 
       if (isEmail) {
-        user = await this.rabbitmq.send<any, { email: string }>(
-          RabbitMQPatterns.USER_FIND_BY_EMAIL,
-          { email: dto.email },
-          10000, // 10 second timeout
-        );
+        try {
+          user = await firstValueFrom(
+            this.client
+              .send<any, { email: string }>(RabbitMQPatterns.USER_FIND_BY_EMAIL, {
+                email: dto.email,
+              })
+              .pipe(timeout(10000)),
+          );
+        } catch (error) {
+          this.logger.error('Error sending request to users service', error);
+          throw error;
+        }
       } else {
-        user = await this.rabbitmq.send<any, { username: string }>(
-          RabbitMQPatterns.USER_FIND_BY_USERNAME,
-          { username: dto.email },
-          10000, // 10 second timeout
-        );
+        try {
+          user = await firstValueFrom(
+            this.client
+              .send<any, { username: string }>(RabbitMQPatterns.USER_FIND_BY_USERNAME, {
+                username: dto.email,
+              })
+              .pipe(timeout(10000)),
+          );
+        } catch (error) {
+          this.logger.error('Error sending request to users service', error);
+          throw error;
+        }
       }
 
       if (!user || !user.isActive) {
@@ -146,10 +162,14 @@ export class AuthService {
       }
 
       // Step 2: Load user's city assignments from core service via RabbitMQ
-      const dbAssignments = await this.rabbitmq.send<
-        Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
-        { userId: string }
-      >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: user.id }, 10000);
+      const dbAssignments = await firstValueFrom(
+        this.client
+          .send<
+            Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
+            { userId: string }
+          >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: user.id })
+          .pipe(timeout(10000)),
+      );
 
       const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
         cityId: a.cityId,
@@ -267,10 +287,10 @@ export class AuthService {
       }
 
       // Get user from users service via RabbitMQ
-      const user = await this.rabbitmq.send<any, { id: string }>(
-        RabbitMQPatterns.USER_FIND_BY_ID,
-        { id: payload.sub },
-        10000,
+      const user = await firstValueFrom(
+        this.client
+          .send<any, { id: string }>(RabbitMQPatterns.USER_FIND_BY_ID, { id: payload.sub })
+          .pipe(timeout(10000)),
       );
 
       if (!user || !user.isActive) {
@@ -284,10 +304,14 @@ export class AuthService {
       }
 
       // Load user's city assignments from core service via RabbitMQ
-      const dbAssignments = await this.rabbitmq.send<
-        Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
-        { userId: string }
-      >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: user.id }, 10000);
+      const dbAssignments = await firstValueFrom(
+        this.client
+          .send<
+            Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
+            { userId: string }
+          >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: user.id })
+          .pipe(timeout(10000)),
+      );
 
       const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
         cityId: a.cityId,
@@ -356,10 +380,10 @@ export class AuthService {
     }
 
     // Verify user exists via users service
-    const user = await this.rabbitmq.send<any, { id: string }>(
-      RabbitMQPatterns.USER_FIND_BY_ID,
-      { id: dto.userId },
-      10000,
+    const user = await firstValueFrom(
+      this.client
+        .send<any, { id: string }>(RabbitMQPatterns.USER_FIND_BY_ID, { id: dto.userId })
+        .pipe(timeout(10000)),
     );
 
     if (!user) {
@@ -375,17 +399,17 @@ export class AuthService {
       requesterAssignment?.canManageAdmins === true && dto.role === UserRole.CITY_ADMIN;
 
     // Assign city admin via core service
-    const assignment = await this.rabbitmq.send<
-      { id: string; userId: string; cityId: string; role: UserRole },
-      AssignCityAdminDto & { assignedBy: string; canGrantManageAdmins: boolean }
-    >(
-      RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN,
-      {
-        ...dto,
-        assignedBy: requesterId,
-        canGrantManageAdmins,
-      },
-      15000,
+    const assignment = await firstValueFrom(
+      this.client
+        .send<
+          { id: string; userId: string; cityId: string; role: UserRole },
+          AssignCityAdminDto & { assignedBy: string; canGrantManageAdmins: boolean }
+        >(RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN, {
+          ...dto,
+          assignedBy: requesterId,
+          canGrantManageAdmins,
+        })
+        .pipe(timeout(15000)),
     );
 
     this.logger.log(`City admin assigned successfully: ${assignment.id}`);
@@ -400,10 +424,14 @@ export class AuthService {
     this.logger.log(`Getting cities for user: ${userId}`);
 
     // Get user cities from core service via RabbitMQ
-    const assignments = await this.rabbitmq.send<
-      Array<{ cityId: string; role: UserRole; canManageAdmins: boolean; createdAt: Date }>,
-      { userId: string }
-    >(RabbitMQPatterns.CORE_GET_USER_CITIES, { userId }, 10000);
+    const assignments = await firstValueFrom(
+      this.client
+        .send<
+          Array<{ cityId: string; role: UserRole; canManageAdmins: boolean; createdAt: Date }>,
+          { userId: string }
+        >(RabbitMQPatterns.CORE_GET_USER_CITIES, { userId })
+        .pipe(timeout(10000)),
+    );
 
     return assignments;
   }
@@ -413,10 +441,14 @@ export class AuthService {
    */
   async getUserManagedCities(userId: string): Promise<string[]> {
     // Get user cities from core service via RabbitMQ
-    const assignments = await this.rabbitmq.send<
-      Array<{ cityId: string }>,
-      { userId: string; role: UserRole }
-    >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId, role: UserRole.CITY_ADMIN }, 10000);
+    const assignments = await firstValueFrom(
+      this.client
+        .send<
+          Array<{ cityId: string }>,
+          { userId: string; role: UserRole }
+        >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId, role: UserRole.CITY_ADMIN })
+        .pipe(timeout(10000)),
+    );
 
     return assignments.map((a) => a.cityId);
   }

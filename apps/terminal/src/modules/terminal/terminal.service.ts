@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaTerminalService } from '@heidi/prisma';
 import { LoggerService } from '@heidi/logger';
-import { RabbitMQService } from '@heidi/rabbitmq';
 import { CreateTerminalDto, UpdateTerminalDto } from './dto';
 
 @Injectable()
@@ -9,7 +8,6 @@ export class TerminalService {
   constructor(
     private readonly prisma: PrismaTerminalService,
     private readonly logger: LoggerService,
-    private readonly rabbitmq: RabbitMQService,
   ) {
     this.logger.setContext('TerminalService');
   }

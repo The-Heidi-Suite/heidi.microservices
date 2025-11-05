@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaAdminService } from '@heidi/prisma';
 import { LoggerService } from '@heidi/logger';
-import { RabbitMQService } from '@heidi/rabbitmq';
 import { CreateAdminDto, UpdateAdminDto } from './dto';
 
 @Injectable()
@@ -9,7 +8,6 @@ export class AdminService {
   constructor(
     private readonly prisma: PrismaAdminService,
     private readonly logger: LoggerService,
-    private readonly rabbitmq: RabbitMQService,
   ) {
     this.logger.setContext('AdminService');
   }

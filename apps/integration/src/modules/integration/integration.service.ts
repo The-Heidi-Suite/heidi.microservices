@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { PrismaIntegrationService } from '@heidi/prisma';
-import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { firstValueFrom } from 'rxjs';
 
@@ -11,7 +11,7 @@ export class IntegrationService {
 
   constructor(
     private readonly prisma: PrismaIntegrationService,
-    private readonly rabbitmq: RabbitMQService,
+    @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly http: HttpService,
     logger: LoggerService,
   ) {
@@ -47,7 +47,7 @@ export class IntegrationService {
       });
 
       // Forward event to other services via RabbitMQ
-      await this.rabbitmq.emit(RabbitMQPatterns.INTEGRATION_WEBHOOK, {
+      this.client.emit(RabbitMQPatterns.INTEGRATION_WEBHOOK, {
         provider,
         integrationId: integration.id,
         payload,

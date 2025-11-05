@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
 import { ConfigService } from '@heidi/config';
-import { getRabbitMQMicroserviceOptions } from '@heidi/rabbitmq';
+import { getRmqConsumerOptions } from '@heidi/rabbitmq';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -21,8 +21,9 @@ async function bootstrap() {
   app.enableShutdownHooks();
 
   // Connect RabbitMQ microservice (for request-response patterns)
+  // Uses service-specific queue with topic exchange routing
   app.connectMicroservice<MicroserviceOptions>(
-    getRabbitMQMicroserviceOptions(configService),
+    getRmqConsumerOptions(configService, 'notification'),
   );
 
   await app.startAllMicroservices();

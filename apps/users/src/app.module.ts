@@ -4,7 +4,7 @@ import { TerminusModule } from '@nestjs/terminus';
 import { ConfigModule, ConfigService } from '@heidi/config';
 import { PrismaUsersModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
-import { RabbitMQModule } from '@heidi/rabbitmq';
+import { RmqModule } from '@heidi/rabbitmq';
 import { JwtModule } from '@heidi/jwt';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
 import { LoggingInterceptor, TimeoutInterceptor } from '@heidi/interceptors';
@@ -19,7 +19,11 @@ import { HealthController } from './health.controller';
     TerminusModule,
     PrismaUsersModule,
     LoggerModule,
-    RabbitMQModule.register(),
+    RmqModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: () => ({ serviceName: 'users' }),
+    }),
     JwtModule.register(),
     MetricsModule,
     I18nModule,

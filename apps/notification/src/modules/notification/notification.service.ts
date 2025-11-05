@@ -1,6 +1,6 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import { PrismaNotificationService } from '@heidi/prisma';
-import { RabbitMQService, RabbitMQPatterns } from '@heidi/rabbitmq';
+import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { SendNotificationDto } from './dto';
 
@@ -10,7 +10,7 @@ export class NotificationService implements OnModuleInit {
 
   constructor(
     private readonly prisma: PrismaNotificationService,
-    private readonly rabbitmq: RabbitMQService,
+    @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     logger: LoggerService,
   ) {
     this.logger = logger;
@@ -39,7 +39,7 @@ export class NotificationService implements OnModuleInit {
     });
 
     // Queue notification for delivery
-    await this.rabbitmq.emit(RabbitMQPatterns.NOTIFICATION_SEND, {
+    this.client.emit(RabbitMQPatterns.NOTIFICATION_SEND, {
       notificationId: notification.id,
       ...dto,
     });
