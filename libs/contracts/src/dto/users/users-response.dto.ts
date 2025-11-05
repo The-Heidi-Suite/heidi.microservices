@@ -1,4 +1,151 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+// Error Response DTOs
+export class ValidationErrorResponseDto {
+  @ApiProperty({ example: 'VALIDATION_ERROR', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Validation failed', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/register', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 400, description: 'HTTP status code' })
+  statusCode: number;
+
+  @ApiPropertyOptional({
+    description: 'Additional error details',
+    example: {
+      message: ['email must be an email', 'password must be longer than or equal to 8 characters'],
+    },
+  })
+  details?: any;
+}
+
+export class ConflictErrorResponseDto {
+  @ApiProperty({ example: 'CONFLICT', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'User with this email already exists', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/register', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 409, description: 'HTTP status code' })
+  statusCode: number;
+}
+
+export class UnauthorizedErrorResponseDto {
+  @ApiProperty({ example: 'UNAUTHORIZED', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Invalid or expired token', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/api/users', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'GET', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 401, description: 'HTTP status code' })
+  statusCode: number;
+}
+
+export class ForbiddenErrorResponseDto {
+  @ApiProperty({ example: 'FORBIDDEN', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Insufficient permissions', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/api/users', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'GET', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 403, description: 'HTTP status code' })
+  statusCode: number;
+}
+
+export class NotFoundErrorResponseDto {
+  @ApiProperty({ example: 'NOT_FOUND', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'User not found', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/123e4567-e89b-12d3-a456-426614174000', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'GET', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 404, description: 'HTTP status code' })
+  statusCode: number;
+}
+
+export class BadRequestErrorResponseDto {
+  @ApiProperty({ example: 'BAD_REQUEST', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Current password is incorrect', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/profile/me/change-password', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 400, description: 'HTTP status code' })
+  statusCode: number;
+}
 
 // Shared User DTO
 export class UserDto {

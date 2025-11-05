@@ -1,5 +1,29 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+// Login Error Responses
+export class LoginUnauthorizedErrorResponseDto {
+  @ApiProperty({ example: 'UNAUTHORIZED', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Invalid credentials', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/login', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 401, description: 'HTTP status code' })
+  statusCode: number;
+}
+
 export class LoginUserDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
   id: string;
