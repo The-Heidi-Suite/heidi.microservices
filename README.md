@@ -390,23 +390,27 @@ docker compose --profile full down
 ### Available Scripts
 
 **Build Commands:**
+
 - `yarn docker:build` - Build all services (full profile)
 - `yarn docker:build:prod` - Build with full + monitoring
 - `yarn docker:build:infra` - Build only infrastructure
 - `yarn docker:build:services` - Build only microservices
 
 **Up Commands:**
+
 - `yarn docker:up` - Start all services (full profile)
 - `yarn docker:up:prod` - Start with full + monitoring
 - `yarn docker:up:infra` - Start only infrastructure
 - `yarn docker:up:services` - Start only microservices
 
 **Down Commands:**
+
 - `yarn docker:down` - Stop all services
 - `yarn docker:down:infra` - Stop only infrastructure
 - `yarn docker:down:services` - Stop only microservices
 
 **Logs Commands:**
+
 - `yarn docker:logs` - Logs for all services
 - `yarn docker:logs:prod` - Logs with monitoring
 - `yarn docker:logs:infra` - Logs for infrastructure

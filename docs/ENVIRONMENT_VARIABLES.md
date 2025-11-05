@@ -184,6 +184,7 @@ SWAGGER_VERSION=1.0
 ```
 
 **Note:** The `ENABLE_API_GATEWAY_PREFIX` variable controls whether Swagger documentation includes the API gateway path prefix (`/api/{service}`).
+
 - Set to `false` for local development (default) - Swagger shows direct service paths
 - Set to `true` for production/server deployments - Swagger shows API gateway paths
 

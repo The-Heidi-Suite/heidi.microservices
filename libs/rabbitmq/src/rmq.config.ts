@@ -1,11 +1,6 @@
 import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { ConfigService } from '@heidi/config';
-import {
-  RABBITMQ_EXCHANGE,
-  RABBITMQ_EXCHANGE_TYPE,
-  getQueueName,
-  getRoutingKeyPattern,
-} from './rmq.constants';
+import { RABBITMQ_EXCHANGE, RABBITMQ_EXCHANGE_TYPE } from './rmq.constants';
 import { RmqClientOptions } from './rmq.interfaces';
 
 /**
@@ -70,29 +65,18 @@ export function getRmqConsumerOptions(
   },
 ): MicroserviceOptions {
   const url = getRabbitMQUrl(configService);
-  const queueName = getQueueName(serviceName);
-  const routingKey = getRoutingKeyPattern(serviceName);
+  // Each service uses its own queue (e.g., heidi_users_queue, heidi_core_queue)
+  // Queue name format: heidi_{serviceName}_queue
+  const queueName = `heidi_${serviceName}_queue`;
   const prefetchCount = options?.prefetchCount ?? DEFAULT_CONFIG.PREFETCH_COUNT;
-  const messageTtl = options?.messageTtl ?? DEFAULT_CONFIG.MESSAGE_TTL;
   const durable = options?.durable ?? true;
 
-  // DLX configuration: messages that fail or timeout will go to DLX queue
-  // After TTL expires, they'll be republished to the original queue for retry
+  // Queue options
+  // Note: DLX and TTL arguments are not set here to avoid conflicts with existing queues
   const queueOptions: any = {
     durable,
-    noAck: false, // Manual acknowledgment - allows NACK for unmatched messages
-    prefetchCount,
-    // Dead Letter Exchange configuration
-    deadLetterExchange: RABBITMQ_EXCHANGE,
-    deadLetterRoutingKey: routingKey,
-    // Message TTL for automatic retry
-    messageTtl,
-    // Additional arguments for DLX queue binding
-    arguments: {
-      'x-dead-letter-exchange': RABBITMQ_EXCHANGE,
-      'x-dead-letter-routing-key': routingKey,
-      'x-message-ttl': messageTtl,
-    },
+    exclusive: false,
+    autoDelete: false,
   };
 
   return {
@@ -100,10 +84,8 @@ export function getRmqConsumerOptions(
     options: {
       urls: [url],
       queue: queueName,
-      exchange: RABBITMQ_EXCHANGE,
-      exchangeType: RABBITMQ_EXCHANGE_TYPE,
-      routingKey,
       queueOptions,
+      prefetchCount,
       socketOptions: {
         heartbeatIntervalInSeconds: DEFAULT_CONFIG.HEARTBEAT_INTERVAL,
         reconnectTimeInSeconds: DEFAULT_CONFIG.RECONNECT_TIME,

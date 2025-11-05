@@ -9,3 +9,6 @@ export * from './rmq.constants';
 
 // Interfaces (exported for type usage)
 export * from './rmq.interfaces';
+
+// Client wrapper
+export * from './rmq-client-wrapper';
