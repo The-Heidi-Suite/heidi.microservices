@@ -42,6 +42,8 @@ import {
   ForbiddenErrorResponseDto,
   NotFoundErrorResponseDto,
   BadRequestErrorResponseDto,
+  GuestLoginDto,
+  ConvertGuestDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { AdminOnlyGuard } from '@heidi/rbac';
@@ -260,5 +262,85 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   async changePassword(@GetCurrentUser('userId') userId: string, @Body() dto: ChangePasswordDto) {
     return this.usersService.changePassword(userId, dto);
+  }
+
+  @Post('guest')
+  @Public()
+  @ApiOperation({
+    summary: 'Create guest user (internal)',
+    description:
+      'Create a new guest user for mobile device (internal endpoint, typically called by auth service)',
+  })
+  @ApiBody({ type: GuestLoginDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Guest user created or retrieved successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: ValidationErrorResponseDto,
+    examples: {
+      validationError: {
+        value: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/guest',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'deviceId must be a string',
+              'devicePlatform must be one of the following values: IOS, ANDROID',
+            ],
+          },
+        },
+      },
+    },
+  })
+  @HttpCode(HttpStatus.CREATED)
+  async createGuest(@Body() dto: GuestLoginDto) {
+    return this.usersService.createGuest(dto.deviceId, dto.devicePlatform, dto.deviceMetadata);
+  }
+
+  @Post('guest/convert')
+  @Public()
+  @ApiOperation({
+    summary: 'Convert guest to registered user',
+    description:
+      'Convert a guest user account to a registered user account with automatic data migration',
+  })
+  @ApiBody({ type: ConvertGuestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Guest user converted successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Guest user not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Email or username already exists',
+    type: ConflictErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async convertGuest(@Body() dto: ConvertGuestDto) {
+    return this.usersService.convertGuestToUser(dto.guestUserId, {
+      email: dto.email,
+      username: dto.username,
+      password: dto.password,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      cityId: dto.cityId,
+    });
   }
 }
