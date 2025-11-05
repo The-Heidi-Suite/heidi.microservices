@@ -11,6 +11,7 @@ import { PermissionService } from '@heidi/rbac';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { UserRole } from '@prisma/client-core';
+import { UserType, DevicePlatform } from '@prisma/client-users';
 import * as bcrypt from 'bcrypt';
 import {
   CreateUserDto,
@@ -41,6 +42,11 @@ export class UsersService {
    * Uses Saga pattern if cityId is provided (multi-service transaction)
    */
   async register(dto: RegisterDto) {
+    // Validate required fields for registration
+    if (!dto.email || !dto.username || !dto.password) {
+      throw new ConflictException('Email, username, and password are required for registration');
+    }
+
     this.logger.log(`Registering user: ${dto.email}`);
 
     // Check if user already exists by email
@@ -262,6 +268,9 @@ export class UsersService {
         email: true,
         username: true,
         role: true,
+        userType: true,
+        deviceId: true,
+        devicePlatform: true,
         firstName: true,
         lastName: true,
         isActive: true,
@@ -477,6 +486,11 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    // Guest users don't have passwords
+    if (!user.password) {
+      throw new UnauthorizedException('Guest users cannot change password. Please register first.');
+    }
+
     // Verify current password
     const isPasswordValid = await bcrypt.compare(dto.currentPassword, user.password);
     if (!isPasswordValid) {
@@ -499,5 +513,192 @@ export class UsersService {
 
     this.logger.log(`Password changed for user: ${userId}`);
     return { message: 'Password changed successfully' };
+  }
+
+  /**
+   * Create a new guest user
+   * Checks for existing guest with same deviceId and devicePlatform to prevent duplicates
+   */
+  async createGuest(
+    deviceId: string,
+    devicePlatform: DevicePlatform,
+    _deviceMetadata?: Record<string, any>,
+  ) {
+    this.logger.log(`Creating guest user for device: ${deviceId} (${devicePlatform})`);
+
+    // Check if guest already exists for this device
+    const existingGuest = await this.prisma.user.findFirst({
+      where: {
+        deviceId,
+        devicePlatform,
+        userType: UserType.GUEST,
+        deletedAt: null,
+      },
+    });
+
+    if (existingGuest) {
+      this.logger.log(
+        `Guest user already exists for device: ${deviceId}, returning existing guest`,
+      );
+      return {
+        id: existingGuest.id,
+        guestId: existingGuest.guestId,
+        deviceId: existingGuest.deviceId,
+        devicePlatform: existingGuest.devicePlatform,
+        userType: existingGuest.userType,
+        createdAt: existingGuest.createdAt,
+      };
+    }
+
+    // Generate unique guest ID
+    const guestId = `guest_${deviceId}_${Date.now()}`;
+
+    // Create new guest user
+    const guestUser = await this.prisma.user.create({
+      data: {
+        guestId,
+        deviceId,
+        devicePlatform,
+        userType: UserType.GUEST,
+        role: UserRole.CITIZEN,
+        email: null,
+        username: null,
+        password: null,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        guestId: true,
+        deviceId: true,
+        devicePlatform: true,
+        userType: true,
+        createdAt: true,
+      },
+    });
+
+    // Emit user created event
+    this.client.emit(RabbitMQPatterns.USER_CREATED, {
+      userId: guestUser.id,
+      userType: 'GUEST',
+      deviceId,
+      devicePlatform,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Guest user created successfully: ${guestUser.id}`);
+    return guestUser;
+  }
+
+  /**
+   * Find guest user by device ID and platform
+   * Used for session restoration when app reopens
+   */
+  async findByDeviceId(deviceId: string, devicePlatform: DevicePlatform) {
+    this.logger.log(`Finding guest user by device: ${deviceId} (${devicePlatform})`);
+
+    const guestUser = await this.prisma.user.findFirst({
+      where: {
+        deviceId,
+        devicePlatform,
+        userType: UserType.GUEST,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        guestId: true,
+        deviceId: true,
+        devicePlatform: true,
+        userType: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    return guestUser;
+  }
+
+  /**
+   * Convert guest user to registered user
+   * All data linked by userId automatically transfers (favorites, listings, etc.)
+   */
+  async convertGuestToUser(guestUserId: string, dto: RegisterDto) {
+    this.logger.log(`Converting guest user to registered: ${guestUserId}`);
+
+    // Validate required fields
+    if (!dto.email || !dto.username || !dto.password) {
+      throw new ConflictException('Email, username, and password are required for conversion');
+    }
+
+    // Get guest user
+    const guestUser = await this.prisma.user.findUnique({
+      where: { id: guestUserId },
+    });
+
+    if (!guestUser) {
+      throw new NotFoundException('Guest user not found');
+    }
+
+    if (guestUser.userType !== UserType.GUEST) {
+      throw new ConflictException('User is not a guest user');
+    }
+
+    // Check if email already exists
+    const existingUserByEmail = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (existingUserByEmail) {
+      throw new ConflictException('User with this email already exists');
+    }
+
+    // Check if username already exists
+    const existingUserByUsername = await this.prisma.user.findUnique({
+      where: { username: dto.username },
+    });
+
+    if (existingUserByUsername) {
+      throw new ConflictException('User with this username already exists');
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+
+    // Update user record (same userId, so data auto-migrates)
+    const registeredUser = await this.prisma.user.update({
+      where: { id: guestUserId },
+      data: {
+        email: dto.email,
+        username: dto.username,
+        password: hashedPassword,
+        firstName: dto.firstName,
+        lastName: dto.lastName,
+        userType: UserType.REGISTERED,
+        migratedFromGuestId: guestUser.guestId, // Store original guest ID for historical tracking
+        guestId: null, // Clear guestId since user is no longer a guest
+        // Keep deviceId and devicePlatform for reference, but can be cleared if needed
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        role: true,
+        userType: true,
+        firstName: true,
+        lastName: true,
+        migratedFromGuestId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+
+    // Emit user updated event
+    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
+      userId: registeredUser.id,
+      action: 'GUEST_TO_USER_CONVERSION',
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Guest user converted to registered user successfully: ${registeredUser.id}`);
+    return registeredUser;
   }
 }

@@ -99,12 +99,32 @@ model Listing {
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
 
+  // Relations
+  favorites  UserFavorite[]
+
   @@index([userId])
   @@index([cityId])
   @@index([status])
   @@index([createdAt])
   @@index([category])
   @@map("listings")
+}
+
+// UserFavorite - Track user favorites (works for both guests and registered users)
+// Note: userId and listingId are stored as strings (no FK due to multi-database architecture)
+model UserFavorite {
+  id        String   @id @default(uuid())
+  userId    String   // Reference to User.id in users database (can be guest or registered)
+  listingId String   // Reference to Listing.id
+  createdAt DateTime @default(now())
+
+  // Relations
+  listing   Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
+  @@map("user_favorites")
 }
 
 enum UserRole {

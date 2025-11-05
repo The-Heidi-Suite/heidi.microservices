@@ -12,24 +12,33 @@ datasource db {
 
 // User model - for user management
 model User {
-  id        String            @id @default(uuid())
-  email     String            @unique
-  username  String            @unique
-  password  String
-  role      UserRole          @default(CITIZEN)
-  cityId    String?
-  firstName String?
-  lastName  String?
-  isActive  Boolean           @default(true)
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  deletedAt DateTime?
+  id                  String            @id @default(uuid())
+  email               String?           @unique
+  username            String?           @unique
+  password            String?
+  role                UserRole          @default(CITIZEN)
+  userType            UserType          @default(REGISTERED)
+  guestId             String?           @unique
+  deviceId            String?
+  devicePlatform      DevicePlatform?
+  migratedFromGuestId String?
+  cityId              String?
+  firstName           String?
+  lastName            String?
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  deletedAt           DateTime?
 
   @@index([email])
   @@index([username])
+  @@index([guestId])
+  @@index([deviceId])
+  @@index([userType])
   @@index([isActive])
   @@index([role])
   @@index([cityId])
+  @@unique([deviceId, devicePlatform])
   @@map("users")
 }
 
@@ -37,4 +46,14 @@ enum UserRole {
   SUPER_ADMIN
   CITY_ADMIN
   CITIZEN
+}
+
+enum UserType {
+  REGISTERED
+  GUEST
+}
+
+enum DevicePlatform {
+  IOS
+  ANDROID
 }

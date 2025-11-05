@@ -15,7 +15,7 @@ import { LoggerService } from '@heidi/logger';
 import { UserRole } from '@prisma/client-core';
 import { AuthAction, AuthProvider, TokenType } from '@prisma/client-auth';
 import * as bcrypt from 'bcrypt';
-import { LoginDto, AssignCityAdminDto } from '@heidi/contracts';
+import { LoginDto, AssignCityAdminDto, GuestLoginDto, ConvertGuestDto } from '@heidi/contracts';
 import { SagaOrchestratorService } from '@heidi/saga';
 
 @Injectable()
@@ -74,6 +74,8 @@ export class AuthService {
     expiresAt: Date,
     provider: AuthProvider = AuthProvider.LOCAL,
     metadata?: Record<string, any>,
+    deviceId?: string,
+    devicePlatform?: string,
   ) {
     try {
       await this.prismaAuth.session.create({
@@ -83,6 +85,8 @@ export class AuthService {
           expiresAt,
           provider,
           metadata: metadata ? metadata : undefined,
+          deviceId: deviceId || null,
+          devicePlatform: (devicePlatform as any) || null,
         },
       });
     } catch (error) {
@@ -226,6 +230,7 @@ export class AuthService {
           email: user.email,
           username: user.username,
           role: user.role,
+          userType: 'REGISTERED',
           firstName: user.firstName,
           lastName: user.lastName,
         },
@@ -303,57 +308,80 @@ export class AuthService {
         throw new UnauthorizedException('User not found or inactive');
       }
 
-      // Load user's city assignments from core service via RabbitMQ
-      const dbAssignments = await firstValueFrom(
-        this.client
-          .send<
-            Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
-            { userId: string }
-          >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: user.id })
-          .pipe(timeout(10000)),
+      // Check if user is a guest
+      const isGuest = payload.isGuest || user.userType === 'GUEST';
+
+      // Load user's city assignments from core service via RabbitMQ (only for registered users)
+      let cityAssignments: CityAssignment[] = [];
+      let permissions: string[] = [];
+      let selectedCityId: string | undefined;
+
+      if (!isGuest) {
+        const dbAssignments = await firstValueFrom(
+          this.client
+            .send<
+              Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
+              { userId: string }
+            >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: user.id })
+            .pipe(timeout(10000)),
+        );
+
+        cityAssignments = dbAssignments.map((a) => ({
+          cityId: a.cityId,
+          role: a.role,
+          canManageAdmins: a.canManageAdmins,
+        }));
+
+        // Determine effective role for permissions
+        const roleHierarchy = [UserRole.SUPER_ADMIN, UserRole.CITY_ADMIN, UserRole.CITIZEN];
+        const userRoleIndex = roleHierarchy.indexOf(user.role as UserRole);
+        const assignmentRoles = dbAssignments.map((a) => a.role);
+        const highestAssignmentIndex =
+          assignmentRoles.length > 0
+            ? Math.min(...assignmentRoles.map((r) => roleHierarchy.indexOf(r)))
+            : roleHierarchy.length - 1;
+
+        const effectiveRole =
+          userRoleIndex >= 0 && userRoleIndex < highestAssignmentIndex
+            ? user.role
+            : assignmentRoles.length > 0
+              ? roleHierarchy[highestAssignmentIndex]
+              : UserRole.CITIZEN;
+
+        permissions = await this.permissionService.getUserPermissions(effectiveRole as UserRole);
+        selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
+      }
+
+      // Generate new tokens with appropriate flags
+      const tokens = await this.jwtService.generateTokenPair(
+        user.id,
+        user.email || null, // Can be null for guest users
+        user.role,
+        {
+          isGuest,
+          deviceId: payload.deviceId || user.deviceId, // Preserve deviceId for guest users
+          selectedCityId,
+          cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
+          permissions: permissions.length > 0 ? permissions : undefined,
+        },
       );
-
-      const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
-        cityId: a.cityId,
-        role: a.role,
-        canManageAdmins: a.canManageAdmins,
-      }));
-
-      // Determine effective role for permissions
-      const roleHierarchy = [UserRole.SUPER_ADMIN, UserRole.CITY_ADMIN, UserRole.CITIZEN];
-      const userRoleIndex = roleHierarchy.indexOf(user.role as UserRole);
-      const assignmentRoles = dbAssignments.map((a) => a.role);
-      const highestAssignmentIndex =
-        assignmentRoles.length > 0
-          ? Math.min(...assignmentRoles.map((r) => roleHierarchy.indexOf(r)))
-          : roleHierarchy.length - 1;
-
-      const effectiveRole =
-        userRoleIndex >= 0 && userRoleIndex < highestAssignmentIndex
-          ? user.role
-          : assignmentRoles.length > 0
-            ? roleHierarchy[highestAssignmentIndex]
-            : UserRole.CITIZEN;
-
-      const permissions = await this.permissionService.getUserPermissions(
-        effectiveRole as UserRole,
-      );
-
-      // Generate new tokens with city context and permissions
-      const selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
-      const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role, {
-        selectedCityId,
-        cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
-        permissions: permissions.length > 0 ? permissions : undefined,
-      });
 
       // Update refresh token in Redis
-      const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days
+      // Guest users get 30 days, registered users get 7 days
+      const refreshTokenExpiry = isGuest ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60;
       await this.redis.set(`refresh_token:${user.id}`, tokens.refreshToken, refreshTokenExpiry);
 
       // Update session expiry
       const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
-      await this.storeSession(user.id, TokenType.REFRESH, expiresAt, AuthProvider.LOCAL);
+      await this.storeSession(
+        user.id,
+        TokenType.REFRESH,
+        expiresAt,
+        AuthProvider.LOCAL,
+        undefined,
+        user.deviceId,
+        user.devicePlatform,
+      );
 
       // Create audit log
       await this.createAuditLog(user.id, AuthAction.TOKEN_REFRESH, true);
@@ -553,5 +581,245 @@ export class AuthService {
       message: 'All sessions revoked successfully',
       sessionsRevoked: result.count,
     };
+  }
+
+  /**
+   * Create guest session for mobile app
+   * Checks for existing guest with same deviceId and devicePlatform, creates if not exists
+   */
+  async createGuestSession(dto: GuestLoginDto, ipAddress?: string, userAgent?: string) {
+    this.logger.log(`Creating guest session for device: ${dto.deviceId} (${dto.devicePlatform})`);
+
+    try {
+      // Check if guest already exists for this device
+      let guestUser = await firstValueFrom(
+        this.client
+          .send<any, { deviceId: string; devicePlatform: string }>(
+            RabbitMQPatterns.USER_FIND_BY_DEVICE,
+            {
+              deviceId: dto.deviceId,
+              devicePlatform: dto.devicePlatform,
+            },
+          )
+          .pipe(timeout(10000)),
+      );
+
+      // If no guest exists, create one
+      if (!guestUser) {
+        guestUser = await firstValueFrom(
+          this.client
+            .send<any, { deviceId: string; devicePlatform: string; deviceMetadata?: any }>(
+              RabbitMQPatterns.USER_CREATE_GUEST,
+              {
+                deviceId: dto.deviceId,
+                devicePlatform: dto.devicePlatform,
+                deviceMetadata: dto.deviceMetadata,
+              },
+            )
+            .pipe(timeout(10000)),
+        );
+      }
+
+      // Generate tokens with guest flag
+      const tokens = await this.jwtService.generateTokenPair(
+        guestUser.id,
+        null, // No email for guests
+        UserRole.CITIZEN,
+        {
+          isGuest: true,
+          deviceId: guestUser.deviceId,
+        },
+      );
+
+      // Store refresh token in Redis
+      const refreshTokenExpiry = 30 * 24 * 60 * 60; // 30 days for guest sessions
+      await this.redis.set(
+        `refresh_token:${guestUser.id}`,
+        tokens.refreshToken,
+        refreshTokenExpiry,
+      );
+
+      // Store session in auth database with device info
+      const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
+      await this.storeSession(
+        guestUser.id,
+        TokenType.JWT,
+        expiresAt,
+        AuthProvider.LOCAL,
+        {
+          ...dto.deviceMetadata,
+        },
+        dto.deviceId,
+        dto.devicePlatform,
+      );
+
+      // Create audit log
+      await this.createAuditLog(
+        guestUser.id,
+        AuthAction.LOGIN,
+        true,
+        undefined,
+        ipAddress,
+        userAgent,
+        {
+          userType: 'GUEST',
+          deviceId: dto.deviceId,
+          devicePlatform: dto.devicePlatform,
+        },
+      );
+
+      this.logger.log(`Guest session created successfully: ${guestUser.id}`);
+
+      return {
+        user: {
+          id: guestUser.id,
+          guestId: guestUser.guestId,
+          deviceId: guestUser.deviceId,
+          devicePlatform: guestUser.devicePlatform,
+          userType: 'GUEST',
+        },
+        ...tokens,
+      };
+    } catch (error) {
+      this.logger.error('Failed to create guest session', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert guest user to registered user
+   * All data linked by userId automatically transfers (favorites, listings, etc.)
+   */
+  async convertGuestToRegistered(dto: ConvertGuestDto, ipAddress?: string, userAgent?: string) {
+    this.logger.log(`Converting guest to registered user: ${dto.guestUserId}`);
+
+    try {
+      // Verify guest user exists
+      const guestUser = await firstValueFrom(
+        this.client
+          .send<any, { id: string }>(RabbitMQPatterns.USER_FIND_BY_ID, { id: dto.guestUserId })
+          .pipe(timeout(10000)),
+      );
+
+      if (!guestUser || guestUser.userType !== 'GUEST') {
+        throw new UnauthorizedException('Invalid guest user');
+      }
+
+      // Convert guest to registered user via users service
+      const registeredUser = await firstValueFrom(
+        this.client
+          .send<
+            any,
+            {
+              guestUserId: string;
+              email: string;
+              username: string;
+              password: string;
+              firstName?: string;
+              lastName?: string;
+              cityId?: string;
+            }
+          >(RabbitMQPatterns.USER_CONVERT_GUEST, {
+            guestUserId: dto.guestUserId,
+            email: dto.email,
+            username: dto.username,
+            password: dto.password,
+            firstName: dto.firstName,
+            lastName: dto.lastName,
+            cityId: dto.cityId,
+          })
+          .pipe(timeout(15000)),
+      );
+
+      // Load user's city assignments from core service (if any)
+      let cityAssignments: CityAssignment[] = [];
+      try {
+        const dbAssignments = await firstValueFrom(
+          this.client
+            .send<
+              Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
+              { userId: string }
+            >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: registeredUser.id })
+            .pipe(timeout(10000)),
+        );
+
+        cityAssignments = dbAssignments.map((a) => ({
+          cityId: a.cityId,
+          role: a.role,
+          canManageAdmins: a.canManageAdmins,
+        }));
+      } catch (error) {
+        // No city assignments, that's fine
+        this.logger.debug('No city assignments found for converted user');
+      }
+
+      // Get permissions
+      const permissions = await this.permissionService.getUserPermissions(
+        registeredUser.role as UserRole,
+      );
+
+      // Generate new tokens for registered user
+      const selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
+      const tokens = await this.jwtService.generateTokenPair(
+        registeredUser.id,
+        registeredUser.email,
+        registeredUser.role,
+        {
+          isGuest: false,
+          selectedCityId,
+          cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
+          permissions: permissions.length > 0 ? permissions : undefined,
+        },
+      );
+
+      // Update refresh token in Redis
+      const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days for registered users
+      await this.redis.set(
+        `refresh_token:${registeredUser.id}`,
+        tokens.refreshToken,
+        refreshTokenExpiry,
+      );
+
+      // Update session expiry
+      const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
+      await this.storeSession(registeredUser.id, TokenType.JWT, expiresAt, AuthProvider.LOCAL);
+
+      // Create audit log
+      await this.createAuditLog(
+        registeredUser.id,
+        AuthAction.REGISTRATION_ATTEMPT,
+        true,
+        undefined,
+        ipAddress,
+        userAgent,
+        {
+          action: 'GUEST_TO_USER_CONVERSION',
+          migratedFromGuestId: registeredUser.migratedFromGuestId,
+        },
+      );
+
+      this.logger.log(`Guest converted to registered user successfully: ${registeredUser.id}`);
+
+      return {
+        user: {
+          id: registeredUser.id,
+          email: registeredUser.email,
+          username: registeredUser.username,
+          role: registeredUser.role,
+          userType: registeredUser.userType,
+          firstName: registeredUser.firstName,
+          lastName: registeredUser.lastName,
+          migratedFromGuestId: registeredUser.migratedFromGuestId,
+        },
+        ...tokens,
+        dataMigrated: true, // All data automatically migrated
+      };
+    } catch (error) {
+      this.logger.error('Failed to convert guest to registered user', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Failed to convert guest user');
+    }
   }
 }

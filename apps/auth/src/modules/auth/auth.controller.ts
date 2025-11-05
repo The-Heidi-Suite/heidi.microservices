@@ -38,6 +38,12 @@ import {
   RevokeSessionResponseDto,
   SessionNotFoundErrorResponseDto,
   RevokeAllSessionsResponseDto,
+  GuestLoginDto,
+  GuestLoginResponseDto,
+  ConvertGuestDto,
+  ConvertGuestResponseDto,
+  ValidationErrorResponseDto,
+  ConflictErrorResponseDto,
 } from '@heidi/contracts';
 import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
 import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
@@ -271,5 +277,65 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async revokeAllSessions(@GetCurrentUser('userId') userId: string) {
     return this.authService.revokeAllSessions(userId);
+  }
+
+  @Post('guest')
+  @Public()
+  @ApiOperation({
+    summary: 'Create guest session',
+    description:
+      'Create or retrieve a guest user session for mobile app (iOS/Android). Uses native device identifiers (iOS IDFV, Android ID) that persist across app reinstalls.',
+  })
+  @ApiBody({ type: GuestLoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Guest session created or retrieved successfully',
+    type: GuestLoginResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async createGuest(@Body() dto: GuestLoginDto, @Req() req: Request) {
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.createGuestSession(dto, ipAddress as string, userAgent);
+  }
+
+  @Post('guest/register')
+  @Public()
+  @ApiOperation({
+    summary: 'Convert guest to registered user',
+    description:
+      'Convert a guest user account to a registered user account. All guest data (favorites, listings) is automatically migrated.',
+  })
+  @ApiBody({ type: ConvertGuestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Guest converted to registered user successfully',
+    type: ConvertGuestResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid guest user',
+    type: AuthUnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Email or username already exists',
+    type: ConflictErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async convertGuest(@Body() dto: ConvertGuestDto, @Req() req: Request) {
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.convertGuestToRegistered(dto, ipAddress as string, userAgent);
   }
 }

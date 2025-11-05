@@ -28,20 +28,23 @@ export class LoginUserDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
   id: string;
 
-  @ApiProperty({ example: 'user@example.com' })
-  email: string;
+  @ApiProperty({ example: 'user@example.com', required: false })
+  email?: string;
 
-  @ApiProperty({ example: 'johndoe' })
-  username: string;
+  @ApiProperty({ example: 'johndoe', required: false })
+  username?: string;
 
   @ApiProperty({ example: 'CITIZEN', enum: ['CITIZEN', 'CITY_ADMIN', 'SUPER_ADMIN'] })
   role: string;
 
-  @ApiProperty({ example: 'John' })
-  firstName: string;
+  @ApiProperty({ example: 'REGISTERED', enum: ['GUEST', 'REGISTERED'] })
+  userType: string;
 
-  @ApiProperty({ example: 'Doe' })
-  lastName: string;
+  @ApiProperty({ example: 'John', required: false })
+  firstName?: string;
+
+  @ApiProperty({ example: 'Doe', required: false })
+  lastName?: string;
 }
 
 export class LoginResponseDataDto {
