@@ -1,3 +1,11 @@
-export * from './rabbitmq.module';
-export * from './rabbitmq.service';
-export * from './rabbitmq.config';
+// Module
+export * from './rmq.module';
+
+// Configuration
+export * from './rmq.config';
+
+// Constants and patterns
+export * from './rmq.constants';
+
+// Interfaces (exported for type usage)
+export * from './rmq.interfaces';
