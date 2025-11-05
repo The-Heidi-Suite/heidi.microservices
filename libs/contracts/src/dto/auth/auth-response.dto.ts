@@ -1,5 +1,127 @@
 import { ApiProperty } from '@nestjs/swagger';
 
+// Auth Error Response DTOs
+export class AuthUnauthorizedErrorResponseDto {
+  @ApiProperty({ example: 'UNAUTHORIZED', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Invalid or expired token', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/logout', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 401, description: 'HTTP status code' })
+  statusCode: number;
+}
+
+export class RefreshTokenUnauthorizedErrorResponseDto {
+  @ApiProperty({ example: 'UNAUTHORIZED', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Invalid refresh token', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/refresh', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 401, description: 'HTTP status code' })
+  statusCode: number;
+}
+
+export class AuthForbiddenErrorResponseDto {
+  @ApiProperty({ example: 'FORBIDDEN', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({
+    example: 'Insufficient permissions to assign city admins',
+    description: 'Error message',
+  })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/assign-city-admin', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 403, description: 'HTTP status code' })
+  statusCode: number;
+}
+
+export class AuthNotFoundErrorResponseDto {
+  @ApiProperty({ example: 'NOT_FOUND', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'User not found', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/assign-city-admin', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 404, description: 'HTTP status code' })
+  statusCode: number;
+}
+
+export class SessionNotFoundErrorResponseDto {
+  @ApiProperty({ example: 'NOT_FOUND', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Session not found or already revoked', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({
+    example: '/sessions/123e4567-e89b-12d3-a456-426614174000/revoke',
+    description: 'Request path',
+  })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 404, description: 'HTTP status code' })
+  statusCode: number;
+}
+
 // Logout Response
 export class LogoutResponseDataDto {
   @ApiProperty({ example: 'Logged out successfully' })

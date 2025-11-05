@@ -22,17 +22,22 @@ import { AuthService } from './auth.service';
 import {
   LoginDto,
   LoginResponseDto,
+  LoginUnauthorizedErrorResponseDto,
   RefreshTokenDto,
   RefreshTokenResponseDto,
+  RefreshTokenUnauthorizedErrorResponseDto,
   AssignCityAdminDto,
   AssignCityAdminResponseDto,
+  AuthForbiddenErrorResponseDto,
+  AuthNotFoundErrorResponseDto,
   ValidateTokenResponseDto,
+  AuthUnauthorizedErrorResponseDto,
   LogoutResponseDto,
   GetUserCitiesResponseDto,
   GetSessionsResponseDto,
   RevokeSessionResponseDto,
+  SessionNotFoundErrorResponseDto,
   RevokeAllSessionsResponseDto,
-  ApiErrorResponseDto,
 } from '@heidi/contracts';
 import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
 import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
@@ -77,18 +82,7 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'Invalid credentials',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 401,
-        errorCode: 'UNAUTHORIZED',
-        message: 'Invalid credentials',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/auth/login',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: LoginUnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Req() req: Request) {
@@ -111,18 +105,7 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 401,
-        errorCode: 'UNAUTHORIZED',
-        message: 'Invalid or expired token',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/auth/logout',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: AuthUnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async logout(@GetCurrentUser('userId') userId: string, @Req() req: Request) {
@@ -146,18 +129,7 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'Invalid or expired refresh token',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 401,
-        errorCode: 'UNAUTHORIZED',
-        message: 'Invalid refresh token',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/auth/refresh',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: RefreshTokenUnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async refresh(@Body() dto: RefreshTokenDto) {
@@ -175,18 +147,7 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'Invalid or expired token',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 401,
-        errorCode: 'UNAUTHORIZED',
-        message: 'Invalid or expired token',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/auth/validate',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: AuthUnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async validate(@GetCurrentUser() user: any) {
@@ -212,34 +173,12 @@ export class AuthController {
   @ApiResponse({
     status: 403,
     description: 'Forbidden - Super Admin access required',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 403,
-        errorCode: 'FORBIDDEN',
-        message: 'Insufficient permissions to assign city admins',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/auth/assign-city-admin',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: AuthForbiddenErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'User or city not found',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 404,
-        errorCode: 'NOT_FOUND',
-        message: 'User not found',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/auth/assign-city-admin',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: AuthNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.CREATED)
   async assignCityAdmin(
@@ -263,18 +202,7 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 401,
-        errorCode: 'UNAUTHORIZED',
-        message: 'Invalid or expired token',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/auth/cities',
-        method: 'GET',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: AuthUnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async getUserCities(@GetCurrentUser('userId') userId: string) {
@@ -295,18 +223,7 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 401,
-        errorCode: 'UNAUTHORIZED',
-        message: 'Invalid or expired token',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/auth/sessions',
-        method: 'GET',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: AuthUnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async getSessions(@GetCurrentUser('userId') userId: string) {
@@ -325,18 +242,7 @@ export class AuthController {
   @ApiResponse({
     status: 404,
     description: 'Session not found',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 404,
-        errorCode: 'NOT_FOUND',
-        message: 'Session not found or already revoked',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/auth/sessions/123e4567-e89b-12d3-a456-426614174000/revoke',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: SessionNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async revokeSession(
@@ -360,18 +266,7 @@ export class AuthController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 401,
-        errorCode: 'UNAUTHORIZED',
-        message: 'Invalid or expired token',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/auth/sessions/revoke-all',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: AuthUnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async revokeAllSessions(@GetCurrentUser('userId') userId: string) {

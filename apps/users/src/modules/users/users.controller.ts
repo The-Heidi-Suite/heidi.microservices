@@ -36,7 +36,12 @@ import {
   GetProfileResponseDto,
   UpdateProfileResponseDto,
   ChangePasswordResponseDto,
-  ApiErrorResponseDto,
+  ValidationErrorResponseDto,
+  ConflictErrorResponseDto,
+  UnauthorizedErrorResponseDto,
+  ForbiddenErrorResponseDto,
+  NotFoundErrorResponseDto,
+  BadRequestErrorResponseDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { AdminOnlyGuard } from '@heidi/rbac';
@@ -62,40 +67,12 @@ export class UsersController {
   @ApiResponse({
     status: 400,
     description: 'Bad request - validation failed',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 400,
-        errorCode: 'VALIDATION_ERROR',
-        message: 'Validation failed',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users/register',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-        details: {
-          message: [
-            'email must be an email',
-            'password must be longer than or equal to 8 characters',
-          ],
-        },
-      },
-    },
+    type: ValidationErrorResponseDto,
   })
   @ApiResponse({
     status: 409,
     description: 'User already exists',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 409,
-        errorCode: 'CONFLICT',
-        message: 'User with this email already exists',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users/register',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: ConflictErrorResponseDto,
   })
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() dto: RegisterDto) {
@@ -128,34 +105,12 @@ export class UsersController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 401,
-        errorCode: 'UNAUTHORIZED',
-        message: 'Invalid or expired token',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users',
-        method: 'GET',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: UnauthorizedErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
     description: 'Forbidden - Admin access required',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 403,
-        errorCode: 'FORBIDDEN',
-        message: 'Insufficient permissions',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users',
-        method: 'GET',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: ForbiddenErrorResponseDto,
   })
   async findAll(@Query('page') page = 1, @Query('limit') limit = 10) {
     return this.usersService.findAll(+page, +limit);
@@ -176,18 +131,7 @@ export class UsersController {
   @ApiResponse({
     status: 404,
     description: 'User not found',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 404,
-        errorCode: 'NOT_FOUND',
-        message: 'User not found',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users/123e4567-e89b-12d3-a456-426614174000',
-        method: 'GET',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: NotFoundErrorResponseDto,
   })
   async findOne(@Param('id') id: string) {
     return this.usersService.findOne(id);
@@ -205,37 +149,12 @@ export class UsersController {
   @ApiResponse({
     status: 400,
     description: 'Bad request - validation failed',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 400,
-        errorCode: 'VALIDATION_ERROR',
-        message: 'Validation failed',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-        details: {
-          message: ['email must be an email', 'role must be a valid enum value'],
-        },
-      },
-    },
+    type: ValidationErrorResponseDto,
   })
   @ApiResponse({
     status: 409,
     description: 'User already exists',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 409,
-        errorCode: 'CONFLICT',
-        message: 'User with this email already exists',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: ConflictErrorResponseDto,
   })
   async create(@Body() dto: CreateUserDto) {
     return this.usersService.create(dto);
@@ -254,18 +173,7 @@ export class UsersController {
   @ApiResponse({
     status: 404,
     description: 'User not found',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 404,
-        errorCode: 'NOT_FOUND',
-        message: 'User not found',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users/123e4567-e89b-12d3-a456-426614174000',
-        method: 'PATCH',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: NotFoundErrorResponseDto,
   })
   async update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
     return this.usersService.update(id, dto);
@@ -283,18 +191,7 @@ export class UsersController {
   @ApiResponse({
     status: 404,
     description: 'User not found',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 404,
-        errorCode: 'NOT_FOUND',
-        message: 'User not found',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users/123e4567-e89b-12d3-a456-426614174000',
-        method: 'DELETE',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: NotFoundErrorResponseDto,
   })
   async delete(@Param('id') id: string) {
     return this.usersService.delete(id);
@@ -314,18 +211,7 @@ export class UsersController {
   @ApiResponse({
     status: 401,
     description: 'Unauthorized',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 401,
-        errorCode: 'UNAUTHORIZED',
-        message: 'Invalid or expired token',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users/profile/me',
-        method: 'GET',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: UnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async getProfile(@GetCurrentUser('userId') userId: string) {
@@ -364,34 +250,12 @@ export class UsersController {
   @ApiResponse({
     status: 400,
     description: 'Bad request - current password incorrect',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 400,
-        errorCode: 'BAD_REQUEST',
-        message: 'Current password is incorrect',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users/profile/me/change-password',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: BadRequestErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
     description: 'Unauthorized',
-    type: ApiErrorResponseDto,
-    schema: {
-      example: {
-        statusCode: 401,
-        errorCode: 'UNAUTHORIZED',
-        message: 'Invalid or expired token',
-        timestamp: '2024-01-01T00:00:00.000Z',
-        path: '/api/users/profile/me/change-password',
-        method: 'POST',
-        requestId: 'req_1234567890_abc123',
-      },
-    },
+    type: UnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async changePassword(@GetCurrentUser('userId') userId: string, @Body() dto: ChangePasswordDto) {
