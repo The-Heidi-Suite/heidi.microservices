@@ -15,18 +15,21 @@ datasource db {
 // Session model - Tracks authentication sessions (JWT, OAuth, BIND_ID)
 // Note: userId references User.id in users database (no FK due to multi-database architecture)
 model Session {
-  id        String   @id @default(uuid())
-  userId    String   // Reference to User.id in users database
-  tokenType TokenType
-  tokenHash String?  // Hashed token for validation (JWT tokens stored in Redis)
-  provider  AuthProvider @default(LOCAL)
-  metadata  Json?     // Provider-specific data (OAuth tokens, BIND_ID data, etc.)
-  expiresAt DateTime
-  revokedAt DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id            String         @id @default(uuid())
+  userId        String         // Reference to User.id in users database
+  tokenType     TokenType
+  tokenHash      String?       // Hashed token for validation (JWT tokens stored in Redis)
+  provider      AuthProvider   @default(LOCAL)
+  metadata      Json?          // Provider-specific data (OAuth tokens, BIND_ID data, device info, etc.)
+  deviceId      String?        // Mobile device identifier (iOS IDFV or Android ID)
+  devicePlatform String?        // Device platform (IOS or ANDROID)
+  expiresAt     DateTime
+  revokedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
 
   @@index([userId])
+  @@index([deviceId])
   @@index([tokenType])
   @@index([provider])
   @@index([expiresAt])
