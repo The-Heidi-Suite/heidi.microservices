@@ -3,3 +3,7 @@ export * from './login-response.dto';
 export * from './auth-response.dto';
 export * from './refresh-token.dto';
 export * from './assign-city-admin.dto';
+export * from './guest-login.dto';
+export * from './guest-login-response.dto';
+export * from './convert-guest.dto';
+export * from './convert-guest-response.dto';

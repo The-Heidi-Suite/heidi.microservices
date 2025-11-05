@@ -1,19 +1,25 @@
 import { IsEmail, IsString, MinLength, IsOptional, IsUUID, Matches } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class RegisterDto {
-  @ApiPropertyOptional({
-    description: 'User email address (required for registration, optional for guest conversion)',
+export class ConvertGuestDto {
+  @ApiProperty({
+    description: 'Guest user ID to convert',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    format: 'uuid',
+  })
+  @IsUUID()
+  guestUserId: string;
+
+  @ApiProperty({
+    description: 'User email address',
     example: 'user@example.com',
     format: 'email',
   })
   @IsEmail()
-  @IsOptional()
-  email?: string;
+  email: string;
 
-  @ApiPropertyOptional({
-    description:
-      'Username (alphanumeric and underscores, 3-30 characters) (required for registration, optional for guest conversion)',
+  @ApiProperty({
+    description: 'Username (alphanumeric and underscores, 3-30 characters)',
     example: 'johndoe',
     minLength: 3,
     maxLength: 30,
@@ -23,19 +29,17 @@ export class RegisterDto {
   @Matches(/^[a-zA-Z0-9_]+$/, {
     message: 'Username must contain only letters, numbers, and underscores',
   })
-  @IsOptional()
-  username?: string;
+  username: string;
 
-  @ApiPropertyOptional({
-    description: 'User password (required for registration, optional for guest conversion)',
+  @ApiProperty({
+    description: 'User password',
     example: 'password123',
     minLength: 6,
     format: 'password',
   })
   @IsString()
   @MinLength(6)
-  @IsOptional()
-  password?: string;
+  password: string;
 
   @ApiPropertyOptional({
     description: 'User first name',

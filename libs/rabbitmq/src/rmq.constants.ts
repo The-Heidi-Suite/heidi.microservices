@@ -59,6 +59,9 @@ export const RabbitMQPatterns = {
   USER_FIND_BY_USERNAME: 'user.findByUsername',
   USER_FIND_BY_ID: 'user.findById',
   USER_GET_PROFILE: 'user.getProfile',
+  USER_CREATE_GUEST: 'user.createGuest',
+  USER_FIND_BY_DEVICE: 'user.findByDevice',
+  USER_CONVERT_GUEST: 'user.convertGuest',
 
   // Core request-response patterns
   CORE_GET_USER_CITIES: 'core.getUserCities',
