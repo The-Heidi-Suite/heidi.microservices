@@ -673,7 +673,8 @@ export class UsersService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         userType: UserType.REGISTERED,
-        migratedFromGuestId: guestUser.guestId,
+        migratedFromGuestId: guestUser.guestId, // Store original guest ID for historical tracking
+        guestId: null, // Clear guestId since user is no longer a guest
         // Keep deviceId and devicePlatform for reference, but can be cleared if needed
       },
       select: {

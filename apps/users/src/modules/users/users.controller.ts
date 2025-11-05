@@ -282,6 +282,7 @@ export class UsersController {
     type: ValidationErrorResponseDto,
     examples: {
       validationError: {
+        summary: 'Validation error example',
         value: {
           errorCode: 'VALIDATION_ERROR',
           message: 'Validation failed',
