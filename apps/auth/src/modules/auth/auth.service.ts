@@ -162,7 +162,8 @@ export class AuthService {
           userAgent,
         );
         throw new ForbiddenException({
-          message: 'Please verify your email address before logging in. A verification email has been sent to your email address.',
+          message:
+            'Please verify your email address before logging in. A verification email has been sent to your email address.',
           errorCode: 'EMAIL_VERIFICATION_REQUIRED',
           details: {
             userId: user.id,
@@ -232,16 +233,23 @@ export class AuthService {
       });
 
       // Store refresh token in Redis
-      const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days
+      // Use 30 days if rememberMe is true, otherwise 7 days
+      const refreshTokenExpiry = dto.rememberMe
+        ? 30 * 24 * 60 * 60 // 30 days for remember me
+        : 7 * 24 * 60 * 60; // 7 days for regular login
       await this.redis.set(`refresh_token:${user.id}`, tokens.refreshToken, refreshTokenExpiry);
 
       // Store session in auth database (for audit and future OAuth/BIND_ID)
       const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
-      await this.storeSession(user.id, TokenType.JWT, expiresAt, AuthProvider.LOCAL);
+      await this.storeSession(user.id, TokenType.JWT, expiresAt, AuthProvider.LOCAL, {
+        rememberMe: dto.rememberMe || false,
+      });
 
       // Create audit log for successful login
       await this.createAuditLog(user.id, AuthAction.LOGIN, true, undefined, ipAddress, userAgent, {
         tokenType: 'JWT',
+        rememberMe: dto.rememberMe || false,
+        refreshTokenExpiry: refreshTokenExpiry,
       });
 
       this.logger.log(`User logged in successfully: ${user.id}`);

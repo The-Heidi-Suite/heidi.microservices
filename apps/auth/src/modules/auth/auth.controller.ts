@@ -61,7 +61,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'User login',
     description:
-      "Authenticate user with email or username and password. You can use either email address (e.g., user@example.com) or username (e.g., johndoe) to login. If the user's email is not verified, a 403 response will be returned with instructions to verify the email.",
+      "Authenticate user with email or username and password. You can use either email address (e.g., user@example.com) or username (e.g., johndoe) to login. If the user's email is not verified, a 403 response will be returned with instructions to verify the email. Use the 'rememberMe' field to extend session duration to 30 days (default is 7 days).",
   })
   @ApiBody({
     type: LoginDto,
@@ -79,6 +79,16 @@ export class AuthController {
           email: 'johndoe',
           password: 'password123',
         },
+      },
+      rememberMeLogin: {
+        summary: 'Login with remember me enabled',
+        value: {
+          email: 'user@example.com',
+          password: 'password123',
+          rememberMe: true,
+        },
+        description:
+          'When rememberMe is true, the session will be kept for 30 days instead of 7 days',
       },
     },
   })
