@@ -44,6 +44,7 @@ import {
   ConvertGuestResponseDto,
   ValidationErrorResponseDto,
   ConflictErrorResponseDto,
+  GuestValidationErrorResponseDto,
 } from '@heidi/contracts';
 import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
 import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
@@ -295,7 +296,7 @@ export class AuthController {
   @ApiResponse({
     status: 400,
     description: 'Bad request - validation failed',
-    type: ValidationErrorResponseDto,
+    type: GuestValidationErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async createGuest(@Body() dto: GuestLoginDto, @Req() req: Request) {
@@ -320,7 +321,7 @@ export class AuthController {
   @ApiResponse({
     status: 400,
     description: 'Bad request - validation failed',
-    type: ValidationErrorResponseDto,
+    type: GuestValidationErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
