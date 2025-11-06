@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Login Error Responses
 export class LoginUnauthorizedErrorResponseDto {
@@ -59,6 +59,30 @@ export class LoginResponseDataDto {
 
   @ApiProperty({ example: 900, description: 'Token expiration time in seconds' })
   expiresIn: number;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether user needs to accept terms of use',
+  })
+  requiresTermsAcceptance?: boolean;
+
+  @ApiPropertyOptional({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'Terms ID that needs to be accepted',
+  })
+  termsId?: string | null;
+
+  @ApiPropertyOptional({
+    example: '2024-01',
+    description: 'Latest terms version',
+  })
+  latestVersion?: string | null;
+
+  @ApiPropertyOptional({
+    example: '2024-01-08T00:00:00.000Z',
+    description: 'Grace period end date (if within grace period)',
+  })
+  gracePeriodEndsAt?: string | null;
 }
 
 export class LoginResponseDto {
