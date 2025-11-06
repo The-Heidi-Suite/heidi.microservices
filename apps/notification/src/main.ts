@@ -46,9 +46,7 @@ async function bootstrap() {
 
   const documentBuilder = new DocumentBuilder()
     .setTitle(swaggerTitle)
-    .setDescription(
-      swaggerConfig.description || 'API documentation for HEIDI Notification Service',
-    )
+    .setDescription(swaggerConfig.description || 'API documentation for HEIDI Notification Service')
     .setVersion(swaggerConfig.version || '1.0');
 
   // Only add server URL if API gateway prefix is enabled (for production/server)
