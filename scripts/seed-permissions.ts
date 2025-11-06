@@ -9,6 +9,9 @@
  * Run: npx ts-node scripts/seed-permissions.ts
  */
 
+// Register tsconfig-paths to resolve TypeScript path mappings
+import 'tsconfig-paths/register';
+
 import { PrismaClient, Permission } from '@prisma/client-core';
 import { UserRole } from '@prisma/client-core';
 
