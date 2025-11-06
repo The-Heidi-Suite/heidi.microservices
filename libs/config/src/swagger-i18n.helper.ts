@@ -55,6 +55,159 @@ export function getSwaggerI18nOptions(configService: ConfigService) {
     .map((lang) => `<option value="${lang.code}">${lang.nativeName} (${lang.name})</option>`)
     .join('');
 
+  // Build the JavaScript code string at TypeScript level with interpolated values
+  const languageSelectorJs = `
+    (function() {
+      'use strict';
+
+      // Language storage key - shared across all services
+      const LANGUAGE_STORAGE_KEY = 'heidi-swagger-language';
+      const LANGUAGE_QUERY_PARAM = 'lang';
+      const DEFAULT_LANGUAGE = ${JSON.stringify(defaultLanguage)};
+      const LANGUAGE_OPTIONS_HTML = ${JSON.stringify(languageOptionsHtml)};
+
+      // Helper function to get language from URL or storage
+      function getLanguage() {
+        // First, check URL query parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlLang = urlParams.get(LANGUAGE_QUERY_PARAM);
+
+        if (urlLang) {
+          // Save to localStorage for persistence
+          localStorage.setItem(LANGUAGE_STORAGE_KEY, urlLang);
+          return urlLang;
+        }
+
+        // Fall back to localStorage
+        return localStorage.getItem(LANGUAGE_STORAGE_KEY) || DEFAULT_LANGUAGE;
+      }
+
+      // Helper function to update URL with language parameter
+      function updateUrlWithLanguage(lang) {
+        const url = new URL(window.location.href);
+        url.searchParams.set(LANGUAGE_QUERY_PARAM, lang);
+        // Update URL without reload (using history API)
+        window.history.replaceState({}, '', url.toString());
+      }
+
+      // Wait for DOM to be ready
+      function initLanguageSelector() {
+        // Check if selector already exists
+        if (document.getElementById('swagger-i18n-selector')) {
+          return;
+        }
+
+        // Create language selector container
+        const selector = document.createElement('div');
+        selector.id = 'swagger-i18n-selector';
+        selector.className = 'swagger-i18n-selector';
+
+        // Get current language (from URL or storage)
+        const savedLang = getLanguage();
+
+        // Create label
+        const label = document.createElement('label');
+        label.setAttribute('for', 'swagger-lang-select');
+        label.textContent = '🌐 Language:';
+
+        // Create indicator
+        const indicator = document.createElement('div');
+        indicator.className = 'language-indicator';
+        indicator.textContent = savedLang.toUpperCase();
+
+        // Create select element
+        const select = document.createElement('select');
+        select.id = 'swagger-lang-select';
+        select.innerHTML = LANGUAGE_OPTIONS_HTML;
+        select.value = savedLang;
+
+        // Update indicator, localStorage, and URL when language changes
+        select.addEventListener('change', function() {
+          const selectedLang = this.value;
+
+          // Save to localStorage
+          localStorage.setItem(LANGUAGE_STORAGE_KEY, selectedLang);
+
+          // Update URL
+          updateUrlWithLanguage(selectedLang);
+
+          // Update indicator
+          indicator.textContent = selectedLang.toUpperCase();
+
+          // Show notification
+          showLanguageChangeNotification(selectedLang);
+        });
+
+        // Assemble the selector
+        selector.appendChild(label);
+        selector.appendChild(indicator);
+        selector.appendChild(select);
+
+        // Insert into body
+        document.body.appendChild(selector);
+
+        // Add notification function
+        function showLanguageChangeNotification(lang) {
+          // Remove existing notification if any
+          const existing = document.getElementById('swagger-i18n-notification');
+          if (existing) {
+            existing.remove();
+          }
+
+          const notification = document.createElement('div');
+          notification.id = 'swagger-i18n-notification';
+          notification.style.cssText = 'position: fixed; top: 70px; right: 10px; z-index: 101; padding: 12px 20px; background: #4caf50; color: white; border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: 500; animation: slideIn 0.3s ease;';
+          notification.textContent = 'Language changed to: ' + lang.toUpperCase() + '. Accept-Language header will be set to ' + lang.toUpperCase() + ' for all API requests.';
+
+          // Add animation
+          const style = document.createElement('style');
+          style.textContent = '@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }';
+          document.head.appendChild(style);
+
+          document.body.appendChild(notification);
+
+          // Remove after 3 seconds
+          setTimeout(() => {
+            if (notification.parentNode) {
+              notification.style.animation = 'slideIn 0.3s ease reverse';
+              setTimeout(() => notification.remove(), 300);
+            }
+          }, 3000);
+        }
+      }
+
+      // Initialize when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initLanguageSelector);
+      } else {
+        initLanguageSelector();
+      }
+
+      // Also initialize after Swagger UI loads (in case of async loading)
+      const observer = new MutationObserver(function(mutations) {
+        if (document.querySelector('.swagger-ui')) {
+          initLanguageSelector();
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    })();
+  `;
+
+  // Build the onComplete function body as a string with the code embedded
+  const onCompleteBody = `function () {
+    try {
+      const code = ${JSON.stringify(languageSelectorJs.trim())};
+      eval(code);
+    } catch (error) {
+      console.error('Failed to initialize language selector:', error);
+    }
+  }`;
+
   return {
     swaggerOptions: {
       persistAuthorization: true,
@@ -64,10 +217,13 @@ export function getSwaggerI18nOptions(configService: ConfigService) {
         // Check URL query parameter first
         const urlParams = new URLSearchParams(window.location.search);
         const urlLang = urlParams.get('lang');
-        const language = urlLang || localStorage.getItem('heidi-swagger-language') || defaultLanguage;
+        const language =
+          urlLang || localStorage.getItem('heidi-swagger-language') || defaultLanguage;
         request.headers['Accept-Language'] = language;
         return request;
       },
+      // Inject JavaScript after Swagger UI loads
+      onComplete: eval('(' + onCompleteBody + ')') as () => void,
     },
     customCss: `
       /* Language Selector Styles */
@@ -157,150 +313,6 @@ export function getSwaggerI18nOptions(configService: ConfigService) {
       .swagger-ui .topbar {
         display: none;
       }
-    `,
-    customJs:
-      `
-      (function() {
-        'use strict';
-
-        // Language storage key - shared across all services
-        const LANGUAGE_STORAGE_KEY = 'heidi-swagger-language';
-        const LANGUAGE_QUERY_PARAM = 'lang';
-
-        // Helper function to get language from URL or storage
-        function getLanguage() {
-          // First, check URL query parameter
-          const urlParams = new URLSearchParams(window.location.search);
-          const urlLang = urlParams.get(LANGUAGE_QUERY_PARAM);
-          
-          if (urlLang) {
-            // Save to localStorage for persistence
-            localStorage.setItem(LANGUAGE_STORAGE_KEY, urlLang);
-            return urlLang;
-          }
-          
-          // Fall back to localStorage
-          return localStorage.getItem(LANGUAGE_STORAGE_KEY) || '` +
-      JSON.stringify(defaultLanguage) +
-      `';
-        }
-
-        // Helper function to update URL with language parameter
-        function updateUrlWithLanguage(lang) {
-          const url = new URL(window.location.href);
-          url.searchParams.set(LANGUAGE_QUERY_PARAM, lang);
-          // Update URL without reload (using history API)
-          window.history.replaceState({}, '', url.toString());
-        }
-
-        // Wait for DOM to be ready
-        function initLanguageSelector() {
-          // Check if selector already exists
-          if (document.getElementById('swagger-i18n-selector')) {
-            return;
-          }
-
-          // Create language selector container
-          const selector = document.createElement('div');
-          selector.id = 'swagger-i18n-selector';
-          selector.className = 'swagger-i18n-selector';
-
-          // Get current language (from URL or storage)
-          const savedLang = getLanguage();
-
-          // Create label
-          const label = document.createElement('label');
-          label.setAttribute('for', 'swagger-lang-select');
-          label.textContent = '🌐 Language:';
-
-          // Create indicator
-          const indicator = document.createElement('div');
-          indicator.className = 'language-indicator';
-          indicator.textContent = savedLang.toUpperCase();
-
-          // Create select element
-          const select = document.createElement('select');
-          select.id = 'swagger-lang-select';
-          select.innerHTML = ` +
-      JSON.stringify(languageOptionsHtml) +
-      `;
-          select.value = savedLang;
-
-          // Update indicator, localStorage, and URL when language changes
-          select.addEventListener('change', function() {
-            const selectedLang = this.value;
-            
-            // Save to localStorage
-            localStorage.setItem(LANGUAGE_STORAGE_KEY, selectedLang);
-            
-            // Update URL
-            updateUrlWithLanguage(selectedLang);
-            
-            // Update indicator
-            indicator.textContent = selectedLang.toUpperCase();
-
-            // Show notification
-            showLanguageChangeNotification(selectedLang);
-          });
-
-          // Assemble the selector
-          selector.appendChild(label);
-          selector.appendChild(indicator);
-          selector.appendChild(select);
-
-          // Insert into body
-          document.body.appendChild(selector);
-
-          // Add notification function
-          function showLanguageChangeNotification(lang) {
-            // Remove existing notification if any
-            const existing = document.getElementById('swagger-i18n-notification');
-            if (existing) {
-              existing.remove();
-            }
-
-            const notification = document.createElement('div');
-            notification.id = 'swagger-i18n-notification';
-            notification.style.cssText = 'position: fixed; top: 70px; right: 10px; z-index: 101; padding: 12px 20px; background: #4caf50; color: white; border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: 500; animation: slideIn 0.3s ease;';
-            notification.textContent = 'Language changed to: ' + lang.toUpperCase() + '. Next request will use this language.';
-
-            // Add animation
-            const style = document.createElement('style');
-            style.textContent = '@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }';
-            document.head.appendChild(style);
-
-            document.body.appendChild(notification);
-
-            // Remove after 3 seconds
-            setTimeout(() => {
-              if (notification.parentNode) {
-                notification.style.animation = 'slideIn 0.3s ease reverse';
-                setTimeout(() => notification.remove(), 300);
-              }
-            }, 3000);
-          }
-        }
-
-        // Initialize when DOM is ready
-        if (document.readyState === 'loading') {
-          document.addEventListener('DOMContentLoaded', initLanguageSelector);
-        } else {
-          initLanguageSelector();
-        }
-
-        // Also initialize after Swagger UI loads (in case of async loading)
-        const observer = new MutationObserver(function(mutations) {
-          if (document.querySelector('.swagger-ui')) {
-            initLanguageSelector();
-            observer.disconnect();
-          }
-        });
-
-        observer.observe(document.body, {
-          childList: true,
-          subtree: true,
-        });
-      })();
     `,
   };
 }
