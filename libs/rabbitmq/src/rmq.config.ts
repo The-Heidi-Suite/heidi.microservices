@@ -79,6 +79,9 @@ export function getRmqConsumerOptions(
     autoDelete: false,
   };
 
+  // NestJS RabbitMQ transport needs exchange configuration to bind @EventPattern handlers
+  // to heidi_exchange instead of the default exchange.
+  // The exchange and bindings are created by RmqSetupService on module initialization.
   return {
     transport: Transport.RMQ,
     options: {
@@ -86,10 +89,13 @@ export function getRmqConsumerOptions(
       queue: queueName,
       queueOptions,
       prefetchCount,
+      // Add exchange configuration so NestJS binds @EventPattern handlers to heidi_exchange
+      exchange: RABBITMQ_EXCHANGE,
+      exchangeType: RABBITMQ_EXCHANGE_TYPE,
       socketOptions: {
         heartbeatIntervalInSeconds: DEFAULT_CONFIG.HEARTBEAT_INTERVAL,
         reconnectTimeInSeconds: DEFAULT_CONFIG.RECONNECT_TIME,
       },
-    },
+    } as any, // Type assertion needed - NestJS supports exchange but types don't include it
   };
 }

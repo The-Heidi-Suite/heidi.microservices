@@ -12,3 +12,6 @@ export * from './rmq.interfaces';
 
 // Client wrapper
 export * from './rmq-client-wrapper';
+
+// Setup service
+export * from './rmq-setup.service';
