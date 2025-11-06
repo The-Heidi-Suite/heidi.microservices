@@ -81,7 +81,7 @@ export class JwtTokenService {
 
     return this.jwtService.sign(payload, {
       secret: this.accessTokenSecret,
-      expiresIn: this.accessTokenExpiry,
+      expiresIn: this.accessTokenExpiry as any,
     });
   }
 
@@ -118,7 +118,7 @@ export class JwtTokenService {
 
     return this.jwtService.sign(payload, {
       secret: this.refreshTokenSecret,
-      expiresIn: this.refreshTokenExpiry,
+      expiresIn: this.refreshTokenExpiry as any,
     });
   }
 

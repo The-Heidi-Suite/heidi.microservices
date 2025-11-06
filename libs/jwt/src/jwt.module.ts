@@ -27,7 +27,7 @@ export class JwtModule {
           useFactory: (configService: ConfigService) => ({
             secret: configService.jwtSecret,
             signOptions: {
-              expiresIn: configService.jwtExpiresIn,
+              expiresIn: configService.jwtExpiresIn as any,
             },
           }),
         }),
