@@ -2,6 +2,47 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.13.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.12.0...v1.13.0) (2025-11-06)
+
+
+### ♻️ Code Refactoring
+
+* **dto:** remove common exports and delete common index file ([eae4abc](https://github.com/The-Heidi-Suite/heidi.microservices/commit/eae4abc6dd3b935de6a56110372fcfda6b391e30))
+* **rabbitmq:** remove definitions.json and update documentation ([17f38fe](https://github.com/The-Heidi-Suite/heidi.microservices/commit/17f38fec063dc19431eb98262f68707e15f82b10))
+
+
+### ✨ Features
+
+* **auth, users:** enhance user and session models with device tracking and favorites ([70bcf38](https://github.com/The-Heidi-Suite/heidi.microservices/commit/70bcf387f36af6a919b184adc01159ef63c0e1c1))
+* **auth:** add email verification check during login process ([682b5dd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/682b5ddf7c227f2dccdc74d238e0358702858b1d))
+* **auth:** add guest conversion and login DTOs for improved user management ([d54b1c6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d54b1c6cebbcb8191b00a285a5a1b940d477fb2d))
+* **auth:** implement guest session creation and conversion endpoints ([c6d2b83](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c6d2b832fb48f4c7cce995ac3d1ae48b1b52a921))
+* **core:** implement favorites management for users ([83bdd77](https://github.com/The-Heidi-Suite/heidi.microservices/commit/83bdd77fbc5a02c2e0506bdf03d3e1aaa4a37368))
+* **email:** enhance SMTP configuration and email service ([d546579](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d546579b7ece68f7c85e723ed8b3e2bc48ab98e9))
+* **notification:** add DTOs for verification processes ([66a6c47](https://github.com/The-Heidi-Suite/heidi.microservices/commit/66a6c47e2d68e1c9317bc4429507803e0734e503))
+* **notification:** add VerificationToken model and related enums for email/SMS verification ([387c04b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/387c04b92f116c3686107c1e39b1b9b4a0086e2d))
+* **notification:** implement email service and notification message controller ([83186f8](https://github.com/The-Heidi-Suite/heidi.microservices/commit/83186f8c544bb8f2ccb1dc25c57db2af6ed3098f))
+* **rabbitmq:** enhance RabbitMQ client and setup services ([0493b6f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0493b6f29897df9160b3de3c6a28fad5eb24525c))
+* **users:** add CreateGuestDto for guest user creation ([8e9ff51](https://github.com/The-Heidi-Suite/heidi.microservices/commit/8e9ff51464f1f38cb4a06ff6a516daed2f832731))
+* **users:** enhance user service and controller with validation error documentation ([9c8ab7a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/9c8ab7ae06f5cb15ee5458317ac36bccc7705473))
+* **users:** implement email verification handling and user service updates ([ea5b01a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ea5b01a69e68df657514c5afb070a79c2f242291))
+* **users:** implement guest user creation and conversion endpoints ([c91b1f5](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c91b1f50aa29c3895a1de0d59614d2af0132e7d8))
+* **users:** update guest user creation and validation response handling ([7407dda](https://github.com/The-Heidi-Suite/heidi.microservices/commit/7407dda1ef24fb1e0c8744570e0eeae0a2b82c40))
+* **verification:** add verification module and controllers for email/SMS verification ([c43dbf7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c43dbf713729450483edb1ce782f933cf7552b6e))
+* **verification:** implement email and SMS verification strategies ([c3f020a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c3f020a6f7cd81deef059ff1da2e462678e01273))
+
+
+### 🐛 Bug Fixes
+
+* **auth:** update validation response type for guest creation ([9ae731b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/9ae731b295fa620156e213bfddd76b1c79ded978))
+
+
+### 🔧 Chores
+
+* **dependencies:** clean up package-lock.json and yarn.lock ([3ec3ff4](https://github.com/The-Heidi-Suite/heidi.microservices/commit/3ec3ff4d8ac9a3775058f1073bf54c96dcf580b3))
+* **dependencies:** update package versions and add new dependencies ([cb1fc51](https://github.com/The-Heidi-Suite/heidi.microservices/commit/cb1fc513d8dab34bd86814b081f8bc05be6ccccc))
+* **dependencies:** update package-lock and yarn.lock for dependency upgrades ([0c576bc](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0c576bc72bbadc25795f4fe67a000ad95f396bc4))
+
 ## [1.12.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.11.0...v1.12.0) (2025-11-05)
 
 
