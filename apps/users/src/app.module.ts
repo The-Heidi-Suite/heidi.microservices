@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
 import { ConfigModule, ConfigService } from '@heidi/config';
 import { PrismaUsersModule } from '@heidi/prisma';
@@ -15,6 +15,7 @@ import {
 } from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 import { ErrorHandlingModule } from '@heidi/errors';
+import { TermsAcceptanceGuard } from '@heidi/rbac';
 import { UsersModule } from './modules/users/users.module';
 import { HealthController } from './health.controller';
 
@@ -52,6 +53,10 @@ import { HealthController } from './health.controller';
     {
       provide: APP_INTERCEPTOR,
       useClass: TransformInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: TermsAcceptanceGuard,
     },
   ],
 })
