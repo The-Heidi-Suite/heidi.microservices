@@ -182,6 +182,28 @@ export default () => ({
   // Email configuration
   systemEmailId: process.env.SYSTEM_EMAIL_ID,
 
+  // Email/SMTP configuration
+  smtp: {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    // Optional: only set if provided in env
+    port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
+    // Optional: only set if provided in env
+    secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : undefined,
+    // Optional path for SMTP server (e.g., "/webmail-rc")
+    path: process.env.SMTP_PATH,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+    from: process.env.SYSTEM_EMAIL_ID || process.env.SMTP_USER || 'noreply@heidi.example.com',
+    // Optional: only set if provided in env
+    tls: process.env.SMTP_TLS_REJECT_UNAUTHORIZED
+      ? {
+          rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false',
+        }
+      : undefined,
+  },
+
   // Client URL
   clientURL: process.env.CLIENT_URL,
 

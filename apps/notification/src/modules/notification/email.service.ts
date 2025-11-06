@@ -19,6 +19,7 @@ export class EmailService {
     this.logger.setContext(EmailService.name);
 
     // Create nodemailer transporter
+    // Start with minimal config (host and auth are required)
     const transportConfig: any = {
       host: configService.smtpHost,
       auth: {
@@ -27,9 +28,34 @@ export class EmailService {
       },
     };
 
-    // Add path if configured (for custom SMTP servers that require a path)
+    // Add optional path if configured (for custom SMTP servers that require a path)
     if (configService.smtpPath) {
       transportConfig.path = configService.smtpPath;
+    }
+
+    // Add optional port if configured
+    const smtpPort = configService.smtpPort;
+    if (smtpPort !== undefined) {
+      transportConfig.port = smtpPort;
+    }
+
+    // Add optional secure flag if configured
+    const smtpSecure = configService.smtpSecure;
+    if (smtpSecure !== undefined) {
+      transportConfig.secure = smtpSecure;
+    }
+
+    // Add optional TLS configuration if configured
+    const tlsConfig = configService.get('smtp.tls');
+    if (tlsConfig && tlsConfig.rejectUnauthorized !== undefined) {
+      transportConfig.tls = {
+        rejectUnauthorized: tlsConfig.rejectUnauthorized,
+      };
+    }
+
+    // Add optional requireTLS if port is 587
+    if (smtpPort === 587) {
+      transportConfig.requireTLS = true;
     }
 
     this.transporter = nodemailer.createTransport(transportConfig);
