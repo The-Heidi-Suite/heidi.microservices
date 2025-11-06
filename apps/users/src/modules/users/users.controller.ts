@@ -37,12 +37,13 @@ import {
   UpdateProfileResponseDto,
   ChangePasswordResponseDto,
   ValidationErrorResponseDto,
+  GuestValidationErrorResponseDto,
   ConflictErrorResponseDto,
   UnauthorizedErrorResponseDto,
   ForbiddenErrorResponseDto,
   NotFoundErrorResponseDto,
   BadRequestErrorResponseDto,
-  GuestLoginDto,
+  CreateGuestDto,
   ConvertGuestDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
@@ -271,7 +272,7 @@ export class UsersController {
     description:
       'Create a new guest user for mobile device (internal endpoint, typically called by auth service)',
   })
-  @ApiBody({ type: GuestLoginDto })
+  @ApiBody({ type: CreateGuestDto })
   @ApiResponse({
     status: 201,
     description: 'Guest user created or retrieved successfully',
@@ -279,30 +280,10 @@ export class UsersController {
   @ApiResponse({
     status: 400,
     description: 'Bad request - validation failed',
-    type: ValidationErrorResponseDto,
-    examples: {
-      validationError: {
-        summary: 'Validation error example',
-        value: {
-          errorCode: 'VALIDATION_ERROR',
-          message: 'Validation failed',
-          timestamp: '2024-01-01T00:00:00.000Z',
-          path: '/guest',
-          method: 'POST',
-          requestId: 'req_1234567890_abc123',
-          statusCode: 400,
-          details: {
-            message: [
-              'deviceId must be a string',
-              'devicePlatform must be one of the following values: IOS, ANDROID',
-            ],
-          },
-        },
-      },
-    },
+    type: GuestValidationErrorResponseDto,
   })
   @HttpCode(HttpStatus.CREATED)
-  async createGuest(@Body() dto: GuestLoginDto) {
+  async createGuest(@Body() dto: CreateGuestDto) {
     return this.usersService.createGuest(dto.deviceId, dto.devicePlatform, dto.deviceMetadata);
   }
 

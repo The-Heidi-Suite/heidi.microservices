@@ -32,6 +32,40 @@ export class ValidationErrorResponseDto {
   details?: any;
 }
 
+export class GuestValidationErrorResponseDto {
+  @ApiProperty({ example: 'VALIDATION_ERROR', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Validation failed', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/guest', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 400, description: 'HTTP status code' })
+  statusCode: number;
+
+  @ApiPropertyOptional({
+    description: 'Additional error details',
+    example: {
+      message: [
+        'deviceId must be a string',
+        'devicePlatform must be one of the following values: IOS, ANDROID',
+      ],
+    },
+  })
+  details?: any;
+}
+
 export class ConflictErrorResponseDto {
   @ApiProperty({ example: 'CONFLICT', description: 'Error code' })
   errorCode: string;
