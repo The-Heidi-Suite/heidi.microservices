@@ -161,7 +161,15 @@ export class AuthService {
           ipAddress,
           userAgent,
         );
-        throw new ForbiddenException('Please verify your email address before logging in');
+        throw new ForbiddenException({
+          message: 'Please verify your email address before logging in. A verification email has been sent to your email address.',
+          errorCode: 'EMAIL_VERIFICATION_REQUIRED',
+          details: {
+            userId: user.id,
+            email: user.email,
+            resendVerificationEndpoint: '/verification/resend',
+          },
+        });
       }
 
       // Verify password
