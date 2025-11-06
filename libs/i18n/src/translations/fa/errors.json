@@ -27,6 +27,7 @@
   "AUTH_TOKEN_EXPIRED": "توکن احراز هویت منقضی شده است",
   "AUTH_INSUFFICIENT_PERMISSIONS": "مجوزهای ناکافی",
   "AUTH_USER_NOT_FOUND": "کاربر یافت نشد",
+  "EMAIL_VERIFICATION_REQUIRED": "لطفاً قبل از ورود، آدرس ایمیل خود را تأیید کنید. ایمیل تأیید به آدرس ایمیل شما ارسال شده است.",
   "CONFIG_MISSING_REQUIRED": "پیکربندی موردنیاز وجود ندارد",
   "CONFIG_INVALID_VALUE": "مقدار پیکربندی نامعتبر",
   "EXTERNAL_SERVICE_UNAVAILABLE": "سرویس خارجی در دسترس نیست",

@@ -27,6 +27,7 @@
   "AUTH_TOKEN_EXPIRED": "Authentication token expired",
   "AUTH_INSUFFICIENT_PERMISSIONS": "Insufficient permissions",
   "AUTH_USER_NOT_FOUND": "User not found",
+  "EMAIL_VERIFICATION_REQUIRED": "Please verify your email address before logging in. A verification email has been sent to your email address.",
   "CONFIG_MISSING_REQUIRED": "Missing required configuration",
   "CONFIG_INVALID_VALUE": "Invalid configuration value",
   "EXTERNAL_SERVICE_UNAVAILABLE": "External service unavailable",

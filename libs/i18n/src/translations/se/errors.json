@@ -27,6 +27,7 @@
   "AUTH_TOKEN_EXPIRED": "Autentiseringstoken utgånget",
   "AUTH_INSUFFICIENT_PERMISSIONS": "Otillräckliga behörigheter",
   "AUTH_USER_NOT_FOUND": "Användare hittades inte",
+  "EMAIL_VERIFICATION_REQUIRED": "Vänligen verifiera din e-postadress innan inloggning. Ett verifieringsmeddelande har skickats till din e-postadress.",
   "CONFIG_MISSING_REQUIRED": "Obligatorisk konfiguration saknas",
   "CONFIG_INVALID_VALUE": "Ogiltigt konfigurationsvärde",
   "EXTERNAL_SERVICE_UNAVAILABLE": "Extern tjänst otillgänglig",
