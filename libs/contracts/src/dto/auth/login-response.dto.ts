@@ -68,6 +68,9 @@ export class LoginResponseDto {
   @ApiProperty({ type: LoginResponseDataDto })
   data: LoginResponseDataDto;
 
+  @ApiProperty({ example: 'Login successful', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 

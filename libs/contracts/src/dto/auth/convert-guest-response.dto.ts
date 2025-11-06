@@ -53,6 +53,9 @@ export class ConvertGuestResponseDto {
   @ApiProperty({ type: ConvertGuestResponseDataDto })
   data: ConvertGuestResponseDataDto;
 
+  @ApiProperty({ example: 'Guest converted successfully', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 

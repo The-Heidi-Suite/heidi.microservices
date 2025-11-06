@@ -38,6 +38,9 @@ export class GuestLoginResponseDto {
   @ApiProperty({ type: GuestLoginResponseDataDto })
   data: GuestLoginResponseDataDto;
 
+  @ApiProperty({ example: 'Guest login successful', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 
