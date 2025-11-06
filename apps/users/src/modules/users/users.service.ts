@@ -84,6 +84,7 @@ export class UsersService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         role: UserRole.CITIZEN,
+        emailVerified: false,
       },
       select: {
         id: true,
@@ -100,6 +101,8 @@ export class UsersService {
     this.client.emit(RabbitMQPatterns.USER_CREATED, {
       userId: user.id,
       email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
       timestamp: new Date().toISOString(),
     });
 
@@ -158,6 +161,7 @@ export class UsersService {
           firstName: dto.firstName,
           lastName: dto.lastName,
           role: UserRole.CITIZEN,
+          emailVerified: false,
         },
         select: {
           id: true,
@@ -217,6 +221,8 @@ export class UsersService {
       this.client.emit(RabbitMQPatterns.USER_CREATED, {
         userId: user.id,
         email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
         timestamp: new Date().toISOString(),
       });
 
@@ -298,6 +304,7 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
+        emailVerified: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -320,6 +327,7 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
+        emailVerified: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -673,6 +681,7 @@ export class UsersService {
         firstName: dto.firstName,
         lastName: dto.lastName,
         userType: UserType.REGISTERED,
+        emailVerified: false,
         migratedFromGuestId: guestUser.guestId, // Store original guest ID for historical tracking
         guestId: null, // Clear guestId since user is no longer a guest
         // Keep deviceId and devicePlatform for reference, but can be cleared if needed
@@ -691,7 +700,16 @@ export class UsersService {
       },
     });
 
-    // Emit user updated event
+    // Emit user created event (since this is effectively a new registration)
+    this.client.emit(RabbitMQPatterns.USER_CREATED, {
+      userId: registeredUser.id,
+      email: registeredUser.email,
+      firstName: registeredUser.firstName,
+      lastName: registeredUser.lastName,
+      timestamp: new Date().toISOString(),
+    });
+
+    // Also emit user updated event for tracking
     this.client.emit(RabbitMQPatterns.USER_UPDATED, {
       userId: registeredUser.id,
       action: 'GUEST_TO_USER_CONVERSION',
@@ -700,5 +718,33 @@ export class UsersService {
 
     this.logger.log(`Guest user converted to registered user successfully: ${registeredUser.id}`);
     return registeredUser;
+  }
+
+  /**
+   * Mark user's email as verified
+   */
+  async markEmailAsVerified(userId: string) {
+    this.logger.log(`Marking email as verified for user: ${userId}`);
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: true },
+      select: {
+        id: true,
+        email: true,
+        emailVerified: true,
+        updatedAt: true,
+      },
+    });
+
+    // Emit user updated event
+    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
+      userId: user.id,
+      action: 'EMAIL_VERIFIED',
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Email verified for user: ${userId}`);
+    return user;
   }
 }

@@ -106,7 +106,6 @@ rabbitmq:
   volumes:
     - rabbitmq_data:/var/lib/rabbitmq
     - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-    - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
 ```
 
 ## Configuration Details

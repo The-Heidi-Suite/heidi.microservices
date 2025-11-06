@@ -25,12 +25,14 @@ model User {
   cityId              String?
   firstName           String?
   lastName            String?
+  emailVerified       Boolean          @default(false)
   isActive            Boolean           @default(true)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
   deletedAt           DateTime?
 
   @@index([email])
+  @@index([emailVerified])
   @@index([username])
   @@index([guestId])
   @@index([deviceId])

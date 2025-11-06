@@ -60,7 +60,7 @@ This script:
 
 - **RabbitMQ**:
   - Configuration: `infra/rabbitmq/rabbitmq.conf`
-  - Queue definitions: `infra/rabbitmq/definitions.json`
+  - Queues, exchanges, and bindings are created dynamically by `RmqSetupService` on service startup
 
 ## First-Time Setup Checklist
 
