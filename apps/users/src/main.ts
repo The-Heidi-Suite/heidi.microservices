@@ -15,7 +15,18 @@ async function bootstrap() {
   logger.setContext('Users-Service');
   app.useLogger(logger);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline scripts for Swagger UI
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], // Allow inline styles and Google Fonts
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'], // Allow Google Fonts font files
+        },
+      },
+    }),
+  );
   const configService = app.get(ConfigService);
   app.enableCors({ origin: configService.get<string>('corsOrigin', '*'), credentials: true });
 
