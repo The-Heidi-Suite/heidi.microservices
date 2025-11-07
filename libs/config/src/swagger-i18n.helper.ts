@@ -214,12 +214,28 @@ export function getSwaggerI18nOptions(configService: ConfigService) {
       // Request interceptor to add Accept-Language header
       // Priority: URL query parameter (?lang=de) > localStorage > default
       requestInterceptor: (request: any) => {
+        // Guard against null/undefined request object
+        if (!request) {
+          return request;
+        }
+
+        // Ensure headers object exists
+        if (!request.headers) {
+          request.headers = {};
+        }
+
         // Check URL query parameter first
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlLang = urlParams.get('lang');
-        const language =
-          urlLang || localStorage.getItem('heidi-swagger-language') || defaultLanguage;
-        request.headers['Accept-Language'] = language;
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const urlLang = urlParams.get('lang');
+          const language =
+            urlLang || localStorage.getItem('heidi-swagger-language') || defaultLanguage;
+          request.headers['Accept-Language'] = language;
+        } catch (error) {
+          // Fallback to default language if any error occurs
+          request.headers['Accept-Language'] = defaultLanguage;
+        }
+
         return request;
       },
       // Inject JavaScript after Swagger UI loads
