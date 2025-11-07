@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.14.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.13.0...v1.14.0) (2025-11-07)
+
+
+### 🔧 Chores
+
+* **dependencies:** migrate from Yarn to npm and update package configurations ([bb0ff84](https://github.com/The-Heidi-Suite/heidi.microservices/commit/bb0ff84797571217829c4487fa2958f5def100bc))
+* **dependencies:** update package-lock.json and yarn.lock for version bump and dependency adjustments ([5d66d0d](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5d66d0defebb79418a2aaa0cc30a119c56cabcbc))
+* **dependencies:** update package-lock.json and yarn.lock to remove peer dependencies and adjust dev flags ([3d5bdd6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/3d5bdd6516ade9524546fb8b12d796c716b6c6c3))
+* **dependencies:** update package-lock.json to remove peer flags and adjust dev flags ([c1ed350](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c1ed35013fe14b60e94ac924033324bd635de988))
+* **dependencies:** update yarn.lock and enhance error handling in global exception filter ([eac62d9](https://github.com/The-Heidi-Suite/heidi.microservices/commit/eac62d959b52c3a8658d7fab4524621ed20e2cb1))
+* **dependencies:** update yarn.lock to reflect dependency changes and optimizations ([d134440](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d1344405d4dd763b565e968f841d7265edacac52))
+
+
+### 🐛 Bug Fixes
+
+* **swagger:** enhance request interceptor for Accept-Language header handling ([aaa78c0](https://github.com/The-Heidi-Suite/heidi.microservices/commit/aaa78c0e07d8bb92f7ce9161fcf6d3d4771c9e51))
+* **swagger:** improve LiveResponse component and response handling ([0e1e524](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0e1e52446a2b2fae97c26bd666e22b561c6f2b0b))
+* **swagger:** patch LiveResponse component and enhance response interceptor ([75d46ea](https://github.com/The-Heidi-Suite/heidi.microservices/commit/75d46ea8cdac7910e9e37b23189bff7dd308ff11))
+* **swagger:** temporarily disable i18n options in Swagger setup ([69269f2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/69269f2427bf232477a1d664710e2cf34da13dd4))
+
+
+### ✨ Features
+
+* **auth:** enhance API response documentation and error handling ([2ab0598](https://github.com/The-Heidi-Suite/heidi.microservices/commit/2ab0598da2fa3595675e2da5c68f5ce1601ac42c))
+* **auth:** enhance login functionality with remember me option ([aafad13](https://github.com/The-Heidi-Suite/heidi.microservices/commit/aafad13c423fe89c86527927df42da26952808ba))
+* **auth:** enhance login process with email verification handling ([7dc288c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/7dc288c081bd859e556ccc843f3a6be4e5c6d042))
+* **auth:** implement non-blocking terms acceptance check during login ([021f692](https://github.com/The-Heidi-Suite/heidi.microservices/commit/021f6929edb27f08a3b693d3e263fa2c6fe515f6))
+* **auth:** improve email verification handling and error logging during login ([5181410](https://github.com/The-Heidi-Suite/heidi.microservices/commit/51814108e0b8483be0a42d3c0414c4c841b328b3))
+* **config:** add API Gateway Base URL configuration and update email verification strategy ([8fce638](https://github.com/The-Heidi-Suite/heidi.microservices/commit/8fce63800b8319c94e2803ff8a87a939ec3ef31f))
+* **i18n:** add success messages and email verification error handling ([dc9f03d](https://github.com/The-Heidi-Suite/heidi.microservices/commit/dc9f03d91b160e1e004511f8349f62acf91a6e30))
+* **interceptors:** add SuccessMessageService and success message decorator ([7afd63f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/7afd63feb1d7612e459b6e21f1a6a5cb239c4fbe))
+* **notification:** enhance verification endpoints and integrate Swagger documentation ([efc86ac](https://github.com/The-Heidi-Suite/heidi.microservices/commit/efc86ac43a07d99709b344d5525b14e53aafd421))
+* **security:** enhance helmet configuration and integrate i18n options for Swagger UI ([a2affd4](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a2affd45bbddee6369ea2333b87de01476368532))
+* **swagger-i18n:** implement dynamic language selector for Swagger UI ([29d1a46](https://github.com/The-Heidi-Suite/heidi.microservices/commit/29d1a46ee32b277df457463eb9cc72c533022b43))
+* **terms:** add seeding scripts for terms of use and permissions ([44da0ff](https://github.com/The-Heidi-Suite/heidi.microservices/commit/44da0ff9a9ff0aa75b9beb3c365542925adde4c3))
+* **terms:** add terms management DTOs and update login response ([17aaa86](https://github.com/The-Heidi-Suite/heidi.microservices/commit/17aaa863e347a6ac731d8af7d0c25a893ff885d9))
+* **terms:** add terms of use configuration and i18n support for Swagger UI ([4023723](https://github.com/The-Heidi-Suite/heidi.microservices/commit/402372333b21d2f02ed5958f812a00e783b6cef3))
+* **terms:** add TermsOfUse and UserTermsAcceptance models for terms management ([a24a226](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a24a226da1f74d8209e056e858e74a81d6c58aaf))
+* **terms:** implement terms acceptance guard and related decorators ([86eb01e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/86eb01ed364dfc6dbb407e9e14fb41eb09bf8030))
+* **terms:** implement terms management module with controllers and service ([cdc3b46](https://github.com/The-Heidi-Suite/heidi.microservices/commit/cdc3b460d4aef4c8fe0e5cd405d696d66e35f2fe))
+* **terms:** integrate TermsAcceptanceGuard across multiple modules ([71b6472](https://github.com/The-Heidi-Suite/heidi.microservices/commit/71b647220e94600f8fa78d029f479a2f62a5b169))
+* **users:** add SuccessMessageService to app module ([2a9d8d2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/2a9d8d2f65402a0c31688d939e8669a2eb750453))
+* **verification:** add verification DTOs and enhance response structures ([8db88f8](https://github.com/The-Heidi-Suite/heidi.microservices/commit/8db88f89d7e9ea1dd7fb772e04467d50d3ae7ef0))
+
+
+### ♻️ Code Refactoring
+
+* **dto:** improve API property documentation formatting ([f0bb3bc](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f0bb3bc6f1f302a6b90fd1501955910b9f421017))
+* **terms:** simplify terms controller responses and enhance response DTOs ([df47e85](https://github.com/The-Heidi-Suite/heidi.microservices/commit/df47e8533601f67301b6639c1056079f1ead5bd3))
+* **terms:** update acceptance status endpoint to require authentication ([6326d50](https://github.com/The-Heidi-Suite/heidi.microservices/commit/6326d50614949c4aa9838c4e9e66f47adf3ca9ca))
+* **terms:** update terms controller and response DTOs for improved validation handling ([1e090a2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1e090a22e7689e3cc81c0f3031cb025dd99abe63))
+* **users:** update message handling to event handling for verification ([5613c96](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5613c961f9e6150932b96ceb7e867ad83e492187))
+
 ## [1.13.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.12.0...v1.13.0) (2025-11-06)
 
 
