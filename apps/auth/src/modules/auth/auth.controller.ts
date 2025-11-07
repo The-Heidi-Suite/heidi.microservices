@@ -98,6 +98,11 @@ export class AuthController {
     type: LoginResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
     status: 401,
     description: 'Invalid credentials - user not found, inactive, or incorrect password',
     type: LoginUnauthorizedErrorResponseDto,
@@ -151,6 +156,11 @@ export class AuthController {
     type: RefreshTokenResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
     status: 401,
     description: 'Invalid or expired refresh token',
     type: RefreshTokenUnauthorizedErrorResponseDto,
@@ -193,6 +203,16 @@ export class AuthController {
     status: 201,
     description: 'City admin assigned successfully',
     type: AssignCityAdminResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: AuthUnauthorizedErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
@@ -262,6 +282,11 @@ export class AuthController {
     status: 200,
     description: 'Session revoked successfully',
     type: RevokeSessionResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: AuthUnauthorizedErrorResponseDto,
   })
   @ApiResponse({
     status: 404,

@@ -162,13 +162,13 @@ export class AuthService {
           userAgent,
         );
         throw new ForbiddenException({
+          errorCode: 'EMAIL_VERIFICATION_REQUIRED',
           message:
             'Please verify your email address before logging in. A verification email has been sent to your email address.',
-          errorCode: 'EMAIL_VERIFICATION_REQUIRED',
           details: {
             userId: user.id,
             email: user.email,
-            resendVerificationEndpoint: '/verification/resend',
+            resendVerificationEndpoint: '/api/notification/verification/resend',
           },
         });
       }
