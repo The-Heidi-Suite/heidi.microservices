@@ -14,7 +14,20 @@ export class EmailVerificationStrategy implements IVerificationStrategy {
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
   ) {
-    this.baseUrl = this.configService.get<string>('frontendBaseUrl') || 'http://localhost:3000';
+    // Use API gateway URL if configured, otherwise fallback to direct service URL
+    const apiGatewayBaseUrl = this.configService.get<string>('apiGatewayBaseUrl');
+    const apiPrefix = this.configService.get<string>('apiPrefix', 'api');
+
+    if (apiGatewayBaseUrl) {
+      // Use API gateway URL with /api/notification prefix
+      this.baseUrl = `${apiGatewayBaseUrl}/${apiPrefix}/notification`;
+    } else {
+      // Fallback to direct service URL for local development
+      const notificationPort = this.configService.get<number>('notification.port', 3005);
+      const host = process.env.NOTIFICATION_HOST || 'localhost';
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      this.baseUrl = `${protocol}://${host}:${notificationPort}`;
+    }
     this.logger.setContext(EmailVerificationStrategy.name);
   }
 
@@ -34,8 +47,8 @@ export class EmailVerificationStrategy implements IVerificationStrategy {
     userId: string,
     metadata?: Record<string, any>,
   ): Promise<void> {
-    const verificationLink = `${this.baseUrl}/verify-email?token=${token}`;
-    const cancelLink = `${this.baseUrl}/verify-email/cancel?token=${token}`;
+    const verificationLink = `${this.baseUrl}/verification/verify?token=${token}`;
+    const cancelLink = `${this.baseUrl}/verification/cancel?token=${token}`;
 
     // Send welcome email with verification link
     await this.client.emit(RabbitMQPatterns.NOTIFICATION_SEND, {
