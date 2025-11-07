@@ -254,6 +254,84 @@ export class AuthService {
 
       this.logger.log(`User logged in successfully: ${user.id}`);
 
+      // Check terms acceptance status (non-blocking - don't wait if slow)
+      // Use Promise.race to ensure we don't block login if terms service is slow
+      const termsInfo: {
+        requiresTermsAcceptance: boolean;
+        termsId: string | null;
+        latestVersion: string | null;
+        gracePeriodEndsAt: string | null;
+      } = {
+        requiresTermsAcceptance: false,
+        termsId: null,
+        latestVersion: null,
+        gracePeriodEndsAt: null,
+      };
+
+      // Start terms check but don't wait for it - use Promise.race with short timeout
+      const termsCheckPromise = (async () => {
+        try {
+          // Get cityId from user's city assignments (use first city if available)
+          const cityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : null;
+          const acceptanceCheck = await firstValueFrom(
+            this.client
+              .send<
+                { hasAccepted: boolean; termsId: string | null; gracePeriodEndsAt: Date | null },
+                { userId: string; locale?: string; cityId?: string | null }
+              >(RabbitMQPatterns.TERMS_CHECK_ACCEPTANCE, {
+                userId: user.id,
+                cityId,
+              })
+              .pipe(timeout(500)), // Very short timeout - 500ms max
+          );
+
+          if (!acceptanceCheck.hasAccepted) {
+            // Get latest terms to include version
+            try {
+              const latestTerms = await firstValueFrom(
+                this.client
+                  .send<
+                    any,
+                    { locale?: string; cityId?: string | null }
+                  >(RabbitMQPatterns.TERMS_GET_LATEST, { cityId })
+                  .pipe(timeout(500)), // Very short timeout - 500ms max
+              );
+
+              return {
+                requiresTermsAcceptance: true,
+                termsId: latestTerms?.id || acceptanceCheck.termsId,
+                latestVersion: latestTerms?.version || null,
+                gracePeriodEndsAt: acceptanceCheck.gracePeriodEndsAt
+                  ? new Date(acceptanceCheck.gracePeriodEndsAt).toISOString()
+                  : null,
+              };
+            } catch (error) {
+              // If we can't get latest terms, still include what we have
+              return {
+                requiresTermsAcceptance: true,
+                termsId: acceptanceCheck.termsId,
+                latestVersion: null,
+                gracePeriodEndsAt: acceptanceCheck.gracePeriodEndsAt
+                  ? new Date(acceptanceCheck.gracePeriodEndsAt).toISOString()
+                  : null,
+              };
+            }
+          }
+          return termsInfo; // User has accepted, no action needed
+        } catch (error) {
+          // If terms check fails, return default (non-blocking)
+          return termsInfo;
+        }
+      })();
+
+      // Race against a timeout - if terms check takes longer than 500ms, skip it
+      const timeoutPromise = new Promise<typeof termsInfo>((resolve) =>
+        setTimeout(() => resolve(termsInfo), 500),
+      );
+
+      // Wait for whichever completes first (terms check or timeout)
+      const finalTermsInfo = await Promise.race([termsCheckPromise, timeoutPromise]);
+
       return {
         user: {
           id: user.id,
@@ -265,6 +343,7 @@ export class AuthService {
           lastName: user.lastName,
         },
         ...tokens,
+        ...finalTermsInfo,
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {

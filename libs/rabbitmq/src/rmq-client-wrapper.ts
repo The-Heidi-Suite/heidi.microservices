@@ -21,6 +21,7 @@ function getServiceNameFromPattern(pattern: string): string {
   // Map pattern prefixes to service names
   const serviceMap: Record<string, string> = {
     user: 'users',
+    terms: 'users', // Terms service is part of users service
     core: 'core',
     notification: 'notification',
     city: 'city',
