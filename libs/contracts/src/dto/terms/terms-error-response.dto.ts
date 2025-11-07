@@ -1,4 +1,41 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class TermsValidationErrorResponseDto {
+  @ApiProperty({ example: 'VALIDATION_ERROR', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Validation failed', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/terms/accept', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 400, description: 'HTTP status code' })
+  statusCode: number;
+
+  @ApiPropertyOptional({
+    description: 'Validation error details',
+    example: {
+      message: [
+        'termsId must be a UUID',
+        'termsId must be a string',
+        'termsId should not be empty',
+      ],
+    },
+  })
+  details?: {
+    message?: string[];
+  };
+}
 
 export class TermsNotAcceptedErrorResponseDto {
   @ApiProperty({ example: 'TERMS_NOT_ACCEPTED', description: 'Error code' })

@@ -31,8 +31,9 @@ import {
   TermsListResponseDto,
   TermsStatusResponseDto,
   TermsNotFoundErrorResponseDto,
-  ValidationErrorResponseDto,
+  TermsValidationErrorResponseDto,
   ConflictErrorResponseDto,
+  ValidationErrorResponseDto,
 } from '@heidi/contracts';
 import { JwtAuthGuard, GetCurrentUser, Public } from '@heidi/jwt';
 import { AdminOnlyGuard, TermsExempt } from '@heidi/rbac';
@@ -102,10 +103,7 @@ export class TermsController {
     description: 'Terms not found',
     type: TermsNotFoundErrorResponseDto,
   })
-  async getTermsByVersion(
-    @Param('version') version: string,
-    @Query('locale') locale?: string,
-  ) {
+  async getTermsByVersion(@Param('version') version: string, @Query('locale') locale?: string) {
     const terms = await this.termsService.getTermsByVersion(version, locale);
     return {
       success: true,
@@ -115,8 +113,7 @@ export class TermsController {
   }
 
   @Post('accept')
-  @Public()
-  @TermsExempt()
+  @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Accept terms of use',
@@ -130,8 +127,12 @@ export class TermsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request',
-    type: ValidationErrorResponseDto,
+    description: 'Bad request - validation failed',
+    type: TermsValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - authentication required',
   })
   @ApiResponse({
     status: 404,
@@ -140,16 +141,11 @@ export class TermsController {
   })
   async acceptTerms(
     @Body() dto: AcceptTermsDto,
-    @GetCurrentUser() user: any,
+    @GetCurrentUser('userId') userId: string,
     @Req() req: Request,
   ) {
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
-    const userId = user?.sub || user?.userId;
-
-    if (!userId) {
-      throw new Error('User not authenticated');
-    }
 
     const acceptance = await this.termsService.acceptTerms(
       userId,
@@ -183,10 +179,7 @@ export class TermsController {
     description: 'Status retrieved successfully',
     type: TermsStatusResponseDto,
   })
-  async getAcceptanceStatus(
-    @GetCurrentUser() user: any,
-    @Query('locale') locale?: string,
-  ) {
+  async getAcceptanceStatus(@GetCurrentUser() user: any, @Query('locale') locale?: string) {
     const userId = user?.sub || user?.userId;
 
     if (!userId) {
