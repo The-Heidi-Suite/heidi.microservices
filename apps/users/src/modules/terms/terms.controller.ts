@@ -153,8 +153,7 @@ export class TermsController {
   }
 
   @Get('status')
-  @Public()
-  @TermsExempt()
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Check terms acceptance status',
     description: 'Check if current user has accepted the latest terms',
@@ -170,20 +169,14 @@ export class TermsController {
     description: 'Status retrieved successfully',
     type: TermsStatusResponseDto,
   })
-  async getAcceptanceStatus(@GetCurrentUser() user: any, @Query('locale') locale?: string) {
-    const userId = user?.sub || user?.userId;
-
-    if (!userId) {
-      return {
-        hasAccepted: false,
-        acceptedVersion: null,
-        latestVersion: null,
-        needsAcceptance: true,
-        termsId: null,
-        gracePeriodEndsAt: null,
-      };
-    }
-
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - authentication required',
+  })
+  async getAcceptanceStatus(
+    @GetCurrentUser('userId') userId: string,
+    @Query('locale') locale?: string,
+  ) {
     return this.termsService.getAcceptanceStatus(userId, locale);
   }
 
