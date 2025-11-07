@@ -25,10 +25,16 @@ api.$DEV_IP.nip.io {
         respond "healthy" 200
     }
 
-    # Root endpoint - API information
-    handle / {
-        header Content-Type application/json
-        respond `{"message":"HEIDI Microservices API","version":"1.0","endpoints":["/api/auth","/api/users","/api/city","/api/core","/api/notification","/api/scheduler","/api/integration","/api/admin"],"health":"/health"}` 200
+    # Frontend React App - serve static files for non-API routes
+    # This handles React Router by serving index.html for routes that don't match files
+    @notApi {
+        not path /api/*
+        not path /health
+    }
+    handle @notApi {
+        root * /var/www/frontend
+        file_server
+        try_files {path} /index.html
     }
 
     # Health check endpoints for each service
