@@ -73,6 +73,48 @@ export class AuthForbiddenErrorResponseDto {
   statusCode: number;
 }
 
+export class EmailVerificationRequiredErrorResponseDto {
+  @ApiProperty({ example: 'EMAIL_VERIFICATION_REQUIRED', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({
+    example:
+      'Please verify your email address before logging in. A verification email has been sent to your email address.',
+    description: 'Error message',
+  })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/login', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 403, description: 'HTTP status code' })
+  statusCode: number;
+
+  @ApiProperty({
+    example: {
+      userId: '123e4567-e89b-12d3-a456-426614174000',
+      email: 'user@example.com',
+      resendVerificationEndpoint: '/verification/resend',
+    },
+    description: 'Additional details about the verification requirement',
+    required: false,
+  })
+  details?: {
+    userId?: string;
+    email?: string;
+    resendVerificationEndpoint?: string;
+  };
+}
+
 export class AuthNotFoundErrorResponseDto {
   @ApiProperty({ example: 'NOT_FOUND', description: 'Error code' })
   errorCode: string;
@@ -135,6 +177,9 @@ export class LogoutResponseDto {
   @ApiProperty({ type: LogoutResponseDataDto })
   data: LogoutResponseDataDto;
 
+  @ApiProperty({ example: 'Logged out successfully', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 
@@ -163,6 +208,9 @@ export class RefreshTokenResponseDto {
 
   @ApiProperty({ type: RefreshTokenResponseDataDto })
   data: RefreshTokenResponseDataDto;
+
+  @ApiProperty({ example: 'Token refreshed successfully', description: 'Success message' })
+  message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
@@ -201,6 +249,9 @@ export class ValidateTokenResponseDto {
   @ApiProperty({ type: ValidateTokenResponseDataDto })
   data: ValidateTokenResponseDataDto;
 
+  @ApiProperty({ example: 'Token validated successfully', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 
@@ -233,6 +284,9 @@ export class AssignCityAdminResponseDto {
   @ApiProperty({ type: AssignCityAdminResponseDataDto })
   data: AssignCityAdminResponseDataDto;
 
+  @ApiProperty({ example: 'City admin assigned successfully', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 
@@ -264,6 +318,9 @@ export class GetUserCitiesResponseDto {
 
   @ApiProperty({ type: [UserCityDto], isArray: true })
   data: UserCityDto[];
+
+  @ApiProperty({ example: 'User cities retrieved successfully', description: 'Success message' })
+  message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
@@ -303,6 +360,9 @@ export class GetSessionsResponseDto {
   @ApiProperty({ type: [SessionDto] })
   data: SessionDto[];
 
+  @ApiProperty({ example: 'Sessions retrieved successfully', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 
@@ -325,6 +385,9 @@ export class RevokeSessionResponseDto {
 
   @ApiProperty({ type: RevokeSessionResponseDataDto })
   data: RevokeSessionResponseDataDto;
+
+  @ApiProperty({ example: 'Session revoked successfully', description: 'Success message' })
+  message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
@@ -351,6 +414,9 @@ export class RevokeAllSessionsResponseDto {
 
   @ApiProperty({ type: RevokeAllSessionsResponseDataDto })
   data: RevokeAllSessionsResponseDataDto;
+
+  @ApiProperty({ example: 'All sessions revoked successfully', description: 'Success message' })
+  message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;

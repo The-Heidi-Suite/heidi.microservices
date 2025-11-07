@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
-import { ConfigService, getSwaggerServerUrl } from '@heidi/config';
+import { ConfigService, getSwaggerServerUrl, getSwaggerI18nOptions } from '@heidi/config';
 import { getRmqConsumerOptions } from '@heidi/rabbitmq';
 
 async function bootstrap() {
@@ -15,7 +15,18 @@ async function bootstrap() {
   logger.setContext('Users-Service');
   app.useLogger(logger);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline scripts for Swagger UI
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], // Allow inline styles and Google Fonts
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'], // Allow Google Fonts font files
+        },
+      },
+    }),
+  );
   const configService = app.get(ConfigService);
   app.enableCors({ origin: configService.get<string>('corsOrigin', '*'), credentials: true });
 
@@ -67,8 +78,14 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
+
+  // Use i18n-enabled Swagger options
+  const swaggerI18nOptions = getSwaggerI18nOptions(configService);
+
   SwaggerModule.setup('docs', app, document, {
+    ...swaggerI18nOptions,
     swaggerOptions: {
+      ...swaggerI18nOptions.swaggerOptions,
       persistAuthorization: true,
     },
   });

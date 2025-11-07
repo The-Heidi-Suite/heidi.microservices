@@ -45,6 +45,7 @@ import {
   ValidationErrorResponseDto,
   ConflictErrorResponseDto,
   GuestValidationErrorResponseDto,
+  EmailVerificationRequiredErrorResponseDto,
 } from '@heidi/contracts';
 import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
 import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
@@ -60,7 +61,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'User login',
     description:
-      'Authenticate user with email or username and password. You can use either email address (e.g., user@example.com) or username (e.g., johndoe) to login.',
+      "Authenticate user with email or username and password. You can use either email address (e.g., user@example.com) or username (e.g., johndoe) to login. If the user's email is not verified, a 403 response will be returned with instructions to verify the email. Use the 'rememberMe' field to extend session duration to 30 days (default is 7 days).",
   })
   @ApiBody({
     type: LoginDto,
@@ -79,6 +80,16 @@ export class AuthController {
           password: 'password123',
         },
       },
+      rememberMeLogin: {
+        summary: 'Login with remember me enabled',
+        value: {
+          email: 'user@example.com',
+          password: 'password123',
+          rememberMe: true,
+        },
+        description:
+          'When rememberMe is true, the session will be kept for 30 days instead of 7 days',
+      },
     },
   })
   @ApiResponse({
@@ -88,8 +99,14 @@ export class AuthController {
   })
   @ApiResponse({
     status: 401,
-    description: 'Invalid credentials',
+    description: 'Invalid credentials - user not found, inactive, or incorrect password',
     type: LoginUnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Email verification required - user must verify their email address before logging in',
+    type: EmailVerificationRequiredErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Req() req: Request) {

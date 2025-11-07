@@ -27,6 +27,7 @@
   "AUTH_TOKEN_EXPIRED": "Autentiseringstoken utløpt",
   "AUTH_INSUFFICIENT_PERMISSIONS": "Utilstrekkelige tillatelser",
   "AUTH_USER_NOT_FOUND": "Bruker ikke funnet",
+  "EMAIL_VERIFICATION_REQUIRED": "Vennligst bekreft e-postadressen din før innlogging. En bekreftelses-e-post er blitt sendt til e-postadressen din.",
   "CONFIG_MISSING_REQUIRED": "Påkrevd konfigurasjon mangler",
   "CONFIG_INVALID_VALUE": "Ugyldig konfigurasjonsverdi",
   "EXTERNAL_SERVICE_UNAVAILABLE": "Ekstern tjeneste utilgjengelig",

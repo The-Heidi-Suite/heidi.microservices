@@ -96,6 +96,11 @@ export const RabbitMQPatterns = {
 
   // Core events (fire and forget)
   CORE_OPERATION: 'core.operation',
+
+  // Terms request-response patterns
+  TERMS_GET_LATEST: 'terms.getLatest',
+  TERMS_CHECK_ACCEPTANCE: 'terms.checkAcceptance',
+  TERMS_GET_USER_VERSION: 'terms.getUserVersion',
 } as const;
 
 /**

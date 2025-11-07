@@ -84,7 +84,14 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      const errorCode = this.mapHttpStatusToErrorCode(status);
+
+      // Use custom errorCode from exception response if available, otherwise map from status
+      const customErrorCode =
+        typeof exceptionResponse === 'object' && (exceptionResponse as any).errorCode
+          ? (exceptionResponse as any).errorCode
+          : this.mapHttpStatusToErrorCode(status);
+
+      const errorCode = customErrorCode;
 
       const originalMessage =
         typeof exceptionResponse === 'string'
@@ -92,6 +99,17 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           : (exceptionResponse as any).message;
 
       const translatedMessage = this.i18nService.translate(`errors.${errorCode}`);
+
+      // Extract details, excluding errorCode and message to avoid duplication
+      const responseDetails = typeof exceptionResponse === 'object'
+        ? { ...exceptionResponse }
+        : undefined;
+      if (responseDetails && 'errorCode' in responseDetails) {
+        delete responseDetails.errorCode;
+      }
+      if (responseDetails && 'message' in responseDetails) {
+        delete responseDetails.message;
+      }
 
       return {
         statusCode: status,
@@ -101,7 +119,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         path,
         method,
         requestId,
-        details: typeof exceptionResponse === 'object' ? exceptionResponse : undefined,
+        details: responseDetails && Object.keys(responseDetails).length > 0 ? responseDetails : undefined,
       };
     }
 

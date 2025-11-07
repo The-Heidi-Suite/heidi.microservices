@@ -27,6 +27,7 @@
   "AUTH_TOKEN_EXPIRED": "Authentifizierungstoken abgelaufen",
   "AUTH_INSUFFICIENT_PERMISSIONS": "Unzureichende Berechtigungen",
   "AUTH_USER_NOT_FOUND": "Benutzer nicht gefunden",
+  "EMAIL_VERIFICATION_REQUIRED": "Bitte verifizieren Sie Ihre E-Mail-Adresse vor der Anmeldung. Eine Bestätigungs-E-Mail wurde an Ihre E-Mail-Adresse gesendet.",
   "CONFIG_MISSING_REQUIRED": "Erforderliche Konfiguration fehlt",
   "CONFIG_INVALID_VALUE": "Ungültiger Konfigurationswert",
   "EXTERNAL_SERVICE_UNAVAILABLE": "Externer Dienst nicht verfügbar",

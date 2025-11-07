@@ -31,12 +31,15 @@ export class I18nService implements OnModuleInit {
       try {
         const errorsPath = join(this.translationsPath, lang, 'errors.json');
         const validationPath = join(this.translationsPath, lang, 'validation.json');
+        const successPath = join(this.translationsPath, lang, 'success.json');
 
         const errorsData = this.loadJsonFile(errorsPath);
         const validationData = this.loadJsonFile(validationPath);
+        const successData = this.loadJsonFile(successPath);
 
         this.translations.set(`${lang}:errors`, errorsData);
         this.translations.set(`${lang}:validation`, validationData);
+        this.translations.set(`${lang}:success`, successData);
       } catch (error) {
         console.warn(
           `Failed to load translations for language '${lang}':`,

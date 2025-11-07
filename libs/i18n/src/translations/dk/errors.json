@@ -27,6 +27,7 @@
   "AUTH_TOKEN_EXPIRED": "Godkendelsestoken udløbet",
   "AUTH_INSUFFICIENT_PERMISSIONS": "Utilstrækkelige tilladelser",
   "AUTH_USER_NOT_FOUND": "Bruger ikke fundet",
+  "EMAIL_VERIFICATION_REQUIRED": "Verificer venligst din e-mailadresse før login. En bekræftelses-e-mail er blevet sendt til din e-mailadresse.",
   "CONFIG_MISSING_REQUIRED": "Påkrævet konfiguration mangler",
   "CONFIG_INVALID_VALUE": "Ugyldig konfigurationsværdi",
   "EXTERNAL_SERVICE_UNAVAILABLE": "Ekstern tjeneste utilgængelig",

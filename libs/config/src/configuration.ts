@@ -161,6 +161,12 @@ export default () => ({
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
 
+  // Terms of use configuration
+  terms: {
+    defaultLocale: process.env.TERMS_DEFAULT_LOCALE || 'en',
+    gracePeriodDays: parseInt(process.env.TERMS_GRACE_PERIOD_DAYS || '7', 10),
+  },
+
   // RabbitMQ configuration
   rabbitmq: {
     host: process.env.RABBITMQ_HOST || 'localhost',

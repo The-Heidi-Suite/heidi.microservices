@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
 import { ConfigModule, ConfigService } from '@heidi/config';
 import { PrismaNotificationModule } from '@heidi/prisma';
@@ -8,6 +8,7 @@ import { RmqModule } from '@heidi/rabbitmq';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
 import { LoggingInterceptor } from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
+import { TermsAcceptanceGuard } from '@heidi/rbac';
 import { NotificationModule } from './modules/notification/notification.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { HealthController } from './health.controller';
@@ -33,6 +34,10 @@ import { HealthController } from './health.controller';
     { provide: APP_INTERCEPTOR, useClass: LanguageInterceptor },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
     { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
+    {
+      provide: APP_GUARD,
+      useClass: TermsAcceptanceGuard,
+    },
   ],
 })
 export class AppModule {}

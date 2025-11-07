@@ -27,6 +27,7 @@
   "AUTH_TOKEN_EXPIRED": "انتهت صلاحية رمز المصادقة",
   "AUTH_INSUFFICIENT_PERMISSIONS": "أذونات غير كافية",
   "AUTH_USER_NOT_FOUND": "المستخدم غير موجود",
+  "EMAIL_VERIFICATION_REQUIRED": "يرجى التحقق من عنوان بريدك الإلكتروني قبل تسجيل الدخول. تم إرسال بريد التحقق إلى عنوان بريدك الإلكتروني.",
   "CONFIG_MISSING_REQUIRED": "التهيئة المطلوبة مفقودة",
   "CONFIG_INVALID_VALUE": "قيمة التهيئة غير صالحة",
   "EXTERNAL_SERVICE_UNAVAILABLE": "الخدمة الخارجية غير متاحة",

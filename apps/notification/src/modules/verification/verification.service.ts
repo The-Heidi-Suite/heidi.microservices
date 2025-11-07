@@ -16,7 +16,7 @@ import {
   VerifyTokenDto,
   ResendVerificationDto,
   CancelVerificationDto,
-} from './dto';
+} from '@heidi/contracts';
 
 @Injectable()
 export class VerificationService {

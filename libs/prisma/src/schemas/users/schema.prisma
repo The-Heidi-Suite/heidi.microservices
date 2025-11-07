@@ -59,3 +59,53 @@ enum DevicePlatform {
   IOS
   ANDROID
 }
+
+// Terms of Use model - Stores terms versions with multi-language support
+// cityId is null for general terms, or specific city ID for city-specific terms
+model TermsOfUse {
+  id              String   @id @default(uuid())
+  version         String   // Custom format like "2024-01"
+  title           String
+  content         String   // Full terms content (can be HTML/markdown)
+  locale          String   // e.g., 'en', 'de', 'ar'
+  cityId          String?  // Reference to City.id (null = general terms, specific ID = city-specific)
+  isActive        Boolean  @default(true)
+  isLatest        Boolean  @default(false) // Only one should be true per locale+cityId combination
+  gracePeriodDays Int      @default(7) // Grace period in days
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  createdBy       String?  // Reference to User.id who created this version
+
+  // Relations
+  acceptances     UserTermsAcceptance[]
+
+  @@unique([version, locale, cityId])
+  @@index([isActive])
+  @@index([isLatest])
+  @@index([version])
+  @@index([locale])
+  @@index([cityId])
+  @@map("terms_of_use")
+}
+
+// User Terms Acceptance - Tracks when users accepted which version
+model UserTermsAcceptance {
+  id         String      @id @default(uuid())
+  userId     String      // Reference to User.id
+  termsId    String      // Reference to TermsOfUse.id
+  version    String      // Denormalized for quick access
+  locale     String      // Denormalized locale
+  ipAddress  String?
+  userAgent  String?
+  acceptedAt DateTime    @default(now())
+
+  // Relations
+  terms      TermsOfUse @relation(fields: [termsId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, termsId])
+  @@index([userId])
+  @@index([termsId])
+  @@index([version])
+  @@index([acceptedAt])
+  @@map("user_terms_acceptance")
+}

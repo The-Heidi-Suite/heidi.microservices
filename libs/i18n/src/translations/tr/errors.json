@@ -27,6 +27,7 @@
   "AUTH_TOKEN_EXPIRED": "Kimlik doğrulama belirteci süresi doldu",
   "AUTH_INSUFFICIENT_PERMISSIONS": "Yetersiz izinler",
   "AUTH_USER_NOT_FOUND": "Kullanıcı bulunamadı",
+  "EMAIL_VERIFICATION_REQUIRED": "Lütfen giriş yapmadan önce e-posta adresinizi doğrulayın. Doğrulama e-postası e-posta adresinize gönderilmiştir.",
   "CONFIG_MISSING_REQUIRED": "Gerekli yapılandırma eksik",
   "CONFIG_INVALID_VALUE": "Geçersiz yapılandırma değeri",
   "EXTERNAL_SERVICE_UNAVAILABLE": "Harici hizmet kullanılamıyor",

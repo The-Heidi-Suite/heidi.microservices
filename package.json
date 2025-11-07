@@ -40,6 +40,8 @@
     "prisma:migrate:prod": "./scripts/prisma-migrate-prod.sh",
     "prisma:studio": "prisma studio",
     "prisma:seed": "prisma db seed",
+    "seed:terms": "npx ts-node -r tsconfig-paths/register scripts/seed-terms.ts",
+    "seed:permissions": "npx ts-node -r tsconfig-paths/register scripts/seed-permissions.ts",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
     "format": "prettier --write \"**/*.{ts,json,md}\"",
     "test": "jest",
