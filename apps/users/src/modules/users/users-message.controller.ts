@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { UsersService } from './users.service';
 import { RabbitMQPatterns } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
@@ -190,7 +190,7 @@ export class UsersMessageController {
     }
   }
 
-  @MessagePattern(RabbitMQPatterns.VERIFICATION_VERIFIED)
+  @EventPattern(RabbitMQPatterns.VERIFICATION_VERIFIED)
   async handleVerificationVerified(
     @Payload()
     data: {
@@ -202,27 +202,28 @@ export class UsersMessageController {
     },
   ) {
     this.logger.log(
-      `Received message: ${RabbitMQPatterns.VERIFICATION_VERIFIED} for userId: ${data.userId}`,
+      `Received event: ${RabbitMQPatterns.VERIFICATION_VERIFIED} for userId: ${data.userId}`,
     );
 
     try {
       // Only handle EMAIL verification
       if (data.type === 'EMAIL') {
         const result = await this.usersService.markEmailAsVerified(data.userId);
-        this.logger.debug(
-          `Successfully processed message: ${RabbitMQPatterns.VERIFICATION_VERIFIED} for userId: ${data.userId} (will ACK)`,
+        this.logger.log(
+          `Email verified for user: ${data.userId} via event ${RabbitMQPatterns.VERIFICATION_VERIFIED}`,
         );
         return result;
       }
 
-      // For SMS or other types, just acknowledge
-      return { success: true, message: 'Verification acknowledged' };
+      // For SMS or other types, just log
+      this.logger.debug(`Verification event received for type: ${data.type}, skipping`);
     } catch (error) {
       this.logger.error(
-        `Error processing message: ${RabbitMQPatterns.VERIFICATION_VERIFIED} for userId: ${data.userId} (will NACK)`,
+        `Error processing event: ${RabbitMQPatterns.VERIFICATION_VERIFIED} for userId: ${data.userId}`,
         error,
       );
-      throw error; // Throwing error causes NestJS to NACK the message
+      // Note: For @EventPattern, errors are logged but don't NACK since it's fire-and-forget
+      // The event will be lost if processing fails, which is expected behavior for events
     }
   }
 }
