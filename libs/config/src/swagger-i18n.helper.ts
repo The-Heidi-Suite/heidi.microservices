@@ -203,6 +203,59 @@ export function getSwaggerI18nOptions(configService: ConfigService) {
     try {
       const code = ${JSON.stringify(languageSelectorJs.trim())};
       eval(code);
+
+      // Patch LiveResponse component to handle null responses
+      // This prevents "Cannot read properties of null (reading 'get')" errors
+      try {
+        // Wait a bit for Swagger UI to fully initialize
+        setTimeout(function() {
+          try {
+            const swaggerUI = window.ui || window.swaggerUi;
+            if (swaggerUI && swaggerUI.getSystem) {
+              const system = swaggerUI.getSystem();
+              const components = system.getComponents();
+
+              // Find LiveResponse component and patch its render method
+              if (components && components.LiveResponse) {
+                const OriginalLiveResponse = components.LiveResponse;
+                if (OriginalLiveResponse && OriginalLiveResponse.prototype) {
+                  const originalRender = OriginalLiveResponse.prototype.render;
+                  if (originalRender && typeof originalRender === 'function') {
+                    OriginalLiveResponse.prototype.render = function() {
+                      try {
+                        // Guard against null/undefined response prop
+                        if (!this.props || !this.props.response) {
+                          // Return null or empty element to prevent rendering
+                          const React = window.React || (window.Re && window.Re.createElement ? { createElement: window.Re.createElement } : null);
+                          if (React) {
+                            return React.createElement('div', { className: 'live-response-empty', style: { display: 'none' } });
+                          }
+                          return null;
+                        }
+                        // Call original render if response exists
+                        return originalRender.call(this);
+                      } catch (renderError) {
+                        // If render fails, return empty element
+                        console.debug('LiveResponse render error:', renderError);
+                        const React = window.React || (window.Re && window.Re.createElement ? { createElement: window.Re.createElement } : null);
+                        if (React) {
+                          return React.createElement('div', { className: 'live-response-error', style: { display: 'none' } });
+                        }
+                        return null;
+                      }
+                    };
+                  }
+                }
+              }
+            }
+          } catch (patchError) {
+            // Silently fail if patching doesn't work (Swagger UI version differences)
+            console.debug('Could not patch LiveResponse component:', patchError);
+          }
+        }, 100);
+      } catch (patchInitError) {
+        console.debug('Could not initialize LiveResponse patch:', patchInitError);
+      }
     } catch (error) {
       console.error('Failed to initialize language selector:', error);
     }
@@ -237,6 +290,52 @@ export function getSwaggerI18nOptions(configService: ConfigService) {
         }
 
         return request;
+      },
+      // Response interceptor to handle null/undefined responses
+      // This prevents LiveResponse.render from crashing when response is null
+      responseInterceptor: (response: any) => {
+        // Guard against null/undefined response
+        // Return a valid response structure if response is null
+        if (!response) {
+          return {
+            ok: false,
+            status: 0,
+            statusText: 'No Response',
+            headers: {},
+            text: '',
+            data: null,
+          };
+        }
+
+        // Ensure response has required properties
+        if (typeof response.get !== 'function') {
+          // If response is not an Immutable object, wrap it
+          const ok =
+            response.ok !== undefined
+              ? response.ok
+              : response.status >= 200 && response.status < 300;
+          return {
+            ok,
+            status: response.status || 0,
+            statusText: response.statusText || '',
+            headers: response.headers || {},
+            text: response.text || '',
+            data: response.data || response.body || null,
+            get: function (key: string) {
+              const map: Record<string, any> = {
+                status: this.status,
+                headers: this.headers,
+                text: this.text,
+                error: !this.ok,
+                notDocumented: false,
+                duration: 0,
+              };
+              return map[key] !== undefined ? map[key] : null;
+            },
+          };
+        }
+
+        return response;
       },
       // Inject JavaScript after Swagger UI loads
       onComplete: eval('(' + onCompleteBody + ')') as () => void,
