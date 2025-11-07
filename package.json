@@ -5,7 +5,7 @@
   "private": true,
   "license": "MIT",
   "scripts": {
-    "bootstrap": "yarn install && yarn prisma:generate",
+    "bootstrap": "npm install && npm run prisma:generate",
     "prebuild": "rimraf dist",
     "build:auth": "nest build auth",
     "build:users": "nest build users",
@@ -16,7 +16,7 @@
     "build:integration": "nest build integration",
     "build:admin": "nest build admin",
     "build:terminal": "nest build terminal",
-    "dev:all": "concurrently --names AUTH,CORE,USERS,CITY,NOTIF,SCHED -c bgBlue.bold,bgMagenta.bold,bgCyan.bold,bgGreen.bold,bgYellow.bold,bgRed.bold \"yarn dev:auth\" \"yarn dev:core\" \"yarn dev:users\" \"yarn dev:city\" \"yarn dev:notification\" \"yarn dev:schedule\"",
+    "dev:all": "concurrently --names AUTH,CORE,USERS,CITY,NOTIF,SCHED -c bgBlue.bold,bgMagenta.bold,bgCyan.bold,bgGreen.bold,bgYellow.bold,bgRed.bold \"npm run dev:auth\" \"npm run dev:core\" \"npm run dev:users\" \"npm run dev:city\" \"npm run dev:notification\" \"npm run dev:schedule\"",
     "dev:pm2:start": "pm2 start ecosystem.config.cjs",
     "dev:pm2:stop": "pm2 stop ecosystem.config.cjs",
     "dev:pm2:restart": "pm2 restart ecosystem.config.cjs",
@@ -190,9 +190,9 @@
   },
   "engines": {
     "node": ">=24.11.0",
-    "yarn": ">=1.22.0"
+    "npm": ">=10.0.0"
   },
-  "packageManager": "yarn@4.10.3",
+  "packageManager": "npm@10.9.2",
   "config": {
     "commitizen": {
       "path": "./node_modules/cz-conventional-changelog"
