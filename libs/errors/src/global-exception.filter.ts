@@ -101,9 +101,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       const translatedMessage = this.i18nService.translate(`errors.${errorCode}`);
 
       // Extract details, excluding errorCode and message to avoid duplication
-      const responseDetails = typeof exceptionResponse === 'object'
-        ? { ...exceptionResponse }
-        : undefined;
+      const responseDetails =
+        typeof exceptionResponse === 'object' ? { ...exceptionResponse } : undefined;
       if (responseDetails && 'errorCode' in responseDetails) {
         delete responseDetails.errorCode;
       }
@@ -119,7 +118,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         path,
         method,
         requestId,
-        details: responseDetails && Object.keys(responseDetails).length > 0 ? responseDetails : undefined,
+        details:
+          responseDetails && Object.keys(responseDetails).length > 0 ? responseDetails : undefined,
       };
     }
 

@@ -8,13 +8,19 @@ export class VerifyTokenResponseDataDto {
   @ApiProperty({ example: 'EMAIL', enum: ['EMAIL', 'SMS'], description: 'Type of verification' })
   type: string;
 
-  @ApiProperty({ example: 'user@example.com', description: 'Email address or phone number that was verified' })
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'Email address or phone number that was verified',
+  })
   identifier: string;
 
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'User ID' })
   userId: string;
 
-  @ApiProperty({ example: '2024-01-01T12:00:00.000Z', description: 'Timestamp when verification was completed' })
+  @ApiProperty({
+    example: '2024-01-01T12:00:00.000Z',
+    description: 'Timestamp when verification was completed',
+  })
   verifiedAt: Date;
 }
 
@@ -40,7 +46,10 @@ export class VerifyTokenResponseDto {
 
 // Send Verification Response
 export class SendVerificationResponseDataDto {
-  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'Verification token ID' })
+  @ApiProperty({
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'Verification token ID',
+  })
   id: string;
 
   @ApiProperty({ example: 'EMAIL', enum: ['EMAIL', 'SMS'], description: 'Type of verification' })
@@ -49,10 +58,16 @@ export class SendVerificationResponseDataDto {
   @ApiProperty({ example: 'user@example.com', description: 'Email address or phone number' })
   identifier: string;
 
-  @ApiProperty({ example: '2024-01-02T00:00:00.000Z', description: 'Expiration timestamp for the verification link' })
+  @ApiProperty({
+    example: '2024-01-02T00:00:00.000Z',
+    description: 'Expiration timestamp for the verification link',
+  })
   expiresAt: Date;
 
-  @ApiProperty({ example: 'Verification link sent to your email', description: 'Informational message' })
+  @ApiProperty({
+    example: 'Verification link sent to your email',
+    description: 'Informational message',
+  })
   message: string;
 }
 
@@ -81,7 +96,10 @@ export class CancelVerificationResponseDataDto {
   @ApiProperty({ example: true, description: 'Whether the cancellation was successful' })
   cancelled: boolean;
 
-  @ApiProperty({ example: 'Verification has been cancelled. If this was not you, your account may be at risk.', description: 'Cancellation message' })
+  @ApiProperty({
+    example: 'Verification has been cancelled. If this was not you, your account may be at risk.',
+    description: 'Cancellation message',
+  })
   message: string;
 }
 
@@ -133,7 +151,10 @@ export class VerificationBadRequestErrorResponseDto {
   @ApiProperty({ example: 'BAD_REQUEST', description: 'Error code' })
   errorCode: string;
 
-  @ApiProperty({ example: 'This verification link has already been used', description: 'Error message' })
+  @ApiProperty({
+    example: 'This verification link has already been used',
+    description: 'Error message',
+  })
   message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
@@ -156,7 +177,10 @@ export class VerificationExpiredErrorResponseDto {
   @ApiProperty({ example: 'UNPROCESSABLE_ENTITY', description: 'Error code' })
   errorCode: string;
 
-  @ApiProperty({ example: 'Verification link has expired. Please request a new verification email.', description: 'Error message' })
+  @ApiProperty({
+    example: 'Verification link has expired. Please request a new verification email.',
+    description: 'Error message',
+  })
   message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })

@@ -13,13 +13,7 @@ import { ConfigModule } from '@heidi/config';
 
 @Global()
 @Module({
-  imports: [
-    PrismaCoreModule,
-    PrismaCityModule,
-    LoggerModule,
-    RedisModule,
-    ConfigModule,
-  ],
+  imports: [PrismaCoreModule, PrismaCityModule, LoggerModule, RedisModule, ConfigModule],
   providers: [
     PermissionService,
     CityHierarchyService,
