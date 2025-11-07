@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   NotFoundException,
+  HttpException,
   Inject,
 } from '@nestjs/common';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -151,29 +152,42 @@ export class AuthService {
       }
 
       // Check email verification (fail fast if email exists and not verified)
-      if (user.email && !user.emailVerified) {
-        failureReason = 'Email not verified';
-        await this.createAuditLog(
-          user.id,
-          AuthAction.LOGIN,
-          false,
-          failureReason,
-          ipAddress,
-          userAgent,
-        );
-        throw new ForbiddenException({
-          errorCode: 'EMAIL_VERIFICATION_REQUIRED',
-          message:
-            'Please verify your email address before logging in. A verification email has been sent to your email address.',
-          details: {
-            userId: user.id,
-            email: user.email,
-            resendVerificationEndpoint: '/api/notification/verification/resend',
-          },
-        });
+      // This check must happen BEFORE password validation to prevent information leakage
+      // IMPORTANT: Check email verification status BEFORE password validation
+      this.logger.debug(
+        `User found: id=${user.id}, email=${user.email}, emailVerified=${user.emailVerified}, isActive=${user.isActive}`,
+      );
+
+      // If user has an email, it MUST be verified before login
+      if (user.email) {
+        // Explicitly check if emailVerified is not true (handles false, null, undefined)
+        if (user.emailVerified !== true) {
+          this.logger.log(
+            `Blocking login - email not verified: userId=${user.id}, email=${user.email}, emailVerified=${user.emailVerified}`,
+          );
+          failureReason = 'Email not verified';
+          await this.createAuditLog(
+            user.id,
+            AuthAction.LOGIN,
+            false,
+            failureReason,
+            ipAddress,
+            userAgent,
+          );
+          throw new ForbiddenException({
+            errorCode: 'EMAIL_VERIFICATION_REQUIRED',
+            message:
+              'Please verify your email address before logging in. A verification email has been sent to your email address.',
+            details: {
+              userId: user.id,
+              email: user.email,
+              resendVerificationEndpoint: '/api/notification/verification/resend',
+            },
+          });
+        }
       }
 
-      // Verify password
+      // Verify password (only if email is verified or user has no email)
       const isPasswordValid = await bcrypt.compare(dto.password, user.password);
       if (!isPasswordValid) {
         failureReason = 'Invalid password';
@@ -346,9 +360,11 @@ export class AuthService {
         ...finalTermsInfo,
       };
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
+      // Re-throw HTTP exceptions (UnauthorizedException, ForbiddenException) as-is
+      if (error instanceof HttpException) {
         throw error;
       }
+      // Log and convert other errors to UnauthorizedException
       failureReason = error instanceof Error ? error.message : 'Unknown error';
       await this.createAuditLog(null, AuthAction.LOGIN, false, failureReason, ipAddress, userAgent);
       throw new UnauthorizedException('Invalid credentials');
