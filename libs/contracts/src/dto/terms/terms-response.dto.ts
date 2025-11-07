@@ -1,6 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { TermsOfUseDto } from './get-terms-response.dto';
 
+// Simplified terms object that matches what's actually returned from acceptTerms
+export class TermsSummaryDto {
+  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
+  id: string;
+
+  @ApiProperty({ example: '2024-01' })
+  version: string;
+
+  @ApiProperty({ example: 'Terms of Use' })
+  title: string;
+
+  @ApiProperty({ example: 'en' })
+  locale: string;
+}
+
 export class UserTermsAcceptanceDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
   id: string;
@@ -26,8 +41,8 @@ export class UserTermsAcceptanceDto {
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   acceptedAt: Date;
 
-  @ApiPropertyOptional({ type: TermsOfUseDto })
-  terms?: TermsOfUseDto;
+  @ApiPropertyOptional({ type: TermsSummaryDto })
+  terms?: TermsSummaryDto;
 }
 
 export class AcceptTermsResponseDto {
@@ -37,11 +52,20 @@ export class AcceptTermsResponseDto {
   @ApiProperty({ example: true })
   success: boolean;
 
-  @ApiProperty({ example: 'Terms accepted successfully' })
+  @ApiProperty({ example: 'Operation completed successfully' })
   message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/terms/accept' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
 }
 
-export class TermsStatusResponseDto {
+export class TermsStatusDataDto {
   @ApiProperty({ example: false })
   hasAccepted: boolean;
 
@@ -49,16 +73,36 @@ export class TermsStatusResponseDto {
   acceptedVersion?: string | null;
 
   @ApiProperty({ example: '2024-01' })
-  latestVersion: string;
+  latestVersion: string | null;
 
   @ApiProperty({ example: true })
   needsAcceptance: boolean;
 
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
-  termsId: string;
+  termsId: string | null;
 
   @ApiPropertyOptional({ example: '2024-01-08T00:00:00.000Z' })
   gracePeriodEndsAt?: string | null;
+}
+
+export class TermsStatusResponseDto {
+  @ApiProperty({ type: TermsStatusDataDto })
+  data: TermsStatusDataDto;
+
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ example: 'Operation completed successfully' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/terms/status' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
 }
 
 export class TermsListResponseDto {
@@ -68,6 +112,15 @@ export class TermsListResponseDto {
   @ApiProperty({ example: true })
   success: boolean;
 
-  @ApiProperty({ example: 'Terms retrieved successfully' })
+  @ApiProperty({ example: 'Operation completed successfully' })
   message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/terms/all' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
 }

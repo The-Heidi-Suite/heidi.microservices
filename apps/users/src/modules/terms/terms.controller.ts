@@ -69,11 +69,8 @@ export class TermsController {
   })
   async getLatestTerms(@Query('locale') locale?: string) {
     const terms = await this.termsService.getLatestTerms(locale);
-    return {
-      success: true,
-      data: terms,
-      message: 'Terms retrieved successfully',
-    };
+    // Return just the data - TransformInterceptor will wrap it
+    return terms;
   }
 
   @Get('version/:version')
@@ -105,11 +102,8 @@ export class TermsController {
   })
   async getTermsByVersion(@Param('version') version: string, @Query('locale') locale?: string) {
     const terms = await this.termsService.getTermsByVersion(version, locale);
-    return {
-      success: true,
-      data: terms,
-      message: 'Terms retrieved successfully',
-    };
+    // Return just the data - TransformInterceptor will wrap it
+    return terms;
   }
 
   @Post('accept')
@@ -154,11 +148,8 @@ export class TermsController {
       userAgent,
     );
 
-    return {
-      success: true,
-      data: acceptance,
-      message: 'Terms accepted successfully',
-    };
+    // Return just the data - TransformInterceptor will wrap it
+    return acceptance;
   }
 
   @Get('status')
@@ -223,11 +214,8 @@ export class TermsController {
   async createTerms(@Body() dto: CreateTermsDto, @GetCurrentUser() user: any) {
     const userId = user.sub || user.userId;
     const terms = await this.termsService.createTerms(dto, userId);
-    return {
-      success: true,
-      data: terms,
-      message: 'Terms created successfully',
-    };
+    // Return just the data - TransformInterceptor will wrap it
+    return terms;
   }
 
   @Put(':id')
@@ -253,11 +241,8 @@ export class TermsController {
   })
   async updateTerms(@Param('id') id: string, @Body() dto: UpdateTermsDto) {
     const terms = await this.termsService.updateTerms(id, dto);
-    return {
-      success: true,
-      data: terms,
-      message: 'Terms updated successfully',
-    };
+    // Return just the data - TransformInterceptor will wrap it
+    return terms;
   }
 
   @Get('all')
@@ -279,10 +264,7 @@ export class TermsController {
   })
   async getAllTerms(@Query('locale') locale?: string) {
     const terms = await this.termsService.getAllTerms(locale);
-    return {
-      success: true,
-      data: terms,
-      message: 'Terms retrieved successfully',
-    };
+    // Return just the data - TransformInterceptor will wrap it
+    return terms;
   }
 }

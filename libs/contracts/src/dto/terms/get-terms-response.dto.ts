@@ -42,6 +42,15 @@ export class GetTermsResponseDto {
   @ApiProperty({ example: true })
   success: boolean;
 
-  @ApiProperty({ example: 'Terms retrieved successfully' })
+  @ApiProperty({ example: 'Operation completed successfully' })
   message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/terms/latest' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
 }
