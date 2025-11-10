@@ -10,6 +10,8 @@ import { LoggingInterceptor } from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 import { TermsAcceptanceGuard } from '@heidi/rbac';
 import { CoreModule } from './modules/core/core.module';
+import { ListingsModule } from './modules/listings/listings.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -26,6 +28,8 @@ import { HealthController } from './health.controller';
     MetricsModule,
     I18nModule,
     CoreModule,
+    ListingsModule,
+    CategoriesModule,
   ],
   controllers: [HealthController],
   providers: [
