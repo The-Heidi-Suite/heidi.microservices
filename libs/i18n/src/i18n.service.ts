@@ -1,6 +1,6 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@heidi/config';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import { i18nAsyncLocalStorage } from './i18n-async-storage';
 import { TranslationFile } from './interfaces/translation.interface';
@@ -13,8 +13,12 @@ export class I18nService implements OnModuleInit {
 
   constructor(private readonly configService: ConfigService) {
     this.defaultLanguage = this.configService.get<string>('i18n.defaultLanguage', 'en');
-    // Translations path relative to this service file
-    this.translationsPath = join(__dirname, 'translations');
+    // Translations path - check both production (dist) and development (src) locations
+    const distPath = join(__dirname, 'translations');
+    const srcPath = join(process.cwd(), 'libs', 'i18n', 'src', 'translations');
+    
+    // Use dist path if it exists (production), otherwise use src path (development)
+    this.translationsPath = existsSync(distPath) ? distPath : srcPath;
   }
 
   async onModuleInit() {
