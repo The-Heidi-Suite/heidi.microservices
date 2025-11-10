@@ -174,6 +174,8 @@ model Category {
   children Category[] @relation("CategoryHierarchy")
 
   listings ListingCategory[]
+  cityCategories CityCategory[]
+  categoryRequests CategoryRequest[]
 
   @@index([parentId])
   @@index([type])
@@ -273,6 +275,40 @@ model ListingTimeIntervalException {
   @@map("listing_time_interval_exceptions")
 }
 
+model CityCategory {
+  id         String   @id @default(uuid())
+  cityId     String
+  categoryId String
+  isActive   Boolean  @default(true)
+  addedBy    String?
+  addedAt    DateTime @default(now())
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([cityId, categoryId])
+  @@index([cityId])
+  @@index([categoryId])
+  @@map("city_categories")
+}
+
+model CategoryRequest {
+  id          String                  @id @default(uuid())
+  cityId      String
+  categoryId  String
+  status      CategoryRequestStatus   @default(PENDING)
+  requestedBy String
+  requestedAt DateTime                @default(now())
+  handledBy   String?
+  handledAt   DateTime?
+  notes       String?
+
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([cityId, categoryId, requestedBy, status])
+  @@index([cityId, status])
+  @@map("category_requests")
+}
+
 // UserFavorite - Track user favorites (works for both guests and registered users)
 // Note: userId and listingId are stored as strings (no FK due to multi-database architecture)
 model UserFavorite {
@@ -350,4 +386,10 @@ enum CategoryType {
   HOTEL
   ARTICLE
   OTHER
+}
+
+enum CategoryRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
