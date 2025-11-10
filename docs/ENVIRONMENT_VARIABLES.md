@@ -210,6 +210,31 @@ SMTP_USER=your-email@gmail.com
 SMTP_PASSWORD=your-app-password
 ```
 
+### Caddy Reverse Proxy Configuration
+
+```bash
+# Development IP for nip.io domain (e.g., 192.168.1.100)
+DEV_IP=localhost
+
+# Let's Encrypt email for SSL certificates
+LETSENCRYPT_EMAIL=admin@heidi.com
+
+# Use Let's Encrypt staging environment (set to 'true' for testing)
+LETSENCRYPT_STAGING=false
+
+# Caddy HTTP/HTTPS ports
+CADDY_HTTP_PORT=80
+CADDY_HTTPS_PORT=443
+
+# React frontend build folder path (absolute or relative to docker-compose.yml)
+# This is the path to your React app's build directory on the host machine
+# Example: /home/user/projects/heidi-frontend/build
+# Or relative: ../heidi-frontend/build
+REACT_BUILD_PATH=../heidi-frontend/build
+```
+
+**Note:** The `REACT_BUILD_PATH` variable specifies where your React app's build folder is located. This folder will be mounted into the Caddy container to serve the frontend. Use an absolute path or a path relative to the `docker-compose.yml` file location.
+
 ---
 
 ## 🔧 Development Configuration
