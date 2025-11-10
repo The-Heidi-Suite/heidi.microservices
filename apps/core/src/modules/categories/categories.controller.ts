@@ -11,53 +11,19 @@ import {
   Post,
   Query,
   UseGuards,
-  ForbiddenException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateCategoryDto, UpdateCategoryDto } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { CategoryRequestStatus, UserRole } from '@prisma/client-core';
 import { CategoriesService } from './categories.service';
+import { AdminOnlyGuard, SuperAdminOnly, CityAdminOnly } from '@heidi/rbac';
 
 @ApiTags('categories')
 @Controller('categories')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, AdminOnlyGuard)
 export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
-
-  private isSuperAdmin(role?: string) {
-    if (!role) {
-      return false;
-    }
-    const normalized = role.toUpperCase() as keyof typeof UserRole;
-    return UserRole[normalized] === UserRole.SUPER_ADMIN;
-  }
-
-  private isCityAdmin(role?: string) {
-    if (!role) {
-      return false;
-    }
-    const normalized = role.toUpperCase() as keyof typeof UserRole;
-    return UserRole[normalized] === UserRole.CITY_ADMIN;
-  }
-
-  private assertSuperAdmin(role?: string) {
-    if (!this.isSuperAdmin(role)) {
-      throw new ForbiddenException('Super admin privileges required');
-    }
-  }
-
-  private assertCityAdmin(role?: string) {
-    if (!this.isCityAdmin(role)) {
-      throw new ForbiddenException('City admin privileges required');
-    }
-  }
-
-  private assertSuperAdminOrCityAdmin(role?: string) {
-    if (!(this.isSuperAdmin(role) || this.isCityAdmin(role))) {
-      throw new ForbiddenException('City admin or super admin privileges required');
-    }
-  }
 
   private parseRequestStatus(value?: string): CategoryRequestStatus | undefined {
     if (!value) {
@@ -75,8 +41,8 @@ export class CategoriesController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'List categories' })
   @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
+  @SuperAdminOnly()
   async list(@GetCurrentUser() user: CurrentUser) {
-    this.assertSuperAdmin(user?.role);
     return this.categoriesService.listCategories();
   }
 
@@ -84,8 +50,8 @@ export class CategoriesController {
   @Post()
   @ApiOperation({ summary: 'Create category' })
   @ApiResponse({ status: 201, description: 'Category created successfully' })
+  @SuperAdminOnly()
   async create(@GetCurrentUser() user: CurrentUser, @Body() dto: CreateCategoryDto) {
-    this.assertSuperAdmin(user?.role);
     return this.categoriesService.createCategory(dto);
   }
 
@@ -93,12 +59,12 @@ export class CategoriesController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update category' })
   @ApiResponse({ status: 200, description: 'Category updated successfully' })
+  @SuperAdminOnly()
   async update(
     @Param('id') id: string,
     @GetCurrentUser() user: CurrentUser,
     @Body() dto: UpdateCategoryDto,
   ) {
-    this.assertSuperAdmin(user?.role);
     return this.categoriesService.updateCategory(id, dto);
   }
 
@@ -107,8 +73,8 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Delete category' })
   @ApiResponse({ status: 200, description: 'Category deleted successfully' })
   @HttpCode(HttpStatus.OK)
+  @SuperAdminOnly()
   async delete(@Param('id') id: string, @GetCurrentUser() user: CurrentUser) {
-    this.assertSuperAdmin(user?.role);
     return this.categoriesService.deleteCategory(id);
   }
 
@@ -116,13 +82,12 @@ export class CategoriesController {
   @Get('cities/:cityId')
   @ApiOperation({ summary: 'List categories assigned to a city' })
   @ApiResponse({ status: 200, description: 'City categories retrieved successfully' })
+  @CityAdminOnly()
   async listCityCategories(@Param('cityId') cityId: string, @GetCurrentUser() user: CurrentUser) {
-    this.assertSuperAdminOrCityAdmin(user?.role);
-
-    if (this.isCityAdmin(user?.role)) {
+    if (user.role !== UserRole.SUPER_ADMIN) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
-        throw new ForbiddenException('You are not assigned to this city');
+        throw new BadRequestException('You are not assigned to this city');
       }
     }
 
@@ -133,12 +98,12 @@ export class CategoriesController {
   @Post('cities/:cityId/assign')
   @ApiOperation({ summary: 'Assign category to city (super admin only)' })
   @ApiResponse({ status: 201, description: 'Category assigned to city' })
+  @SuperAdminOnly()
   async assignCategory(
     @Param('cityId') cityId: string,
     @GetCurrentUser() user: CurrentUser,
     @Body('categoryId') categoryId: string,
   ) {
-    this.assertSuperAdmin(user?.role);
     return this.categoriesService.assignCategoryToCity(cityId, categoryId, user.userId);
   }
 
@@ -146,12 +111,12 @@ export class CategoriesController {
   @Delete('cities/:cityId/categories/:categoryId')
   @ApiOperation({ summary: 'Remove category from city (super admin only)' })
   @ApiResponse({ status: 200, description: 'Category removed from city' })
+  @SuperAdminOnly()
   async removeCategory(
     @Param('cityId') cityId: string,
     @Param('categoryId') categoryId: string,
     @GetCurrentUser() user: CurrentUser,
   ) {
-    this.assertSuperAdmin(user?.role);
     return this.categoriesService.removeCategoryFromCity(cityId, categoryId);
   }
 
@@ -159,16 +124,17 @@ export class CategoriesController {
   @Post('cities/:cityId/requests')
   @ApiOperation({ summary: 'City admin requests a category for their city' })
   @ApiResponse({ status: 201, description: 'Category request created' })
+  @CityAdminOnly()
   async requestCategory(
     @Param('cityId') cityId: string,
     @GetCurrentUser() user: CurrentUser,
     @Body() body: { categoryId: string; notes?: string },
   ) {
-    this.assertCityAdmin(user?.role);
-
-    const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
-    if (!hasAccess) {
-      throw new ForbiddenException('You are not assigned to this city');
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
+      if (!hasAccess) {
+        throw new BadRequestException('You are not assigned to this city');
+      }
     }
 
     return this.categoriesService.requestCityCategory(
@@ -183,12 +149,12 @@ export class CategoriesController {
   @Get('requests')
   @ApiOperation({ summary: 'List category requests' })
   @ApiResponse({ status: 200, description: 'Category requests retrieved successfully' })
+  @SuperAdminOnly()
   async listRequests(
     @GetCurrentUser() user: CurrentUser,
     @Query('cityId') cityId?: string,
     @Query('status') status?: string,
   ) {
-    this.assertSuperAdmin(user?.role);
     const parsedStatus = this.parseRequestStatus(status);
     return this.categoriesService.listCategoryRequests({ cityId, status: parsedStatus });
   }
@@ -197,17 +163,16 @@ export class CategoriesController {
   @Get('cities/:cityId/requests')
   @ApiOperation({ summary: 'List category requests for a city' })
   @ApiResponse({ status: 200, description: 'Category requests for city retrieved' })
+  @CityAdminOnly()
   async listCityRequests(
     @Param('cityId') cityId: string,
     @GetCurrentUser() user: CurrentUser,
     @Query('status') status?: string,
   ) {
-    this.assertSuperAdminOrCityAdmin(user?.role);
-
-    if (this.isCityAdmin(user?.role)) {
+    if (user.role !== UserRole.SUPER_ADMIN) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
-        throw new ForbiddenException('You are not assigned to this city');
+        throw new BadRequestException('You are not assigned to this city');
       }
     }
 
@@ -219,12 +184,12 @@ export class CategoriesController {
   @Post('requests/:requestId/resolve')
   @ApiOperation({ summary: 'Resolve a category request (super admin only)' })
   @ApiResponse({ status: 200, description: 'Category request resolved' })
+  @SuperAdminOnly()
   async resolveRequest(
     @Param('requestId') requestId: string,
     @GetCurrentUser() user: CurrentUser,
     @Body() body: { status: CategoryRequestStatus; notes?: string },
   ) {
-    this.assertSuperAdmin(user?.role);
     return this.categoriesService.handleCategoryRequest(
       requestId,
       body.status,
