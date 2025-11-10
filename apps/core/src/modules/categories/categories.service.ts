@@ -1,7 +1,7 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaCoreService } from '@heidi/prisma';
 import { CreateCategoryDto, UpdateCategoryDto } from '@heidi/contracts';
-import { Prisma } from '@prisma/client-core';
+import { CategoryRequestStatus, Prisma } from '@prisma/client-core';
 
 @Injectable()
 export class CategoriesService {
@@ -107,5 +107,145 @@ export class CategoriesService {
     return this.prisma.category.delete({
       where: { id: categoryId },
     });
+  }
+
+  async listCityCategories(cityId: string) {
+    return this.prisma.cityCategory.findMany({
+      where: { cityId, isActive: true },
+      include: {
+        category: true,
+      },
+      orderBy: { addedAt: 'desc' },
+    });
+  }
+
+  async assignCategoryToCity(cityId: string, categoryId: string, addedBy: string) {
+    return this.prisma.cityCategory.upsert({
+      where: {
+        cityId_categoryId: {
+          cityId,
+          categoryId,
+        },
+      },
+      update: {
+        isActive: true,
+        addedBy,
+        addedAt: new Date(),
+      },
+      create: {
+        cityId,
+        categoryId,
+        addedBy,
+      },
+    });
+  }
+
+  async removeCategoryFromCity(cityId: string, categoryId: string) {
+    const existing = await this.prisma.cityCategory.findUnique({
+      where: {
+        cityId_categoryId: {
+          cityId,
+          categoryId,
+        },
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('City category mapping not found');
+    }
+
+    if (!existing.isActive) {
+      return existing;
+    }
+
+    return this.prisma.cityCategory.update({
+      where: {
+        cityId_categoryId: {
+          cityId,
+          categoryId,
+        },
+      },
+      data: {
+        isActive: false,
+      },
+    });
+  }
+
+  async requestCityCategory(
+    cityId: string,
+    categoryId: string,
+    requestedBy: string,
+    notes?: string,
+  ) {
+    return this.prisma.categoryRequest.upsert({
+      where: {
+        cityId_categoryId_requestedBy_status: {
+          cityId,
+          categoryId,
+          requestedBy,
+          status: CategoryRequestStatus.PENDING,
+        },
+      },
+      update: {
+        notes,
+      },
+      create: {
+        cityId,
+        categoryId,
+        requestedBy,
+        notes,
+      },
+    });
+  }
+
+  async listCategoryRequests(options: { cityId?: string; status?: CategoryRequestStatus } = {}) {
+    const { cityId, status } = options;
+
+    return this.prisma.categoryRequest.findMany({
+      where: {
+        ...(cityId && { cityId }),
+        ...(status && { status }),
+      },
+      include: {
+        category: true,
+      },
+      orderBy: { requestedAt: 'desc' },
+    });
+  }
+
+  async handleCategoryRequest(
+    requestId: string,
+    status: CategoryRequestStatus,
+    handledBy: string,
+    notes?: string,
+  ) {
+    const request = await this.prisma.categoryRequest.update({
+      where: { id: requestId },
+      data: {
+        status,
+        handledBy,
+        handledAt: new Date(),
+        notes,
+      },
+    });
+
+    if (status === CategoryRequestStatus.APPROVED) {
+      await this.assignCategoryToCity(request.cityId, request.categoryId, handledBy);
+    }
+
+    return request;
+  }
+
+  async cityAdminHasAccess(userId: string, cityId: string) {
+    const assignment = await this.prisma.userCityAssignment.findFirst({
+      where: {
+        userId,
+        cityId,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+
+    return Boolean(assignment);
   }
 }
