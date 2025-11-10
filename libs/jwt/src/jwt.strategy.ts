@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException, forwardRef } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { TokenPayload } from './jwt.service';
@@ -10,6 +10,7 @@ import { ConfigService } from '@heidi/config';
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private readonly prismaCore: PrismaCoreService,
+    @Inject(forwardRef(() => PermissionService))
     private readonly permissionService: PermissionService,
     private readonly configService: ConfigService,
   ) {

@@ -1,4 +1,4 @@
-import { DynamicModule, Global, Module } from '@nestjs/common';
+import { DynamicModule, Global, Module, forwardRef } from '@nestjs/common';
 import { JwtModule as NestJwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { JwtTokenService } from './jwt.service';
@@ -19,7 +19,7 @@ export class JwtModule {
         ConfigModule,
         LoggerModule,
         PrismaCoreModule,
-        RBACModule,
+        forwardRef(() => RBACModule),
         PassportModule.register({ defaultStrategy: 'jwt' }),
         NestJwtModule.registerAsync({
           imports: [ConfigModule],
