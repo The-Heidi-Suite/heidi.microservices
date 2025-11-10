@@ -1,0 +1,111 @@
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { PrismaCoreService } from '@heidi/prisma';
+import { CreateCategoryDto, UpdateCategoryDto } from '@heidi/contracts';
+import { Prisma } from '@prisma/client-core';
+
+@Injectable()
+export class CategoriesService {
+  constructor(private readonly prisma: PrismaCoreService) {}
+
+  private slugify(value: string) {
+    return value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  private async ensureUniqueCategorySlug(baseSlug: string, currentId?: string) {
+    let candidate = baseSlug;
+    let counter = 1;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const existing = await this.prisma.category.findUnique({
+        where: { slug: candidate },
+        select: { id: true },
+      });
+
+      if (!existing || existing.id === currentId) {
+        return candidate;
+      }
+
+      candidate = `${baseSlug}-${counter++}`;
+    }
+  }
+
+  async listCategories() {
+    return this.prisma.category.findMany({
+      orderBy: [{ type: 'asc' }, { name: 'asc' }],
+    });
+  }
+
+  async createCategory(dto: CreateCategoryDto) {
+    const baseSlugCandidate = dto.slug ? this.slugify(dto.slug) : this.slugify(dto.name);
+    const baseSlug = baseSlugCandidate || this.slugify(`${dto.name}-${Date.now()}`);
+    const slug = await this.ensureUniqueCategorySlug(baseSlug);
+
+    const data: Prisma.CategoryCreateInput = {
+      name: dto.name,
+      slug,
+      type: dto.type ?? null,
+      isActive: dto.isActive ?? true,
+    };
+
+    if (dto.parentId) {
+      data.parent = {
+        connect: { id: dto.parentId },
+      };
+    }
+
+    return this.prisma.category.create({ data });
+  }
+
+  async updateCategory(categoryId: string, dto: UpdateCategoryDto) {
+    const updateData: Prisma.CategoryUpdateInput = {};
+
+    if (dto.name !== undefined) {
+      updateData.name = dto.name;
+    }
+
+    if (dto.slug !== undefined) {
+      const baseSlug = this.slugify(dto.slug);
+      updateData.slug = await this.ensureUniqueCategorySlug(baseSlug, categoryId);
+    }
+
+    if (dto.type !== undefined) {
+      updateData.type = dto.type;
+    }
+
+    if (dto.parentId !== undefined) {
+      updateData.parent = dto.parentId
+        ? {
+            connect: { id: dto.parentId },
+          }
+        : { disconnect: true };
+    }
+
+    if (dto.isActive !== undefined) {
+      updateData.isActive = dto.isActive;
+    }
+
+    return this.prisma.category.update({
+      where: { id: categoryId },
+      data: updateData,
+    });
+  }
+
+  async deleteCategory(categoryId: string) {
+    const usageCount = await this.prisma.listingCategory.count({
+      where: { categoryId },
+    });
+
+    if (usageCount > 0) {
+      throw new BadRequestException('Category is associated with existing listings');
+    }
+
+    return this.prisma.category.delete({
+      where: { id: categoryId },
+    });
+  }
+}
