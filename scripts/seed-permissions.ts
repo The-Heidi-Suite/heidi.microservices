@@ -48,6 +48,20 @@ const PERMISSIONS = [
     action: 'moderate',
     description: 'Approve/reject listings for moderation',
   },
+  { resource: 'city_categories', action: 'assign', description: 'Assign categories to a city' },
+  { resource: 'city_categories', action: 'remove', description: 'Remove categories from a city' },
+  {
+    resource: 'city_categories',
+    action: 'read',
+    description: 'View categories assigned to a city',
+  },
+  { resource: 'category_requests', action: 'create', description: 'Request categories for a city' },
+  { resource: 'category_requests', action: 'read', description: 'View city category requests' },
+  {
+    resource: 'category_requests',
+    action: 'resolve',
+    description: 'Resolve city category requests',
+  },
 ];
 
 // Define role-permission mappings
@@ -75,6 +89,9 @@ const ROLE_PERMISSIONS: Record<UserRole, Array<{ resource: string; action: strin
     { resource: 'listings', action: 'read' },
     { resource: 'listings', action: 'moderate' },
     { resource: 'listings', action: 'delete' },
+    { resource: 'city_categories', action: 'read' },
+    { resource: 'category_requests', action: 'create' },
+    { resource: 'category_requests', action: 'read' },
   ],
   [UserRole.CITIZEN]: [
     // Citizens can create and view their own listings
