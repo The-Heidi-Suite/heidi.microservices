@@ -84,30 +84,193 @@ model UserCityAssignment {
 }
 
 // Listing model - Content/listings created by citizens and moderated by city admins
-// Note: userId and cityId are stored as strings (no FK due to multi-database architecture)
 model Listing {
-  id         String       @id @default(uuid())
-  userId     String       // Reference to User.id in users database (creator)
-  cityId     String       // Reference to City.id in city database
-  title      String
-  content    String
-  status     ListingStatus @default(PENDING)
-  category   String?
-  metadata   Json?
-  reviewedBy String?      // Reference to User.id who reviewed (city admin)
-  reviewedAt DateTime?
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  id                String                     @id @default(uuid())
+  slug              String                     @unique
+  title             String
+  summary           String?
+  content           String
+  status            ListingStatus              @default(PENDING)
+  moderationStatus  ListingModerationStatus    @default(PENDING)
+  visibility        ListingVisibility          @default(PUBLIC)
+  isFeatured        Boolean                    @default(false)
+  featuredUntil     DateTime?
+  publishAt         DateTime?
+  expireAt          DateTime?
+  languageCode      String?
+  sourceUrl         String?
+  heroImageUrl      String?
+  metadata          Json?
+  viewCount         Int                        @default(0)
+  likeCount         Int                        @default(0)
+  shareCount        Int                        @default(0)
+  createdByUserId   String?
+  lastEditedByUserId String?
+  reviewedBy        String?
+  reviewedAt        DateTime?
+  reviewNotes       String?
+  sourceType        ListingSourceType          @default(MANUAL)
+  externalSource    String?
+  externalId        String?
+  syncHash          String?
+  contentChecksum   String?
+  lastSyncedAt      DateTime?
+  ingestedAt        DateTime?
+  ingestedByService String?
+  ingestNotes       String?
+  primaryCityId     String?
+  venueName         String?
+  address           String?
+  geoLat            Decimal?                   @db.Decimal(9, 6)
+  geoLng            Decimal?                   @db.Decimal(9, 6)
+  timezone          String?
+  contactPhone      String?
+  contactEmail      String?
+  website           String?
+  eventStart        DateTime?
+  eventEnd          DateTime?
+  isAllDay          Boolean                    @default(false)
+  organizerName     String?
+  organizerContact  String?
+  registrationUrl   String?
+  isArchived        Boolean                    @default(false)
+  archivedAt        DateTime?
+  archivedBy        String?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
 
   // Relations
-  favorites  UserFavorite[]
+  favorites              UserFavorite[]
+  categories             ListingCategory[]
+  cities                 ListingCity[]
+  media                  ListingMedia[]
+  timeIntervals          ListingTimeInterval[]
+  timeIntervalExceptions ListingTimeIntervalException[]
 
-  @@index([userId])
-  @@index([cityId])
   @@index([status])
+  @@index([moderationStatus])
+  @@index([visibility])
+  @@index([publishAt])
+  @@index([expireAt])
+  @@index([isFeatured])
+  @@index([primaryCityId])
+  @@index([sourceType])
   @@index([createdAt])
-  @@index([category])
+  @@index([updatedAt])
   @@map("listings")
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String
+  slug      String    @unique
+  type      CategoryType?
+  parentId  String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  listings ListingCategory[]
+
+  @@index([parentId])
+  @@index([type])
+  @@index([isActive])
+  @@map("categories")
+}
+
+model ListingCategory {
+  id         String   @id @default(uuid())
+  listingId  String
+  categoryId String
+  assignedAt DateTime @default(now())
+
+  listing  Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, categoryId])
+  @@index([categoryId])
+  @@index([listingId])
+  @@map("listing_categories")
+}
+
+model ListingCity {
+  id           String   @id @default(uuid())
+  listingId    String
+  cityId       String
+  isPrimary    Boolean  @default(false)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, cityId])
+  @@index([cityId])
+  @@index([listingId])
+  @@map("listing_cities")
+}
+
+model ListingMedia {
+  id        String           @id @default(uuid())
+  listingId String
+  type      ListingMediaType
+  url       String
+  altText   String?
+  caption   String?
+  order     Int              @default(0)
+  metadata  Json?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([type])
+  @@map("listing_media")
+}
+
+model ListingTimeInterval {
+  id         String                 @id @default(uuid())
+  listingId  String
+  weekdays   String[]
+  start      DateTime
+  end        DateTime
+  tz         String
+  freq       ListingRecurrenceFreq  @default(NONE)
+  interval   Int                    @default(1)
+  repeatUntil DateTime?
+  metadata   Json?
+  createdAt  DateTime               @default(now())
+  updatedAt  DateTime               @updatedAt
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([start])
+  @@index([repeatUntil])
+  @@index([freq, interval])
+  @@map("listing_time_intervals")
+}
+
+model ListingTimeIntervalException {
+  id        String   @id @default(uuid())
+  listingId String
+  date      DateTime
+  opensAt   String?
+  closesAt  String?
+  isClosed  Boolean  @default(false)
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@index([listingId])
+  @@index([date])
+  @@map("listing_time_interval_exceptions")
 }
 
 // UserFavorite - Track user favorites (works for both guests and registered users)
@@ -138,4 +301,53 @@ enum ListingStatus {
   APPROVED     // Approved by city admin
   REJECTED     // Rejected by city admin
   DELETED      // Soft deleted
+}
+
+enum ListingModerationStatus {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+  ARCHIVED
+}
+
+enum ListingVisibility {
+  PUBLIC
+  CITY_ONLY
+  PRIVATE
+}
+
+enum ListingSourceType {
+  MANUAL
+  SCRAPER
+  INTEGRATION
+  API_IMPORT
+}
+
+enum ListingRecurrenceFreq {
+  NONE
+  DAILY
+  WEEKLY
+  MONTHLY
+  YEARLY
+}
+
+enum ListingMediaType {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  AUDIO
+  OTHER
+}
+
+enum CategoryType {
+  NEWS
+  EVENT
+  GASTRO
+  TOUR
+  RESTAURANT
+  POI
+  HOTEL
+  ARTICLE
+  OTHER
 }
