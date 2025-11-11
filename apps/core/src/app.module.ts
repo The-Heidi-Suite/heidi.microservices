@@ -10,7 +10,11 @@ import { LoggingInterceptor } from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 import { TermsAcceptanceGuard } from '@heidi/rbac';
 import { CoreModule } from './modules/core/core.module';
+import { ListingsModule } from './modules/listings/listings.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 import { HealthController } from './health.controller';
+import { JwtModule } from '@heidi/jwt';
+import { RBACModule } from '@heidi/rbac';
 
 @Module({
   imports: [
@@ -25,7 +29,11 @@ import { HealthController } from './health.controller';
     RedisModule,
     MetricsModule,
     I18nModule,
+    JwtModule.register(),
+    RBACModule,
     CoreModule,
+    ListingsModule,
+    CategoriesModule,
   ],
   controllers: [HealthController],
   providers: [

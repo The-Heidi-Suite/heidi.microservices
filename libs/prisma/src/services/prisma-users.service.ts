@@ -15,11 +15,6 @@ export class PrismaUsersService extends PrismaUsersClient implements OnModuleIni
       throw new Error('USERS_DATABASE_URL is not configured');
     }
 
-    // Extract database name from URL for logging (mask password)
-    const urlWithoutPassword = databaseUrl.replace(/:[^:@]+@/, ':****@');
-    logger.setContext('PrismaUsersService');
-    logger.log(`Connecting to database: ${urlWithoutPassword}`);
-
     super({
       datasourceUrl: databaseUrl,
       log: [
@@ -52,12 +47,6 @@ export class PrismaUsersService extends PrismaUsersClient implements OnModuleIni
   async onModuleInit() {
     try {
       await this.$connect();
-      // Verify which database we're connected to
-      const result = await this.$queryRaw<Array<{ current_database: string }>>`
-        SELECT current_database();
-      `;
-      const dbName = result[0]?.current_database;
-      this.logger.log(`PrismaUsersService: Connected to database '${dbName}'`);
     } catch (error) {
       this.logger.error('PrismaUsersService: Failed to connect to database', error);
       throw error;

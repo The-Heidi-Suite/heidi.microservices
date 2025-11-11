@@ -1,28 +1,13 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Delete,
-  Body,
-  Param,
-  UseGuards,
-  HttpCode,
-  HttpStatus,
-} from '@nestjs/common';
-import {
-  ApiTags,
-  ApiOperation,
-  ApiResponse,
-  ApiBearerAuth,
-  ApiParam,
-  ApiBody,
-} from '@nestjs/swagger';
+import { Body, Controller, Get, Post, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CoreService } from './core.service';
-import { GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
+import { JwtAuthGuard } from '@heidi/jwt';
 import {
-  ValidationErrorResponseDto,
-  NotFoundErrorResponseDto,
+  CoreOperationRequestDto,
+  CoreOperationResponseDto,
+  CoreStatusResponseDto,
   UnauthorizedErrorResponseDto,
+  ValidationErrorResponseDto,
 } from '@heidi/contracts';
 
 @ApiTags('core')
@@ -32,106 +17,65 @@ export class CoreController {
   constructor(private readonly coreService: CoreService) {}
 
   @Get('status')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get core service status',
+    description:
+      'Retrieve current uptime, timestamp, and process memory usage for the core microservice.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Status retrieved successfully',
+    type: CoreStatusResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
   getStatus() {
     return this.coreService.getStatus();
   }
 
   @Post('operations')
-  executeOperation(@Body() payload: any) {
-    return this.coreService.executeOperation(payload);
-  }
-
-  @Post('favorites')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Add listing to favorites',
+    summary: 'Queue core operation',
     description:
-      "Add a listing to the current user's favorites (works for both guest and registered users)",
+      'Queue an asynchronous core operation that will be broadcast via RabbitMQ to downstream services.',
   })
   @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        listingId: {
-          type: 'string',
-          format: 'uuid',
-          example: '123e4567-e89b-12d3-a456-426614174000',
+    type: CoreOperationRequestDto,
+    examples: {
+      syncAssignments: {
+        summary: 'Queue synchronization',
+        value: {
+          operation: 'sync.cityAssignments',
+          payload: {
+            cityId: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+            force: true,
+          },
         },
       },
-      required: ['listingId'],
     },
   })
   @ApiResponse({
-    status: 201,
-    description: 'Listing added to favorites successfully',
+    status: 202,
+    description: 'Operation accepted for processing',
+    type: CoreOperationResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - validation failed or listing not found',
+    description: 'Invalid operation payload',
     type: ValidationErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
-    description: 'Unauthorized',
+    description: 'Authentication required',
     type: UnauthorizedErrorResponseDto,
   })
-  @HttpCode(HttpStatus.CREATED)
-  async addFavorite(@GetCurrentUser('userId') userId: string, @Body() body: { listingId: string }) {
-    return this.coreService.addFavorite(userId, body.listingId);
-  }
-
-  @Delete('favorites/:listingId')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({
-    summary: 'Remove listing from favorites',
-    description: "Remove a listing from the current user's favorites",
-  })
-  @ApiParam({
-    name: 'listingId',
-    description: 'Listing ID to remove from favorites',
-    type: String,
-    format: 'uuid',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Listing removed from favorites successfully',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Favorite not found',
-    type: NotFoundErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-    type: UnauthorizedErrorResponseDto,
-  })
-  @HttpCode(HttpStatus.OK)
-  async removeFavorite(
-    @GetCurrentUser('userId') userId: string,
-    @Param('listingId') listingId: string,
-  ) {
-    return this.coreService.removeFavorite(userId, listingId);
-  }
-
-  @Get('favorites')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({
-    summary: 'Get user favorites',
-    description:
-      'Get all favorites for the current user (works for both guest and registered users)',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'List of user favorites retrieved successfully',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-    type: UnauthorizedErrorResponseDto,
-  })
-  @HttpCode(HttpStatus.OK)
-  async getUserFavorites(@GetCurrentUser('userId') userId: string) {
-    return this.coreService.getUserFavorites(userId);
+  @HttpCode(HttpStatus.ACCEPTED)
+  executeOperation(@Body() payload: CoreOperationRequestDto) {
+    return this.coreService.executeOperation(payload);
   }
 }
