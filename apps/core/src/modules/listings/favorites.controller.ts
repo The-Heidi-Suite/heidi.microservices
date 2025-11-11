@@ -9,8 +9,25 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
+import {
+  AddFavoriteDto,
+  AddFavoriteResponseDto,
+  BadRequestErrorResponseDto,
+  FavoriteListingDto,
+  NotFoundErrorResponseDto,
+  RemoveFavoriteResponseDto,
+  UnauthorizedErrorResponseDto,
+  ValidationErrorResponseDto,
+} from '@heidi/contracts';
 import { ListingsService } from './listings.service';
 
 @ApiTags('favorites')
@@ -27,28 +44,38 @@ export class FavoritesController {
       "Add a listing to the current user's favorites (works for both guest and registered users)",
   })
   @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        listingId: {
-          type: 'string',
-          format: 'uuid',
-          example: '123e4567-e89b-12d3-a456-426614174000',
+    type: AddFavoriteDto,
+    examples: {
+      default: {
+        summary: 'Add listing to favorites',
+        value: {
+          listingId: '123e4567-e89b-12d3-a456-426614174000',
         },
       },
-      required: ['listingId'],
     },
   })
   @ApiResponse({
     status: 201,
     description: 'Listing added to favorites successfully',
+    type: AddFavoriteResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - validation failed or listing not found',
+    description: 'Bad request - validation failed or listing already favorited',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Listing not found',
+    type: NotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.CREATED)
-  async addFavorite(@GetCurrentUser('userId') userId: string, @Body() body: { listingId: string }) {
+  async addFavorite(@GetCurrentUser('userId') userId: string, @Body() body: AddFavoriteDto) {
     return this.listingsService.addFavorite(userId, body.listingId);
   }
 
@@ -58,13 +85,30 @@ export class FavoritesController {
     summary: 'Remove listing from favorites',
     description: "Remove a listing from the current user's favorites",
   })
+  @ApiParam({
+    name: 'listingId',
+    description: 'Listing identifier',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
   @ApiResponse({
     status: 200,
     description: 'Listing removed from favorites successfully',
+    type: RemoveFavoriteResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Favorite not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request',
+    type: BadRequestErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async removeFavorite(
@@ -84,6 +128,13 @@ export class FavoritesController {
   @ApiResponse({
     status: 200,
     description: 'List of user favorites retrieved successfully',
+    type: FavoriteListingDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async getUserFavorites(@GetCurrentUser('userId') userId: string) {
