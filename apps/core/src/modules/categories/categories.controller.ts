@@ -61,7 +61,7 @@ export class CategoriesController {
 
     const normalized = String(value).toUpperCase() as keyof typeof CategoryRequestStatus;
     if (!(normalized in CategoryRequestStatus)) {
-      throw new BadRequestException('Invalid category request status');
+      throw new BadRequestException({ errorCode: 'CATEGORY_REQUEST_INVALID_STATUS' });
     }
     return CategoryRequestStatus[normalized];
   }
@@ -276,7 +276,7 @@ export class CategoriesController {
     if (user.role !== UserRole.SUPER_ADMIN) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
-        throw new BadRequestException('You are not assigned to this city');
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
       }
     }
 
@@ -433,7 +433,7 @@ export class CategoriesController {
     if (user.role !== UserRole.SUPER_ADMIN) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
-        throw new BadRequestException('You are not assigned to this city');
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
       }
     }
 
@@ -547,7 +547,7 @@ export class CategoriesController {
     if (user.role !== UserRole.SUPER_ADMIN) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
-        throw new BadRequestException('You are not assigned to this city');
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
       }
     }
 

@@ -101,7 +101,7 @@ export class CategoriesService {
     });
 
     if (usageCount > 0) {
-      throw new BadRequestException('Category is associated with existing listings');
+      throw new BadRequestException({ errorCode: 'CATEGORY_IN_USE' });
     }
 
     return this.prisma.category.delete({
@@ -157,7 +157,7 @@ export class CategoriesService {
     });
 
     if (!existing) {
-      throw new NotFoundException('City category mapping not found');
+      throw new NotFoundException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
     }
 
     if (!existing.isActive) {
