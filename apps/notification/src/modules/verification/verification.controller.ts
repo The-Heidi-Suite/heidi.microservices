@@ -13,6 +13,7 @@ import {
   VerificationBadRequestErrorResponseDto,
   VerificationExpiredErrorResponseDto,
 } from '@heidi/contracts';
+import { GetLanguage } from '@heidi/i18n';
 
 @ApiTags('Verification')
 @Controller('verification')
@@ -53,8 +54,8 @@ export class VerificationController {
     description: 'Bad request - invalid email format or unsupported verification type',
     type: VerificationBadRequestErrorResponseDto,
   })
-  async sendVerification(@Body() dto: SendVerificationDto) {
-    return this.verificationService.sendVerification(dto);
+  async sendVerification(@Body() dto: SendVerificationDto, @GetLanguage() language: string) {
+    return this.verificationService.sendVerification(dto, language);
   }
 
   @Get('verify')
@@ -89,8 +90,8 @@ export class VerificationController {
     description: 'Verification link has expired',
     type: VerificationExpiredErrorResponseDto,
   })
-  async verifyTokenGet(@Query('token') token: string) {
-    return this.verificationService.verifyToken({ token });
+  async verifyTokenGet(@Query('token') token: string, @GetLanguage() language: string) {
+    return this.verificationService.verifyToken({ token }, language);
   }
 
   @Post('verify')
@@ -131,8 +132,8 @@ export class VerificationController {
     description: 'Verification link has expired',
     type: VerificationExpiredErrorResponseDto,
   })
-  async verifyTokenPost(@Body() dto: VerifyTokenDto) {
-    return this.verificationService.verifyToken(dto);
+  async verifyTokenPost(@Body() dto: VerifyTokenDto, @GetLanguage() language: string) {
+    return this.verificationService.verifyToken(dto, language);
   }
 
   @Get('cancel')
@@ -162,8 +163,8 @@ export class VerificationController {
     description: 'Invalid verification token',
     type: VerificationNotFoundErrorResponseDto,
   })
-  async cancelVerificationGet(@Query('token') token: string) {
-    return this.verificationService.cancelVerification({ token });
+  async cancelVerificationGet(@Query('token') token: string, @GetLanguage() language: string) {
+    return this.verificationService.cancelVerification({ token }, language);
   }
 
   @Post('cancel')
@@ -199,8 +200,11 @@ export class VerificationController {
     description: 'Invalid verification token',
     type: VerificationNotFoundErrorResponseDto,
   })
-  async cancelVerificationPost(@Body() dto: CancelVerificationDto) {
-    return this.verificationService.cancelVerification(dto);
+  async cancelVerificationPost(
+    @Body() dto: CancelVerificationDto,
+    @GetLanguage() language: string,
+  ) {
+    return this.verificationService.cancelVerification(dto, language);
   }
 
   @Post('resend')
@@ -237,8 +241,8 @@ export class VerificationController {
     description: 'Bad request - verification email already sent and not expired',
     type: VerificationBadRequestErrorResponseDto,
   })
-  async resendVerification(@Body() dto: ResendVerificationDto) {
-    return this.verificationService.resendVerification(dto);
+  async resendVerification(@Body() dto: ResendVerificationDto, @GetLanguage() language: string) {
+    return this.verificationService.resendVerification(dto, language);
   }
 
   @Get('status/:userId')

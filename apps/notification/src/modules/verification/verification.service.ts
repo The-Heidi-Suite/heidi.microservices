@@ -17,6 +17,7 @@ import {
   ResendVerificationDto,
   CancelVerificationDto,
 } from '@heidi/contracts';
+import { I18nService } from '@heidi/i18n';
 
 @Injectable()
 export class VerificationService {
@@ -30,6 +31,7 @@ export class VerificationService {
     private readonly smsStrategy: SmsVerificationStrategy,
     @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly logger: LoggerService,
+    private readonly i18nService: I18nService,
   ) {
     this.strategies = new Map<'EMAIL' | 'SMS', IVerificationStrategy>([
       ['EMAIL', this.emailStrategy],
@@ -41,15 +43,32 @@ export class VerificationService {
   /**
    * Send verification link to user (automatically called after registration)
    */
-  async sendVerification(dto: SendVerificationDto) {
+  async sendVerification(dto: SendVerificationDto, language?: string) {
+    const initialLanguage = this.resolveLanguage(language, dto.metadata);
     const strategy = this.strategies.get(dto.type);
     if (!strategy) {
-      throw new BadRequestException(`Unsupported verification type: ${dto.type}`);
+      const msg = this.i18nService.translate(
+        'errors.VERIFICATION_UNSUPPORTED_TYPE',
+        { type: dto.type.toLowerCase() },
+        initialLanguage,
+      );
+      throw new BadRequestException({
+        errorCode: 'VERIFICATION_UNSUPPORTED_TYPE',
+        message: msg,
+      });
     }
 
     // Validate identifier format
     if (!strategy.validateIdentifier(dto.identifier)) {
-      throw new BadRequestException(`Invalid ${dto.type.toLowerCase()} format`);
+      const msg = this.i18nService.translate(
+        'errors.VERIFICATION_INVALID_IDENTIFIER',
+        { type: dto.type.toLowerCase() },
+        initialLanguage,
+      );
+      throw new BadRequestException({
+        errorCode: 'VERIFICATION_INVALID_IDENTIFIER',
+        message: msg,
+      });
     }
 
     // Cancel any existing pending verification for this user/identifier
@@ -69,6 +88,18 @@ export class VerificationService {
     expiresAt.setHours(expiresAt.getHours() + this.TOKEN_EXPIRY_HOURS);
 
     // Create verification record
+    const mergedMetadata: Record<string, any> = {
+      ...(dto.metadata || {}),
+    };
+
+    const effectiveLanguage = this.resolveLanguage(initialLanguage, mergedMetadata);
+    if (effectiveLanguage && !mergedMetadata.preferredLanguage) {
+      mergedMetadata.preferredLanguage = effectiveLanguage;
+    }
+    if (effectiveLanguage && !mergedMetadata.language) {
+      mergedMetadata.language = effectiveLanguage;
+    }
+
     const verificationToken = await this.prisma.verificationToken.create({
       data: {
         userId: dto.userId,
@@ -79,13 +110,13 @@ export class VerificationService {
         expiresAt,
         maxAttempts: this.MAX_ATTEMPTS,
         status: 'PENDING',
-        metadata: dto.metadata || {},
+        metadata: mergedMetadata,
       },
     });
 
     // Send verification via appropriate channel (includes welcome email for EMAIL type)
     await strategy.sendVerification(dto.identifier, token, dto.userId, {
-      ...dto.metadata,
+      ...mergedMetadata,
       verificationTokenId: verificationToken.id,
     });
 
@@ -105,53 +136,95 @@ export class VerificationService {
       type: dto.type,
       identifier: dto.identifier,
       expiresAt: verificationToken.expiresAt,
-      message: `Verification link sent to your ${dto.type.toLowerCase()}`,
+      message: this.i18nService.translate(
+        mergedMetadata.isResend
+          ? 'success.EMAIL_VERIFICATION_RESENT'
+          : 'success.EMAIL_VERIFICATION_SENT',
+        undefined,
+        effectiveLanguage,
+      ),
     };
   }
 
   /**
    * Verify token from email link
    */
-  async verifyToken(dto: VerifyTokenDto) {
+  async verifyToken(dto: VerifyTokenDto, language?: string) {
     const verificationToken = await this.prisma.verificationToken.findUnique({
       where: { token: dto.token },
     });
 
     if (!verificationToken) {
-      throw new NotFoundException('Invalid verification token');
+      const msg = this.i18nService.translate(
+        'errors.VERIFICATION_TOKEN_INVALID',
+        undefined,
+        language,
+      );
+      throw new NotFoundException({
+        errorCode: 'VERIFICATION_TOKEN_INVALID',
+        message: msg,
+      });
     }
 
-    // Check if already used (one-time use)
+    const metadataLanguage = this.extractLanguageFromMetadata(verificationToken.metadata);
+    const effectiveLanguage = this.resolveLanguage(language, metadataLanguage);
+
     if (verificationToken.isUsed || verificationToken.status === 'VERIFIED') {
-      throw new BadRequestException('This verification link has already been used');
+      const msg = this.i18nService.translate(
+        'errors.VERIFICATION_TOKEN_USED',
+        undefined,
+        effectiveLanguage,
+      );
+      throw new BadRequestException({
+        errorCode: 'VERIFICATION_TOKEN_USED',
+        message: msg,
+      });
     }
 
-    // Check if cancelled
     if (verificationToken.status === 'CANCELLED') {
-      throw new BadRequestException('This verification link has been cancelled');
+      const msg = this.i18nService.translate(
+        'errors.VERIFICATION_TOKEN_CANCELLED',
+        undefined,
+        effectiveLanguage,
+      );
+      throw new BadRequestException({
+        errorCode: 'VERIFICATION_TOKEN_CANCELLED',
+        message: msg,
+      });
     }
 
-    // Check if expired
     if (new Date() > verificationToken.expiresAt) {
       await this.prisma.verificationToken.update({
         where: { id: verificationToken.id },
         data: { status: 'EXPIRED' },
       });
-      throw new UnprocessableEntityException(
-        'Verification link has expired. Please request a new verification email.',
+      const msg = this.i18nService.translate(
+        'errors.VERIFICATION_TOKEN_EXPIRED',
+        undefined,
+        effectiveLanguage,
       );
+      throw new UnprocessableEntityException({
+        errorCode: 'VERIFICATION_TOKEN_EXPIRED',
+        message: msg,
+      });
     }
 
-    // Check attempts
     if (verificationToken.attempts >= verificationToken.maxAttempts) {
       await this.prisma.verificationToken.update({
         where: { id: verificationToken.id },
         data: { status: 'FAILED' },
       });
-      throw new UnprocessableEntityException('Maximum verification attempts exceeded');
+      const msg = this.i18nService.translate(
+        'errors.VERIFICATION_MAX_ATTEMPTS',
+        undefined,
+        effectiveLanguage,
+      );
+      throw new UnprocessableEntityException({
+        errorCode: 'VERIFICATION_MAX_ATTEMPTS',
+        message: msg,
+      });
     }
 
-    // Mark as verified
     await this.prisma.verificationToken.update({
       where: { id: verificationToken.id },
       data: {
@@ -162,7 +235,6 @@ export class VerificationService {
       },
     });
 
-    // Emit verification verified event
     this.client.emit(RabbitMQPatterns.VERIFICATION_VERIFIED, {
       userId: verificationToken.userId,
       type: verificationToken.type,
@@ -181,29 +253,53 @@ export class VerificationService {
       identifier: verificationToken.identifier,
       userId: verificationToken.userId,
       verifiedAt: new Date(),
+      message: this.i18nService.translate('success.EMAIL_VERIFIED', undefined, effectiveLanguage),
     };
   }
 
   /**
    * Cancel verification (It's not me)
    */
-  async cancelVerification(dto: CancelVerificationDto) {
+  async cancelVerification(dto: CancelVerificationDto, language?: string) {
     const verificationToken = await this.prisma.verificationToken.findUnique({
       where: { token: dto.token },
     });
 
     if (!verificationToken) {
-      throw new NotFoundException('Invalid verification token');
+      const msg = this.i18nService.translate(
+        'errors.VERIFICATION_TOKEN_INVALID',
+        undefined,
+        language,
+      );
+      throw new NotFoundException({
+        errorCode: 'VERIFICATION_TOKEN_INVALID',
+        message: msg,
+      });
     }
 
+    const metadataLanguage = this.extractLanguageFromMetadata(verificationToken.metadata);
+    const effectiveLanguage = this.resolveLanguage(language, metadataLanguage);
+
     if (verificationToken.status === 'VERIFIED') {
-      throw new BadRequestException('Cannot cancel an already verified token');
+      const msg = this.i18nService.translate(
+        'errors.VERIFICATION_CANCEL_VERIFIED',
+        undefined,
+        effectiveLanguage,
+      );
+      throw new BadRequestException({
+        errorCode: 'VERIFICATION_CANCEL_VERIFIED',
+        message: msg,
+      });
     }
 
     if (verificationToken.status === 'CANCELLED') {
       return {
         cancelled: true,
-        message: 'This verification link has already been cancelled',
+        message: this.i18nService.translate(
+          'success.VERIFICATION_ALREADY_CANCELLED',
+          undefined,
+          effectiveLanguage,
+        ),
       };
     }
 
@@ -231,14 +327,18 @@ export class VerificationService {
 
     return {
       cancelled: true,
-      message: 'Verification has been cancelled. If this was not you, your account may be at risk.',
+      message: this.i18nService.translate(
+        'success.VERIFICATION_CANCELLED',
+        undefined,
+        effectiveLanguage,
+      ),
     };
   }
 
   /**
    * Resend verification link (if expired or user requests new one)
    */
-  async resendVerification(dto: ResendVerificationDto) {
+  async resendVerification(dto: ResendVerificationDto, language?: string) {
     // Check if there's a recent verification that's expired
     const existingToken = await this.prisma.verificationToken.findFirst({
       where: {
@@ -252,23 +352,34 @@ export class VerificationService {
 
     // If expired, allow resend. If pending and not expired, inform user
     if (existingToken && existingToken.status === 'PENDING') {
+      const metadataLanguage = this.extractLanguageFromMetadata(existingToken.metadata);
+      const effectiveLanguage = this.resolveLanguage(language, metadataLanguage);
       const isExpired = new Date() > existingToken.expiresAt;
       if (!isExpired) {
-        throw new BadRequestException(
-          'A verification email has already been sent. Please check your inbox or wait until it expires.',
+        const msg = this.i18nService.translate(
+          'errors.VERIFICATION_ALREADY_SENT',
+          undefined,
+          effectiveLanguage,
         );
+        throw new BadRequestException({
+          errorCode: 'VERIFICATION_ALREADY_SENT',
+          message: msg,
+        });
       }
     }
 
-    return this.sendVerification({
-      userId: dto.userId,
-      type: dto.type,
-      identifier: dto.identifier,
-      metadata: {
-        ...dto.metadata,
-        isResend: true,
+    return this.sendVerification(
+      {
+        userId: dto.userId,
+        type: dto.type,
+        identifier: dto.identifier,
+        metadata: {
+          ...dto.metadata,
+          isResend: true,
+        },
       },
-    });
+      language,
+    );
   }
 
   /**
@@ -294,5 +405,40 @@ export class VerificationService {
       identifier: verification.identifier,
       verifiedAt: verification.verifiedAt,
     };
+  }
+
+  private resolveLanguage(
+    explicitLanguage?: string | null,
+    metadata?: Record<string, any> | string | null,
+  ): string | undefined {
+    if (explicitLanguage && explicitLanguage.trim() !== '') {
+      return explicitLanguage;
+    }
+
+    if (!metadata) {
+      return undefined;
+    }
+
+    if (typeof metadata === 'string' && metadata.trim() !== '') {
+      return metadata;
+    }
+
+    if (typeof metadata === 'object') {
+      const meta = metadata as Record<string, any>;
+      const preferred = meta.preferredLanguage || meta.language || meta.locale;
+      if (typeof preferred === 'string' && preferred.trim() !== '') {
+        return preferred;
+      }
+    }
+
+    return undefined;
+  }
+
+  private extractLanguageFromMetadata(metadata: unknown): Record<string, any> | string | null {
+    if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) {
+      return null;
+    }
+
+    return metadata as Record<string, any>;
   }
 }

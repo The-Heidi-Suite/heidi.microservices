@@ -3,6 +3,7 @@ import { ConfigService } from '@heidi/config';
 import { IVerificationStrategy } from './verification-strategy.interface';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
+import { I18nService } from '@heidi/i18n';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -13,6 +14,7 @@ export class EmailVerificationStrategy implements IVerificationStrategy {
     @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
+    private readonly i18nService: I18nService,
   ) {
     // Use API gateway URL if configured, otherwise fallback to direct service URL
     const apiGatewayBaseUrl = this.configService.get<string>('apiGatewayBaseUrl');
@@ -50,13 +52,30 @@ export class EmailVerificationStrategy implements IVerificationStrategy {
     const verificationLink = `${this.baseUrl}/verification/verify?token=${token}`;
     const cancelLink = `${this.baseUrl}/verification/cancel?token=${token}`;
 
+    const preferredLanguage =
+      metadata?.preferredLanguage || metadata?.language || metadata?.locale || undefined;
+
+    const emailSubject = this.i18nService.translate(
+      'emails.verification.subject',
+      undefined,
+      preferredLanguage,
+    );
+
+    const emailContent = this.generateEmailContent(
+      verificationLink,
+      cancelLink,
+      metadata?.firstName,
+      emailSubject,
+      preferredLanguage,
+    );
+
     // Send welcome email with verification link
     await this.client.emit(RabbitMQPatterns.NOTIFICATION_SEND, {
       userId,
       type: 'INFO',
       channel: 'EMAIL',
-      subject: 'Welcome! Please verify your email address',
-      content: this.generateEmailContent(verificationLink, cancelLink, metadata?.firstName),
+      subject: emailSubject,
+      content: emailContent,
       metadata: {
         ...metadata,
         recipientEmail: identifier, // Add recipient email for email delivery
@@ -74,40 +93,79 @@ export class EmailVerificationStrategy implements IVerificationStrategy {
   private generateEmailContent(
     verificationLink: string,
     cancelLink: string,
-    firstName?: string,
+    firstName: string | undefined,
+    emailSubject: string,
+    preferredLanguage?: string,
   ): string {
+    const firstNamePart = firstName ? `, ${firstName}` : '';
+    const greeting = this.i18nService.translate(
+      'emails.verification.greeting',
+      { firstNamePart },
+      preferredLanguage,
+    );
+    const intro = this.i18nService.translate(
+      'emails.verification.intro',
+      undefined,
+      preferredLanguage,
+    );
+    const ctaText = this.i18nService.translate(
+      'emails.verification.cta',
+      undefined,
+      preferredLanguage,
+    );
+    const expiryNotice = this.i18nService.translate(
+      'emails.verification.expiryNotice',
+      undefined,
+      preferredLanguage,
+    );
+    const cancelText = this.i18nService.translate(
+      'emails.verification.cancelText',
+      undefined,
+      preferredLanguage,
+    );
+    const cancelLinkText = this.i18nService.translate(
+      'emails.verification.cancelLinkText',
+      undefined,
+      preferredLanguage,
+    );
+    const fallback = this.i18nService.translate(
+      'emails.verification.fallback',
+      undefined,
+      preferredLanguage,
+    );
+
     return `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Welcome! Verify Your Email</title>
+        <title>${emailSubject}</title>
       </head>
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background-color: #f4f4f4; padding: 20px; border-radius: 5px;">
-          <h1 style="color: #2c3e50;">Welcome${firstName ? `, ${firstName}` : ''}!</h1>
+          <h1 style="color: #2c3e50;">${greeting}</h1>
 
-          <p>Thank you for registering with us. To complete your registration and secure your account, please verify your email address.</p>
+          <p>${intro}</p>
 
           <div style="text-align: center; margin: 30px 0;">
             <a href="${verificationLink}"
                style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-              Verify Email Address
+              ${ctaText}
             </a>
           </div>
 
           <p style="font-size: 14px; color: #7f8c8d;">
-            <strong>Important:</strong> This verification link will expire in 24 hours. If you didn't create an account, you can safely ignore this email or click the link below to cancel.
+            ${expiryNotice}
           </p>
 
           <p style="font-size: 12px; color: #95a5a6; margin-top: 30px; border-top: 1px solid #ecf0f1; padding-top: 20px;">
-            If you didn't create this account, please
-            <a href="${cancelLink}" style="color: #e74c3c;">click here to cancel</a>.
+            ${cancelText}
+            <a href="${cancelLink}" style="color: #e74c3c;">${cancelLinkText}</a>.
           </p>
 
           <p style="font-size: 12px; color: #95a5a6; margin-top: 10px;">
-            If the button doesn't work, copy and paste this link into your browser:<br>
+            ${fallback}<br>
             <span style="word-break: break-all; color: #3498db;">${verificationLink}</span>
           </p>
         </div>
