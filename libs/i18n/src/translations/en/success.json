@@ -22,6 +22,7 @@
   "EMAIL_VERIFIED": "Email verified successfully",
   "EMAIL_VERIFICATION_SENT": "Verification email sent successfully",
   "EMAIL_VERIFICATION_RESENT": "Verification email resent successfully",
+  "VERIFICATION_ALREADY_CANCELLED": "This verification link has already been cancelled",
   "VERIFICATION_CANCELLED": "Verification cancelled successfully",
   "OPERATION_SUCCESS": "Operation completed successfully"
 }

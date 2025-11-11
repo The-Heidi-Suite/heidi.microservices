@@ -22,6 +22,7 @@
   "EMAIL_VERIFIED": "E-posta başarıyla doğrulandı",
   "EMAIL_VERIFICATION_SENT": "Doğrulama e-postası başarıyla gönderildi",
   "EMAIL_VERIFICATION_RESENT": "Doğrulama e-postası başarıyla yeniden gönderildi",
+  "VERIFICATION_ALREADY_CANCELLED": "Bu doğrulama bağlantısı zaten iptal edildi",
   "VERIFICATION_CANCELLED": "Doğrulama başarıyla iptal edildi",
   "OPERATION_SUCCESS": "İşlem başarıyla tamamlandı"
 }

@@ -22,6 +22,7 @@
   "EMAIL_VERIFIED": "ایمیل با موفقیت تأیید شد",
   "EMAIL_VERIFICATION_SENT": "ایمیل تأیید با موفقیت ارسال شد",
   "EMAIL_VERIFICATION_RESENT": "ایمیل تأیید با موفقیت دوباره ارسال شد",
+  "VERIFICATION_ALREADY_CANCELLED": "این لینک تأیید از قبل لغو شده است",
   "VERIFICATION_CANCELLED": "تأیید با موفقیت لغو شد",
   "OPERATION_SUCCESS": "عملیات با موفقیت انجام شد"
 }

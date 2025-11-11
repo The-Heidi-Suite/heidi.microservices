@@ -22,6 +22,7 @@
   "EMAIL_VERIFIED": "Електронну пошту успішно підтверджено",
   "EMAIL_VERIFICATION_SENT": "Лист з підтвердженням успішно надіслано",
   "EMAIL_VERIFICATION_RESENT": "Лист з підтвердженням успішно надіслано повторно",
+  "VERIFICATION_ALREADY_CANCELLED": "Це посилання для підтвердження вже скасовано",
   "VERIFICATION_CANCELLED": "Підтвердження успішно скасовано",
   "OPERATION_SUCCESS": "Операцію успішно завершено"
 }

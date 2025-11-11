@@ -35,5 +35,18 @@
   "EXTERNAL_SERVICE_RATE_LIMIT": "External service rate limit exceeded",
   "DUPLICATE_USERNAME": "User with this username already exists",
   "DUPLICATE_EMAIL": "User with this email already exists",
+  "VERIFICATION_UNSUPPORTED_TYPE": "Unsupported verification type.",
+  "VERIFICATION_INVALID_IDENTIFIER": "The provided contact information is not valid.",
+  "VERIFICATION_TOKEN_INVALID": "Invalid verification token.",
+  "VERIFICATION_TOKEN_USED": "This verification link has already been used.",
+  "VERIFICATION_TOKEN_CANCELLED": "This verification link has been cancelled.",
+  "VERIFICATION_TOKEN_EXPIRED": "Verification link has expired. Please request a new verification email.",
+  "VERIFICATION_MAX_ATTEMPTS": "Maximum verification attempts exceeded.",
+  "VERIFICATION_CANCEL_VERIFIED": "Cannot cancel a token that is already verified.",
+  "VERIFICATION_ALREADY_SENT": "A verification message has already been sent. Please check your inbox or wait until it expires.",
+  "CATEGORY_IN_USE": "Category is associated with existing listings.",
+  "CATEGORY_REQUEST_INVALID_STATUS": "Invalid category request status.",
+  "CITY_ACCESS_DENIED": "You are not assigned to this city.",
+  "CITY_CATEGORY_MAPPING_NOT_FOUND": "City category mapping not found.",
   "REGISTRATION_FIELDS_REQUIRED": "Email, username, and password are required for registration"
 }

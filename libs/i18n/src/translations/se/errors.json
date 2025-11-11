@@ -35,5 +35,18 @@
   "EXTERNAL_SERVICE_RATE_LIMIT": "Extern tjänst hastighetsgräns överskriden",
   "DUPLICATE_USERNAME": "En användare med detta användarnamn finns redan",
   "DUPLICATE_EMAIL": "En användare med denna e-postadress finns redan",
+  "VERIFICATION_UNSUPPORTED_TYPE": "Verifieringstypen stöds inte.",
+  "VERIFICATION_INVALID_IDENTIFIER": "De angivna kontaktuppgifterna är ogiltiga.",
+  "VERIFICATION_TOKEN_INVALID": "Ogiltig verifieringstoken.",
+  "VERIFICATION_TOKEN_USED": "Denna verifieringslänk har redan använts.",
+  "VERIFICATION_TOKEN_CANCELLED": "Denna verifieringslänk har avbrutits.",
+  "VERIFICATION_TOKEN_EXPIRED": "Verifieringslänken har upphört att gälla. Begär en ny verifieringsmejl.",
+  "VERIFICATION_MAX_ATTEMPTS": "Maximalt antal verifieringsförsök har överskridits.",
+  "VERIFICATION_CANCEL_VERIFIED": "Det går inte att avbryta en token som redan har verifierats.",
+  "VERIFICATION_ALREADY_SENT": "Ett verifieringsmeddelande har redan skickats. Kontrollera din inkorg eller vänta tills det löper ut.",
+  "CATEGORY_IN_USE": "Kategorin är kopplad till befintliga annonser.",
+  "CATEGORY_REQUEST_INVALID_STATUS": "Ogiltig status för kategoriansökan.",
+  "CITY_ACCESS_DENIED": "Du är inte tilldelad den här staden.",
+  "CITY_CATEGORY_MAPPING_NOT_FOUND": "Kopplingen mellan stad och kategori hittades inte.",
   "REGISTRATION_FIELDS_REQUIRED": "E-post, användarnamn och lösenord krävs för registrering"
 }

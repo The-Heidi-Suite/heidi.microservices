@@ -22,6 +22,7 @@
   "EMAIL_VERIFIED": "E-Mail erfolgreich verifiziert",
   "EMAIL_VERIFICATION_SENT": "Bestätigungs-E-Mail erfolgreich gesendet",
   "EMAIL_VERIFICATION_RESENT": "Bestätigungs-E-Mail erfolgreich erneut gesendet",
+  "VERIFICATION_ALREADY_CANCELLED": "Dieses Bestätigungslink wurde bereits storniert",
   "VERIFICATION_CANCELLED": "Bestätigung erfolgreich storniert",
   "OPERATION_SUCCESS": "Vorgang erfolgreich abgeschlossen"
 }
