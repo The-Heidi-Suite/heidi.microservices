@@ -137,6 +137,9 @@ export class CategoriesService {
         categoryId,
         addedBy,
       },
+      include: {
+        category: true,
+      },
     });
   }
 
@@ -147,6 +150,9 @@ export class CategoriesService {
           cityId,
           categoryId,
         },
+      },
+      include: {
+        category: true,
       },
     });
 
@@ -167,6 +173,9 @@ export class CategoriesService {
       },
       data: {
         isActive: false,
+      },
+      include: {
+        category: true,
       },
     });
   }
@@ -194,6 +203,9 @@ export class CategoriesService {
         categoryId,
         requestedBy,
         notes,
+      },
+      include: {
+        category: true,
       },
     });
   }
@@ -226,6 +238,9 @@ export class CategoriesService {
         handledBy,
         handledAt: new Date(),
         notes,
+      },
+      include: {
+        category: true,
       },
     });
 
