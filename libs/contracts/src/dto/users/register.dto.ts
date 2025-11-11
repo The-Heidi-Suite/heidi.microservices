@@ -7,7 +7,7 @@ export class RegisterDto {
     example: 'user@example.com',
     format: 'email',
   })
-  @IsEmail()
+  @IsEmail({}, { message: 'Please enter a valid email address.' })
   @IsOptional()
   email?: string;
 
@@ -29,11 +29,11 @@ export class RegisterDto {
   @ApiPropertyOptional({
     description: 'User password (required for registration, optional for guest conversion)',
     example: 'password123',
-    minLength: 6,
+    minLength: 8,
     format: 'password',
   })
   @IsString()
-  @MinLength(6)
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
   @IsOptional()
   password?: string;
 

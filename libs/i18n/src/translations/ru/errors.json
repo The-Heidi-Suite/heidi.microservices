@@ -32,5 +32,8 @@
   "CONFIG_INVALID_VALUE": "Неверное значение конфигурации",
   "EXTERNAL_SERVICE_UNAVAILABLE": "Внешний сервис недоступен",
   "EXTERNAL_SERVICE_TIMEOUT": "Истекло время ожидания внешнего сервиса",
-  "EXTERNAL_SERVICE_RATE_LIMIT": "Превышен лимит скорости внешнего сервиса"
+  "EXTERNAL_SERVICE_RATE_LIMIT": "Превышен лимит скорости внешнего сервиса",
+  "DUPLICATE_USERNAME": "Пользователь с таким именем уже существует",
+  "DUPLICATE_EMAIL": "Пользователь с таким адресом электронной почты уже существует",
+  "REGISTRATION_FIELDS_REQUIRED": "Для регистрации требуются электронная почта, имя пользователя и пароль"
 }

@@ -26,7 +26,7 @@ export class ValidationErrorResponseDto {
   @ApiPropertyOptional({
     description: 'Additional error details',
     example: {
-      message: ['email must be an email', 'password must be longer than or equal to 8 characters'],
+      message: ['Please enter a valid email address.', 'Password must be at least 8 characters'],
     },
   })
   details?: any;

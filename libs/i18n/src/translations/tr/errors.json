@@ -32,5 +32,8 @@
   "CONFIG_INVALID_VALUE": "Geçersiz yapılandırma değeri",
   "EXTERNAL_SERVICE_UNAVAILABLE": "Harici hizmet kullanılamıyor",
   "EXTERNAL_SERVICE_TIMEOUT": "Harici hizmet zaman aşımı",
-  "EXTERNAL_SERVICE_RATE_LIMIT": "Harici hizmet hız limiti aşıldı"
+  "EXTERNAL_SERVICE_RATE_LIMIT": "Harici hizmet hız limiti aşıldı",
+  "DUPLICATE_USERNAME": "Bu kullanıcı adına sahip bir kullanıcı zaten mevcut",
+  "DUPLICATE_EMAIL": "Bu e-posta adresine sahip bir kullanıcı zaten mevcut",
+  "REGISTRATION_FIELDS_REQUIRED": "Kayıt için e-posta, kullanıcı adı ve şifre gereklidir"
 }

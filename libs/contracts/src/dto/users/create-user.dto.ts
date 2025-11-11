@@ -8,7 +8,7 @@ export class CreateUserDto {
     example: 'user@example.com',
     format: 'email',
   })
-  @IsEmail()
+  @IsEmail({}, { message: 'Please enter a valid email address.' })
   email: string;
 
   @ApiProperty({
@@ -27,9 +27,11 @@ export class CreateUserDto {
   @ApiProperty({
     description: 'User password',
     example: 'password123',
+    minLength: 8,
     format: 'password',
   })
   @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
   password: string;
 
   @ApiPropertyOptional({

@@ -32,5 +32,8 @@
   "CONFIG_INVALID_VALUE": "Ungültiger Konfigurationswert",
   "EXTERNAL_SERVICE_UNAVAILABLE": "Externer Dienst nicht verfügbar",
   "EXTERNAL_SERVICE_TIMEOUT": "Externer Dienst Timeout",
-  "EXTERNAL_SERVICE_RATE_LIMIT": "Externer Dienst Ratenlimit überschritten"
+  "EXTERNAL_SERVICE_RATE_LIMIT": "Externer Dienst Ratenlimit überschritten",
+  "DUPLICATE_USERNAME": "Ein Benutzer mit diesem Benutzernamen existiert bereits",
+  "DUPLICATE_EMAIL": "Ein Benutzer mit dieser E-Mail-Adresse existiert bereits",
+  "REGISTRATION_FIELDS_REQUIRED": "E-Mail, Benutzername und Passwort sind für die Registrierung erforderlich"
 }

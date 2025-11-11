@@ -32,5 +32,8 @@
   "CONFIG_INVALID_VALUE": "Invalid configuration value",
   "EXTERNAL_SERVICE_UNAVAILABLE": "External service unavailable",
   "EXTERNAL_SERVICE_TIMEOUT": "External service timeout",
-  "EXTERNAL_SERVICE_RATE_LIMIT": "External service rate limit exceeded"
+  "EXTERNAL_SERVICE_RATE_LIMIT": "External service rate limit exceeded",
+  "DUPLICATE_USERNAME": "User with this username already exists",
+  "DUPLICATE_EMAIL": "User with this email already exists",
+  "REGISTRATION_FIELDS_REQUIRED": "Email, username, and password are required for registration"
 }

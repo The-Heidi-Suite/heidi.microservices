@@ -21,6 +21,7 @@ import {
   ChangePasswordDto,
 } from '@heidi/contracts';
 import { SagaOrchestratorService } from '@heidi/saga';
+import { ErrorCode } from '@heidi/errors';
 
 @Injectable()
 export class UsersService {
@@ -44,7 +45,7 @@ export class UsersService {
   async register(dto: RegisterDto) {
     // Validate required fields for registration
     if (!dto.email || !dto.username || !dto.password) {
-      throw new ConflictException('Email, username, and password are required for registration');
+      throw new ConflictException({ errorCode: ErrorCode.REGISTRATION_FIELDS_REQUIRED });
     }
 
     this.logger.log(`Registering user: ${dto.email}`);
@@ -55,7 +56,7 @@ export class UsersService {
     });
 
     if (existingUserByEmail) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException({ errorCode: ErrorCode.DUPLICATE_EMAIL });
     }
 
     // Check if username already exists
@@ -64,7 +65,7 @@ export class UsersService {
     });
 
     if (existingUserByUsername) {
-      throw new ConflictException('User with this username already exists');
+      throw new ConflictException({ errorCode: ErrorCode.DUPLICATE_USERNAME });
     }
 
     // Hash password
@@ -634,7 +635,7 @@ export class UsersService {
 
     // Validate required fields
     if (!dto.email || !dto.username || !dto.password) {
-      throw new ConflictException('Email, username, and password are required for conversion');
+      throw new ConflictException({ errorCode: ErrorCode.REGISTRATION_FIELDS_REQUIRED });
     }
 
     // Get guest user
@@ -656,7 +657,7 @@ export class UsersService {
     });
 
     if (existingUserByEmail) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException({ errorCode: ErrorCode.DUPLICATE_EMAIL });
     }
 
     // Check if username already exists
@@ -665,7 +666,7 @@ export class UsersService {
     });
 
     if (existingUserByUsername) {
-      throw new ConflictException('User with this username already exists');
+      throw new ConflictException({ errorCode: ErrorCode.DUPLICATE_USERNAME });
     }
 
     // Hash password
