@@ -42,7 +42,7 @@ export class UsersService {
    * Register a new user (public endpoint)
    * Uses Saga pattern if cityId is provided (multi-service transaction)
    */
-  async register(dto: RegisterDto) {
+  async register(dto: RegisterDto, language?: string) {
     // Validate required fields for registration
     if (!dto.email || !dto.username || !dto.password) {
       throw new ConflictException({ errorCode: ErrorCode.REGISTRATION_FIELDS_REQUIRED });
@@ -73,7 +73,7 @@ export class UsersService {
 
     // If cityId is provided, use Saga pattern for distributed transaction
     if (dto.cityId) {
-      return this.registerWithCity(dto, hashedPassword);
+      return this.registerWithCity(dto, hashedPassword, language);
     }
 
     // Simple case: just create user (no city assignment)
@@ -105,6 +105,7 @@ export class UsersService {
       firstName: user.firstName,
       lastName: user.lastName,
       timestamp: new Date().toISOString(),
+      preferredLanguage: language,
     });
 
     this.logger.log(`User registered successfully: ${user.id}`);
@@ -114,7 +115,7 @@ export class UsersService {
   /**
    * Register user with city assignment using Saga pattern
    */
-  private async registerWithCity(dto: RegisterDto, hashedPassword: string) {
+  private async registerWithCity(dto: RegisterDto, hashedPassword: string, language?: string) {
     const sagaId = await this.sagaOrchestrator.createSaga('USER_REGISTRATION', [
       {
         stepId: 'CREATE_USER',
@@ -225,6 +226,7 @@ export class UsersService {
         firstName: user.firstName,
         lastName: user.lastName,
         timestamp: new Date().toISOString(),
+        preferredLanguage: language,
       });
 
       this.logger.log(`User registered successfully with city assignment: ${user.id}`);
@@ -336,7 +338,7 @@ export class UsersService {
     });
   }
 
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto, language?: string) {
     const user = await this.prisma.user.create({
       data: dto,
       select: {
@@ -354,6 +356,7 @@ export class UsersService {
       userId: user.id,
       email: user.email,
       timestamp: new Date().toISOString(),
+      preferredLanguage: language,
     });
 
     this.logger.log(`User created: ${user.id}`);
