@@ -4,6 +4,7 @@ import { RedisService } from '@heidi/redis';
 import { LoggerService } from '@heidi/logger';
 import { PrismaCoreService } from '@heidi/prisma';
 import { UserRole } from '@prisma/client-core';
+import { CoreOperationRequestDto, CoreOperationResponseDto } from '@heidi/contracts';
 
 @Injectable()
 export class CoreService implements OnModuleInit {
@@ -37,11 +38,12 @@ export class CoreService implements OnModuleInit {
     return status;
   }
 
-  async executeOperation(payload: any) {
-    this.logger.log(`Executing operation: ${JSON.stringify(payload)}`);
+  async executeOperation(dto: CoreOperationRequestDto): Promise<CoreOperationResponseDto> {
+    this.logger.log(`Queueing operation: ${dto.operation}`);
 
     this.client.emit(RabbitMQPatterns.CORE_OPERATION, {
-      ...payload,
+      operation: dto.operation,
+      payload: dto.payload ?? {},
       timestamp: new Date().toISOString(),
     });
 
