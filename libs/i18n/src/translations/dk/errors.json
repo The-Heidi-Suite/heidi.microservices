@@ -32,5 +32,8 @@
   "CONFIG_INVALID_VALUE": "Ugyldig konfigurationsværdi",
   "EXTERNAL_SERVICE_UNAVAILABLE": "Ekstern tjeneste utilgængelig",
   "EXTERNAL_SERVICE_TIMEOUT": "Ekstern tjeneste timeout",
-  "EXTERNAL_SERVICE_RATE_LIMIT": "Ekstern tjeneste hastighedsgrænse overskredet"
+  "EXTERNAL_SERVICE_RATE_LIMIT": "Ekstern tjeneste hastighedsgrænse overskredet",
+  "DUPLICATE_USERNAME": "En bruger med dette brugernavn findes allerede",
+  "DUPLICATE_EMAIL": "En bruger med denne e-mailadresse findes allerede",
+  "REGISTRATION_FIELDS_REQUIRED": "E-mail, brugernavn og adgangskode er påkrævet til registrering"
 }

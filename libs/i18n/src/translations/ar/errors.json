@@ -32,5 +32,8 @@
   "CONFIG_INVALID_VALUE": "قيمة التهيئة غير صالحة",
   "EXTERNAL_SERVICE_UNAVAILABLE": "الخدمة الخارجية غير متاحة",
   "EXTERNAL_SERVICE_TIMEOUT": "انتهت مهلة الخدمة الخارجية",
-  "EXTERNAL_SERVICE_RATE_LIMIT": "تم تجاوز حد معدل الخدمة الخارجية"
+  "EXTERNAL_SERVICE_RATE_LIMIT": "تم تجاوز حد معدل الخدمة الخارجية",
+  "DUPLICATE_USERNAME": "المستخدم بهذا الاسم موجود بالفعل",
+  "DUPLICATE_EMAIL": "المستخدم بهذا البريد الإلكتروني موجود بالفعل",
+  "REGISTRATION_FIELDS_REQUIRED": "البريد الإلكتروني واسم المستخدم وكلمة المرور مطلوبة للتسجيل"
 }

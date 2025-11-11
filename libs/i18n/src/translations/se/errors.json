@@ -32,5 +32,8 @@
   "CONFIG_INVALID_VALUE": "Ogiltigt konfigurationsvärde",
   "EXTERNAL_SERVICE_UNAVAILABLE": "Extern tjänst otillgänglig",
   "EXTERNAL_SERVICE_TIMEOUT": "Extern tjänst timeout",
-  "EXTERNAL_SERVICE_RATE_LIMIT": "Extern tjänst hastighetsgräns överskriden"
+  "EXTERNAL_SERVICE_RATE_LIMIT": "Extern tjänst hastighetsgräns överskriden",
+  "DUPLICATE_USERNAME": "En användare med detta användarnamn finns redan",
+  "DUPLICATE_EMAIL": "En användare med denna e-postadress finns redan",
+  "REGISTRATION_FIELDS_REQUIRED": "E-post, användarnamn och lösenord krävs för registrering"
 }
