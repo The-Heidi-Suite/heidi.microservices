@@ -116,7 +116,7 @@ export class ListingController {
               venueName: 'Central Park',
               address: '123 Main St, City, State 12345',
               geoLat: 40.7128,
-              geoLng: -74.0060,
+              geoLng: -74.006,
               timezone: 'America/New_York',
               contactPhone: '+1-555-123-4567',
               contactEmail: 'contact@example.com',
