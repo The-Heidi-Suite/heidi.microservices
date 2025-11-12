@@ -2,8 +2,6 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { StorageService } from './storage.service';
 import { LoggerService } from '@heidi/logger';
 import sharp from 'sharp';
-import { fileTypeFromBuffer } from 'file-type';
-import { Readable } from 'stream';
 
 export interface FileValidationOptions {
   maxSize: number; // in bytes
@@ -35,12 +33,7 @@ export class FileUploadService {
   private readonly MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
 
   // Allowed MIME types
-  private readonly ALLOWED_IMAGE_TYPES = [
-    'image/jpeg',
-    'image/jpg',
-    'image/png',
-    'image/webp',
-  ];
+  private readonly ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 
   private readonly ALLOWED_VIDEO_TYPES = [
     'video/mp4',
@@ -75,10 +68,7 @@ export class FileUploadService {
   /**
    * Validate file size and type
    */
-  async validateFile(
-    file: any,
-    options: FileValidationOptions,
-  ): Promise<void> {
+  async validateFile(file: any, options: FileValidationOptions): Promise<void> {
     // Check file size
     if (file.size > options.maxSize) {
       throw new BadRequestException(
@@ -87,6 +77,7 @@ export class FileUploadService {
     }
 
     // Detect actual file type from buffer
+    const { fileTypeFromBuffer } = await import('file-type');
     const fileType = await fileTypeFromBuffer(file.buffer);
     if (!fileType) {
       throw new BadRequestException('Unable to detect file type');
@@ -104,9 +95,7 @@ export class FileUploadService {
     if (options.allowedExtensions) {
       const extension = this.getFileExtension(file.originalname);
       if (!options.allowedExtensions.includes(extension.toLowerCase())) {
-        throw new BadRequestException(
-          `File extension .${extension} is not allowed`,
-        );
+        throw new BadRequestException(`File extension .${extension} is not allowed`);
       }
     }
   }
@@ -155,10 +144,7 @@ export class FileUploadService {
   /**
    * Process and optimize image
    */
-  async processImage(
-    file: any,
-    options: ImageProcessingOptions = {},
-  ): Promise<ProcessedFile> {
+  async processImage(file: any, options: ImageProcessingOptions = {}): Promise<ProcessedFile> {
     const {
       maxWidth = 1920,
       maxHeight = 1080,
@@ -226,9 +212,7 @@ export class FileUploadService {
   /**
    * Process profile photo (resize to square, smaller size)
    */
-  async processProfilePhoto(
-    file: any,
-  ): Promise<ProcessedFile> {
+  async processProfilePhoto(file: any): Promise<ProcessedFile> {
     return this.processImage(file, {
       maxWidth: 400,
       maxHeight: 400,
@@ -241,11 +225,7 @@ export class FileUploadService {
   /**
    * Upload processed file to storage
    */
-  async uploadFile(
-    processedFile: ProcessedFile,
-    bucket: string,
-    key: string,
-  ): Promise<string> {
+  async uploadFile(processedFile: ProcessedFile, bucket: string, key: string): Promise<string> {
     try {
       await this.storageService.uploadFile({
         bucket,
@@ -292,11 +272,7 @@ export class FileUploadService {
   /**
    * Generate storage key for listing media file
    */
-  generateListingMediaKey(
-    listingId: string,
-    index: number,
-    extension: string,
-  ): string {
+  generateListingMediaKey(listingId: string, index: number, extension: string): string {
     const timestamp = Date.now();
     return `listings/${listingId}/media/${timestamp}-${index}.${extension}`;
   }
@@ -324,7 +300,7 @@ export class FileUploadService {
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
   }
 
   /**
@@ -344,6 +320,7 @@ export class FileUploadService {
     type: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'AUDIO' | 'OTHER';
     mimeType: string;
   }> {
+    const { fileTypeFromBuffer } = await import('file-type');
     const fileType = await fileTypeFromBuffer(file.buffer);
     if (!fileType) {
       return { type: 'OTHER', mimeType: file.mimetype };
