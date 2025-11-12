@@ -48,5 +48,9 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "Geçersiz kategori talebi durumu.",
   "CITY_ACCESS_DENIED": "Bu şehre atanmış değilsiniz.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "Şehir-kategori eşleştirmesi bulunamadı.",
-  "REGISTRATION_FIELDS_REQUIRED": "Kayıt için e-posta ve şifre gereklidir"
+  "REGISTRATION_FIELDS_REQUIRED": "Kayıt için e-posta ve şifre gereklidir",
+  "ACCOUNT_NOT_FOUND": "Bu e-posta adresiyle bir hesap bulunamadı. Lütfen e-postanızı kontrol edin veya yeni bir hesap oluşturun.",
+  "ACCOUNT_INACTIVE": "Hesabınız aktif değil. Lütfen destek ile iletişime geçin.",
+  "INVALID_CREDENTIALS": "Geçersiz e-posta veya şifre. Lütfen bilgilerinizi kontrol edip tekrar deneyin.",
+  "LOGIN_ERROR": "Giriş sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin."
 }

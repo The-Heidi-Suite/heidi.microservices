@@ -48,5 +48,9 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "Invalid category request status.",
   "CITY_ACCESS_DENIED": "You are not assigned to this city.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "City category mapping not found.",
-  "REGISTRATION_FIELDS_REQUIRED": "Email and password are required for registration"
+  "REGISTRATION_FIELDS_REQUIRED": "Email and password are required for registration",
+  "ACCOUNT_NOT_FOUND": "No account found with this email address. Please check your email or register for a new account.",
+  "ACCOUNT_INACTIVE": "Your account is inactive. Please contact support for assistance.",
+  "INVALID_CREDENTIALS": "Invalid email or password. Please check your credentials and try again.",
+  "LOGIN_ERROR": "An error occurred during login. Please try again later."
 }

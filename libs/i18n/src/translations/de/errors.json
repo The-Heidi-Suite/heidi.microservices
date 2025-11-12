@@ -48,5 +48,9 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "Ungültiger Status für die Kategorieanfrage.",
   "CITY_ACCESS_DENIED": "Du bist dieser Stadt nicht zugeordnet.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "Zuordnung zwischen Stadt und Kategorie wurde nicht gefunden.",
-  "REGISTRATION_FIELDS_REQUIRED": "E-Mail und Passwort sind für die Registrierung erforderlich"
+  "REGISTRATION_FIELDS_REQUIRED": "E-Mail und Passwort sind für die Registrierung erforderlich",
+  "ACCOUNT_NOT_FOUND": "Kein Konto mit dieser E-Mail-Adresse gefunden. Bitte überprüfe deine E-Mail oder registriere ein neues Konto.",
+  "ACCOUNT_INACTIVE": "Dein Konto ist inaktiv. Bitte kontaktiere den Support für Hilfe.",
+  "INVALID_CREDENTIALS": "Ungültige E-Mail oder Passwort. Bitte überprüfe deine Anmeldedaten und versuche es erneut.",
+  "LOGIN_ERROR": "Während der Anmeldung ist ein Fehler aufgetreten. Bitte versuche es später erneut."
 }
