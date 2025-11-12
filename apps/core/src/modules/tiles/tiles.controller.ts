@@ -10,7 +10,11 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -29,17 +33,24 @@ import {
   UnauthorizedErrorResponseDto,
   ForbiddenErrorResponseDto,
   NotFoundErrorResponseDto,
+  UploadBackgroundImageResponseDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { UserRole } from '@prisma/client-core';
 import { TilesService } from './tiles.service';
 import { CityAdminOnly, AdminOnlyGuard, PermissionsGuard, RequiresPermission } from '@heidi/rbac';
+import { FileUploadService } from '@heidi/storage';
+import { ConfigService } from '@heidi/config';
 
 @ApiTags('tiles')
 @Controller('tiles')
 @UseGuards(JwtAuthGuard)
 export class TilesController {
-  constructor(private readonly tilesService: TilesService) {}
+  constructor(
+    private readonly tilesService: TilesService,
+    private readonly fileUploadService: FileUploadService,
+    private readonly configService: ConfigService,
+  ) {}
 
   private getRoles(role?: string): UserRole[] {
     if (!role) {
@@ -251,5 +262,88 @@ export class TilesController {
     const userId = user.userId;
     const roles = this.getRoles(user.role);
     return this.tilesService.deleteTile(id, userId, roles);
+  }
+
+  @Post(':id/background-image')
+  @UseGuards(AdminOnlyGuard, PermissionsGuard)
+  @CityAdminOnly()
+  @RequiresPermission('tiles', 'update')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Upload background image for a tile',
+    description:
+      'Upload and process a background image for a tile. Only Super Admin and City Admin can upload images.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the tile',
+    example: 'tile_01J3MJG0YX6FT5PB9SJ9Y2KQW4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Background image uploaded successfully',
+    type: UploadBackgroundImageResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Insufficient permissions',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Tile not found',
+    type: NotFoundErrorResponseDto,
+  })
+  async uploadBackgroundImage(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+    @GetCurrentUser() user: CurrentUser,
+  ): Promise<UploadBackgroundImageResponseDto> {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    const userId = user.userId;
+    const roles = this.getRoles(user.role);
+
+    // Validate image
+    await this.fileUploadService.validateImage(file);
+
+    // Process image
+    const processedFile = await this.fileUploadService.processImage(file);
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Generate storage key
+    const key = this.fileUploadService.generateTileBackgroundKey(id, processedFile.extension);
+
+    // Upload to storage
+    const imageUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    // Update tile in database
+    const tile = await this.tilesService.updateTile(id, userId, roles, {
+      backgroundImageUrl: imageUrl,
+    });
+
+    return {
+      tile,
+      imageUrl,
+    };
   }
 }
