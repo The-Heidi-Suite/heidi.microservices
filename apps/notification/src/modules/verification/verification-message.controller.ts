@@ -24,6 +24,7 @@ export class VerificationMessageController {
       email?: string;
       firstName?: string;
       lastName?: string;
+      cityId?: string | null;
       timestamp: string;
       userType?: string;
       deviceId?: string;
@@ -46,6 +47,7 @@ export class VerificationMessageController {
             metadata: {
               firstName: data.firstName,
               lastName: data.lastName,
+              cityId: data.cityId || null, // Pass cityId to verification service
               isWelcomeEmail: true,
               preferredLanguage: data.preferredLanguage,
             },

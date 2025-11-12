@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Body, Param, Query } from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import { SendNotificationDto } from './dto';
+import { SendNotificationDto } from '@heidi/contracts';
 
 @Controller()
 export class NotificationController {

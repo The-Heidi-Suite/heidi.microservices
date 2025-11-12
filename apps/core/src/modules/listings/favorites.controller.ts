@@ -23,7 +23,8 @@ import {
   AddFavoriteResponseDto,
   BadRequestErrorResponseDto,
   FavoriteListingDto,
-  NotFoundErrorResponseDto,
+  ListingNotFoundErrorResponseDto,
+  FavoriteNotFoundErrorResponseDto,
   RemoveFavoriteResponseDto,
   UnauthorizedErrorResponseDto,
   ValidationErrorResponseDto,
@@ -63,6 +64,25 @@ export class FavoritesController {
     status: 400,
     description: 'Bad request - validation failed or listing already favorited',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/favorites',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'listingId must be a UUID',
+              'listingId should not be empty',
+            ],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -72,7 +92,7 @@ export class FavoritesController {
   @ApiResponse({
     status: 404,
     description: 'Listing not found',
-    type: NotFoundErrorResponseDto,
+    type: ListingNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.CREATED)
   async addFavorite(@GetCurrentUser('userId') userId: string, @Body() body: AddFavoriteDto) {
@@ -98,7 +118,7 @@ export class FavoritesController {
   @ApiResponse({
     status: 404,
     description: 'Favorite not found',
-    type: NotFoundErrorResponseDto,
+    type: FavoriteNotFoundErrorResponseDto,
   })
   @ApiResponse({
     status: 400,

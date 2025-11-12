@@ -1,7 +1,6 @@
 {
   "verification": {
-    "subject": "Välkommen! Bekräfta din e-postadress",
-    "greeting": "Välkommen{firstNamePart}!",
+    "subject": "Välkommen till {appName}! Bekräfta din e-postadress",
     "intro": "Tack för att du registrerade dig. För att slutföra registreringen och skydda ditt konto behöver du bekräfta din e-postadress.",
     "cta": "Bekräfta e-postadress",
     "expiryNotice": "<strong>Viktigt:</strong> Denna bekräftelselänk gäller i 24 timmar. Om du inte skapade kontot kan du ignorera mejlet eller använda länken nedan för att avbryta.",

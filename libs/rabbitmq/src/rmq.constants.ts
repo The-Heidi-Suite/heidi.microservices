@@ -86,6 +86,9 @@ export const RabbitMQPatterns = {
   CITY_UPDATED: 'city.updated',
   CITY_DELETED: 'city.deleted',
 
+  // City request-response patterns
+  CITY_FIND_BY_ID: 'city.findById',
+
   // Integration events
   INTEGRATION_WEBHOOK: 'integration.webhook',
   INTEGRATION_SYNC: 'integration.sync',

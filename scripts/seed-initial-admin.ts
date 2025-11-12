@@ -116,6 +116,21 @@ async function ensureKielCity(): Promise<string> {
   const country = 'Germany';
   const state = 'Schleswig-Holstein';
 
+  const emailTheme = {
+    appName: 'mein.Kiel',
+    appNameDisplay: 'mein.Kiel',
+    primaryColor: '#009EE0',
+    secondaryColor: '#1a1a2e',
+    accentColor: '#009EE0',
+    greetingTemplate: 'Moin, moin in der {appName}{firstNamePart}!',
+    emailTheme: {
+      headerBackgroundColor: '#1a1a2e',
+      footerBackgroundColor: '#009EE0',
+      buttonColor: '#ffffff',
+      buttonTextColor: '#009EE0',
+    },
+  };
+
   const existing = await cityPrisma.city.findFirst({
     where: {
       name,
@@ -134,9 +149,12 @@ async function ensureKielCity(): Promise<string> {
         timezone: 'Europe/Berlin',
         population: 246601,
         isActive: true,
+        metadata: {
+          emailTheme,
+        },
       },
     });
-    console.log('↻ Updated city record for Kiel');
+    console.log('↻ Updated city record for Kiel with email theme');
     return existing.id;
   }
 
@@ -150,11 +168,14 @@ async function ensureKielCity(): Promise<string> {
       timezone: 'Europe/Berlin',
       population: 246601,
       isActive: true,
+      metadata: {
+        emailTheme,
+      },
     },
     select: { id: true },
   });
 
-  console.log('✓ Created city record for Kiel');
+  console.log('✓ Created city record for Kiel with email theme');
   return created.id;
 }
 
