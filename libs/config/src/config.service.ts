@@ -177,6 +177,39 @@ export class ConfigService {
     return this.get<string>('systemEmailId');
   }
 
+  // SMTP configuration
+  get smtpConfig() {
+    return this.get('smtp');
+  }
+
+  get smtpHost(): string {
+    return this.get<string>('smtp.host', 'smtp.gmail.com');
+  }
+
+  get smtpPort(): number | undefined {
+    return this.get<number>('smtp.port');
+  }
+
+  get smtpSecure(): boolean | undefined {
+    return this.get<boolean>('smtp.secure');
+  }
+
+  get smtpPath(): string | undefined {
+    return this.get<string>('smtp.path');
+  }
+
+  get smtpUser(): string {
+    return this.get<string>('smtp.auth.user');
+  }
+
+  get smtpPassword(): string {
+    return this.get<string>('smtp.auth.pass');
+  }
+
+  get smtpFrom(): string {
+    return this.get<string>('smtp.from', 'noreply@heidi.example.com');
+  }
+
   // Client URL
   get clientURL(): string {
     return this.get<string>('clientURL');

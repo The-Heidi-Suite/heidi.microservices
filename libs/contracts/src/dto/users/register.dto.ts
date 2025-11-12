@@ -3,15 +3,26 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
   @ApiProperty({
-    description: 'User email address',
+    description: 'User email address (required for registration)',
     example: 'user@example.com',
     format: 'email',
   })
-  @IsEmail()
+  @IsEmail({}, { message: 'Please enter a valid email address.' })
   email: string;
 
   @ApiProperty({
-    description: 'Username (alphanumeric and underscores, 3-30 characters)',
+    description: 'User password (required for registration)',
+    example: 'password123',
+    minLength: 8,
+    format: 'password',
+  })
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  password: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Username (alphanumeric and underscores, 3-30 characters). Optional - can be set later via profile update.',
     example: 'johndoe',
     minLength: 3,
     maxLength: 30,
@@ -21,20 +32,11 @@ export class RegisterDto {
   @Matches(/^[a-zA-Z0-9_]+$/, {
     message: 'Username must contain only letters, numbers, and underscores',
   })
-  username: string;
-
-  @ApiProperty({
-    description: 'User password',
-    example: 'password123',
-    minLength: 6,
-    format: 'password',
-  })
-  @IsString()
-  @MinLength(6)
-  password: string;
+  @IsOptional()
+  username?: string;
 
   @ApiPropertyOptional({
-    description: 'User first name',
+    description: 'User first name. Optional - can be set later via profile update.',
     example: 'John',
   })
   @IsString()
@@ -42,7 +44,7 @@ export class RegisterDto {
   firstName?: string;
 
   @ApiPropertyOptional({
-    description: 'User last name',
+    description: 'User last name. Optional - can be set later via profile update.',
     example: 'Doe',
   })
   @IsString()

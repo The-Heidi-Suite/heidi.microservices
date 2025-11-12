@@ -59,6 +59,9 @@ export const RabbitMQPatterns = {
   USER_FIND_BY_USERNAME: 'user.findByUsername',
   USER_FIND_BY_ID: 'user.findById',
   USER_GET_PROFILE: 'user.getProfile',
+  USER_CREATE_GUEST: 'user.createGuest',
+  USER_FIND_BY_DEVICE: 'user.findByDevice',
+  USER_CONVERT_GUEST: 'user.convertGuest',
 
   // Core request-response patterns
   CORE_GET_USER_CITIES: 'core.getUserCities',
@@ -70,6 +73,13 @@ export const RabbitMQPatterns = {
   NOTIFICATION_SEND: 'notification.send',
   NOTIFICATION_SENT: 'notification.sent',
   NOTIFICATION_FAILED: 'notification.failed',
+
+  // Verification events
+  VERIFICATION_REQUIRED: 'verification.required',
+  VERIFICATION_SENT: 'verification.sent',
+  VERIFICATION_VERIFIED: 'verification.verified',
+  VERIFICATION_FAILED: 'verification.failed',
+  VERIFICATION_CANCELLED: 'verification.cancelled',
 
   // City events
   CITY_CREATED: 'city.created',
@@ -86,6 +96,11 @@ export const RabbitMQPatterns = {
 
   // Core events (fire and forget)
   CORE_OPERATION: 'core.operation',
+
+  // Terms request-response patterns
+  TERMS_GET_LATEST: 'terms.getLatest',
+  TERMS_CHECK_ACCEPTANCE: 'terms.checkAcceptance',
+  TERMS_GET_USER_VERSION: 'terms.getUserVersion',
 } as const;
 
 /**

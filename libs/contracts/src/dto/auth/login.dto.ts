@@ -1,27 +1,14 @@
-import { IsString, MinLength } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, MinLength, IsOptional, IsBoolean, IsEmail } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class LoginDto {
   @ApiProperty({
-    description: 'User email address or username for login',
+    description: 'User email address for login',
     example: 'user@example.com',
-    examples: {
-      email: {
-        value: 'user@example.com',
-        description: 'Login with email address',
-      },
-      username: {
-        value: 'johndoe',
-        description: 'Login with username',
-      },
-    },
-    oneOf: [
-      { type: 'string', format: 'email' },
-      { type: 'string', pattern: '^[a-zA-Z0-9_]+$' },
-    ],
+    format: 'email',
   })
-  @IsString()
-  email: string; // Note: This field accepts both email and username
+  @IsEmail({}, { message: 'Please enter a valid email address.' })
+  email: string;
 
   @ApiProperty({
     description: 'User password',
@@ -32,4 +19,13 @@ export class LoginDto {
   @IsString()
   @MinLength(6)
   password: string;
+
+  @ApiPropertyOptional({
+    description: 'Remember me - if true, session will be kept for 30 days instead of 7 days',
+    example: true,
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  rememberMe?: boolean;
 }

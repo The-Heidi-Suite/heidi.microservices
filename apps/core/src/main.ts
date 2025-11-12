@@ -2,9 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { MicroserviceOptions } from '@nestjs/microservices';
 import helmet from 'helmet';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
-import { ConfigService } from '@heidi/config';
+import { ConfigService, getSwaggerServerUrl } from '@heidi/config';
 import { getRmqConsumerOptions } from '@heidi/rabbitmq';
 
 async function bootstrap() {
@@ -14,7 +15,18 @@ async function bootstrap() {
   logger.setContext('Core-Service');
   app.useLogger(logger);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+        },
+      },
+    }),
+  );
   const configService = app.get(ConfigService);
   app.enableCors({ origin: configService.get<string>('corsOrigin', '*'), credentials: true });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
@@ -27,12 +39,51 @@ async function bootstrap() {
   await app.startAllMicroservices();
   logger.log('RabbitMQ microservice connected');
 
+  const swaggerConfig = configService.swaggerConfig;
+  const swaggerTitle = `Core Service | ${swaggerConfig.title || 'HEIDI Microservices API'}`;
+  const serverUrl = getSwaggerServerUrl(configService, 'core');
+
+  const documentBuilder = new DocumentBuilder()
+    .setTitle(swaggerTitle)
+    .setDescription(swaggerConfig.description || 'API documentation for HEIDI Core Service')
+    .setVersion(swaggerConfig.version || '1.0');
+
+  if (serverUrl) {
+    documentBuilder.addServer(serverUrl, 'API Gateway Path');
+  }
+
+  const swaggerDocumentConfig = documentBuilder
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        name: 'JWT',
+        description: 'Enter JWT token',
+        in: 'header',
+      },
+      'JWT-auth',
+    )
+    .addTag('core', 'Core service operations')
+    .addTag('listings', 'Listings management endpoints')
+    .addTag('categories', 'Listing category endpoints')
+    .addTag('favorites', 'User favorites endpoints')
+    .build();
+
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerDocumentConfig);
+  SwaggerModule.setup('docs', app, swaggerDocument, {
+    swaggerOptions: {
+      persistAuthorization: true,
+    },
+  });
+
   const port = configService.get<number>('core.port', 3004);
   await app.listen(port);
 
   logger.log(`🚀 Core service is running on: http://localhost:${port}`);
   logger.log(`📊 Metrics available at: http://localhost:${port}/metrics`);
   logger.log(`💚 Health check at: http://localhost:${port}/healthz`);
+  logger.log(`📚 Swagger docs available at: http://localhost:${port}/docs`);
 }
 
 bootstrap();

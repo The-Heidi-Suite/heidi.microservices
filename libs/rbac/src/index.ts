@@ -8,6 +8,8 @@ export * from './admin-only.guard';
 export * from './guards/city-scope.guard';
 export * from './guards/city-management.guard';
 export * from './guards/content-moderation.guard';
+export * from './guards/terms-acceptance.guard';
 export * from './decorators/permissions.decorator';
 export * from './decorators/super-admin-only.decorator';
 export * from './decorators/city-admin-only.decorator';
+export * from './decorators/terms-exempt.decorator';

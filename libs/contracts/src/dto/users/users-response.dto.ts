@@ -26,7 +26,41 @@ export class ValidationErrorResponseDto {
   @ApiPropertyOptional({
     description: 'Additional error details',
     example: {
-      message: ['email must be an email', 'password must be longer than or equal to 8 characters'],
+      message: ['Please enter a valid email address.', 'Password must be at least 8 characters'],
+    },
+  })
+  details?: any;
+}
+
+export class GuestValidationErrorResponseDto {
+  @ApiProperty({ example: 'VALIDATION_ERROR', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Validation failed', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/guest', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1234567890_abc123', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 400, description: 'HTTP status code' })
+  statusCode: number;
+
+  @ApiPropertyOptional({
+    description: 'Additional error details',
+    example: {
+      message: [
+        'deviceId must be a string',
+        'devicePlatform must be one of the following values: IOS, ANDROID',
+      ],
     },
   })
   details?: any;
@@ -185,6 +219,9 @@ export class RegisterResponseDto {
   @ApiProperty({ type: UserDto })
   data: UserDto;
 
+  @ApiProperty({ example: 'User registered successfully', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 
@@ -220,6 +257,9 @@ export class GetUsersResponseDto {
   @ApiProperty({ type: GetUsersResponseDataDto })
   data: GetUsersResponseDataDto;
 
+  @ApiProperty({ example: 'Users retrieved successfully', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 
@@ -237,6 +277,9 @@ export class GetUserResponseDto {
 
   @ApiProperty({ type: UserDto })
   data: UserDto;
+
+  @ApiProperty({ example: 'User retrieved successfully', description: 'Success message' })
+  message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
@@ -256,6 +299,9 @@ export class CreateUserResponseDto {
   @ApiProperty({ type: UserDto })
   data: UserDto;
 
+  @ApiProperty({ example: 'User created successfully', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 
@@ -273,6 +319,9 @@ export class UpdateUserResponseDto {
 
   @ApiProperty({ type: UserDto })
   data: UserDto;
+
+  @ApiProperty({ example: 'User updated successfully', description: 'Success message' })
+  message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
@@ -296,6 +345,9 @@ export class DeleteUserResponseDto {
 
   @ApiProperty({ type: DeleteUserResponseDataDto })
   data: DeleteUserResponseDataDto;
+
+  @ApiProperty({ example: 'User deleted successfully', description: 'Success message' })
+  message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
@@ -334,6 +386,9 @@ export class GetProfileResponseDto {
   @ApiProperty({ type: GetProfileResponseDataDto })
   data: GetProfileResponseDataDto;
 
+  @ApiProperty({ example: 'Profile retrieved successfully', description: 'Success message' })
+  message: string;
+
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
 
@@ -351,6 +406,9 @@ export class UpdateProfileResponseDto {
 
   @ApiProperty({ type: UserDto })
   data: UserDto;
+
+  @ApiProperty({ example: 'Profile updated successfully', description: 'Success message' })
+  message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;
@@ -374,6 +432,9 @@ export class ChangePasswordResponseDto {
 
   @ApiProperty({ type: ChangePasswordResponseDataDto })
   data: ChangePasswordResponseDataDto;
+
+  @ApiProperty({ example: 'Password changed successfully', description: 'Success message' })
+  message: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
   timestamp: string;

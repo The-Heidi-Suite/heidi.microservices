@@ -66,7 +66,6 @@ services:
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
-      - ./infra/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', 'ping']
       interval: 30s
@@ -101,6 +100,8 @@ services:
       - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+      # Mount React build folder (set REACT_BUILD_PATH in .env)
+      - ${REACT_BUILD_PATH:-../heidi-frontend/build}:/var/www/frontend:ro
     networks:
       - backend
     depends_on:

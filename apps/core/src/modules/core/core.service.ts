@@ -1,26 +1,23 @@
-import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { RedisService } from '@heidi/redis';
 import { LoggerService } from '@heidi/logger';
 import { PrismaCoreService } from '@heidi/prisma';
 import { UserRole } from '@prisma/client-core';
+import { CoreOperationRequestDto, CoreOperationResponseDto } from '@heidi/contracts';
 
 @Injectable()
 export class CoreService implements OnModuleInit {
-  private readonly logger: LoggerService;
-
   constructor(
     @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly redis: RedisService,
     private readonly prisma: PrismaCoreService,
-    logger: LoggerService,
+    private readonly logger: LoggerService,
   ) {
-    this.logger = logger;
     this.logger.setContext(CoreService.name);
   }
 
   async onModuleInit() {
-    // Listen to events from other services
     this.logger.log('Core service initialized - listening to events');
   }
 
@@ -41,12 +38,12 @@ export class CoreService implements OnModuleInit {
     return status;
   }
 
-  async executeOperation(payload: any) {
-    this.logger.log(`Executing operation: ${JSON.stringify(payload)}`);
+  async executeOperation(dto: CoreOperationRequestDto): Promise<CoreOperationResponseDto> {
+    this.logger.log(`Queueing operation: ${dto.operation}`);
 
-    // Example: Orchestrate operations across services
     this.client.emit(RabbitMQPatterns.CORE_OPERATION, {
-      ...payload,
+      operation: dto.operation,
+      payload: dto.payload ?? {},
       timestamp: new Date().toISOString(),
     });
 
@@ -57,9 +54,6 @@ export class CoreService implements OnModuleInit {
     };
   }
 
-  /**
-   * Get user city assignments (for RabbitMQ request-response)
-   */
   async getUserAssignments(userId: string, role?: string) {
     this.logger.log(`Getting user assignments for userId: ${userId}, role: ${role || 'all'}`);
 
@@ -81,17 +75,14 @@ export class CoreService implements OnModuleInit {
       },
     });
 
-    return assignments.map((a) => ({
-      cityId: a.cityId,
-      role: a.role,
-      canManageAdmins: a.canManageAdmins,
-      createdAt: a.createdAt,
+    return assignments.map((assignment) => ({
+      cityId: assignment.cityId,
+      role: assignment.role,
+      canManageAdmins: assignment.canManageAdmins,
+      createdAt: assignment.createdAt,
     }));
   }
 
-  /**
-   * Get user cities (for RabbitMQ request-response)
-   */
   async getUserCities(userId: string) {
     this.logger.log(`Getting cities for userId: ${userId}`);
 
@@ -102,16 +93,12 @@ export class CoreService implements OnModuleInit {
       },
       select: {
         cityId: true,
-        role: true,
       },
     });
 
-    return assignments.map((a) => a.cityId);
+    return assignments.map((assignment) => assignment.cityId);
   }
 
-  /**
-   * Create user city assignment (for RabbitMQ request-response)
-   */
   async createUserCityAssignment(userId: string, cityId: string, role: string) {
     this.logger.log(
       `Creating user city assignment: userId=${userId}, cityId=${cityId}, role=${role}`,
@@ -140,7 +127,6 @@ export class CoreService implements OnModuleInit {
         assignment,
       };
     } catch (error: any) {
-      // Handle unique constraint violation
       if (error.code === 'P2002') {
         throw new Error('User already assigned to this city');
       }
@@ -148,9 +134,6 @@ export class CoreService implements OnModuleInit {
     }
   }
 
-  /**
-   * Assign city admin (for RabbitMQ request-response)
-   */
   async assignCityAdmin(userId: string, cityId: string) {
     this.logger.log(`Assigning city admin: userId=${userId}, cityId=${cityId}`);
 

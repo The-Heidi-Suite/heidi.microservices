@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { MicroserviceOptions } from '@nestjs/microservices';
 import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
-import { ConfigService, getSwaggerServerUrl } from '@heidi/config';
+import { ConfigService, getSwaggerServerUrl /*, getSwaggerI18nOptions */ } from '@heidi/config';
 import { getRmqConsumerOptions } from '@heidi/rabbitmq';
 
 async function bootstrap() {
@@ -15,7 +15,18 @@ async function bootstrap() {
   logger.setContext('Users-Service');
   app.useLogger(logger);
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Allow inline scripts for Swagger UI
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], // Allow inline styles and Google Fonts
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'], // Allow Google Fonts font files
+        },
+      },
+    }),
+  );
   const configService = app.get(ConfigService);
   app.enableCors({ origin: configService.get<string>('corsOrigin', '*'), credentials: true });
 
@@ -24,6 +35,18 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      exceptionFactory: (errors) => {
+        const formattedErrors = errors.map((error) => ({
+          field: error.property,
+          message: Object.values(error.constraints || {}).join(', '),
+        }));
+        return new BadRequestException({
+          statusCode: 400,
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          errors: formattedErrors,
+        });
+      },
     }),
   );
 
@@ -67,8 +90,15 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
+
+  // Use i18n-enabled Swagger options
+  // TODO: Re-enable i18n options once the null response issue is fixed
+  // const swaggerI18nOptions = getSwaggerI18nOptions(configService);
+
   SwaggerModule.setup('docs', app, document, {
+    // ...swaggerI18nOptions,
     swaggerOptions: {
+      // ...swaggerI18nOptions.swaggerOptions,
       persistAuthorization: true,
     },
   });

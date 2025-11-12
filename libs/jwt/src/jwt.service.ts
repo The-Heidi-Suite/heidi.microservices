@@ -11,9 +11,11 @@ export interface CityAssignment {
 
 export interface TokenPayload {
   sub: string; // user id
-  email: string;
+  email?: string; // Optional for guest users
   role: string;
   type: 'access' | 'refresh';
+  isGuest?: boolean; // Flag to indicate guest user
+  deviceId?: string; // Device ID for guest users
   cityId?: string; // Current/selected city ID (for UI)
   cityIds?: string[]; // All city IDs user has access to (deprecated, use cityAssignments)
   selectedCityId?: string; // Currently selected city in UI
@@ -51,9 +53,11 @@ export class JwtTokenService {
    */
   async generateAccessToken(
     userId: string,
-    email: string,
+    email: string | null,
     role: string,
     options?: {
+      isGuest?: boolean;
+      deviceId?: string;
       cityId?: string;
       cityIds?: string[];
       selectedCityId?: string;
@@ -63,9 +67,11 @@ export class JwtTokenService {
   ): Promise<string> {
     const payload: TokenPayload = {
       sub: userId,
-      email,
+      ...(email && { email }),
       role,
       type: 'access',
+      ...(options?.isGuest && { isGuest: options.isGuest }),
+      ...(options?.deviceId && { deviceId: options.deviceId }),
       ...(options?.cityId && { cityId: options.cityId }),
       ...(options?.cityIds && { cityIds: options.cityIds }),
       ...(options?.selectedCityId && { selectedCityId: options.selectedCityId }),
@@ -75,7 +81,7 @@ export class JwtTokenService {
 
     return this.jwtService.sign(payload, {
       secret: this.accessTokenSecret,
-      expiresIn: this.accessTokenExpiry,
+      expiresIn: this.accessTokenExpiry as any,
     });
   }
 
@@ -84,9 +90,11 @@ export class JwtTokenService {
    */
   async generateRefreshToken(
     userId: string,
-    email: string,
+    email: string | null,
     role: string,
     options?: {
+      isGuest?: boolean;
+      deviceId?: string;
       cityId?: string;
       cityIds?: string[];
       selectedCityId?: string;
@@ -96,9 +104,11 @@ export class JwtTokenService {
   ): Promise<string> {
     const payload: TokenPayload = {
       sub: userId,
-      email,
+      ...(email && { email }),
       role,
       type: 'refresh',
+      ...(options?.isGuest && { isGuest: options.isGuest }),
+      ...(options?.deviceId && { deviceId: options.deviceId }),
       ...(options?.cityId && { cityId: options.cityId }),
       ...(options?.cityIds && { cityIds: options.cityIds }),
       ...(options?.selectedCityId && { selectedCityId: options.selectedCityId }),
@@ -108,7 +118,7 @@ export class JwtTokenService {
 
     return this.jwtService.sign(payload, {
       secret: this.refreshTokenSecret,
-      expiresIn: this.refreshTokenExpiry,
+      expiresIn: this.refreshTokenExpiry as any,
     });
   }
 
@@ -117,9 +127,11 @@ export class JwtTokenService {
    */
   async generateTokenPair(
     userId: string,
-    email: string,
+    email: string | null,
     role: string,
     options?: {
+      isGuest?: boolean;
+      deviceId?: string;
       cityId?: string;
       cityIds?: string[];
       selectedCityId?: string;

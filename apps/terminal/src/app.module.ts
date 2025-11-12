@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule } from '@nestjs/throttler';
 
@@ -13,6 +13,7 @@ import { JwtModule } from '@heidi/jwt';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
 import { LoggingInterceptor, TimeoutInterceptor } from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
+import { TermsAcceptanceGuard } from '@heidi/rbac';
 
 // Local modules
 import { TerminalModule } from './modules/terminal/terminal.module';
@@ -74,6 +75,10 @@ import { HealthController } from './health.controller';
         return new TimeoutInterceptor(timeoutMs);
       },
       inject: [ConfigService],
+    },
+    {
+      provide: APP_GUARD,
+      useClass: TermsAcceptanceGuard,
     },
   ],
 })

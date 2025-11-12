@@ -128,6 +128,7 @@ export default () => ({
   // API configuration
   apiPrefix: process.env.API_PREFIX || 'api',
   enableApiGatewayPrefix: process.env.ENABLE_API_GATEWAY_PREFIX === 'true',
+  apiGatewayBaseUrl: process.env.API_GATEWAY_BASE_URL,
 
   // Swagger configuration
   swagger: {
@@ -161,6 +162,12 @@ export default () => ({
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
   },
 
+  // Terms of use configuration
+  terms: {
+    defaultLocale: process.env.TERMS_DEFAULT_LOCALE || 'en',
+    gracePeriodDays: parseInt(process.env.TERMS_GRACE_PERIOD_DAYS || '7', 10),
+  },
+
   // RabbitMQ configuration
   rabbitmq: {
     host: process.env.RABBITMQ_HOST || 'localhost',
@@ -182,6 +189,31 @@ export default () => ({
   // Email configuration
   systemEmailId: process.env.SYSTEM_EMAIL_ID,
 
+  // Email/SMTP configuration
+  smtp: {
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    // Optional: only set if provided in env
+    port: process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : undefined,
+    // Optional: only set if provided in env
+    secure: process.env.SMTP_SECURE ? process.env.SMTP_SECURE === 'true' : undefined,
+    // Optional path for SMTP server (e.g., "/webmail-rc")
+    path: process.env.SMTP_PATH,
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+    from: process.env.SYSTEM_EMAIL_ID || process.env.SMTP_USER || 'noreply@heidi.example.com',
+    // Optional: only set if provided in env
+    tls: process.env.SMTP_TLS_REJECT_UNAUTHORIZED
+      ? {
+          rejectUnauthorized: process.env.SMTP_TLS_REJECT_UNAUTHORIZED !== 'false',
+        }
+      : undefined,
+  },
+
   // Client URL
   clientURL: process.env.CLIENT_URL,
+
+  // Frontend Base URL (for verification links)
+  frontendBaseUrl: process.env.CLIENT_URL || 'http://localhost:3000',
 });

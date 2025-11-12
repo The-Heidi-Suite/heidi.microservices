@@ -1,0 +1,626 @@
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Patch,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  AssignCategoryToCityDto,
+  BadRequestErrorResponseDto,
+  CategoryRequestFilterDto,
+  CategoryRequestResponseDto,
+  CategoryResponseDto,
+  CityCategoryResponseDto,
+  NotFoundErrorResponseDto,
+  RequestCategoryDto,
+  ResolveCategoryRequestDto,
+  UnauthorizedErrorResponseDto,
+  ValidationErrorResponseDto,
+  ForbiddenErrorResponseDto,
+  CreateCategoryDto,
+  UpdateCategoryDto,
+} from '@heidi/contracts';
+import { CurrentUser, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
+import { CategoryRequestStatus, UserRole } from '@prisma/client-core';
+import { CategoriesService } from './categories.service';
+import { AdminOnlyGuard, SuperAdminOnly, CityAdminOnly } from '@heidi/rbac';
+
+@ApiTags('categories')
+@Controller('categories')
+@UseGuards(JwtAuthGuard, AdminOnlyGuard)
+export class CategoriesController {
+  constructor(private readonly categoriesService: CategoriesService) {}
+
+  private parseRequestStatus(
+    value?: string | CategoryRequestStatus,
+  ): CategoryRequestStatus | undefined {
+    if (!value) {
+      return undefined;
+    }
+
+    if (Object.values(CategoryRequestStatus).includes(value as CategoryRequestStatus)) {
+      return value as CategoryRequestStatus;
+    }
+
+    const normalized = String(value).toUpperCase() as keyof typeof CategoryRequestStatus;
+    if (!(normalized in CategoryRequestStatus)) {
+      throw new BadRequestException({ errorCode: 'CATEGORY_REQUEST_INVALID_STATUS' });
+    }
+    return CategoryRequestStatus[normalized];
+  }
+
+  @Get()
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'List categories',
+    description: 'Retrieve all categories available in the taxonomy.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Categories retrieved successfully',
+    type: CategoryResponseDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async list(@GetCurrentUser() user: CurrentUser) {
+    return this.categoriesService.listCategories();
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Post()
+  @ApiOperation({
+    summary: 'Create category',
+    description:
+      'Create a new category to organize listings. Slugs are automatically generated and deduplicated.',
+  })
+  @ApiBody({
+    type: CreateCategoryDto,
+    examples: {
+      default: {
+        summary: 'Create event category',
+        value: {
+          name: 'Community Events',
+          type: 'EVENT',
+          isActive: true,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Category created successfully',
+    type: CategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request payload',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async create(@GetCurrentUser() user: CurrentUser, @Body() dto: CreateCategoryDto) {
+    return this.categoriesService.createCategory(dto);
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Patch(':id')
+  @ApiOperation({
+    summary: 'Update category',
+    description:
+      'Update an existing category. Changing the slug automatically handles deduplication.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiBody({
+    type: UpdateCategoryDto,
+    examples: {
+      rename: {
+        summary: 'Rename category',
+        value: {
+          name: 'Updated Category Name',
+          isActive: true,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category updated successfully',
+    type: CategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid update payload',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Category not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async update(
+    @Param('id') id: string,
+    @GetCurrentUser() user: CurrentUser,
+    @Body() dto: UpdateCategoryDto,
+  ) {
+    return this.categoriesService.updateCategory(id, dto);
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Delete(':id')
+  @ApiOperation({
+    summary: 'Delete category',
+    description:
+      'Delete a category that is not associated with any listings. Returns the removed category.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category deleted successfully',
+    type: CategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Category cannot be deleted because it is in use',
+    type: BadRequestErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Category not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  @SuperAdminOnly()
+  async delete(@Param('id') id: string, @GetCurrentUser() user: CurrentUser) {
+    return this.categoriesService.deleteCategory(id);
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Get('cities/:cityId')
+  @ApiOperation({
+    summary: 'List categories assigned to a city',
+    description: 'Retrieve active category assignments for a specific city.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'City categories retrieved successfully',
+    type: CityCategoryResponseDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'City admin is not assigned to the requested city',
+    type: BadRequestErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'City Admin or Super Admin role required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @CityAdminOnly()
+  async listCityCategories(@Param('cityId') cityId: string, @GetCurrentUser() user: CurrentUser) {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
+      if (!hasAccess) {
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
+      }
+    }
+
+    return this.categoriesService.listCityCategories(cityId);
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Post('cities/:cityId/assign')
+  @ApiOperation({
+    summary: 'Assign category to city (super admin only)',
+    description: 'Attach a category to a city, creating the assignment if necessary.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiBody({
+    type: AssignCategoryToCityDto,
+    examples: {
+      default: {
+        summary: 'Assign existing category',
+        value: {
+          categoryId: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Category assigned to city',
+    type: CityCategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid payload or assignment not allowed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async assignCategory(
+    @Param('cityId') cityId: string,
+    @GetCurrentUser() user: CurrentUser,
+    @Body() dto: AssignCategoryToCityDto,
+  ) {
+    return this.categoriesService.assignCategoryToCity(cityId, dto.categoryId, user.userId);
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Delete('cities/:cityId/categories/:categoryId')
+  @ApiOperation({
+    summary: 'Remove category from city (super admin only)',
+    description:
+      'Soft-remove a category assignment from a city. Returns the updated assignment record.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category removed from city',
+    type: CityCategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City/category assignment not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async removeCategory(
+    @Param('cityId') cityId: string,
+    @Param('categoryId') categoryId: string,
+    @GetCurrentUser() user: CurrentUser,
+  ) {
+    return this.categoriesService.removeCategoryFromCity(cityId, categoryId);
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Post('cities/:cityId/requests')
+  @ApiOperation({
+    summary: 'City admin requests a category for their city',
+    description:
+      'Create or update a pending category request for a city. If a pending request already exists, the notes will be updated instead.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiBody({
+    type: RequestCategoryDto,
+    examples: {
+      request: {
+        summary: 'Request category',
+        value: {
+          categoryId: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+          notes: 'We plan to launch a new volunteer program in this category.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Category request created',
+    type: CategoryRequestResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request or city admin lacks access',
+    type: BadRequestErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'City Admin or Super Admin role required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @CityAdminOnly()
+  async requestCategory(
+    @Param('cityId') cityId: string,
+    @GetCurrentUser() user: CurrentUser,
+    @Body() dto: RequestCategoryDto,
+  ) {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
+      if (!hasAccess) {
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
+      }
+    }
+
+    return this.categoriesService.requestCityCategory(
+      cityId,
+      dto.categoryId,
+      user.userId,
+      dto.notes,
+    );
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Get('requests')
+  @ApiOperation({
+    summary: 'List category requests',
+    description:
+      'Retrieve category requests across all cities. Supports filtering by city and status.',
+  })
+  @ApiQuery({
+    name: 'cityId',
+    required: false,
+    description: 'Filter requests for a given city',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter requests by status',
+    example: 'PENDING',
+    enum: CategoryRequestStatus,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category requests retrieved successfully',
+    type: CategoryRequestResponseDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid filter parameters',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async listRequests(
+    @GetCurrentUser() user: CurrentUser,
+    @Query() query: CategoryRequestFilterDto,
+  ) {
+    const parsedStatus = this.parseRequestStatus(query.status);
+    return this.categoriesService.listCategoryRequests({
+      cityId: query.cityId,
+      status: parsedStatus,
+    });
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Get('cities/:cityId/requests')
+  @ApiOperation({
+    summary: 'List category requests for a city',
+    description:
+      'Retrieve category requests submitted for a specific city. City admins can only access cities they manage.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    description: 'Filter requests by status',
+    example: 'PENDING',
+    enum: CategoryRequestStatus,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category requests for city retrieved',
+    type: CategoryRequestResponseDto,
+    isArray: true,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid filter parameters or lack of access',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'City Admin or Super Admin role required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @CityAdminOnly()
+  async listCityRequests(
+    @Param('cityId') cityId: string,
+    @GetCurrentUser() user: CurrentUser,
+    @Query() query: CategoryRequestFilterDto,
+  ) {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
+      if (!hasAccess) {
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
+      }
+    }
+
+    const parsedStatus = this.parseRequestStatus(query.status);
+    return this.categoriesService.listCategoryRequests({ cityId, status: parsedStatus });
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Post('requests/:requestId/resolve')
+  @ApiOperation({
+    summary: 'Resolve a category request (super admin only)',
+    description: 'Approve or reject a pending category request, adding optional reviewer notes.',
+  })
+  @ApiParam({
+    name: 'requestId',
+    description: 'Category request identifier',
+    example: 'cr1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiBody({
+    type: ResolveCategoryRequestDto,
+    examples: {
+      approve: {
+        summary: 'Approve request',
+        value: {
+          status: 'APPROVED',
+          notes: 'Approved - aligns with the city program.',
+        },
+      },
+      reject: {
+        summary: 'Reject request',
+        value: {
+          status: 'REJECTED',
+          notes: 'Rejected due to duplication.',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category request resolved',
+    type: CategoryRequestResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid payload',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Category request not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async resolveRequest(
+    @Param('requestId') requestId: string,
+    @GetCurrentUser() user: CurrentUser,
+    @Body() dto: ResolveCategoryRequestDto,
+  ) {
+    return this.categoriesService.handleCategoryRequest(
+      requestId,
+      dto.status,
+      user.userId,
+      dto.notes,
+    );
+  }
+}

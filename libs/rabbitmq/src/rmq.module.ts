@@ -1,11 +1,12 @@
 import { DynamicModule, Global, Module, Provider } from '@nestjs/common';
 import { ClientProxyFactory, Transport } from '@nestjs/microservices';
 import { ConfigModule } from '@heidi/config';
-import { LoggerModule } from '@heidi/logger';
+import { LoggerModule, LoggerService } from '@heidi/logger';
 import { RmqModuleAsyncOptions, RmqModuleOptions } from './rmq.interfaces';
 import { getRmqClientOptions } from './rmq.config';
 import { RABBITMQ_CLIENT } from './rmq.constants';
 import { RmqClientWrapper } from './rmq-client-wrapper';
+import { RmqSetupService } from './rmq-setup.service';
 
 /**
  * RabbitMQ Client Injection Token
@@ -56,6 +57,20 @@ export class RmqModule {
           );
         }
 
+        // Find LoggerService in injected dependencies
+        const loggerService = args.find(
+          (arg) =>
+            arg &&
+            typeof arg.setContext === 'function' &&
+            typeof arg.log === 'function' &&
+            typeof arg.error === 'function',
+        );
+        if (!loggerService) {
+          throw new Error(
+            'LoggerService not found in inject array. Make sure LoggerService is available.',
+          );
+        }
+
         // Get module options
         const moduleOptions: RmqModuleOptions = options.useFactory
           ? await options.useFactory(...args)
@@ -65,26 +80,40 @@ export class RmqModule {
         const clientOptions = getRmqClientOptions(configService, moduleOptions.serviceName);
 
         // Create base client for wrapper
+        // For events (emit), this publishes to heidi_exchange with pattern as routing key
+        // RmqClientWrapper will use this for events and create queue-specific clients for request-response (send)
+        // Note: NestJS RabbitMQ transport requires a queue for connection, even when publishing to exchange
+        // We use an exclusive, auto-delete queue just for the connection
+        // The exchange configuration ensures emit() publishes to the exchange, not the queue
+        const serviceName = moduleOptions.serviceName || 'client';
+        const tempQueueName = `heidi_${serviceName}_temp_${Date.now()}`;
         const baseClient = ClientProxyFactory.create({
           transport: Transport.RMQ,
           options: {
             urls: clientOptions.urls,
-            // No queue specified - RmqClientWrapper handles routing dynamically
+            queue: tempQueueName, // Temporary queue for connection only
+            queueOptions: {
+              exclusive: true,
+              autoDelete: true,
+              durable: false,
+            },
+            exchange: clientOptions.exchange, // Publish events to heidi_exchange
+            exchangeType: clientOptions.exchangeType, // Topic exchange
             socketOptions: clientOptions.socketOptions,
           },
-        });
+        } as any);
 
         // Create and return wrapper - this is what services will inject
-        const wrapper = new RmqClientWrapper(baseClient, configService);
+        const wrapper = new RmqClientWrapper(baseClient, configService, loggerService);
         return wrapper;
       },
-      inject: options.inject || [],
+      inject: [...(options.inject || []), LoggerService],
     };
 
     return {
       module: RmqModule,
       imports: [ConfigModule, LoggerModule],
-      providers: [wrapperProvider],
+      providers: [wrapperProvider, RmqSetupService],
       exports: [RABBITMQ_CLIENT],
     };
   }

@@ -7,7 +7,7 @@ import {
   PrismaClientUnknownRequestError,
 } from '@prisma/client/runtime/library';
 import { LoggerService, ChildLogger } from '@heidi/logger';
-import { I18nService } from '@heidi/i18n';
+import { I18nService, LanguageDetectorService } from '@heidi/i18n';
 import { ConfigService } from '@heidi/config';
 
 @Catch()
@@ -19,6 +19,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     loggerService: LoggerService,
     private readonly i18nService: I18nService,
     private readonly configService: ConfigService,
+    private readonly languageDetector: LanguageDetectorService,
   ) {
     this.structuredLogger = loggerService.createChildLogger({
       operation: 'exception-filter',
@@ -57,12 +58,16 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const path = request.url;
     const method = request.method;
     const requestId = this.getRequestId(request);
+    
+    // Detect language from request headers
+    const language = this.languageDetector.detectLanguage(request.headers['accept-language']);
 
     // Handle custom exceptions
     if (exception instanceof BaseCustomException) {
       const translatedMessage = this.i18nService.translate(
         `errors.${exception.errorCode}`,
         exception.context,
+        language,
       );
 
       return {
@@ -84,34 +89,68 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      const errorCode = this.mapHttpStatusToErrorCode(status);
+
+      // Use custom errorCode from exception response if available, otherwise map from status
+      const customErrorCode =
+        typeof exceptionResponse === 'object' && (exceptionResponse as any).errorCode
+          ? (exceptionResponse as any).errorCode
+          : this.mapHttpStatusToErrorCode(status);
+
+      const errorCode = customErrorCode;
 
       const originalMessage =
         typeof exceptionResponse === 'string'
           ? (exceptionResponse as string)
           : (exceptionResponse as any).message;
 
-      const translatedMessage = this.i18nService.translate(`errors.${errorCode}`);
+      const translatedMessage = this.i18nService.translate(`errors.${errorCode}`, undefined, language);
+
+      // Extract details, excluding errorCode and message to avoid duplication
+      const responseDetails =
+        typeof exceptionResponse === 'object' ? { ...exceptionResponse } : undefined;
+      if (responseDetails && 'errorCode' in responseDetails) {
+        delete responseDetails.errorCode;
+      }
+      if (responseDetails && 'message' in responseDetails) {
+        delete responseDetails.message;
+      }
+
+      // Prioritize translated message when we have a custom errorCode
+      const hasCustomErrorCode = 
+        typeof exceptionResponse === 'object' && 
+        (exceptionResponse as any).errorCode &&
+        (exceptionResponse as any).errorCode !== this.mapHttpStatusToErrorCode(status);
+
+      const finalMessage = hasCustomErrorCode
+        ? translatedMessage !== `errors.${errorCode}`
+          ? translatedMessage
+          : originalMessage || 'An error occurred'
+        : originalMessage && originalMessage !== status.toString()
+          ? originalMessage
+          : translatedMessage !== `errors.${errorCode}`
+            ? translatedMessage
+            : originalMessage || 'An error occurred';
 
       return {
         statusCode: status,
         errorCode,
-        message: translatedMessage !== `errors.${errorCode}` ? translatedMessage : originalMessage,
+        message: finalMessage,
         timestamp,
         path,
         method,
         requestId,
-        details: typeof exceptionResponse === 'object' ? exceptionResponse : undefined,
+        details:
+          responseDetails && Object.keys(responseDetails).length > 0 ? responseDetails : undefined,
       };
     }
 
     // Handle Prisma errors
     if (exception instanceof PrismaClientKnownRequestError) {
-      return this.handlePrismaError(exception, timestamp, path, method, requestId);
+      return this.handlePrismaError(exception, timestamp, path, method, requestId, language);
     }
 
     if (exception instanceof PrismaClientUnknownRequestError) {
-      const translatedMessage = this.i18nService.translate('errors.DATABASE_QUERY_ERROR');
+      const translatedMessage = this.i18nService.translate('errors.DATABASE_QUERY_ERROR', undefined, language);
       // Extract meaningful error from potentially verbose Prisma error
       const errorMessage = exception.message.includes('does not exist')
         ? 'Database table or schema not found. Please run migrations.'
@@ -132,7 +171,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Handle Redis/IORedis errors
     if (this.isRedisError(exception)) {
-      const translatedMessage = this.i18nService.translate('errors.REDIS_CONNECTION_ERROR');
+      const translatedMessage = this.i18nService.translate('errors.REDIS_CONNECTION_ERROR', undefined, language);
 
       return {
         statusCode: HttpStatus.SERVICE_UNAVAILABLE,
@@ -148,7 +187,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Handle validation errors
     if (this.isValidationError(exception)) {
-      const translatedMessage = this.i18nService.translate('errors.VALIDATION_ERROR');
+      const translatedMessage = this.i18nService.translate('errors.VALIDATION_ERROR', undefined, language);
 
       return {
         statusCode: HttpStatus.BAD_REQUEST,
@@ -164,7 +203,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Handle timeout errors
     if (this.isTimeoutError(exception)) {
-      const translatedMessage = this.i18nService.translate('errors.DATABASE_TIMEOUT_ERROR');
+      const translatedMessage = this.i18nService.translate('errors.DATABASE_TIMEOUT_ERROR', undefined, language);
 
       return {
         statusCode: HttpStatus.REQUEST_TIMEOUT,
@@ -179,7 +218,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // Handle unknown errors
-    const translatedMessage = this.i18nService.translate('errors.INTERNAL_SERVER_ERROR');
+    const translatedMessage = this.i18nService.translate('errors.INTERNAL_SERVER_ERROR', undefined, language);
 
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -204,6 +243,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     path: string,
     method: string,
     requestId: string,
+    language: string,
   ) {
     let statusCode = HttpStatus.INTERNAL_SERVER_ERROR;
     let errorCode = ErrorCode.DATABASE_QUERY_ERROR;
@@ -242,7 +282,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         }
     }
 
-    const translatedMessage = this.i18nService.translate(`errors.${errorCode}`);
+    const translatedMessage = this.i18nService.translate(`errors.${errorCode}`, undefined, language);
     const message =
       translatedMessage !== `errors.${errorCode}`
         ? translatedMessage

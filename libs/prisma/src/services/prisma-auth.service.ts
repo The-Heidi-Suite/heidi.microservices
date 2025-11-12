@@ -14,11 +14,6 @@ export class PrismaAuthService extends PrismaAuthClient implements OnModuleInit,
       throw new Error('AUTH_DATABASE_URL is not configured');
     }
 
-    // Extract database name from URL for logging (mask password)
-    const urlWithoutPassword = databaseUrl.replace(/:[^:@]+@/, ':****@');
-    logger.setContext('PrismaAuthService');
-    logger.log(`Connecting to database: ${urlWithoutPassword}`);
-
     super({
       datasourceUrl: databaseUrl,
       log: [
@@ -51,12 +46,6 @@ export class PrismaAuthService extends PrismaAuthClient implements OnModuleInit,
   async onModuleInit() {
     try {
       await this.$connect();
-      // Verify which database we're connected to
-      const result = await this.$queryRaw<Array<{ current_database: string }>>`
-        SELECT current_database();
-      `;
-      const dbName = result[0]?.current_database;
-      this.logger.log(`PrismaAuthService: Connected to database '${dbName}'`);
     } catch (error) {
       this.logger.error('PrismaAuthService: Failed to connect to database', error);
       throw error;

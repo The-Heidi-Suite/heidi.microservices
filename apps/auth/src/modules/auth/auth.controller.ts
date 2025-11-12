@@ -38,6 +38,14 @@ import {
   RevokeSessionResponseDto,
   SessionNotFoundErrorResponseDto,
   RevokeAllSessionsResponseDto,
+  GuestLoginDto,
+  GuestLoginResponseDto,
+  ConvertGuestDto,
+  ConvertGuestResponseDto,
+  ValidationErrorResponseDto,
+  ConflictErrorResponseDto,
+  GuestValidationErrorResponseDto,
+  EmailVerificationRequiredErrorResponseDto,
 } from '@heidi/contracts';
 import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
 import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
@@ -53,7 +61,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'User login',
     description:
-      'Authenticate user with email or username and password. You can use either email address (e.g., user@example.com) or username (e.g., johndoe) to login.',
+      "Authenticate user with email and password. If the user's email is not verified, a 403 response will be returned with instructions to verify the email. Use the 'rememberMe' field to extend session duration to 30 days (default is 7 days).",
   })
   @ApiBody({
     type: LoginDto,
@@ -65,12 +73,15 @@ export class AuthController {
           password: 'password123',
         },
       },
-      usernameLogin: {
-        summary: 'Login with username',
+      rememberMeLogin: {
+        summary: 'Login with remember me enabled',
         value: {
-          email: 'johndoe',
+          email: 'user@example.com',
           password: 'password123',
+          rememberMe: true,
         },
+        description:
+          'When rememberMe is true, the session will be kept for 30 days instead of 7 days',
       },
     },
   })
@@ -80,9 +91,20 @@ export class AuthController {
     type: LoginResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
     status: 401,
-    description: 'Invalid credentials',
+    description: 'Invalid credentials - user not found, inactive, or incorrect password',
     type: LoginUnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description:
+      'Email verification required - user must verify their email address before logging in',
+    type: EmailVerificationRequiredErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto, @Req() req: Request) {
@@ -127,6 +149,11 @@ export class AuthController {
     type: RefreshTokenResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
     status: 401,
     description: 'Invalid or expired refresh token',
     type: RefreshTokenUnauthorizedErrorResponseDto,
@@ -169,6 +196,16 @@ export class AuthController {
     status: 201,
     description: 'City admin assigned successfully',
     type: AssignCityAdminResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: AuthUnauthorizedErrorResponseDto,
   })
   @ApiResponse({
     status: 403,
@@ -240,6 +277,11 @@ export class AuthController {
     type: RevokeSessionResponseDto,
   })
   @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: AuthUnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
     status: 404,
     description: 'Session not found',
     type: SessionNotFoundErrorResponseDto,
@@ -271,5 +313,65 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async revokeAllSessions(@GetCurrentUser('userId') userId: string) {
     return this.authService.revokeAllSessions(userId);
+  }
+
+  @Post('guest')
+  @Public()
+  @ApiOperation({
+    summary: 'Create guest session',
+    description:
+      'Create or retrieve a guest user session for mobile app (iOS/Android). Uses native device identifiers (iOS IDFV, Android ID) that persist across app reinstalls.',
+  })
+  @ApiBody({ type: GuestLoginDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Guest session created or retrieved successfully',
+    type: GuestLoginResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: GuestValidationErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async createGuest(@Body() dto: GuestLoginDto, @Req() req: Request) {
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.createGuestSession(dto, ipAddress as string, userAgent);
+  }
+
+  @Post('guest/register')
+  @Public()
+  @ApiOperation({
+    summary: 'Convert guest to registered user',
+    description:
+      'Convert a guest user account to a registered user account. All guest data (favorites, listings) is automatically migrated.',
+  })
+  @ApiBody({ type: ConvertGuestDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Guest converted to registered user successfully',
+    type: ConvertGuestResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - validation failed',
+    type: GuestValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Invalid guest user',
+    type: AuthUnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Email or username already exists',
+    type: ConflictErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async convertGuest(@Body() dto: ConvertGuestDto, @Req() req: Request) {
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+    return this.authService.convertGuestToRegistered(dto, ipAddress as string, userAgent);
   }
 }

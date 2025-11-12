@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { EventPattern, MessagePattern, Payload } from '@nestjs/microservices';
 import { UsersService } from './users.service';
 import { RabbitMQPatterns } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
@@ -66,12 +66,10 @@ export class UsersMessageController {
 
     try {
       const user = await this.usersService.findOne(data.id);
-      // Return user without password
-      const { password, ...userWithoutPassword } = user as any;
       this.logger.debug(
         `Successfully processed message: ${RabbitMQPatterns.USER_FIND_BY_ID} for id: ${data.id} (will ACK)`,
       );
-      return userWithoutPassword;
+      return user;
     } catch (error) {
       this.logger.error(
         `Error processing message: ${RabbitMQPatterns.USER_FIND_BY_ID} for id: ${data.id} (will NACK)`,
@@ -99,6 +97,133 @@ export class UsersMessageController {
         error,
       );
       throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.USER_CREATE_GUEST)
+  async createGuest(
+    @Payload() data: { deviceId: string; devicePlatform: string; deviceMetadata?: any },
+  ) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_CREATE_GUEST} for device: ${data.deviceId} (${data.devicePlatform})`,
+    );
+
+    try {
+      const guestUser = await this.usersService.createGuest(
+        data.deviceId,
+        data.devicePlatform as any,
+        data.deviceMetadata,
+      );
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_CREATE_GUEST} for device: ${data.deviceId} (will ACK)`,
+      );
+      return guestUser;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_CREATE_GUEST} for device: ${data.deviceId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.USER_FIND_BY_DEVICE)
+  async findByDevice(@Payload() data: { deviceId: string; devicePlatform: string }) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_FIND_BY_DEVICE} for device: ${data.deviceId} (${data.devicePlatform})`,
+    );
+
+    try {
+      const guestUser = await this.usersService.findByDeviceId(
+        data.deviceId,
+        data.devicePlatform as any,
+      );
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_FIND_BY_DEVICE} for device: ${data.deviceId} (will ACK)`,
+      );
+      return guestUser;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_FIND_BY_DEVICE} for device: ${data.deviceId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.USER_CONVERT_GUEST)
+  async convertGuest(
+    @Payload()
+    data: {
+      guestUserId: string;
+      email: string;
+      username?: string | null;
+      password: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      cityId?: string;
+    },
+  ) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_CONVERT_GUEST} for guestUserId: ${data.guestUserId}`,
+    );
+
+    try {
+      const registeredUser = await this.usersService.convertGuestToUser(data.guestUserId, {
+        email: data.email,
+        username: data.username || undefined,
+        password: data.password,
+        firstName: data.firstName || undefined,
+        lastName: data.lastName || undefined,
+        cityId: data.cityId,
+      });
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_CONVERT_GUEST} for guestUserId: ${data.guestUserId} (will ACK)`,
+      );
+      return registeredUser;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_CONVERT_GUEST} for guestUserId: ${data.guestUserId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @EventPattern(RabbitMQPatterns.VERIFICATION_VERIFIED)
+  async handleVerificationVerified(
+    @Payload()
+    data: {
+      userId: string;
+      type: string;
+      identifier: string;
+      verifiedAt: string;
+      timestamp: string;
+    },
+  ) {
+    this.logger.log(
+      `Received event: ${RabbitMQPatterns.VERIFICATION_VERIFIED} for userId: ${data.userId}`,
+    );
+
+    try {
+      // Only handle EMAIL verification
+      if (data.type === 'EMAIL') {
+        const result = await this.usersService.markEmailAsVerified(data.userId);
+        this.logger.log(
+          `Email verified for user: ${data.userId} via event ${RabbitMQPatterns.VERIFICATION_VERIFIED}`,
+        );
+        return result;
+      }
+
+      // For SMS or other types, just log
+      this.logger.debug(`Verification event received for type: ${data.type}, skipping`);
+    } catch (error) {
+      this.logger.error(
+        `Error processing event: ${RabbitMQPatterns.VERIFICATION_VERIFIED} for userId: ${data.userId}`,
+        error,
+      );
+      // Note: For @EventPattern, errors are logged but don't NACK since it's fire-and-forget
+      // The event will be lost if processing fails, which is expected behavior for events
     }
   }
 }

@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
 import { ThrottlerModule } from '@nestjs/throttler';
 
@@ -11,9 +11,15 @@ import { RmqModule } from '@heidi/rabbitmq';
 import { RedisModule } from '@heidi/redis';
 import { JwtModule } from '@heidi/jwt';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
-import { LoggingInterceptor, TimeoutInterceptor, TransformInterceptor } from '@heidi/interceptors';
+import {
+  LoggingInterceptor,
+  TimeoutInterceptor,
+  TransformInterceptor,
+  SuccessMessageService,
+} from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 import { ErrorHandlingModule } from '@heidi/errors';
+import { TermsAcceptanceGuard } from '@heidi/rbac';
 
 // Local modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -77,9 +83,14 @@ import { HealthController } from './health.controller';
       },
       inject: [ConfigService],
     },
+    SuccessMessageService,
     {
       provide: APP_INTERCEPTOR,
       useClass: TransformInterceptor,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: TermsAcceptanceGuard,
     },
   ],
 })

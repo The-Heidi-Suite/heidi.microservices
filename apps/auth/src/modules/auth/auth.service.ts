@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   NotFoundException,
+  HttpException,
   Inject,
 } from '@nestjs/common';
 import { firstValueFrom, timeout } from 'rxjs';
@@ -15,7 +16,7 @@ import { LoggerService } from '@heidi/logger';
 import { UserRole } from '@prisma/client-core';
 import { AuthAction, AuthProvider, TokenType } from '@prisma/client-auth';
 import * as bcrypt from 'bcrypt';
-import { LoginDto, AssignCityAdminDto } from '@heidi/contracts';
+import { LoginDto, AssignCityAdminDto, GuestLoginDto, ConvertGuestDto } from '@heidi/contracts';
 import { SagaOrchestratorService } from '@heidi/saga';
 
 @Injectable()
@@ -74,6 +75,8 @@ export class AuthService {
     expiresAt: Date,
     provider: AuthProvider = AuthProvider.LOCAL,
     metadata?: Record<string, any>,
+    deviceId?: string,
+    devicePlatform?: string,
   ) {
     try {
       await this.prismaAuth.session.create({
@@ -83,6 +86,8 @@ export class AuthService {
           expiresAt,
           provider,
           metadata: metadata ? metadata : undefined,
+          deviceId: deviceId || null,
+          devicePlatform: (devicePlatform as any) || null,
         },
       });
     } catch (error) {
@@ -93,44 +98,28 @@ export class AuthService {
 
   /**
    * Login user - Using Saga pattern for distributed transaction
+   * Login is now email-only since username is optional
    */
   async login(dto: LoginDto, ipAddress?: string, userAgent?: string) {
-    this.logger.log(`Login attempt for: ${dto.email}`);
+    this.logger.log(`Login attempt for email: ${dto.email}`);
 
     let failureReason: string | undefined;
 
     try {
-      // Step 1: Find user from users service via RabbitMQ
-      // Determine if login identifier is email or username
-      const isEmail = dto.email.includes('@');
+      // Step 1: Find user from users service via RabbitMQ (email only)
       let user: any;
 
-      if (isEmail) {
-        try {
-          user = await firstValueFrom(
-            this.client
-              .send<any, { email: string }>(RabbitMQPatterns.USER_FIND_BY_EMAIL, {
-                email: dto.email,
-              })
-              .pipe(timeout(10000)),
-          );
-        } catch (error) {
-          this.logger.error('Error sending request to users service', error);
-          throw error;
-        }
-      } else {
-        try {
-          user = await firstValueFrom(
-            this.client
-              .send<any, { username: string }>(RabbitMQPatterns.USER_FIND_BY_USERNAME, {
-                username: dto.email,
-              })
-              .pipe(timeout(10000)),
-          );
-        } catch (error) {
-          this.logger.error('Error sending request to users service', error);
-          throw error;
-        }
+      try {
+        user = await firstValueFrom(
+          this.client
+            .send<any, { email: string }>(RabbitMQPatterns.USER_FIND_BY_EMAIL, {
+              email: dto.email,
+            })
+            .pipe(timeout(10000)),
+        );
+      } catch (error) {
+        this.logger.error('Error sending request to users service', error);
+        throw error;
       }
 
       if (!user || !user.isActive) {
@@ -146,7 +135,43 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-      // Verify password
+      // Check email verification (fail fast if email exists and not verified)
+      // This check must happen BEFORE password validation to prevent information leakage
+      // IMPORTANT: Check email verification status BEFORE password validation
+      this.logger.debug(
+        `User found: id=${user.id}, email=${user.email}, emailVerified=${user.emailVerified}, isActive=${user.isActive}`,
+      );
+
+      // If user has an email, it MUST be verified before login
+      if (user.email) {
+        // Explicitly check if emailVerified is not true (handles false, null, undefined)
+        if (user.emailVerified !== true) {
+          this.logger.log(
+            `Blocking login - email not verified: userId=${user.id}, email=${user.email}, emailVerified=${user.emailVerified}`,
+          );
+          failureReason = 'Email not verified';
+          await this.createAuditLog(
+            user.id,
+            AuthAction.LOGIN,
+            false,
+            failureReason,
+            ipAddress,
+            userAgent,
+          );
+          throw new ForbiddenException({
+            errorCode: 'EMAIL_VERIFICATION_REQUIRED',
+            message:
+              'Please verify your email address before logging in. A verification email has been sent to your email address.',
+            details: {
+              userId: user.id,
+              email: user.email,
+              resendVerificationEndpoint: '/api/notification/verification/resend',
+            },
+          });
+        }
+      }
+
+      // Verify password (only if email is verified or user has no email)
       const isPasswordValid = await bcrypt.compare(dto.password, user.password);
       if (!isPasswordValid) {
         failureReason = 'Invalid password';
@@ -206,19 +231,104 @@ export class AuthService {
       });
 
       // Store refresh token in Redis
-      const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days
+      // Use 30 days if rememberMe is true, otherwise 7 days
+      const refreshTokenExpiry = dto.rememberMe
+        ? 30 * 24 * 60 * 60 // 30 days for remember me
+        : 7 * 24 * 60 * 60; // 7 days for regular login
       await this.redis.set(`refresh_token:${user.id}`, tokens.refreshToken, refreshTokenExpiry);
 
       // Store session in auth database (for audit and future OAuth/BIND_ID)
       const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
-      await this.storeSession(user.id, TokenType.JWT, expiresAt, AuthProvider.LOCAL);
+      await this.storeSession(user.id, TokenType.JWT, expiresAt, AuthProvider.LOCAL, {
+        rememberMe: dto.rememberMe || false,
+      });
 
       // Create audit log for successful login
       await this.createAuditLog(user.id, AuthAction.LOGIN, true, undefined, ipAddress, userAgent, {
         tokenType: 'JWT',
+        rememberMe: dto.rememberMe || false,
+        refreshTokenExpiry: refreshTokenExpiry,
       });
 
       this.logger.log(`User logged in successfully: ${user.id}`);
+
+      // Check terms acceptance status (non-blocking - don't wait if slow)
+      // Use Promise.race to ensure we don't block login if terms service is slow
+      const termsInfo: {
+        requiresTermsAcceptance: boolean;
+        termsId: string | null;
+        latestVersion: string | null;
+        gracePeriodEndsAt: string | null;
+      } = {
+        requiresTermsAcceptance: false,
+        termsId: null,
+        latestVersion: null,
+        gracePeriodEndsAt: null,
+      };
+
+      // Start terms check but don't wait for it - use Promise.race with short timeout
+      const termsCheckPromise = (async () => {
+        try {
+          // Get cityId from user's city assignments (use first city if available)
+          const cityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : null;
+          const acceptanceCheck = await firstValueFrom(
+            this.client
+              .send<
+                { hasAccepted: boolean; termsId: string | null; gracePeriodEndsAt: Date | null },
+                { userId: string; locale?: string; cityId?: string | null }
+              >(RabbitMQPatterns.TERMS_CHECK_ACCEPTANCE, {
+                userId: user.id,
+                cityId,
+              })
+              .pipe(timeout(500)), // Very short timeout - 500ms max
+          );
+
+          if (!acceptanceCheck.hasAccepted) {
+            // Get latest terms to include version
+            try {
+              const latestTerms = await firstValueFrom(
+                this.client
+                  .send<
+                    any,
+                    { locale?: string; cityId?: string | null }
+                  >(RabbitMQPatterns.TERMS_GET_LATEST, { cityId })
+                  .pipe(timeout(500)), // Very short timeout - 500ms max
+              );
+
+              return {
+                requiresTermsAcceptance: true,
+                termsId: latestTerms?.id || acceptanceCheck.termsId,
+                latestVersion: latestTerms?.version || null,
+                gracePeriodEndsAt: acceptanceCheck.gracePeriodEndsAt
+                  ? new Date(acceptanceCheck.gracePeriodEndsAt).toISOString()
+                  : null,
+              };
+            } catch (error) {
+              // If we can't get latest terms, still include what we have
+              return {
+                requiresTermsAcceptance: true,
+                termsId: acceptanceCheck.termsId,
+                latestVersion: null,
+                gracePeriodEndsAt: acceptanceCheck.gracePeriodEndsAt
+                  ? new Date(acceptanceCheck.gracePeriodEndsAt).toISOString()
+                  : null,
+              };
+            }
+          }
+          return termsInfo; // User has accepted, no action needed
+        } catch (error) {
+          // If terms check fails, return default (non-blocking)
+          return termsInfo;
+        }
+      })();
+
+      // Race against a timeout - if terms check takes longer than 500ms, skip it
+      const timeoutPromise = new Promise<typeof termsInfo>((resolve) =>
+        setTimeout(() => resolve(termsInfo), 500),
+      );
+
+      // Wait for whichever completes first (terms check or timeout)
+      const finalTermsInfo = await Promise.race([termsCheckPromise, timeoutPromise]);
 
       return {
         user: {
@@ -226,15 +336,19 @@ export class AuthService {
           email: user.email,
           username: user.username,
           role: user.role,
+          userType: 'REGISTERED',
           firstName: user.firstName,
           lastName: user.lastName,
         },
         ...tokens,
+        ...finalTermsInfo,
       };
     } catch (error) {
-      if (error instanceof UnauthorizedException) {
+      // Re-throw HTTP exceptions (UnauthorizedException, ForbiddenException) as-is
+      if (error instanceof HttpException) {
         throw error;
       }
+      // Log and convert other errors to UnauthorizedException
       failureReason = error instanceof Error ? error.message : 'Unknown error';
       await this.createAuditLog(null, AuthAction.LOGIN, false, failureReason, ipAddress, userAgent);
       throw new UnauthorizedException('Invalid credentials');
@@ -303,57 +417,80 @@ export class AuthService {
         throw new UnauthorizedException('User not found or inactive');
       }
 
-      // Load user's city assignments from core service via RabbitMQ
-      const dbAssignments = await firstValueFrom(
-        this.client
-          .send<
-            Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
-            { userId: string }
-          >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: user.id })
-          .pipe(timeout(10000)),
+      // Check if user is a guest
+      const isGuest = payload.isGuest || user.userType === 'GUEST';
+
+      // Load user's city assignments from core service via RabbitMQ (only for registered users)
+      let cityAssignments: CityAssignment[] = [];
+      let permissions: string[] = [];
+      let selectedCityId: string | undefined;
+
+      if (!isGuest) {
+        const dbAssignments = await firstValueFrom(
+          this.client
+            .send<
+              Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
+              { userId: string }
+            >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: user.id })
+            .pipe(timeout(10000)),
+        );
+
+        cityAssignments = dbAssignments.map((a) => ({
+          cityId: a.cityId,
+          role: a.role,
+          canManageAdmins: a.canManageAdmins,
+        }));
+
+        // Determine effective role for permissions
+        const roleHierarchy = [UserRole.SUPER_ADMIN, UserRole.CITY_ADMIN, UserRole.CITIZEN];
+        const userRoleIndex = roleHierarchy.indexOf(user.role as UserRole);
+        const assignmentRoles = dbAssignments.map((a) => a.role);
+        const highestAssignmentIndex =
+          assignmentRoles.length > 0
+            ? Math.min(...assignmentRoles.map((r) => roleHierarchy.indexOf(r)))
+            : roleHierarchy.length - 1;
+
+        const effectiveRole =
+          userRoleIndex >= 0 && userRoleIndex < highestAssignmentIndex
+            ? user.role
+            : assignmentRoles.length > 0
+              ? roleHierarchy[highestAssignmentIndex]
+              : UserRole.CITIZEN;
+
+        permissions = await this.permissionService.getUserPermissions(effectiveRole as UserRole);
+        selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
+      }
+
+      // Generate new tokens with appropriate flags
+      const tokens = await this.jwtService.generateTokenPair(
+        user.id,
+        user.email || null, // Can be null for guest users
+        user.role,
+        {
+          isGuest,
+          deviceId: payload.deviceId || user.deviceId, // Preserve deviceId for guest users
+          selectedCityId,
+          cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
+          permissions: permissions.length > 0 ? permissions : undefined,
+        },
       );
-
-      const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
-        cityId: a.cityId,
-        role: a.role,
-        canManageAdmins: a.canManageAdmins,
-      }));
-
-      // Determine effective role for permissions
-      const roleHierarchy = [UserRole.SUPER_ADMIN, UserRole.CITY_ADMIN, UserRole.CITIZEN];
-      const userRoleIndex = roleHierarchy.indexOf(user.role as UserRole);
-      const assignmentRoles = dbAssignments.map((a) => a.role);
-      const highestAssignmentIndex =
-        assignmentRoles.length > 0
-          ? Math.min(...assignmentRoles.map((r) => roleHierarchy.indexOf(r)))
-          : roleHierarchy.length - 1;
-
-      const effectiveRole =
-        userRoleIndex >= 0 && userRoleIndex < highestAssignmentIndex
-          ? user.role
-          : assignmentRoles.length > 0
-            ? roleHierarchy[highestAssignmentIndex]
-            : UserRole.CITIZEN;
-
-      const permissions = await this.permissionService.getUserPermissions(
-        effectiveRole as UserRole,
-      );
-
-      // Generate new tokens with city context and permissions
-      const selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
-      const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role, {
-        selectedCityId,
-        cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
-        permissions: permissions.length > 0 ? permissions : undefined,
-      });
 
       // Update refresh token in Redis
-      const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days
+      // Guest users get 30 days, registered users get 7 days
+      const refreshTokenExpiry = isGuest ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60;
       await this.redis.set(`refresh_token:${user.id}`, tokens.refreshToken, refreshTokenExpiry);
 
       // Update session expiry
       const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
-      await this.storeSession(user.id, TokenType.REFRESH, expiresAt, AuthProvider.LOCAL);
+      await this.storeSession(
+        user.id,
+        TokenType.REFRESH,
+        expiresAt,
+        AuthProvider.LOCAL,
+        undefined,
+        user.deviceId,
+        user.devicePlatform,
+      );
 
       // Create audit log
       await this.createAuditLog(user.id, AuthAction.TOKEN_REFRESH, true);
@@ -553,5 +690,245 @@ export class AuthService {
       message: 'All sessions revoked successfully',
       sessionsRevoked: result.count,
     };
+  }
+
+  /**
+   * Create guest session for mobile app
+   * Checks for existing guest with same deviceId and devicePlatform, creates if not exists
+   */
+  async createGuestSession(dto: GuestLoginDto, ipAddress?: string, userAgent?: string) {
+    this.logger.log(`Creating guest session for device: ${dto.deviceId} (${dto.devicePlatform})`);
+
+    try {
+      // Check if guest already exists for this device
+      let guestUser = await firstValueFrom(
+        this.client
+          .send<any, { deviceId: string; devicePlatform: string }>(
+            RabbitMQPatterns.USER_FIND_BY_DEVICE,
+            {
+              deviceId: dto.deviceId,
+              devicePlatform: dto.devicePlatform,
+            },
+          )
+          .pipe(timeout(10000)),
+      );
+
+      // If no guest exists, create one
+      if (!guestUser) {
+        guestUser = await firstValueFrom(
+          this.client
+            .send<any, { deviceId: string; devicePlatform: string; deviceMetadata?: any }>(
+              RabbitMQPatterns.USER_CREATE_GUEST,
+              {
+                deviceId: dto.deviceId,
+                devicePlatform: dto.devicePlatform,
+                deviceMetadata: dto.deviceMetadata,
+              },
+            )
+            .pipe(timeout(10000)),
+        );
+      }
+
+      // Generate tokens with guest flag
+      const tokens = await this.jwtService.generateTokenPair(
+        guestUser.id,
+        null, // No email for guests
+        UserRole.CITIZEN,
+        {
+          isGuest: true,
+          deviceId: guestUser.deviceId,
+        },
+      );
+
+      // Store refresh token in Redis
+      const refreshTokenExpiry = 30 * 24 * 60 * 60; // 30 days for guest sessions
+      await this.redis.set(
+        `refresh_token:${guestUser.id}`,
+        tokens.refreshToken,
+        refreshTokenExpiry,
+      );
+
+      // Store session in auth database with device info
+      const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
+      await this.storeSession(
+        guestUser.id,
+        TokenType.JWT,
+        expiresAt,
+        AuthProvider.LOCAL,
+        {
+          ...dto.deviceMetadata,
+        },
+        dto.deviceId,
+        dto.devicePlatform,
+      );
+
+      // Create audit log
+      await this.createAuditLog(
+        guestUser.id,
+        AuthAction.LOGIN,
+        true,
+        undefined,
+        ipAddress,
+        userAgent,
+        {
+          userType: 'GUEST',
+          deviceId: dto.deviceId,
+          devicePlatform: dto.devicePlatform,
+        },
+      );
+
+      this.logger.log(`Guest session created successfully: ${guestUser.id}`);
+
+      return {
+        user: {
+          id: guestUser.id,
+          guestId: guestUser.guestId,
+          deviceId: guestUser.deviceId,
+          devicePlatform: guestUser.devicePlatform,
+          userType: 'GUEST',
+        },
+        ...tokens,
+      };
+    } catch (error) {
+      this.logger.error('Failed to create guest session', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert guest user to registered user
+   * All data linked by userId automatically transfers (favorites, listings, etc.)
+   */
+  async convertGuestToRegistered(dto: ConvertGuestDto, ipAddress?: string, userAgent?: string) {
+    this.logger.log(`Converting guest to registered user: ${dto.guestUserId}`);
+
+    try {
+      // Verify guest user exists
+      const guestUser = await firstValueFrom(
+        this.client
+          .send<any, { id: string }>(RabbitMQPatterns.USER_FIND_BY_ID, { id: dto.guestUserId })
+          .pipe(timeout(10000)),
+      );
+
+      if (!guestUser || guestUser.userType !== 'GUEST') {
+        throw new UnauthorizedException('Invalid guest user');
+      }
+
+      // Convert guest to registered user via users service
+      const registeredUser = await firstValueFrom(
+        this.client
+          .send<
+            any,
+            {
+              guestUserId: string;
+              email: string;
+              username?: string | null;
+              password: string;
+              firstName?: string | null;
+              lastName?: string | null;
+              cityId?: string;
+            }
+          >(RabbitMQPatterns.USER_CONVERT_GUEST, {
+            guestUserId: dto.guestUserId,
+            email: dto.email,
+            username: dto.username || null,
+            password: dto.password,
+            firstName: dto.firstName || null,
+            lastName: dto.lastName || null,
+            cityId: dto.cityId,
+          })
+          .pipe(timeout(15000)),
+      );
+
+      // Load user's city assignments from core service (if any)
+      let cityAssignments: CityAssignment[] = [];
+      try {
+        const dbAssignments = await firstValueFrom(
+          this.client
+            .send<
+              Array<{ cityId: string; role: UserRole; canManageAdmins: boolean }>,
+              { userId: string }
+            >(RabbitMQPatterns.CORE_GET_USER_ASSIGNMENTS, { userId: registeredUser.id })
+            .pipe(timeout(10000)),
+        );
+
+        cityAssignments = dbAssignments.map((a) => ({
+          cityId: a.cityId,
+          role: a.role,
+          canManageAdmins: a.canManageAdmins,
+        }));
+      } catch (error) {
+        // No city assignments, that's fine
+        this.logger.debug('No city assignments found for converted user');
+      }
+
+      // Get permissions
+      const permissions = await this.permissionService.getUserPermissions(
+        registeredUser.role as UserRole,
+      );
+
+      // Generate new tokens for registered user
+      const selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
+      const tokens = await this.jwtService.generateTokenPair(
+        registeredUser.id,
+        registeredUser.email,
+        registeredUser.role,
+        {
+          isGuest: false,
+          selectedCityId,
+          cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
+          permissions: permissions.length > 0 ? permissions : undefined,
+        },
+      );
+
+      // Update refresh token in Redis
+      const refreshTokenExpiry = 7 * 24 * 60 * 60; // 7 days for registered users
+      await this.redis.set(
+        `refresh_token:${registeredUser.id}`,
+        tokens.refreshToken,
+        refreshTokenExpiry,
+      );
+
+      // Update session expiry
+      const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
+      await this.storeSession(registeredUser.id, TokenType.JWT, expiresAt, AuthProvider.LOCAL);
+
+      // Create audit log
+      await this.createAuditLog(
+        registeredUser.id,
+        AuthAction.REGISTRATION_ATTEMPT,
+        true,
+        undefined,
+        ipAddress,
+        userAgent,
+        {
+          action: 'GUEST_TO_USER_CONVERSION',
+          migratedFromGuestId: registeredUser.migratedFromGuestId,
+        },
+      );
+
+      this.logger.log(`Guest converted to registered user successfully: ${registeredUser.id}`);
+
+      return {
+        user: {
+          id: registeredUser.id,
+          email: registeredUser.email,
+          username: registeredUser.username,
+          role: registeredUser.role,
+          userType: registeredUser.userType,
+          firstName: registeredUser.firstName,
+          lastName: registeredUser.lastName,
+          migratedFromGuestId: registeredUser.migratedFromGuestId,
+        },
+        ...tokens,
+        dataMigrated: true, // All data automatically migrated
+      };
+    } catch (error) {
+      this.logger.error('Failed to convert guest to registered user', error);
+      if (error instanceof UnauthorizedException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Failed to convert guest user');
+    }
   }
 }
