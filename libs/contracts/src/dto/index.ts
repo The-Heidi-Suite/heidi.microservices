@@ -4,4 +4,6 @@ export * from './saga';
 export * from './verification';
 export * from './terms';
 export * from './listings';
+export * from './tiles';
 export * from './core';
+export * from './notification';

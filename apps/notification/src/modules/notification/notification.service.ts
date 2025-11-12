@@ -2,7 +2,7 @@ import { Injectable, OnModuleInit, Inject } from '@nestjs/common';
 import { PrismaNotificationService } from '@heidi/prisma';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
-import { SendNotificationDto } from './dto';
+import { SendNotificationDto } from '@heidi/contracts';
 
 @Injectable()
 export class NotificationService implements OnModuleInit {

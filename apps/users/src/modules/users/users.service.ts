@@ -106,6 +106,7 @@ export class UsersService {
       email: user.email,
       firstName: user.firstName,
       lastName: user.lastName,
+      cityId: null, // No city selected
       timestamp: new Date().toISOString(),
       preferredLanguage: language,
     });
@@ -227,6 +228,7 @@ export class UsersService {
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
+        cityId: dto.cityId || null, // Include cityId if provided
         timestamp: new Date().toISOString(),
         preferredLanguage: language,
       });
