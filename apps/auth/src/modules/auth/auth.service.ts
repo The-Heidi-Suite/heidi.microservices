@@ -98,44 +98,28 @@ export class AuthService {
 
   /**
    * Login user - Using Saga pattern for distributed transaction
+   * Login is now email-only since username is optional
    */
   async login(dto: LoginDto, ipAddress?: string, userAgent?: string) {
-    this.logger.log(`Login attempt for: ${dto.email}`);
+    this.logger.log(`Login attempt for email: ${dto.email}`);
 
     let failureReason: string | undefined;
 
     try {
-      // Step 1: Find user from users service via RabbitMQ
-      // Determine if login identifier is email or username
-      const isEmail = dto.email.includes('@');
+      // Step 1: Find user from users service via RabbitMQ (email only)
       let user: any;
 
-      if (isEmail) {
-        try {
-          user = await firstValueFrom(
-            this.client
-              .send<any, { email: string }>(RabbitMQPatterns.USER_FIND_BY_EMAIL, {
-                email: dto.email,
-              })
-              .pipe(timeout(10000)),
-          );
-        } catch (error) {
-          this.logger.error('Error sending request to users service', error);
-          throw error;
-        }
-      } else {
-        try {
-          user = await firstValueFrom(
-            this.client
-              .send<any, { username: string }>(RabbitMQPatterns.USER_FIND_BY_USERNAME, {
-                username: dto.email,
-              })
-              .pipe(timeout(10000)),
-          );
-        } catch (error) {
-          this.logger.error('Error sending request to users service', error);
-          throw error;
-        }
+      try {
+        user = await firstValueFrom(
+          this.client
+            .send<any, { email: string }>(RabbitMQPatterns.USER_FIND_BY_EMAIL, {
+              email: dto.email,
+            })
+            .pipe(timeout(10000)),
+        );
+      } catch (error) {
+        this.logger.error('Error sending request to users service', error);
+        throw error;
       }
 
       if (!user || !user.isActive) {
@@ -838,19 +822,19 @@ export class AuthService {
             {
               guestUserId: string;
               email: string;
-              username: string;
+              username?: string | null;
               password: string;
-              firstName?: string;
-              lastName?: string;
+              firstName?: string | null;
+              lastName?: string | null;
               cityId?: string;
             }
           >(RabbitMQPatterns.USER_CONVERT_GUEST, {
             guestUserId: dto.guestUserId,
             email: dto.email,
-            username: dto.username,
+            username: dto.username || null,
             password: dto.password,
-            firstName: dto.firstName,
-            lastName: dto.lastName,
+            firstName: dto.firstName || null,
+            lastName: dto.lastName || null,
             cityId: dto.cityId,
           })
           .pipe(timeout(15000)),
