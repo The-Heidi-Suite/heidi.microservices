@@ -5,3 +5,4 @@ export * from './verification';
 export * from './terms';
 export * from './listings';
 export * from './core';
+export * from './notification';
