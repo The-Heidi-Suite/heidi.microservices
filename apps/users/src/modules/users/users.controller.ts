@@ -10,7 +10,11 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import {
   ApiTags,
   ApiOperation,
@@ -45,16 +49,23 @@ import {
   BadRequestErrorResponseDto,
   CreateGuestDto,
   ConvertGuestDto,
+  UploadProfilePhotoResponseDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { GetLanguage } from '@heidi/i18n';
 import { AdminOnlyGuard } from '@heidi/rbac';
+import { FileUploadService } from '@heidi/storage';
+import { ConfigService } from '@heidi/config';
 
 @ApiTags('users')
 @Controller()
 @UseGuards(JwtAuthGuard, AdminOnlyGuard)
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly fileUploadService: FileUploadService,
+    private readonly configService: ConfigService,
+  ) {}
 
   @Post('register')
   @Public()
@@ -237,6 +248,66 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   async updateProfile(@GetCurrentUser('userId') userId: string, @Body() dto: UpdateProfileDto) {
     return this.usersService.updateProfile(userId, dto);
+  }
+
+  @Post('profile/photo')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Upload profile photo',
+    description: 'Upload and process a profile photo for the current authenticated user.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile photo uploaded successfully',
+    type: UploadProfilePhotoResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  async uploadProfilePhoto(
+    @GetCurrentUser('userId') userId: string,
+    @UploadedFile() file: any,
+  ): Promise<UploadProfilePhotoResponseDto> {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // Validate image
+    await this.fileUploadService.validateImage(file);
+
+    // Process image (resize to 400x400, optimize)
+    const processedFile = await this.fileUploadService.processProfilePhoto(file);
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Generate storage key
+    const key = this.fileUploadService.generateUserProfilePhotoKey(userId, processedFile.extension);
+
+    // Upload to storage
+    const photoUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    // Update user profile in database
+    const profile = await this.usersService.updateProfile(userId, {
+      profilePhotoUrl: photoUrl,
+    });
+
+    return {
+      profile,
+      photoUrl,
+    };
   }
 
   @Post('profile/me/change-password')

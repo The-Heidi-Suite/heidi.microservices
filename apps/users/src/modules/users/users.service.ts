@@ -426,6 +426,7 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
+        profilePhotoUrl: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -463,6 +464,7 @@ export class UsersService {
       data: {
         firstName: dto.firstName,
         lastName: dto.lastName,
+        profilePhotoUrl: dto.profilePhotoUrl,
       },
       select: {
         id: true,
@@ -471,6 +473,7 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
+        profilePhotoUrl: true,
         updatedAt: true,
       },
     });
