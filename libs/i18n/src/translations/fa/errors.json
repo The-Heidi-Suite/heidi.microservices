@@ -35,5 +35,18 @@
   "EXTERNAL_SERVICE_RATE_LIMIT": "محدودیت نرخ سرویس خارجی превышена",
   "DUPLICATE_USERNAME": "کاربری با این نام کاربری از قبل وجود دارد",
   "DUPLICATE_EMAIL": "کاربری با این آدرس ایمیل از قبل وجود دارد",
-  "REGISTRATION_FIELDS_REQUIRED": "ایمیل، نام کاربری و رمز عبور برای ثبت‌نام الزامی است"
+  "VERIFICATION_UNSUPPORTED_TYPE": "نوع تأیید پشتیبانی نمی‌شود.",
+  "VERIFICATION_INVALID_IDENTIFIER": "اطلاعات تماس ارائه‌شده معتبر نیست.",
+  "VERIFICATION_TOKEN_INVALID": "توکن تأیید نامعتبر است.",
+  "VERIFICATION_TOKEN_USED": "این لینک تأیید قبلاً استفاده شده است.",
+  "VERIFICATION_TOKEN_CANCELLED": "این لینک تأیید لغو شده است.",
+  "VERIFICATION_TOKEN_EXPIRED": "لینک تأیید منقضی شده است. لطفاً یک ایمیل تأیید جدید درخواست کنید.",
+  "VERIFICATION_MAX_ATTEMPTS": "حداکثر تعداد تلاش‌های تأیید سپری شده است.",
+  "VERIFICATION_CANCEL_VERIFIED": "نمی‌توان توکنی را که قبلاً تأیید شده است لغو کرد.",
+  "VERIFICATION_ALREADY_SENT": "پیام تأیید قبلاً ارسال شده است. لطفاً صندوق ورودی خود را بررسی کنید یا منتظر بمانید تا منقضی شود.",
+  "CATEGORY_IN_USE": "این دسته‌بندی به آگهی‌های موجود مرتبط است.",
+  "CATEGORY_REQUEST_INVALID_STATUS": "وضعیت درخواست دسته‌بندی نامعتبر است.",
+  "CITY_ACCESS_DENIED": "شما به این شهر اختصاص داده نشده‌اید.",
+  "CITY_CATEGORY_MAPPING_NOT_FOUND": "ارتباط شهر و دسته‌بندی یافت نشد.",
+  "REGISTRATION_FIELDS_REQUIRED": "ایمیل و رمز عبور برای ثبت‌نام الزامی است"
 }

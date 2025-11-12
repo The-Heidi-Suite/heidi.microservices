@@ -22,6 +22,7 @@
   "EMAIL_VERIFIED": "Электронная почта успешно подтверждена",
   "EMAIL_VERIFICATION_SENT": "Письмо с подтверждением успешно отправлено",
   "EMAIL_VERIFICATION_RESENT": "Письмо с подтверждением успешно отправлено повторно",
+  "VERIFICATION_ALREADY_CANCELLED": "Эта ссылка для подтверждения уже отменена",
   "VERIFICATION_CANCELLED": "Подтверждение успешно отменено",
   "OPERATION_SUCCESS": "Операция успешно завершена"
 }

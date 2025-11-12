@@ -47,6 +47,7 @@ import {
   ConvertGuestDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
+import { GetLanguage } from '@heidi/i18n';
 import { AdminOnlyGuard } from '@heidi/rbac';
 
 @ApiTags('users')
@@ -78,8 +79,8 @@ export class UsersController {
     type: ConflictErrorResponseDto,
   })
   @HttpCode(HttpStatus.CREATED)
-  async register(@Body() dto: RegisterDto) {
-    return this.usersService.register(dto);
+  async register(@Body() dto: RegisterDto, @GetLanguage() language: string) {
+    return this.usersService.register(dto, language);
   }
 
   @Get()
@@ -159,8 +160,8 @@ export class UsersController {
     description: 'User already exists',
     type: ConflictErrorResponseDto,
   })
-  async create(@Body() dto: CreateUserDto) {
-    return this.usersService.create(dto);
+  async create(@Body() dto: CreateUserDto, @GetLanguage() language: string) {
+    return this.usersService.create(dto, language);
   }
 
   @Patch(':id')

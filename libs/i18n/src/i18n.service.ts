@@ -16,7 +16,7 @@ export class I18nService implements OnModuleInit {
     // Translations path - check both production (dist) and development (src) locations
     const distPath = join(__dirname, 'translations');
     const srcPath = join(process.cwd(), 'libs', 'i18n', 'src', 'translations');
-    
+
     // Use dist path if it exists (production), otherwise use src path (development)
     this.translationsPath = existsSync(distPath) ? distPath : srcPath;
   }
@@ -36,14 +36,17 @@ export class I18nService implements OnModuleInit {
         const errorsPath = join(this.translationsPath, lang, 'errors.json');
         const validationPath = join(this.translationsPath, lang, 'validation.json');
         const successPath = join(this.translationsPath, lang, 'success.json');
+        const emailsPath = join(this.translationsPath, lang, 'emails.json');
 
         const errorsData = this.loadJsonFile(errorsPath);
         const validationData = this.loadJsonFile(validationPath);
         const successData = this.loadJsonFile(successPath);
+        const emailsData = this.loadJsonFile(emailsPath);
 
         this.translations.set(`${lang}:errors`, errorsData);
         this.translations.set(`${lang}:validation`, validationData);
         this.translations.set(`${lang}:success`, successData);
+        this.translations.set(`${lang}:emails`, emailsData);
       } catch (error) {
         console.warn(
           `Failed to load translations for language '${lang}':`,

@@ -2,18 +2,27 @@ import { IsEmail, IsString, MinLength, IsOptional, IsUUID, Matches } from 'class
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
-  @ApiPropertyOptional({
-    description: 'User email address (required for registration, optional for guest conversion)',
+  @ApiProperty({
+    description: 'User email address (required for registration)',
     example: 'user@example.com',
     format: 'email',
   })
   @IsEmail({}, { message: 'Please enter a valid email address.' })
-  @IsOptional()
-  email?: string;
+  email: string;
+
+  @ApiProperty({
+    description: 'User password (required for registration)',
+    example: 'password123',
+    minLength: 8,
+    format: 'password',
+  })
+  @IsString()
+  @MinLength(8, { message: 'Password must be at least 8 characters' })
+  password: string;
 
   @ApiPropertyOptional({
     description:
-      'Username (alphanumeric and underscores, 3-30 characters) (required for registration, optional for guest conversion)',
+      'Username (alphanumeric and underscores, 3-30 characters). Optional - can be set later via profile update.',
     example: 'johndoe',
     minLength: 3,
     maxLength: 30,
@@ -27,18 +36,7 @@ export class RegisterDto {
   username?: string;
 
   @ApiPropertyOptional({
-    description: 'User password (required for registration, optional for guest conversion)',
-    example: 'password123',
-    minLength: 8,
-    format: 'password',
-  })
-  @IsString()
-  @MinLength(8, { message: 'Password must be at least 8 characters' })
-  @IsOptional()
-  password?: string;
-
-  @ApiPropertyOptional({
-    description: 'User first name',
+    description: 'User first name. Optional - can be set later via profile update.',
     example: 'John',
   })
   @IsString()
@@ -46,7 +44,7 @@ export class RegisterDto {
   firstName?: string;
 
   @ApiPropertyOptional({
-    description: 'User last name',
+    description: 'User last name. Optional - can be set later via profile update.',
     example: 'Doe',
   })
   @IsString()

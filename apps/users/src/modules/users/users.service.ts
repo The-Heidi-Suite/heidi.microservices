@@ -42,9 +42,9 @@ export class UsersService {
    * Register a new user (public endpoint)
    * Uses Saga pattern if cityId is provided (multi-service transaction)
    */
-  async register(dto: RegisterDto) {
-    // Validate required fields for registration
-    if (!dto.email || !dto.username || !dto.password) {
+  async register(dto: RegisterDto, language?: string) {
+    // Validate required fields for registration (only email and password are required)
+    if (!dto.email || !dto.password) {
       throw new ConflictException({ errorCode: ErrorCode.REGISTRATION_FIELDS_REQUIRED });
     }
 
@@ -59,13 +59,15 @@ export class UsersService {
       throw new ConflictException({ errorCode: ErrorCode.DUPLICATE_EMAIL });
     }
 
-    // Check if username already exists
-    const existingUserByUsername = await this.prisma.user.findUnique({
-      where: { username: dto.username },
-    });
+    // Check if username already exists (only if username is provided)
+    if (dto.username) {
+      const existingUserByUsername = await this.prisma.user.findUnique({
+        where: { username: dto.username },
+      });
 
-    if (existingUserByUsername) {
-      throw new ConflictException({ errorCode: ErrorCode.DUPLICATE_USERNAME });
+      if (existingUserByUsername) {
+        throw new ConflictException({ errorCode: ErrorCode.DUPLICATE_USERNAME });
+      }
     }
 
     // Hash password
@@ -73,17 +75,17 @@ export class UsersService {
 
     // If cityId is provided, use Saga pattern for distributed transaction
     if (dto.cityId) {
-      return this.registerWithCity(dto, hashedPassword);
+      return this.registerWithCity(dto, hashedPassword, language);
     }
 
     // Simple case: just create user (no city assignment)
     const user = await this.prisma.user.create({
       data: {
         email: dto.email,
-        username: dto.username,
+        username: dto.username || null,
         password: hashedPassword,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
+        firstName: dto.firstName || null,
+        lastName: dto.lastName || null,
         role: UserRole.CITIZEN,
         emailVerified: false,
       },
@@ -105,6 +107,7 @@ export class UsersService {
       firstName: user.firstName,
       lastName: user.lastName,
       timestamp: new Date().toISOString(),
+      preferredLanguage: language,
     });
 
     this.logger.log(`User registered successfully: ${user.id}`);
@@ -114,7 +117,7 @@ export class UsersService {
   /**
    * Register user with city assignment using Saga pattern
    */
-  private async registerWithCity(dto: RegisterDto, hashedPassword: string) {
+  private async registerWithCity(dto: RegisterDto, hashedPassword: string, language?: string) {
     const sagaId = await this.sagaOrchestrator.createSaga('USER_REGISTRATION', [
       {
         stepId: 'CREATE_USER',
@@ -122,10 +125,10 @@ export class UsersService {
         action: 'CREATE_LOCAL',
         payload: {
           email: dto.email,
-          username: dto.username,
+          username: dto.username || null,
           password: hashedPassword,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
+          firstName: dto.firstName || null,
+          lastName: dto.lastName || null,
           role: UserRole.CITIZEN,
         },
         compensation: {
@@ -157,10 +160,10 @@ export class UsersService {
       const user = await this.prisma.user.create({
         data: {
           email: dto.email,
-          username: dto.username,
+          username: dto.username || null,
           password: hashedPassword,
-          firstName: dto.firstName,
-          lastName: dto.lastName,
+          firstName: dto.firstName || null,
+          lastName: dto.lastName || null,
           role: UserRole.CITIZEN,
           emailVerified: false,
         },
@@ -225,6 +228,7 @@ export class UsersService {
         firstName: user.firstName,
         lastName: user.lastName,
         timestamp: new Date().toISOString(),
+        preferredLanguage: language,
       });
 
       this.logger.log(`User registered successfully with city assignment: ${user.id}`);
@@ -336,7 +340,7 @@ export class UsersService {
     });
   }
 
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto, language?: string) {
     const user = await this.prisma.user.create({
       data: dto,
       select: {
@@ -354,6 +358,7 @@ export class UsersService {
       userId: user.id,
       email: user.email,
       timestamp: new Date().toISOString(),
+      preferredLanguage: language,
     });
 
     this.logger.log(`User created: ${user.id}`);
@@ -633,8 +638,8 @@ export class UsersService {
   async convertGuestToUser(guestUserId: string, dto: RegisterDto) {
     this.logger.log(`Converting guest user to registered: ${guestUserId}`);
 
-    // Validate required fields
-    if (!dto.email || !dto.username || !dto.password) {
+    // Validate required fields (only email and password are required)
+    if (!dto.email || !dto.password) {
       throw new ConflictException({ errorCode: ErrorCode.REGISTRATION_FIELDS_REQUIRED });
     }
 
@@ -660,13 +665,15 @@ export class UsersService {
       throw new ConflictException({ errorCode: ErrorCode.DUPLICATE_EMAIL });
     }
 
-    // Check if username already exists
-    const existingUserByUsername = await this.prisma.user.findUnique({
-      where: { username: dto.username },
-    });
+    // Check if username already exists (only if username is provided)
+    if (dto.username) {
+      const existingUserByUsername = await this.prisma.user.findUnique({
+        where: { username: dto.username },
+      });
 
-    if (existingUserByUsername) {
-      throw new ConflictException({ errorCode: ErrorCode.DUPLICATE_USERNAME });
+      if (existingUserByUsername) {
+        throw new ConflictException({ errorCode: ErrorCode.DUPLICATE_USERNAME });
+      }
     }
 
     // Hash password
@@ -677,10 +684,10 @@ export class UsersService {
       where: { id: guestUserId },
       data: {
         email: dto.email,
-        username: dto.username,
+        username: dto.username || null,
         password: hashedPassword,
-        firstName: dto.firstName,
-        lastName: dto.lastName,
+        firstName: dto.firstName || null,
+        lastName: dto.lastName || null,
         userType: UserType.REGISTERED,
         emailVerified: false,
         migratedFromGuestId: guestUser.guestId, // Store original guest ID for historical tracking

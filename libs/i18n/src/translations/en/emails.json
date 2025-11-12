@@ -1,0 +1,12 @@
+{
+  "verification": {
+    "subject": "Welcome! Please verify your email address",
+    "greeting": "Welcome{firstNamePart}!",
+    "intro": "Thank you for registering with us. To complete your registration and secure your account, please verify your email address.",
+    "cta": "Verify Email Address",
+    "expiryNotice": "<strong>Important:</strong> This verification link will expire in 24 hours. If you didn't create an account, you can safely ignore this email or click the link below to cancel.",
+    "cancelText": "If you didn't create this account, please",
+    "cancelLinkText": "click here to cancel",
+    "fallback": "If the button doesn't work, copy and paste this link into your browser:"
+  }
+}

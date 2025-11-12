@@ -35,5 +35,18 @@
   "EXTERNAL_SERVICE_RATE_LIMIT": "Harici hizmet hız limiti aşıldı",
   "DUPLICATE_USERNAME": "Bu kullanıcı adına sahip bir kullanıcı zaten mevcut",
   "DUPLICATE_EMAIL": "Bu e-posta adresine sahip bir kullanıcı zaten mevcut",
-  "REGISTRATION_FIELDS_REQUIRED": "Kayıt için e-posta, kullanıcı adı ve şifre gereklidir"
+  "VERIFICATION_UNSUPPORTED_TYPE": "Desteklenmeyen doğrulama türü.",
+  "VERIFICATION_INVALID_IDENTIFIER": "Sağlanan iletişim bilgileri geçerli değil.",
+  "VERIFICATION_TOKEN_INVALID": "Geçersiz doğrulama jetonu.",
+  "VERIFICATION_TOKEN_USED": "Bu doğrulama bağlantısı zaten kullanıldı.",
+  "VERIFICATION_TOKEN_CANCELLED": "Bu doğrulama bağlantısı iptal edildi.",
+  "VERIFICATION_TOKEN_EXPIRED": "Doğrulama bağlantısının süresi doldu. Lütfen yeni bir doğrulama e-postası isteyin.",
+  "VERIFICATION_MAX_ATTEMPTS": "Azami doğrulama deneme sayısı aşıldı.",
+  "VERIFICATION_CANCEL_VERIFIED": "Doğrulaması tamamlanmış bir jeton iptal edilemez.",
+  "VERIFICATION_ALREADY_SENT": "Bir doğrulama mesajı zaten gönderildi. Lütfen gelen kutunuzu kontrol edin veya süresinin dolmasını bekleyin.",
+  "CATEGORY_IN_USE": "Kategori mevcut ilanlarla ilişkili.",
+  "CATEGORY_REQUEST_INVALID_STATUS": "Geçersiz kategori talebi durumu.",
+  "CITY_ACCESS_DENIED": "Bu şehre atanmış değilsiniz.",
+  "CITY_CATEGORY_MAPPING_NOT_FOUND": "Şehir-kategori eşleştirmesi bulunamadı.",
+  "REGISTRATION_FIELDS_REQUIRED": "Kayıt için e-posta ve şifre gereklidir"
 }

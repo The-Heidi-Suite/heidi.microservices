@@ -157,10 +157,10 @@ export class UsersMessageController {
     data: {
       guestUserId: string;
       email: string;
-      username: string;
+      username?: string | null;
       password: string;
-      firstName?: string;
-      lastName?: string;
+      firstName?: string | null;
+      lastName?: string | null;
       cityId?: string;
     },
   ) {
@@ -171,10 +171,10 @@ export class UsersMessageController {
     try {
       const registeredUser = await this.usersService.convertGuestToUser(data.guestUserId, {
         email: data.email,
-        username: data.username,
+        username: data.username || undefined,
         password: data.password,
-        firstName: data.firstName,
-        lastName: data.lastName,
+        firstName: data.firstName || undefined,
+        lastName: data.lastName || undefined,
         cityId: data.cityId,
       });
       this.logger.debug(

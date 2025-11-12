@@ -35,5 +35,18 @@
   "EXTERNAL_SERVICE_RATE_LIMIT": "تم تجاوز حد معدل الخدمة الخارجية",
   "DUPLICATE_USERNAME": "المستخدم بهذا الاسم موجود بالفعل",
   "DUPLICATE_EMAIL": "المستخدم بهذا البريد الإلكتروني موجود بالفعل",
-  "REGISTRATION_FIELDS_REQUIRED": "البريد الإلكتروني واسم المستخدم وكلمة المرور مطلوبة للتسجيل"
+  "VERIFICATION_UNSUPPORTED_TYPE": "نوع التحقق غير مدعوم.",
+  "VERIFICATION_INVALID_IDENTIFIER": "معلومات الاتصال المقدمة غير صالحة.",
+  "VERIFICATION_TOKEN_INVALID": "رمز التحقق غير صالح.",
+  "VERIFICATION_TOKEN_USED": "تم استخدام رابط التحقق هذا مسبقًا.",
+  "VERIFICATION_TOKEN_CANCELLED": "تم إلغاء رابط التحقق هذا.",
+  "VERIFICATION_TOKEN_EXPIRED": "انتهت صلاحية رابط التحقق. يرجى طلب رسالة تحقق جديدة.",
+  "VERIFICATION_MAX_ATTEMPTS": "تم تجاوز الحد الأقصى لمحاولات التحقق.",
+  "VERIFICATION_CANCEL_VERIFIED": "لا يمكن إلغاء رمز تم التحقق منه بالفعل.",
+  "VERIFICATION_ALREADY_SENT": "تم إرسال رسالة التحقق بالفعل. يرجى التحقق من بريدك الوارد أو الانتظار حتى تنتهي صلاحيتها.",
+  "CATEGORY_IN_USE": "الفئة مرتبطة بقوائم موجودة.",
+  "CATEGORY_REQUEST_INVALID_STATUS": "حالة طلب الفئة غير صالحة.",
+  "CITY_ACCESS_DENIED": "لست مخصصًا لهذه المدينة.",
+  "CITY_CATEGORY_MAPPING_NOT_FOUND": "تعذر العثور على ارتباط المدينة بالفئة.",
+  "REGISTRATION_FIELDS_REQUIRED": "البريد الإلكتروني وكلمة المرور مطلوبة للتسجيل"
 }

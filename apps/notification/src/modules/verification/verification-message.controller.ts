@@ -28,6 +28,7 @@ export class VerificationMessageController {
       userType?: string;
       deviceId?: string;
       devicePlatform?: string;
+      preferredLanguage?: string;
     },
   ) {
     this.logger.log(
@@ -37,16 +38,20 @@ export class VerificationMessageController {
     try {
       // Automatically send welcome email with verification link
       if (data.email) {
-        await this.verificationService.sendVerification({
-          userId: data.userId,
-          type: 'EMAIL',
-          identifier: data.email,
-          metadata: {
-            firstName: data.firstName,
-            lastName: data.lastName,
-            isWelcomeEmail: true,
+        await this.verificationService.sendVerification(
+          {
+            userId: data.userId,
+            type: 'EMAIL',
+            identifier: data.email,
+            metadata: {
+              firstName: data.firstName,
+              lastName: data.lastName,
+              isWelcomeEmail: true,
+              preferredLanguage: data.preferredLanguage,
+            },
           },
-        });
+          data.preferredLanguage,
+        );
 
         this.logger.log(
           `Welcome email with verification sent to ${data.email} for user ${data.userId}`,

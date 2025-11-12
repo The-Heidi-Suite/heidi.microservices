@@ -6,12 +6,17 @@ import { PrismaNotificationModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { RmqModule } from '@heidi/rabbitmq';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
-import { LoggingInterceptor } from '@heidi/interceptors';
+import {
+  LoggingInterceptor,
+  TransformInterceptor,
+  SuccessMessageService,
+} from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 import { TermsAcceptanceGuard } from '@heidi/rbac';
 import { NotificationModule } from './modules/notification/notification.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { HealthController } from './health.controller';
+import { ErrorHandlingModule } from '@heidi/errors';
 
 @Module({
   imports: [
@@ -26,6 +31,7 @@ import { HealthController } from './health.controller';
     }),
     MetricsModule,
     I18nModule,
+    ErrorHandlingModule,
     NotificationModule,
     VerificationModule,
   ],
@@ -34,6 +40,8 @@ import { HealthController } from './health.controller';
     { provide: APP_INTERCEPTOR, useClass: LanguageInterceptor },
     { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
     { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
+    { provide: APP_INTERCEPTOR, useClass: TransformInterceptor },
+    SuccessMessageService,
     {
       provide: APP_GUARD,
       useClass: TermsAcceptanceGuard,

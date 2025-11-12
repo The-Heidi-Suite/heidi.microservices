@@ -35,5 +35,18 @@
   "EXTERNAL_SERVICE_RATE_LIMIT": "Ekstern tjeneste hastighedsgrænse overskredet",
   "DUPLICATE_USERNAME": "En bruger med dette brugernavn findes allerede",
   "DUPLICATE_EMAIL": "En bruger med denne e-mailadresse findes allerede",
-  "REGISTRATION_FIELDS_REQUIRED": "E-mail, brugernavn og adgangskode er påkrævet til registrering"
+  "VERIFICATION_UNSUPPORTED_TYPE": "Verificeringstypen understøttes ikke.",
+  "VERIFICATION_INVALID_IDENTIFIER": "De angivne kontaktoplysninger er ugyldige.",
+  "VERIFICATION_TOKEN_INVALID": "Ugyldigt verificeringstoken.",
+  "VERIFICATION_TOKEN_USED": "Dette verificeringslink er allerede blevet brugt.",
+  "VERIFICATION_TOKEN_CANCELLED": "Dette verificeringslink er blevet annulleret.",
+  "VERIFICATION_TOKEN_EXPIRED": "Verificeringslinket er udløbet. Anmod venligst om en ny verificeringsmail.",
+  "VERIFICATION_MAX_ATTEMPTS": "Maksimalt antal verificeringsforsøg er overskredet.",
+  "VERIFICATION_CANCEL_VERIFIED": "Et allerede verificeret token kan ikke annulleres.",
+  "VERIFICATION_ALREADY_SENT": "En verificeringsbesked er allerede sendt. Tjek din indbakke eller vent, til den udløber.",
+  "CATEGORY_IN_USE": "Kategorien er forbundet med eksisterende opslag.",
+  "CATEGORY_REQUEST_INVALID_STATUS": "Ugyldig status for kategoriansøgning.",
+  "CITY_ACCESS_DENIED": "Du er ikke tilknyttet denne by.",
+  "CITY_CATEGORY_MAPPING_NOT_FOUND": "Tilknytning mellem by og kategori blev ikke fundet.",
+  "REGISTRATION_FIELDS_REQUIRED": "E-mail og adgangskode er påkrævet til registrering"
 }
