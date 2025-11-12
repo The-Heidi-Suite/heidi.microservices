@@ -39,9 +39,9 @@ export class ListingCategoryReferenceDto {
   @IsString()
   id?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
-    description: 'UUID of the category to associate with this listing'
+    description: 'UUID of the category to associate with this listing',
   })
   @IsUUID()
   categoryId: string;
@@ -58,24 +58,24 @@ export class ListingCityReferenceDto {
   @IsString()
   id?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
-    description: 'Identifier of the city to associate with this listing'
+    description: 'Identifier of the city to associate with this listing',
   })
   @IsString()
   cityId: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: true,
-    description: 'Whether this is the primary city for the listing'
+    description: 'Whether this is the primary city for the listing',
   })
   @IsOptional()
   @IsBoolean()
   isPrimary?: boolean;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 1,
-    description: 'Display order for sorting cities'
+    description: 'Display order for sorting cities',
   })
   @IsOptional()
   @IsNumber()
@@ -88,48 +88,48 @@ export class ListingMediaInputDto {
   @IsString()
   id?: string;
 
-  @ApiProperty({ 
-    enum: ListingMediaType, 
+  @ApiProperty({
+    enum: ListingMediaType,
     example: ListingMediaType.IMAGE,
-    description: 'Type of media file'
+    description: 'Type of media file',
   })
   @IsEnum(ListingMediaType)
   type: ListingMediaType;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'https://cdn.example.com/listings/hero.jpg',
-    description: 'URL of the media file'
+    description: 'URL of the media file',
   })
   @IsUrl()
   url: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'Community cleanup event photo',
-    description: 'Alternative text for accessibility'
+    description: 'Alternative text for accessibility',
   })
   @IsOptional()
   @IsString()
   altText?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'Volunteers cleaning up the park',
-    description: 'Caption for the media'
+    description: 'Caption for the media',
   })
   @IsOptional()
   @IsString()
   caption?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 1,
-    description: 'Display order for sorting media'
+    description: 'Display order for sorting media',
   })
   @IsOptional()
   @IsNumber()
   order?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: { width: 1920, height: 1080 },
-    description: 'Additional metadata for the media'
+    description: 'Additional metadata for the media',
   })
   @IsOptional()
   @IsObject()
@@ -142,64 +142,64 @@ export class ListingTimeIntervalInputDto {
   @IsString()
   id?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: [Weekday.MONDAY, Weekday.WEDNESDAY, Weekday.FRIDAY],
     isArray: true,
-    description: 'Days of the week when this interval applies'
+    description: 'Days of the week when this interval applies',
   })
   @IsOptional()
   @IsArray()
   @IsEnum(Weekday, { each: true })
   weekdays?: Weekday[];
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: '2025-01-20T09:00:00.000Z',
-    description: 'Start date and time of the interval'
+    description: 'Start date and time of the interval',
   })
   @IsDateString()
   start: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: '2025-01-20T17:00:00.000Z',
-    description: 'End date and time of the interval'
+    description: 'End date and time of the interval',
   })
   @IsDateString()
   end: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'America/New_York',
-    description: 'Timezone identifier (IANA format)'
+    description: 'Timezone identifier (IANA format)',
   })
   @IsString()
   tz: string;
 
-  @ApiProperty({ 
-    enum: ListingRecurrenceFreq, 
+  @ApiProperty({
+    enum: ListingRecurrenceFreq,
     example: ListingRecurrenceFreq.WEEKLY,
-    description: 'Recurrence frequency'
+    description: 'Recurrence frequency',
   })
   @IsEnum(ListingRecurrenceFreq)
   freq: ListingRecurrenceFreq;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 1,
-    description: 'Interval between recurrences (e.g., every 2 weeks)'
+    description: 'Interval between recurrences (e.g., every 2 weeks)',
   })
   @IsOptional()
   @IsNumber()
   interval?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2025-12-31T23:59:59.000Z',
-    description: 'Date when recurrence should stop'
+    description: 'Date when recurrence should stop',
   })
   @IsOptional()
   @IsDateString()
   repeatUntil?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: { note: 'Holiday schedule' },
-    description: 'Additional metadata for the time interval'
+    description: 'Additional metadata for the time interval',
   })
   @IsOptional()
   @IsObject()
@@ -212,40 +212,40 @@ export class ListingTimeIntervalExceptionInputDto {
   @IsString()
   id?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: '2025-12-25',
-    description: 'Date of the exception (YYYY-MM-DD format)'
+    description: 'Date of the exception (YYYY-MM-DD format)',
   })
   @IsDateString()
   date: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '10:00:00',
-    description: 'Opening time for this exception (HH:mm:ss format)'
+    description: 'Opening time for this exception (HH:mm:ss format)',
   })
   @IsOptional()
   @IsString()
   opensAt?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '14:00:00',
-    description: 'Closing time for this exception (HH:mm:ss format)'
+    description: 'Closing time for this exception (HH:mm:ss format)',
   })
   @IsOptional()
   @IsString()
   closesAt?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: false,
-    description: 'Whether the location is closed on this date'
+    description: 'Whether the location is closed on this date',
   })
   @IsOptional()
   @IsBoolean()
   isClosed?: boolean;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: { reason: 'Holiday hours' },
-    description: 'Additional metadata for the exception'
+    description: 'Additional metadata for the exception',
   })
   @IsOptional()
   @IsObject()
@@ -253,336 +253,336 @@ export class ListingTimeIntervalExceptionInputDto {
 }
 
 export class CreateListingDto {
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'community-cleanup-day',
-    description: 'URL-friendly slug (auto-generated if not provided)'
+    description: 'URL-friendly slug (auto-generated if not provided)',
   })
   @IsOptional()
   @IsString()
   slug?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: 'Community Cleanup Day',
-    description: 'Title of the listing'
+    description: 'Title of the listing',
   })
   @IsString()
   title: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'Join neighbors to clean up the central park.',
     description: 'Brief summary (max 280 characters)',
-    maxLength: 280
+    maxLength: 280,
   })
   @IsOptional()
   @IsString()
   @MaxLength(280)
   summary?: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     example: '<p>Please bring gloves and reusable bags.</p>',
-    description: 'Full content of the listing (HTML supported)'
+    description: 'Full content of the listing (HTML supported)',
   })
   @IsString()
   content: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'en',
-    description: 'Language code (ISO 639-1)'
+    description: 'Language code (ISO 639-1)',
   })
   @IsOptional()
   @IsString()
   languageCode?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'https://example.com/original-source',
-    description: 'URL of the original source'
+    description: 'URL of the original source',
   })
   @IsOptional()
   @IsUrl()
   sourceUrl?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'https://cdn.example.com/listings/hero.jpg',
-    description: 'URL of the hero/featured image'
+    description: 'URL of the hero/featured image',
   })
   @IsOptional()
   @IsUrl()
   heroImageUrl?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: { tags: ['cleanup', 'volunteer'] },
-    description: 'Additional metadata as key-value pairs'
+    description: 'Additional metadata as key-value pairs',
   })
   @IsOptional()
   @IsObject()
   metadata?: Record<string, unknown>;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: false,
-    description: 'Whether the listing should be featured'
+    description: 'Whether the listing should be featured',
   })
   @IsOptional()
   @IsBoolean()
   isFeatured?: boolean;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2025-02-01T00:00:00.000Z',
-    description: 'Date until which the listing should remain featured'
+    description: 'Date until which the listing should remain featured',
   })
   @IsOptional()
   @IsDateString()
   featuredUntil?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2025-01-20T09:00:00.000Z',
-    description: 'Date and time when the listing should be published'
+    description: 'Date and time when the listing should be published',
   })
   @IsOptional()
   @IsDateString()
   publishAt?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2025-12-31T23:59:59.000Z',
-    description: 'Date and time when the listing should expire'
+    description: 'Date and time when the listing should expire',
   })
   @IsOptional()
   @IsDateString()
   expireAt?: string;
 
-  @ApiPropertyOptional({ 
-    enum: ListingVisibility, 
+  @ApiPropertyOptional({
+    enum: ListingVisibility,
     example: ListingVisibility.PUBLIC,
-    description: 'Visibility level of the listing'
+    description: 'Visibility level of the listing',
   })
   @IsOptional()
   @IsEnum(ListingVisibility)
   visibility?: ListingVisibility;
 
-  @ApiPropertyOptional({ 
-    enum: ListingSourceType, 
+  @ApiPropertyOptional({
+    enum: ListingSourceType,
     example: ListingSourceType.MANUAL,
-    description: 'Source type of the listing'
+    description: 'Source type of the listing',
   })
   @IsOptional()
   @IsEnum(ListingSourceType)
   sourceType?: ListingSourceType;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'external-system',
-    description: 'Name of the external source system'
+    description: 'Name of the external source system',
   })
   @IsOptional()
   @IsString()
   externalSource?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'ext_12345',
-    description: 'External identifier from the source system'
+    description: 'External identifier from the source system',
   })
   @IsOptional()
   @IsString()
   externalId?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'abc123def456',
-    description: 'Hash for synchronization purposes'
+    description: 'Hash for synchronization purposes',
   })
   @IsOptional()
   @IsString()
   syncHash?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'xyz789uvw012',
-    description: 'Checksum of the content for change detection'
+    description: 'Checksum of the content for change detection',
   })
   @IsOptional()
   @IsString()
   contentChecksum?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2025-01-20T08:00:00.000Z',
-    description: 'Last synchronization timestamp'
+    description: 'Last synchronization timestamp',
   })
   @IsOptional()
   @IsDateString()
   lastSyncedAt?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2025-01-20T08:00:00.000Z',
-    description: 'Timestamp when the listing was ingested'
+    description: 'Timestamp when the listing was ingested',
   })
   @IsOptional()
   @IsDateString()
   ingestedAt?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'integration-service',
-    description: 'Service that ingested this listing'
+    description: 'Service that ingested this listing',
   })
   @IsOptional()
   @IsString()
   ingestedByService?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'Imported from external source',
-    description: 'Notes about the ingestion process'
+    description: 'Notes about the ingestion process',
   })
   @IsOptional()
   @IsString()
   ingestNotes?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     type: [ListingCategoryReferenceDto],
-    description: 'Categories to associate with this listing'
+    description: 'Categories to associate with this listing',
   })
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => ListingCategoryReferenceDto)
   categories?: ListingCategoryReferenceDto[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     type: [ListingCityReferenceDto],
-    description: 'Cities to associate with this listing'
+    description: 'Cities to associate with this listing',
   })
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => ListingCityReferenceDto)
   cities?: ListingCityReferenceDto[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     type: [ListingMediaInputDto],
-    description: 'Media files to associate with this listing'
+    description: 'Media files to associate with this listing',
   })
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => ListingMediaInputDto)
   media?: ListingMediaInputDto[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     type: [ListingTimeIntervalInputDto],
-    description: 'Time intervals for recurring events'
+    description: 'Time intervals for recurring events',
   })
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => ListingTimeIntervalInputDto)
   timeIntervals?: ListingTimeIntervalInputDto[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     type: [ListingTimeIntervalExceptionInputDto],
-    description: 'Exceptions to recurring time intervals'
+    description: 'Exceptions to recurring time intervals',
   })
   @IsOptional()
   @ValidateNested({ each: true })
   @Type(() => ListingTimeIntervalExceptionInputDto)
   timeIntervalExceptions?: ListingTimeIntervalExceptionInputDto[];
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'Central Park',
-    description: 'Name of the venue where the event takes place'
+    description: 'Name of the venue where the event takes place',
   })
   @IsOptional()
   @IsString()
   venueName?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '123 Main St, City, State 12345',
-    description: 'Physical address of the venue'
+    description: 'Physical address of the venue',
   })
   @IsOptional()
   @IsString()
   address?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 40.7128,
-    description: 'Latitude coordinate of the venue'
+    description: 'Latitude coordinate of the venue',
   })
   @IsOptional()
   @IsNumber()
   geoLat?: number;
 
-  @ApiPropertyOptional({ 
-    example: -74.0060,
-    description: 'Longitude coordinate of the venue'
+  @ApiPropertyOptional({
+    example: -74.006,
+    description: 'Longitude coordinate of the venue',
   })
   @IsOptional()
   @IsNumber()
   geoLng?: number;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'America/New_York',
-    description: 'Timezone of the venue (IANA format)'
+    description: 'Timezone of the venue (IANA format)',
   })
   @IsOptional()
   @IsString()
   timezone?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '+1-555-123-4567',
-    description: 'Contact phone number'
+    description: 'Contact phone number',
   })
   @IsOptional()
   @IsString()
   contactPhone?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'contact@example.com',
-    description: 'Contact email address'
+    description: 'Contact email address',
   })
   @IsOptional()
   @IsEmail()
   contactEmail?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'https://example.com',
-    description: 'Website URL'
+    description: 'Website URL',
   })
   @IsOptional()
   @IsUrl()
   website?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2025-01-20T09:00:00.000Z',
-    description: 'Event start date and time'
+    description: 'Event start date and time',
   })
   @IsOptional()
   @IsDateString()
   eventStart?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2025-01-20T17:00:00.000Z',
-    description: 'Event end date and time'
+    description: 'Event end date and time',
   })
   @IsOptional()
   @IsDateString()
   eventEnd?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: false,
-    description: 'Whether the event lasts all day'
+    description: 'Whether the event lasts all day',
   })
   @IsOptional()
   @IsBoolean()
   isAllDay?: boolean;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'Community Organization',
-    description: 'Name of the event organizer'
+    description: 'Name of the event organizer',
   })
   @IsOptional()
   @IsString()
   organizerName?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'organizer@example.com',
-    description: 'Contact information for the organizer'
+    description: 'Contact information for the organizer',
   })
   @IsOptional()
   @IsString()
   organizerContact?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'https://example.com/register',
-    description: 'URL for event registration'
+    description: 'URL for event registration',
   })
   @IsOptional()
   @IsUrl()

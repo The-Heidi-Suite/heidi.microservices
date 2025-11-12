@@ -21,12 +21,14 @@ import { HealthController } from './health.controller';
 import { JwtModule } from '@heidi/jwt';
 import { RBACModule } from '@heidi/rbac';
 import { ErrorHandlingModule } from '@heidi/errors';
+import { StorageModule } from '@heidi/storage';
 
 @Module({
   imports: [
     ConfigModule,
     PrismaCoreModule,
     LoggerModule,
+    StorageModule,
     RmqModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

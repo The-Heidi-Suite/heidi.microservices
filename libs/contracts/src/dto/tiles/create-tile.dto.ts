@@ -91,7 +91,8 @@ export class CreateTileDto {
 
   @ApiPropertyOptional({
     description: 'Description/content text for the tile',
-    example: 'Der KielGutschein steht für bunte Vielfalt und kann bei über 120 lokalen Geschäften eingelöst werden.',
+    example:
+      'Der KielGutschein steht für bunte Vielfalt und kann bei über 120 lokalen Geschäften eingelöst werden.',
   })
   @IsOptional()
   @IsString()

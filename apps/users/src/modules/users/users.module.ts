@@ -5,6 +5,7 @@ import { UsersService } from './users.service';
 import { RBACModule } from '@heidi/rbac';
 import { SagaModule } from '@heidi/saga';
 import { LoggerModule } from '@heidi/logger';
+import { StorageModule } from '@heidi/storage';
 import { TermsModule } from '../terms/terms.module';
 
 @Module({
@@ -12,6 +13,7 @@ import { TermsModule } from '../terms/terms.module';
     RBACModule, // For PermissionService
     SagaModule, // Saga orchestrator for distributed transactions
     LoggerModule, // For message controller logging
+    StorageModule, // For file uploads
     TermsModule, // Terms of use module
   ],
   controllers: [UsersController, UsersMessageController],

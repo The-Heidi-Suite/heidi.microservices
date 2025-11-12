@@ -8,3 +8,5 @@ export * from './category.dto';
 export * from './listing-list-response.dto';
 export * from './listing-favorite.dto';
 export * from './category-response.dto';
+export * from './upload-hero-image-response.dto';
+export * from './upload-media-response.dto';

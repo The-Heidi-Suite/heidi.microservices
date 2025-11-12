@@ -25,6 +25,7 @@ model User {
   cityId              String?
   firstName           String?
   lastName            String?
+  profilePhotoUrl     String?
   emailVerified       Boolean          @default(false)
   isActive            Boolean           @default(true)
   createdAt           DateTime          @default(now())

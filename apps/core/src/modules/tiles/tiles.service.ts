@@ -1,8 +1,4 @@
-import {
-  Injectable,
-  ForbiddenException,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { PrismaCoreService } from '@heidi/prisma';
 import { LoggerService } from '@heidi/logger';
 import { Prisma, UserRole } from '@prisma/client-core';
@@ -166,11 +162,11 @@ export class TilesService {
 
       // If managedCities is empty, user is SUPER_ADMIN (shouldn't happen here, but check anyway)
       if (managedCities.length > 0) {
-        const hasAccess = requestedCityIds.every((cityId) =>
-          managedCities.includes(cityId),
-        );
+        const hasAccess = requestedCityIds.every((cityId) => managedCities.includes(cityId));
         if (!hasAccess) {
-          throw new ForbiddenException('You do not have access to create tiles for one or more specified cities');
+          throw new ForbiddenException(
+            'You do not have access to create tiles for one or more specified cities',
+          );
         }
       }
     }
@@ -243,9 +239,7 @@ export class TilesService {
         if (existing.cities.length > 0) {
           const existingCityIds = existing.cities.map((c) => c.cityId);
           if (managedCities.length > 0) {
-            const hasAccess = existingCityIds.every((cityId) =>
-              managedCities.includes(cityId),
-            );
+            const hasAccess = existingCityIds.every((cityId) => managedCities.includes(cityId));
             if (!hasAccess) {
               throw new ForbiddenException('You do not have access to update this tile');
             }
@@ -256,11 +250,11 @@ export class TilesService {
         if (dto.cities && dto.cities.length > 0) {
           const requestedCityIds = dto.cities.map((c) => c.cityId);
           if (managedCities.length > 0) {
-            const hasAccess = requestedCityIds.every((cityId) =>
-              managedCities.includes(cityId),
-            );
+            const hasAccess = requestedCityIds.every((cityId) => managedCities.includes(cityId));
             if (!hasAccess) {
-              throw new ForbiddenException('You do not have access to assign tiles to one or more specified cities');
+              throw new ForbiddenException(
+                'You do not have access to assign tiles to one or more specified cities',
+              );
             }
           }
         }
@@ -419,12 +413,7 @@ export class TilesService {
     const skip = (page - 1) * pageSize;
     const where = this.buildTileWhere(filter);
 
-    const allowedSortFields = new Set([
-      'createdAt',
-      'updatedAt',
-      'publishAt',
-      'displayOrder',
-    ]);
+    const allowedSortFields = new Set(['createdAt', 'updatedAt', 'publishAt', 'displayOrder']);
     const sortByField =
       filter.sortBy && allowedSortFields.has(filter.sortBy) ? filter.sortBy : 'displayOrder';
     const sortDirection = filter.sortDirection ?? TileSortDirection.ASC;
@@ -477,9 +466,7 @@ export class TilesService {
       if (existing.cities.length > 0) {
         const existingCityIds = existing.cities.map((c) => c.cityId);
         if (managedCities.length > 0) {
-          const hasAccess = existingCityIds.every((cityId) =>
-            managedCities.includes(cityId),
-          );
+          const hasAccess = existingCityIds.every((cityId) => managedCities.includes(cityId));
           if (!hasAccess) {
             throw new ForbiddenException('You do not have access to delete this tile');
           }
