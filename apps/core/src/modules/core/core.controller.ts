@@ -68,6 +68,26 @@ export class CoreController {
     status: 400,
     description: 'Invalid operation payload',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/operations',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'operation should not be empty',
+              'operation must be a string',
+              'payload must be an object',
+            ],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,

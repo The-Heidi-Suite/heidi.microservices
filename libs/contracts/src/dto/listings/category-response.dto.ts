@@ -156,3 +156,117 @@ export class CategoryRequestFilterDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.toUpperCase() : value))
   status?: CategoryRequestStatus;
 }
+
+export class CategoryNotFoundErrorResponseDto {
+  @ApiProperty({ example: 'NOT_FOUND', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Category not found', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2025-11-12T09:48:33.872Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/categories/c1a2b3c4-d5e6-7890-abcd-ef1234567890', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'GET', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1762940913872_stt9cnmii', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 404, description: 'HTTP status code' })
+  statusCode: number;
+
+  @ApiPropertyOptional({
+    description: 'Additional error details from the original exception',
+    example: {
+      error: 'Not Found',
+      statusCode: 404,
+    },
+    type: 'object',
+    additionalProperties: true,
+  })
+  details?: {
+    error?: string;
+    statusCode?: number;
+    [key: string]: any;
+  };
+}
+
+export class CategoryAssignmentNotFoundErrorResponseDto {
+  @ApiProperty({ example: 'NOT_FOUND', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'City/category assignment not found', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2025-11-12T09:48:33.872Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/categories/cities/city_01HZXTY0YK3H2V4C5B6N7P8Q/categories/c1a2b3c4-d5e6-7890-abcd-ef1234567890', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'DELETE', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1762940913872_stt9cnmii', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 404, description: 'HTTP status code' })
+  statusCode: number;
+
+  @ApiPropertyOptional({
+    description: 'Additional error details from the original exception',
+    example: {
+      error: 'Not Found',
+      statusCode: 404,
+    },
+    type: 'object',
+    additionalProperties: true,
+  })
+  details?: {
+    error?: string;
+    statusCode?: number;
+    [key: string]: any;
+  };
+}
+
+export class CategoryRequestNotFoundErrorResponseDto {
+  @ApiProperty({ example: 'NOT_FOUND', description: 'Error code' })
+  errorCode: string;
+
+  @ApiProperty({ example: 'Category request not found', description: 'Error message' })
+  message: string;
+
+  @ApiProperty({ example: '2025-11-12T09:48:33.872Z', description: 'Error timestamp' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/categories/requests/cr1a2b3c4-d5e6-7890-abcd-ef1234567890/resolve', description: 'Request path' })
+  path: string;
+
+  @ApiProperty({ example: 'POST', description: 'HTTP method' })
+  method: string;
+
+  @ApiProperty({ example: 'req_1762940913872_stt9cnmii', description: 'Request ID for tracing' })
+  requestId: string;
+
+  @ApiProperty({ example: 404, description: 'HTTP status code' })
+  statusCode: number;
+
+  @ApiPropertyOptional({
+    description: 'Additional error details from the original exception',
+    example: {
+      error: 'Not Found',
+      statusCode: 404,
+    },
+    type: 'object',
+    additionalProperties: true,
+  })
+  details?: {
+    error?: string;
+    statusCode?: number;
+    [key: string]: any;
+  };
+}

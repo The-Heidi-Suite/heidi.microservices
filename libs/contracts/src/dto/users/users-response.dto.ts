@@ -24,12 +24,26 @@ export class ValidationErrorResponseDto {
   statusCode: number;
 
   @ApiPropertyOptional({
-    description: 'Additional error details',
+    description: 'Additional error details containing validation error messages',
     example: {
-      message: ['Please enter a valid email address.', 'Password must be at least 8 characters'],
+      message: [
+        'Please enter a valid email address.',
+        'Password must be at least 8 characters',
+        'name should not be empty',
+      ],
+    },
+    type: 'object',
+    additionalProperties: {
+      type: 'array',
+      items: {
+        type: 'string',
+      },
     },
   })
-  details?: any;
+  details?: {
+    message?: string[];
+    [key: string]: any;
+  };
 }
 
 export class GuestValidationErrorResponseDto {
@@ -156,6 +170,21 @@ export class NotFoundErrorResponseDto {
 
   @ApiProperty({ example: 404, description: 'HTTP status code' })
   statusCode: number;
+
+  @ApiPropertyOptional({
+    description: 'Additional error details from the original exception',
+    example: {
+      error: 'Not Found',
+      statusCode: 404,
+    },
+    type: 'object',
+    additionalProperties: true,
+  })
+  details?: {
+    error?: string;
+    statusCode?: number;
+    [key: string]: any;
+  };
 }
 
 export class BadRequestErrorResponseDto {

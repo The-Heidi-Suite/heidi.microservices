@@ -30,7 +30,7 @@ import {
   ValidationErrorResponseDto,
   UnauthorizedErrorResponseDto,
   ForbiddenErrorResponseDto,
-  NotFoundErrorResponseDto,
+  ListingNotFoundErrorResponseDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { UserRole } from '@prisma/client-core';
@@ -88,12 +88,78 @@ export class ListingController {
               moderationStatus: 'PENDING',
               visibility: 'PUBLIC',
               isFeatured: false,
+              featuredUntil: null,
+              publishAt: '2025-01-20T09:00:00.000Z',
+              expireAt: null,
+              languageCode: 'en',
+              sourceUrl: null,
+              heroImageUrl: 'https://cdn.example.com/listings/hero.jpg',
+              metadata: { tags: ['cleanup', 'volunteer'] },
+              viewCount: 150,
+              likeCount: 25,
+              shareCount: 10,
+              createdByUserId: 'user_01HZXTY0YK3H2V4C5B6N7P8Q',
+              lastEditedByUserId: null,
+              reviewedBy: null,
+              reviewedAt: null,
+              reviewNotes: null,
+              sourceType: 'MANUAL',
+              externalSource: null,
+              externalId: null,
+              syncHash: null,
+              contentChecksum: null,
+              lastSyncedAt: null,
+              ingestedAt: null,
+              ingestedByService: null,
+              ingestNotes: null,
+              primaryCityId: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+              venueName: 'Central Park',
+              address: '123 Main St, City, State 12345',
+              geoLat: 40.7128,
+              geoLng: -74.0060,
+              timezone: 'America/New_York',
+              contactPhone: '+1-555-123-4567',
+              contactEmail: 'contact@example.com',
+              website: 'https://example.com',
+              eventStart: '2025-01-20T09:00:00.000Z',
+              eventEnd: '2025-01-20T17:00:00.000Z',
+              isAllDay: false,
+              organizerName: 'Community Organization',
+              organizerContact: 'organizer@example.com',
+              registrationUrl: 'https://example.com/register',
               isArchived: false,
+              archivedAt: null,
+              archivedBy: null,
               createdAt: '2025-01-20T09:00:00.000Z',
               updatedAt: '2025-01-20T09:15:00.000Z',
-              categories: [],
-              cities: [],
-              media: [],
+              categories: [
+                {
+                  id: 'lc1a2b3c4-d5e6-7890-abcd-ef1234567890',
+                  categoryId: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+                  name: 'Community Events',
+                  slug: 'community-events',
+                  type: 'EVENT',
+                },
+              ],
+              cities: [
+                {
+                  id: 'lct1a2b3c4-d5e6-7890-abcd-ef1234567890',
+                  cityId: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+                  isPrimary: true,
+                  displayOrder: 1,
+                },
+              ],
+              media: [
+                {
+                  id: 'lm1a2b3c4-d5e6-7890-abcd-ef1234567890',
+                  type: 'IMAGE',
+                  url: 'https://cdn.example.com/listings/hero.jpg',
+                  altText: 'Community cleanup event photo',
+                  caption: 'Volunteers cleaning up the park',
+                  order: 1,
+                  metadata: { width: 1920, height: 1080 },
+                },
+              ],
               timeIntervals: [],
               timeIntervalExceptions: [],
             },
@@ -101,8 +167,8 @@ export class ListingController {
           meta: {
             page: 1,
             pageSize: 20,
-            total: 1,
-            totalPages: 1,
+            total: 120,
+            totalPages: 6,
           },
         },
       },
@@ -112,6 +178,26 @@ export class ListingController {
     status: 400,
     description: 'Validation failed for one or more filter parameters',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/listings',
+          method: 'GET',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'page must be a number',
+              'pageSize must be a positive number',
+              'Invalid date format for publishAfter',
+            ],
+          },
+        },
+      },
+    },
   })
   async list(@Query() filter: ListingFilterDto) {
     return this.listingsService.listListings(filter);
@@ -136,7 +222,7 @@ export class ListingController {
   @ApiResponse({
     status: 404,
     description: 'Listing not found',
-    type: NotFoundErrorResponseDto,
+    type: ListingNotFoundErrorResponseDto,
   })
   async getBySlug(@Param('slug') slug: string): Promise<ListingResponseDto> {
     return this.listingsService.getListingBySlug(slug);
@@ -161,7 +247,7 @@ export class ListingController {
   @ApiResponse({
     status: 404,
     description: 'Listing not found',
-    type: NotFoundErrorResponseDto,
+    type: ListingNotFoundErrorResponseDto,
   })
   async getById(@Param('id') id: string): Promise<ListingResponseDto> {
     return this.listingsService.getListingById(id);
@@ -200,6 +286,27 @@ export class ListingController {
     status: 400,
     description: 'Invalid payload - validation failed',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/listings',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'title should not be empty',
+              'content should not be empty',
+              'categories must be an array',
+              'cities must be an array',
+            ],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -252,6 +359,26 @@ export class ListingController {
     status: 400,
     description: 'Invalid update payload',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/listings/lst_01J3MJG0YX6FT5PB9SJ9Y2KQW4',
+          method: 'PATCH',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'title must be a string',
+              'Invalid date format for publishAt',
+              'status must be a valid ListingStatus enum value',
+            ],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -266,7 +393,7 @@ export class ListingController {
   @ApiResponse({
     status: 404,
     description: 'Listing not found',
-    type: NotFoundErrorResponseDto,
+    type: ListingNotFoundErrorResponseDto,
   })
   async update(
     @Param('id') id: string,
@@ -307,7 +434,7 @@ export class ListingController {
   @ApiResponse({
     status: 404,
     description: 'Listing not found',
-    type: NotFoundErrorResponseDto,
+    type: ListingNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async submitForReview(@Param('id') id: string, @GetCurrentUser() user: CurrentUser) {
@@ -349,6 +476,25 @@ export class ListingController {
     status: 400,
     description: 'Invalid moderation payload',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/listings/lst_01J3MJG0YX6FT5PB9SJ9Y2KQW4/moderate',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'moderationStatus must be a valid ListingModerationStatus enum value',
+              'Invalid date format for publishAt',
+            ],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -363,7 +509,7 @@ export class ListingController {
   @ApiResponse({
     status: 404,
     description: 'Listing not found',
-    type: NotFoundErrorResponseDto,
+    type: ListingNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async moderate(
@@ -417,7 +563,7 @@ export class ListingController {
   @ApiResponse({
     status: 404,
     description: 'Listing not found',
-    type: NotFoundErrorResponseDto,
+    type: ListingNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async approve(
@@ -471,7 +617,7 @@ export class ListingController {
   @ApiResponse({
     status: 404,
     description: 'Listing not found',
-    type: NotFoundErrorResponseDto,
+    type: ListingNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async requestChanges(
@@ -524,7 +670,7 @@ export class ListingController {
   @ApiResponse({
     status: 404,
     description: 'Listing not found',
-    type: NotFoundErrorResponseDto,
+    type: ListingNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async reject(
@@ -577,7 +723,7 @@ export class ListingController {
   @ApiResponse({
     status: 404,
     description: 'Listing not found',
-    type: NotFoundErrorResponseDto,
+    type: ListingNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   async archive(

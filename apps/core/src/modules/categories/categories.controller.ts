@@ -28,7 +28,9 @@ import {
   CategoryRequestResponseDto,
   CategoryResponseDto,
   CityCategoryResponseDto,
-  NotFoundErrorResponseDto,
+  CategoryNotFoundErrorResponseDto,
+  CategoryAssignmentNotFoundErrorResponseDto,
+  CategoryRequestNotFoundErrorResponseDto,
   RequestCategoryDto,
   ResolveCategoryRequestDto,
   UnauthorizedErrorResponseDto,
@@ -37,7 +39,7 @@ import {
   CreateCategoryDto,
   UpdateCategoryDto,
 } from '@heidi/contracts';
-import { CurrentUser, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
+import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { CategoryRequestStatus, UserRole } from '@prisma/client-core';
 import { CategoriesService } from './categories.service';
 import { AdminOnlyGuard, SuperAdminOnly, CityAdminOnly } from '@heidi/rbac';
@@ -66,8 +68,8 @@ export class CategoriesController {
     return CategoryRequestStatus[normalized];
   }
 
+  @Public()
   @Get()
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'List categories',
     description: 'Retrieve all categories available in the taxonomy.',
@@ -78,18 +80,7 @@ export class CategoriesController {
     type: CategoryResponseDto,
     isArray: true,
   })
-  @ApiResponse({
-    status: 401,
-    description: 'Authentication required',
-    type: UnauthorizedErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'Super Admin access required',
-    type: ForbiddenErrorResponseDto,
-  })
-  @SuperAdminOnly()
-  async list(@GetCurrentUser() user: CurrentUser) {
+  async list() {
     return this.categoriesService.listCategories();
   }
 
@@ -122,6 +113,26 @@ export class CategoriesController {
     status: 400,
     description: 'Invalid request payload',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/categories',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'name should not be empty',
+              'type must be a valid CategoryType enum value',
+              'isActive must be a boolean value',
+            ],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -171,6 +182,25 @@ export class CategoriesController {
     status: 400,
     description: 'Invalid update payload',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/categories/c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+          method: 'PATCH',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'name must be a string',
+              'isActive must be a boolean value',
+            ],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -185,7 +215,7 @@ export class CategoriesController {
   @ApiResponse({
     status: 404,
     description: 'Category not found',
-    type: NotFoundErrorResponseDto,
+    type: CategoryNotFoundErrorResponseDto,
   })
   @SuperAdminOnly()
   async update(
@@ -231,7 +261,7 @@ export class CategoriesController {
   @ApiResponse({
     status: 404,
     description: 'Category not found',
-    type: NotFoundErrorResponseDto,
+    type: CategoryNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
   @SuperAdminOnly()
@@ -239,7 +269,7 @@ export class CategoriesController {
     return this.categoriesService.deleteCategory(id);
   }
 
-  @ApiBearerAuth('JWT-auth')
+  @Public()
   @Get('cities/:cityId')
   @ApiOperation({
     summary: 'List categories assigned to a city',
@@ -256,30 +286,7 @@ export class CategoriesController {
     type: CityCategoryResponseDto,
     isArray: true,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'City admin is not assigned to the requested city',
-    type: BadRequestErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Authentication required',
-    type: UnauthorizedErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 403,
-    description: 'City Admin or Super Admin role required',
-    type: ForbiddenErrorResponseDto,
-  })
-  @CityAdminOnly()
-  async listCityCategories(@Param('cityId') cityId: string, @GetCurrentUser() user: CurrentUser) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
-      const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
-      if (!hasAccess) {
-        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
-      }
-    }
-
+  async listCityCategories(@Param('cityId') cityId: string) {
     return this.categoriesService.listCityCategories(cityId);
   }
 
@@ -314,6 +321,25 @@ export class CategoriesController {
     status: 400,
     description: 'Invalid payload or assignment not allowed',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/categories/cities/city_01HZXTY0YK3H2V4C5B6N7P8Q/assign',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'categoryId must be a UUID',
+              'categoryId should not be empty',
+            ],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -369,7 +395,7 @@ export class CategoriesController {
   @ApiResponse({
     status: 404,
     description: 'City/category assignment not found',
-    type: NotFoundErrorResponseDto,
+    type: CategoryAssignmentNotFoundErrorResponseDto,
   })
   @SuperAdminOnly()
   async removeCategory(
@@ -475,6 +501,25 @@ export class CategoriesController {
     status: 400,
     description: 'Invalid filter parameters',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/categories/requests',
+          method: 'GET',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'status must be a valid CategoryRequestStatus enum value',
+              'cityId must be a string',
+            ],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -594,6 +639,25 @@ export class CategoriesController {
     status: 400,
     description: 'Invalid payload',
     type: ValidationErrorResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          errorCode: 'VALIDATION_ERROR',
+          message: 'Validation failed',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/categories/requests/cr1a2b3c4-d5e6-7890-abcd-ef1234567890/resolve',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 400,
+          details: {
+            message: [
+              'status must be a valid CategoryRequestStatus enum value',
+              'notes must be a string',
+            ],
+          },
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 401,
@@ -608,7 +672,7 @@ export class CategoriesController {
   @ApiResponse({
     status: 404,
     description: 'Category request not found',
-    type: NotFoundErrorResponseDto,
+    type: CategoryRequestNotFoundErrorResponseDto,
   })
   @SuperAdminOnly()
   async resolveRequest(
