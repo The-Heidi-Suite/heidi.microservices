@@ -69,9 +69,9 @@ export class ListingTimeIntervalDto {
   @ApiProperty({ example: 'lti1a2b3c4-d5e6-7890-abcd-ef1234567890' })
   id: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: [Weekday.MONDAY, Weekday.WEDNESDAY, Weekday.FRIDAY],
-    isArray: true 
+    isArray: true,
   })
   weekdays?: Weekday[];
 
@@ -229,7 +229,7 @@ export class ListingResponseDto {
   @ApiPropertyOptional({ example: 40.7128 })
   geoLat?: number | null;
 
-  @ApiPropertyOptional({ example: -74.0060 })
+  @ApiPropertyOptional({ example: -74.006 })
   geoLng?: number | null;
 
   @ApiPropertyOptional({ example: 'America/New_York' })
@@ -277,7 +277,10 @@ export class ListingResponseDto {
   @ApiProperty({ example: '2025-01-20T09:15:00.000Z' })
   updatedAt: string;
 
-  @ApiProperty({ type: [ListingCategoryDto], description: 'Categories associated with this listing' })
+  @ApiProperty({
+    type: [ListingCategoryDto],
+    description: 'Categories associated with this listing',
+  })
   @Type(() => ListingCategoryDto)
   categories: ListingCategoryDto[];
 
@@ -289,11 +292,17 @@ export class ListingResponseDto {
   @Type(() => ListingMediaDto)
   media: ListingMediaDto[];
 
-  @ApiProperty({ type: [ListingTimeIntervalDto], description: 'Time intervals for recurring events' })
+  @ApiProperty({
+    type: [ListingTimeIntervalDto],
+    description: 'Time intervals for recurring events',
+  })
   @Type(() => ListingTimeIntervalDto)
   timeIntervals: ListingTimeIntervalDto[];
 
-  @ApiProperty({ type: [ListingTimeIntervalExceptionDto], description: 'Exceptions to recurring time intervals' })
+  @ApiProperty({
+    type: [ListingTimeIntervalExceptionDto],
+    description: 'Exceptions to recurring time intervals',
+  })
   @Type(() => ListingTimeIntervalExceptionDto)
   timeIntervalExceptions: ListingTimeIntervalExceptionDto[];
 }
@@ -308,7 +317,10 @@ export class ListingNotFoundErrorResponseDto {
   @ApiProperty({ example: '2025-11-12T09:48:33.872Z', description: 'Error timestamp' })
   timestamp: string;
 
-  @ApiProperty({ example: '/listings/79abffae-cdfe-4833-8cde-d1656e4920e9x', description: 'Request path' })
+  @ApiProperty({
+    example: '/listings/79abffae-cdfe-4833-8cde-d1656e4920e9x',
+    description: 'Request path',
+  })
   path: string;
 
   @ApiProperty({ example: 'GET', description: 'HTTP method' })
@@ -346,7 +358,10 @@ export class FavoriteNotFoundErrorResponseDto {
   @ApiProperty({ example: '2025-11-12T09:48:33.872Z', description: 'Error timestamp' })
   timestamp: string;
 
-  @ApiProperty({ example: '/favorites/123e4567-e89b-12d3-a456-426614174000', description: 'Request path' })
+  @ApiProperty({
+    example: '/favorites/123e4567-e89b-12d3-a456-426614174000',
+    description: 'Request path',
+  })
   path: string;
 
   @ApiProperty({ example: 'DELETE', description: 'HTTP method' })

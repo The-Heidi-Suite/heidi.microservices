@@ -193,10 +193,7 @@ export class CategoriesController {
           requestId: 'req_1234567890_abc123',
           statusCode: 400,
           details: {
-            message: [
-              'name must be a string',
-              'isActive must be a boolean value',
-            ],
+            message: ['name must be a string', 'isActive must be a boolean value'],
           },
         },
       },
@@ -332,10 +329,7 @@ export class CategoriesController {
           requestId: 'req_1234567890_abc123',
           statusCode: 400,
           details: {
-            message: [
-              'categoryId must be a UUID',
-              'categoryId should not be empty',
-            ],
+            message: ['categoryId must be a UUID', 'categoryId should not be empty'],
           },
         },
       },

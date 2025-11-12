@@ -16,6 +16,7 @@ import {
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 import { ErrorHandlingModule } from '@heidi/errors';
 import { TermsAcceptanceGuard } from '@heidi/rbac';
+import { StorageModule } from '@heidi/storage';
 import { UsersModule } from './modules/users/users.module';
 import { HealthController } from './health.controller';
 
@@ -25,6 +26,7 @@ import { HealthController } from './health.controller';
     TerminusModule,
     PrismaUsersModule,
     LoggerModule,
+    StorageModule,
     RmqModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

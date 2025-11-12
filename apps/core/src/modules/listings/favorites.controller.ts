@@ -75,10 +75,7 @@ export class FavoritesController {
           requestId: 'req_1234567890_abc123',
           statusCode: 400,
           details: {
-            message: [
-              'listingId must be a UUID',
-              'listingId should not be empty',
-            ],
+            message: ['listingId must be a UUID', 'listingId should not be empty'],
           },
         },
       },

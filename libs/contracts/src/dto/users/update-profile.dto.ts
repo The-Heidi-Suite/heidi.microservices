@@ -17,4 +17,12 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   lastName?: string;
+
+  @ApiPropertyOptional({
+    description: 'Profile photo URL',
+    example: 'https://storage.example.com/users/user123/profile-photo.webp',
+  })
+  @IsString()
+  @IsOptional()
+  profilePhotoUrl?: string;
 }

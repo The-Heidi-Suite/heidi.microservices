@@ -167,7 +167,10 @@ export class CategoryNotFoundErrorResponseDto {
   @ApiProperty({ example: '2025-11-12T09:48:33.872Z', description: 'Error timestamp' })
   timestamp: string;
 
-  @ApiProperty({ example: '/categories/c1a2b3c4-d5e6-7890-abcd-ef1234567890', description: 'Request path' })
+  @ApiProperty({
+    example: '/categories/c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+    description: 'Request path',
+  })
   path: string;
 
   @ApiProperty({ example: 'GET', description: 'HTTP method' })
@@ -205,7 +208,11 @@ export class CategoryAssignmentNotFoundErrorResponseDto {
   @ApiProperty({ example: '2025-11-12T09:48:33.872Z', description: 'Error timestamp' })
   timestamp: string;
 
-  @ApiProperty({ example: '/categories/cities/city_01HZXTY0YK3H2V4C5B6N7P8Q/categories/c1a2b3c4-d5e6-7890-abcd-ef1234567890', description: 'Request path' })
+  @ApiProperty({
+    example:
+      '/categories/cities/city_01HZXTY0YK3H2V4C5B6N7P8Q/categories/c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+    description: 'Request path',
+  })
   path: string;
 
   @ApiProperty({ example: 'DELETE', description: 'HTTP method' })
@@ -243,7 +250,10 @@ export class CategoryRequestNotFoundErrorResponseDto {
   @ApiProperty({ example: '2025-11-12T09:48:33.872Z', description: 'Error timestamp' })
   timestamp: string;
 
-  @ApiProperty({ example: '/categories/requests/cr1a2b3c4-d5e6-7890-abcd-ef1234567890/resolve', description: 'Request path' })
+  @ApiProperty({
+    example: '/categories/requests/cr1a2b3c4-d5e6-7890-abcd-ef1234567890/resolve',
+    description: 'Request path',
+  })
   path: string;
 
   @ApiProperty({ example: 'POST', description: 'HTTP method' })

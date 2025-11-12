@@ -4,60 +4,60 @@ import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString } from 'class-val
 import { ListingModerationStatus, ListingStatus, ListingSourceType } from '@prisma/client-core';
 
 export class UpdateListingDto extends PartialType(CreateListingDto) {
-  @ApiPropertyOptional({ 
-    enum: ListingStatus, 
+  @ApiPropertyOptional({
+    enum: ListingStatus,
     example: ListingStatus.PENDING,
-    description: 'Status of the listing'
+    description: 'Status of the listing',
   })
   @IsOptional()
   @IsEnum(ListingStatus)
   status?: ListingStatus;
 
-  @ApiPropertyOptional({ 
-    enum: ListingModerationStatus, 
+  @ApiPropertyOptional({
+    enum: ListingModerationStatus,
     example: ListingModerationStatus.PENDING,
-    description: 'Moderation status of the listing'
+    description: 'Moderation status of the listing',
   })
   @IsOptional()
   @IsEnum(ListingModerationStatus)
   moderationStatus?: ListingModerationStatus;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'Approved for publication',
-    description: 'Review notes from the moderator'
+    description: 'Review notes from the moderator',
   })
   @IsOptional()
   @IsString()
   reviewNotes?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: false,
-    description: 'Whether the listing is archived'
+    description: 'Whether the listing is archived',
   })
   @IsOptional()
   @IsBoolean()
   isArchived?: boolean;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: '2025-12-31T23:59:59.000Z',
-    description: 'Date and time when the listing was archived'
+    description: 'Date and time when the listing was archived',
   })
   @IsOptional()
   @IsDateString()
   archivedAt?: string;
 
-  @ApiPropertyOptional({ 
+  @ApiPropertyOptional({
     example: 'user_01HZXTY0YK3H2V4C5B6N7P8Q',
-    description: 'User ID of the person who archived the listing'
+    description: 'User ID of the person who archived the listing',
   })
   @IsOptional()
   @IsString()
   archivedBy?: string;
 
-  @ApiPropertyOptional({ 
-    enum: ListingSourceType, 
+  @ApiPropertyOptional({
+    enum: ListingSourceType,
     example: ListingSourceType.MANUAL,
-    description: 'Source type of the listing'
+    description: 'Source type of the listing',
   })
   @IsOptional()
   @IsEnum(ListingSourceType)
