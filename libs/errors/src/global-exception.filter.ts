@@ -58,7 +58,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const path = request.url;
     const method = request.method;
     const requestId = this.getRequestId(request);
-    
+
     // Detect language from request headers
     const language = this.languageDetector.detectLanguage(request.headers['accept-language']);
 
@@ -103,7 +103,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
           ? (exceptionResponse as string)
           : (exceptionResponse as any).message;
 
-      const translatedMessage = this.i18nService.translate(`errors.${errorCode}`, undefined, language);
+      const translatedMessage = this.i18nService.translate(
+        `errors.${errorCode}`,
+        undefined,
+        language,
+      );
 
       // Extract details, excluding errorCode and message to avoid duplication
       const responseDetails =
@@ -116,8 +120,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
       }
 
       // Prioritize translated message when we have a custom errorCode
-      const hasCustomErrorCode = 
-        typeof exceptionResponse === 'object' && 
+      const hasCustomErrorCode =
+        typeof exceptionResponse === 'object' &&
         (exceptionResponse as any).errorCode &&
         (exceptionResponse as any).errorCode !== this.mapHttpStatusToErrorCode(status);
 
@@ -150,7 +154,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     if (exception instanceof PrismaClientUnknownRequestError) {
-      const translatedMessage = this.i18nService.translate('errors.DATABASE_QUERY_ERROR', undefined, language);
+      const translatedMessage = this.i18nService.translate(
+        'errors.DATABASE_QUERY_ERROR',
+        undefined,
+        language,
+      );
       // Extract meaningful error from potentially verbose Prisma error
       const errorMessage = exception.message.includes('does not exist')
         ? 'Database table or schema not found. Please run migrations.'
@@ -171,7 +179,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Handle Redis/IORedis errors
     if (this.isRedisError(exception)) {
-      const translatedMessage = this.i18nService.translate('errors.REDIS_CONNECTION_ERROR', undefined, language);
+      const translatedMessage = this.i18nService.translate(
+        'errors.REDIS_CONNECTION_ERROR',
+        undefined,
+        language,
+      );
 
       return {
         statusCode: HttpStatus.SERVICE_UNAVAILABLE,
@@ -187,7 +199,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Handle validation errors
     if (this.isValidationError(exception)) {
-      const translatedMessage = this.i18nService.translate('errors.VALIDATION_ERROR', undefined, language);
+      const translatedMessage = this.i18nService.translate(
+        'errors.VALIDATION_ERROR',
+        undefined,
+        language,
+      );
 
       return {
         statusCode: HttpStatus.BAD_REQUEST,
@@ -203,7 +219,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     // Handle timeout errors
     if (this.isTimeoutError(exception)) {
-      const translatedMessage = this.i18nService.translate('errors.DATABASE_TIMEOUT_ERROR', undefined, language);
+      const translatedMessage = this.i18nService.translate(
+        'errors.DATABASE_TIMEOUT_ERROR',
+        undefined,
+        language,
+      );
 
       return {
         statusCode: HttpStatus.REQUEST_TIMEOUT,
@@ -218,7 +238,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // Handle unknown errors
-    const translatedMessage = this.i18nService.translate('errors.INTERNAL_SERVER_ERROR', undefined, language);
+    const translatedMessage = this.i18nService.translate(
+      'errors.INTERNAL_SERVER_ERROR',
+      undefined,
+      language,
+    );
 
     return {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
@@ -282,7 +306,11 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         }
     }
 
-    const translatedMessage = this.i18nService.translate(`errors.${errorCode}`, undefined, language);
+    const translatedMessage = this.i18nService.translate(
+      `errors.${errorCode}`,
+      undefined,
+      language,
+    );
     const message =
       translatedMessage !== `errors.${errorCode}`
         ? translatedMessage
