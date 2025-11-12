@@ -122,8 +122,9 @@ export class AuthService {
         throw error;
       }
 
-      if (!user || !user.isActive) {
-        failureReason = 'User not found or inactive';
+      if (!user) {
+        failureReason = `Account not found with email: ${dto.email}`;
+        this.logger.warn(`Login failed - Account not found for email: ${dto.email}`);
         await this.createAuditLog(
           null,
           AuthAction.LOGIN,
@@ -131,8 +132,34 @@ export class AuthService {
           failureReason,
           ipAddress,
           userAgent,
+          { email: dto.email },
         );
-        throw new UnauthorizedException('Invalid credentials');
+        throw new UnauthorizedException({
+          errorCode: 'ACCOUNT_NOT_FOUND',
+          message: `No account found with email address: ${dto.email}. Please check your email or register for a new account.`,
+          email: dto.email,
+        });
+      }
+
+      if (!user.isActive) {
+        failureReason = `Account is inactive for email: ${dto.email}`;
+        this.logger.warn(
+          `Login failed - Account inactive for email: ${dto.email}, userId: ${user.id}`,
+        );
+        await this.createAuditLog(
+          user.id,
+          AuthAction.LOGIN,
+          false,
+          failureReason,
+          ipAddress,
+          userAgent,
+          { email: dto.email },
+        );
+        throw new UnauthorizedException({
+          errorCode: 'ACCOUNT_INACTIVE',
+          message: `Your account is inactive. Please contact support for assistance.`,
+          email: dto.email,
+        });
       }
 
       // Check email verification (fail fast if email exists and not verified)
@@ -174,7 +201,10 @@ export class AuthService {
       // Verify password (only if email is verified or user has no email)
       const isPasswordValid = await bcrypt.compare(dto.password, user.password);
       if (!isPasswordValid) {
-        failureReason = 'Invalid password';
+        failureReason = `Invalid password for email: ${dto.email}`;
+        this.logger.warn(
+          `Login failed - Invalid password for email: ${dto.email}, userId: ${user.id}`,
+        );
         await this.createAuditLog(
           user.id,
           AuthAction.LOGIN,
@@ -182,8 +212,13 @@ export class AuthService {
           failureReason,
           ipAddress,
           userAgent,
+          { email: dto.email },
         );
-        throw new UnauthorizedException('Invalid credentials');
+        throw new UnauthorizedException({
+          errorCode: 'INVALID_CREDENTIALS',
+          message: 'Invalid email or password. Please check your credentials and try again.',
+          email: dto.email,
+        });
       }
 
       // Step 2: Load user's city assignments from core service via RabbitMQ
@@ -350,8 +385,21 @@ export class AuthService {
       }
       // Log and convert other errors to UnauthorizedException
       failureReason = error instanceof Error ? error.message : 'Unknown error';
-      await this.createAuditLog(null, AuthAction.LOGIN, false, failureReason, ipAddress, userAgent);
-      throw new UnauthorizedException('Invalid credentials');
+      this.logger.error(`Login error for email: ${dto.email}`, error);
+      await this.createAuditLog(
+        null,
+        AuthAction.LOGIN,
+        false,
+        failureReason,
+        ipAddress,
+        userAgent,
+        { email: dto.email },
+      );
+      throw new UnauthorizedException({
+        errorCode: 'LOGIN_ERROR',
+        message: 'An error occurred during login. Please try again later.',
+        email: dto.email,
+      });
     }
   }
 
