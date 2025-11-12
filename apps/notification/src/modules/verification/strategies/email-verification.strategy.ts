@@ -4,6 +4,8 @@ import { IVerificationStrategy } from './verification-strategy.interface';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { I18nService } from '@heidi/i18n';
+import { CityEmailThemeService } from '../services/city-email-theme.service';
+import { CityEmailTheme } from '../config/default-email-theme.config';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -15,6 +17,7 @@ export class EmailVerificationStrategy implements IVerificationStrategy {
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
     private readonly i18nService: I18nService,
+    private readonly cityEmailThemeService: CityEmailThemeService,
   ) {
     // Use API gateway URL if configured, otherwise fallback to direct service URL
     const apiGatewayBaseUrl = this.configService.get<string>('apiGatewayBaseUrl');
@@ -55,11 +58,25 @@ export class EmailVerificationStrategy implements IVerificationStrategy {
     const preferredLanguage =
       metadata?.preferredLanguage || metadata?.language || metadata?.locale || undefined;
 
-    const emailSubject = this.i18nService.translate(
+    // Get city theme configuration
+    const cityId = metadata?.cityId || null;
+    const cityTheme = await this.cityEmailThemeService.getCityTheme(cityId);
+
+    // Generate greeting with app name from theme
+    const appName = cityTheme.appName || 'Heidi';
+    const greetingTemplate = cityTheme.greetingTemplate || 'Welcome to {appName}{firstNamePart}!';
+    const firstNamePart = metadata?.firstName ? `, ${metadata.firstName}` : '';
+    const greeting = greetingTemplate
+      .replace('{appName}', appName)
+      .replace('{firstNamePart}', firstNamePart);
+
+    // Get subject with app name
+    const subjectTemplate = this.i18nService.translate(
       'emails.verification.subject',
       undefined,
       preferredLanguage,
     );
+    const emailSubject = subjectTemplate.replace('{appName}', appName);
 
     const emailContent = this.generateEmailContent(
       verificationLink,
@@ -67,6 +84,8 @@ export class EmailVerificationStrategy implements IVerificationStrategy {
       metadata?.firstName,
       emailSubject,
       preferredLanguage,
+      cityTheme,
+      greeting,
     );
 
     // Send welcome email with verification link
@@ -95,14 +114,10 @@ export class EmailVerificationStrategy implements IVerificationStrategy {
     cancelLink: string,
     firstName: string | undefined,
     emailSubject: string,
-    preferredLanguage?: string,
+    preferredLanguage: string | undefined,
+    cityTheme: CityEmailTheme,
+    greeting: string,
   ): string {
-    const firstNamePart = firstName ? `, ${firstName}` : '';
-    const greeting = this.i18nService.translate(
-      'emails.verification.greeting',
-      { firstNamePart },
-      preferredLanguage,
-    );
     const intro = this.i18nService.translate(
       'emails.verification.intro',
       undefined,
@@ -134,41 +149,82 @@ export class EmailVerificationStrategy implements IVerificationStrategy {
       preferredLanguage,
     );
 
+    // Use city theme colors or defaults
+    const headerBackgroundColor =
+      cityTheme.emailTheme?.headerBackgroundColor || cityTheme.secondaryColor || '#1a1a2e';
+    const footerBackgroundColor =
+      cityTheme.emailTheme?.footerBackgroundColor || cityTheme.primaryColor || '#009EE0';
+    const buttonColor = cityTheme.emailTheme?.buttonColor || '#ffffff';
+    const buttonTextColor =
+      cityTheme.emailTheme?.buttonTextColor || cityTheme.primaryColor || '#009EE0';
+    const accentColor = cityTheme.accentColor || '#009EE0';
+
+    // Generate email template with city theme
     return `
       <!DOCTYPE html>
-      <html>
+      <html lang="${preferredLanguage || 'en'}">
       <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
         <title>${emailSubject}</title>
+        <!--[if mso]>
+        <style type="text/css">
+          body, table, td {font-family: Arial, sans-serif !important;}
+        </style>
+        <![endif]-->
       </head>
-      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <div style="background-color: #f4f4f4; padding: 20px; border-radius: 5px;">
-          <h1 style="color: #2c3e50;">${greeting}</h1>
-
-          <p>${intro}</p>
-
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationLink}"
-               style="background-color: #3498db; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block; font-weight: bold;">
-              ${ctaText}
-            </a>
-          </div>
-
-          <p style="font-size: 14px; color: #7f8c8d;">
-            ${expiryNotice}
-          </p>
-
-          <p style="font-size: 12px; color: #95a5a6; margin-top: 30px; border-top: 1px solid #ecf0f1; padding-top: 20px;">
-            ${cancelText}
-            <a href="${cancelLink}" style="color: #e74c3c;">${cancelLinkText}</a>.
-          </p>
-
-          <p style="font-size: 12px; color: #95a5a6; margin-top: 10px;">
-            ${fallback}<br>
-            <span style="word-break: break-all; color: #3498db;">${verificationLink}</span>
-          </p>
-        </div>
+      <body style="margin: 0; padding: 0; background-color: #f5f5f5; font-family: Arial, Helvetica, sans-serif;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5;">
+          <tr>
+            <td align="center" style="padding: 0;">
+              <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+                <!-- Upper section: Theme secondary color with greeting -->
+                <tr>
+                  <td style="background-color: ${headerBackgroundColor}; padding: 40px 30px 60px 30px; text-align: left;">
+                    <!-- Greeting -->
+                    <h1 style="margin: 0 0 20px 0; color: #ffffff; font-size: 32px; font-weight: bold; line-height: 1.2; font-family: Arial, Helvetica, sans-serif;">
+                      ${greeting}
+                    </h1>
+                    <!-- Intro text -->
+                    <p style="margin: 0 0 30px 0; color: #ffffff; font-size: 16px; line-height: 1.6; font-family: Arial, Helvetica, sans-serif;">
+                      ${intro}
+                    </p>
+                  </td>
+                </tr>
+                <!-- Lower section: Theme primary color with CTA button -->
+                <tr>
+                  <td style="background-color: ${footerBackgroundColor}; padding: 40px 30px; text-align: center; position: relative;">
+                    <!-- CTA Button -->
+                    <div style="margin-bottom: 30px;">
+                      <a href="${verificationLink}"
+                         style="background-color: ${buttonColor}; color: ${buttonTextColor}; padding: 16px 40px; text-decoration: none; border-radius: 30px; display: inline-block; font-weight: bold; font-size: 18px; font-family: Arial, Helvetica, sans-serif; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); border: 2px solid ${buttonColor};">
+                        ${ctaText}
+                      </a>
+                    </div>
+                    <!-- Expiry notice -->
+                    <p style="margin: 0 0 20px 0; color: #ffffff; font-size: 14px; line-height: 1.5; font-family: Arial, Helvetica, sans-serif;">
+                      ${expiryNotice}
+                    </p>
+                  </td>
+                </tr>
+                <!-- Footer section: Cancel link and fallback -->
+                <tr>
+                  <td style="background-color: #ffffff; padding: 30px; text-align: center; border-top: 1px solid #e0e0e0;">
+                    <p style="margin: 0 0 15px 0; color: #666666; font-size: 13px; line-height: 1.5; font-family: Arial, Helvetica, sans-serif;">
+                      ${cancelText}
+                      <a href="${cancelLink}" style="color: #e74c3c; text-decoration: underline;">${cancelLinkText}</a>.
+                    </p>
+                    <p style="margin: 0; color: #999999; font-size: 12px; line-height: 1.5; font-family: Arial, Helvetica, sans-serif;">
+                      ${fallback}<br>
+                      <a href="${verificationLink}" style="color: ${accentColor}; text-decoration: underline; word-break: break-all;">${verificationLink}</a>
+                    </p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
       </body>
       </html>
     `;

@@ -1,7 +1,6 @@
 {
   "verification": {
-    "subject": "Velkommen! Bekræft venligst din e-mailadresse",
-    "greeting": "Velkommen{firstNamePart}!",
+    "subject": "Velkommen til {appName}! Bekræft venligst din e-mailadresse",
     "intro": "Tak fordi du har registreret dig. For at færdiggøre registreringen og sikre din konto skal du bekræfte din e-mailadresse.",
     "cta": "Bekræft e-mailadresse",
     "expiryNotice": "<strong>Vigtigt:</strong> Dette bekræftelseslink udløber om 24 timer. Hvis du ikke har oprettet kontoen, kan du ignorere e-mailen eller bruge linket nedenfor til at annullere.",
