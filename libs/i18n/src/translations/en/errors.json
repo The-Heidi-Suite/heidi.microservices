@@ -52,5 +52,11 @@
   "ACCOUNT_NOT_FOUND": "No account found with this email address. Please check your email or register for a new account.",
   "ACCOUNT_INACTIVE": "Your account is inactive. Please contact support for assistance.",
   "INVALID_CREDENTIALS": "Invalid email or password. Please check your credentials and try again.",
-  "LOGIN_ERROR": "An error occurred during login. Please try again later."
+  "LOGIN_ERROR": "An error occurred during login. Please try again later.",
+  "TILE_NOT_FOUND": "Tile not found",
+  "TILE_ACCESS_DENIED": "You do not have permission to perform this action on tiles",
+  "TILE_CREATE_DENIED": "Only admins can create tiles",
+  "TILE_UPDATE_DENIED": "Only admins can update tiles",
+  "TILE_DELETE_DENIED": "Only admins can delete tiles",
+  "TILE_CITY_ACCESS_DENIED": "You do not have access to create tiles for one or more specified cities"
 }

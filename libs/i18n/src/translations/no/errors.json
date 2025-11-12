@@ -52,5 +52,11 @@
   "ACCOUNT_NOT_FOUND": "Ingen konto funnet med denne e-postadressen. Vennligst sjekk e-posten din eller registrer en ny konto.",
   "ACCOUNT_INACTIVE": "Kontoen din er inaktiv. Vennligst kontakt support for hjelp.",
   "INVALID_CREDENTIALS": "Ugyldig e-post eller passord. Vennligst sjekk opplysningene dine og prøv igjen.",
-  "LOGIN_ERROR": "En feil oppstod under innlogging. Vennligst prøv igjen senere."
+  "LOGIN_ERROR": "En feil oppstod under innlogging. Vennligst prøv igjen senere.",
+  "TILE_NOT_FOUND": "Flis ikke funnet",
+  "TILE_ACCESS_DENIED": "Du har ikke tillatelse til å utføre denne handlingen på fliser",
+  "TILE_CREATE_DENIED": "Kun administratorer kan opprette fliser",
+  "TILE_UPDATE_DENIED": "Kun administratorer kan oppdatere fliser",
+  "TILE_DELETE_DENIED": "Kun administratorer kan slette fliser",
+  "TILE_CITY_ACCESS_DENIED": "Du har ikke tilgang til å opprette fliser for en eller flere angitte byer"
 }

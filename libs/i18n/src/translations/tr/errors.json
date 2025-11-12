@@ -52,5 +52,11 @@
   "ACCOUNT_NOT_FOUND": "Bu e-posta adresiyle bir hesap bulunamadı. Lütfen e-postanızı kontrol edin veya yeni bir hesap oluşturun.",
   "ACCOUNT_INACTIVE": "Hesabınız aktif değil. Lütfen destek ile iletişime geçin.",
   "INVALID_CREDENTIALS": "Geçersiz e-posta veya şifre. Lütfen bilgilerinizi kontrol edip tekrar deneyin.",
-  "LOGIN_ERROR": "Giriş sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin."
+  "LOGIN_ERROR": "Giriş sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
+  "TILE_NOT_FOUND": "Karo bulunamadı",
+  "TILE_ACCESS_DENIED": "Karolar üzerinde bu işlemi gerçekleştirme izniniz yok",
+  "TILE_CREATE_DENIED": "Yalnızca yöneticiler karo oluşturabilir",
+  "TILE_UPDATE_DENIED": "Yalnızca yöneticiler karo güncelleyebilir",
+  "TILE_DELETE_DENIED": "Yalnızca yöneticiler karo silebilir",
+  "TILE_CITY_ACCESS_DENIED": "Belirtilen bir veya daha fazla şehir için karo oluşturma erişiminiz yok"
 }

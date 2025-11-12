@@ -52,5 +52,11 @@
   "ACCOUNT_NOT_FOUND": "Kein Konto mit dieser E-Mail-Adresse gefunden. Bitte überprüfe deine E-Mail oder registriere ein neues Konto.",
   "ACCOUNT_INACTIVE": "Dein Konto ist inaktiv. Bitte kontaktiere den Support für Hilfe.",
   "INVALID_CREDENTIALS": "Ungültige E-Mail oder Passwort. Bitte überprüfe deine Anmeldedaten und versuche es erneut.",
-  "LOGIN_ERROR": "Während der Anmeldung ist ein Fehler aufgetreten. Bitte versuche es später erneut."
+  "LOGIN_ERROR": "Während der Anmeldung ist ein Fehler aufgetreten. Bitte versuche es später erneut.",
+  "TILE_NOT_FOUND": "Kachel nicht gefunden",
+  "TILE_ACCESS_DENIED": "Du hast keine Berechtigung, diese Aktion auf Kacheln auszuführen",
+  "TILE_CREATE_DENIED": "Nur Administratoren können Kacheln erstellen",
+  "TILE_UPDATE_DENIED": "Nur Administratoren können Kacheln aktualisieren",
+  "TILE_DELETE_DENIED": "Nur Administratoren können Kacheln löschen",
+  "TILE_CITY_ACCESS_DENIED": "Du hast keinen Zugriff, um Kacheln für eine oder mehrere angegebene Städte zu erstellen"
 }

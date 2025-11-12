@@ -52,5 +52,11 @@
   "ACCOUNT_NOT_FOUND": "Inget konto hittades med denna e-postadress. Kontrollera din e-post eller registrera ett nytt konto.",
   "ACCOUNT_INACTIVE": "Ditt konto är inaktivt. Kontakta support för hjälp.",
   "INVALID_CREDENTIALS": "Ogiltig e-post eller lösenord. Kontrollera dina uppgifter och försök igen.",
-  "LOGIN_ERROR": "Ett fel uppstod under inloggningen. Försök igen senare."
+  "LOGIN_ERROR": "Ett fel uppstod under inloggningen. Försök igen senare.",
+  "TILE_NOT_FOUND": "Panel hittades inte",
+  "TILE_ACCESS_DENIED": "Du har inte behörighet att utföra denna åtgärd på paneler",
+  "TILE_CREATE_DENIED": "Endast administratörer kan skapa paneler",
+  "TILE_UPDATE_DENIED": "Endast administratörer kan uppdatera paneler",
+  "TILE_DELETE_DENIED": "Endast administratörer kan ta bort paneler",
+  "TILE_CITY_ACCESS_DENIED": "Du har inte åtkomst att skapa paneler för en eller flera angivna städer"
 }
