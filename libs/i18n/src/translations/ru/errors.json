@@ -48,5 +48,5 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "Недопустимый статус запроса категории.",
   "CITY_ACCESS_DENIED": "У вас нет доступа к этому городу.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "Связка города и категории не найдена.",
-  "REGISTRATION_FIELDS_REQUIRED": "Для регистрации требуются электронная почта, имя пользователя и пароль"
+  "REGISTRATION_FIELDS_REQUIRED": "Для регистрации требуются электронная почта и пароль"
 }

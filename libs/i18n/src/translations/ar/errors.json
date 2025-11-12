@@ -48,5 +48,5 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "حالة طلب الفئة غير صالحة.",
   "CITY_ACCESS_DENIED": "لست مخصصًا لهذه المدينة.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "تعذر العثور على ارتباط المدينة بالفئة.",
-  "REGISTRATION_FIELDS_REQUIRED": "البريد الإلكتروني واسم المستخدم وكلمة المرور مطلوبة للتسجيل"
+  "REGISTRATION_FIELDS_REQUIRED": "البريد الإلكتروني وكلمة المرور مطلوبة للتسجيل"
 }

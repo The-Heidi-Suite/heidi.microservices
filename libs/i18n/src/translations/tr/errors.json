@@ -48,5 +48,5 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "Geçersiz kategori talebi durumu.",
   "CITY_ACCESS_DENIED": "Bu şehre atanmış değilsiniz.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "Şehir-kategori eşleştirmesi bulunamadı.",
-  "REGISTRATION_FIELDS_REQUIRED": "Kayıt için e-posta, kullanıcı adı ve şifre gereklidir"
+  "REGISTRATION_FIELDS_REQUIRED": "Kayıt için e-posta ve şifre gereklidir"
 }

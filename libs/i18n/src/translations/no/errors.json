@@ -48,5 +48,5 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "Ugyldig status for kategori-forespørselen.",
   "CITY_ACCESS_DENIED": "Du er ikke tilordnet denne byen.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "Koblingen mellom by og kategori ble ikke funnet.",
-  "REGISTRATION_FIELDS_REQUIRED": "E-post, brukernavn og passord er påkrevd for registrering"
+  "REGISTRATION_FIELDS_REQUIRED": "E-post og passord er påkrevd for registrering"
 }

@@ -48,5 +48,5 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "Ogiltig status för kategoriansökan.",
   "CITY_ACCESS_DENIED": "Du är inte tilldelad den här staden.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "Kopplingen mellan stad och kategori hittades inte.",
-  "REGISTRATION_FIELDS_REQUIRED": "E-post, användarnamn och lösenord krävs för registrering"
+  "REGISTRATION_FIELDS_REQUIRED": "E-post och lösenord krävs för registrering"
 }

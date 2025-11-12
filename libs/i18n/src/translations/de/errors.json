@@ -48,5 +48,5 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "Ungültiger Status für die Kategorieanfrage.",
   "CITY_ACCESS_DENIED": "Du bist dieser Stadt nicht zugeordnet.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "Zuordnung zwischen Stadt und Kategorie wurde nicht gefunden.",
-  "REGISTRATION_FIELDS_REQUIRED": "E-Mail, Benutzername und Passwort sind für die Registrierung erforderlich"
+  "REGISTRATION_FIELDS_REQUIRED": "E-Mail und Passwort sind für die Registrierung erforderlich"
 }

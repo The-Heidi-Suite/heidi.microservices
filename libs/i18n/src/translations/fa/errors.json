@@ -48,5 +48,5 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "وضعیت درخواست دسته‌بندی نامعتبر است.",
   "CITY_ACCESS_DENIED": "شما به این شهر اختصاص داده نشده‌اید.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "ارتباط شهر و دسته‌بندی یافت نشد.",
-  "REGISTRATION_FIELDS_REQUIRED": "ایمیل، نام کاربری و رمز عبور برای ثبت‌نام الزامی است"
+  "REGISTRATION_FIELDS_REQUIRED": "ایمیل و رمز عبور برای ثبت‌نام الزامی است"
 }
