@@ -16,6 +16,7 @@ import { TermsAcceptanceGuard } from '@heidi/rbac';
 import { CoreModule } from './modules/core/core.module';
 import { ListingsModule } from './modules/listings/listings.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { TilesModule } from './modules/tiles/tiles.module';
 import { HealthController } from './health.controller';
 import { JwtModule } from '@heidi/jwt';
 import { RBACModule } from '@heidi/rbac';
@@ -40,6 +41,7 @@ import { ErrorHandlingModule } from '@heidi/errors';
     CoreModule,
     ListingsModule,
     CategoriesModule,
+    TilesModule,
   ],
   controllers: [HealthController],
   providers: [
