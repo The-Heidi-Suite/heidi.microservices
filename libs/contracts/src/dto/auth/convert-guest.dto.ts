@@ -18,8 +18,9 @@ export class ConvertGuestDto {
   @IsEmail({}, { message: 'Please enter a valid email address.' })
   email: string;
 
-  @ApiProperty({
-    description: 'Username (alphanumeric and underscores, 3-30 characters)',
+  @ApiPropertyOptional({
+    description:
+      'Username (alphanumeric and underscores, 3-30 characters). Optional - can be set later via profile update.',
     example: 'johndoe',
     minLength: 3,
     maxLength: 30,
@@ -29,7 +30,8 @@ export class ConvertGuestDto {
   @Matches(/^[a-zA-Z0-9_]+$/, {
     message: 'Username must contain only letters, numbers, and underscores',
   })
-  username: string;
+  @IsOptional()
+  username?: string;
 
   @ApiProperty({
     description: 'User password',
