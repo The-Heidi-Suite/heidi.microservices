@@ -8,6 +8,7 @@ import { PrismaCoreService } from '@heidi/prisma';
 import { LoggerService } from '@heidi/logger';
 import {
   Prisma,
+  ListingMediaType,
   ListingModerationStatus,
   ListingRecurrenceFreq,
   ListingSourceType,
@@ -369,6 +370,47 @@ export class ListingsService {
         });
       }),
     );
+  }
+
+  /**
+   * Create a single listing media record
+   */
+  async createListingMedia(
+    listingId: string,
+    media: {
+      type: ListingMediaType;
+      url: string;
+      altText?: string;
+      caption?: string;
+      order?: number;
+      metadata?: any;
+    },
+  ): Promise<ListingMediaDto> {
+    const created = await this.prisma.listingMedia.create({
+      data: {
+        listingId,
+        type: media.type,
+        url: media.url,
+        altText: media.altText,
+        caption: media.caption,
+        order: media.order ?? 0,
+        metadata: this.toJson(media.metadata),
+      },
+    });
+
+    return this.mapListingMedia(created);
+  }
+
+  private mapListingMedia(media: any): ListingMediaDto {
+    return {
+      id: media.id,
+      type: media.type,
+      url: media.url,
+      altText: media.altText,
+      caption: media.caption,
+      order: media.order,
+      metadata: media.metadata as Record<string, unknown> | null,
+    };
   }
 
   private async syncListingTimeIntervals(

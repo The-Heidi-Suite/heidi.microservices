@@ -10,7 +10,12 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
+  UploadedFiles,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -31,16 +36,25 @@ import {
   UnauthorizedErrorResponseDto,
   ForbiddenErrorResponseDto,
   ListingNotFoundErrorResponseDto,
+  UploadHeroImageResponseDto,
+  UploadMediaResponseDto,
+  ListingMediaDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
-import { UserRole } from '@prisma/client-core';
+import { UserRole, ListingMediaType } from '@prisma/client-core';
 import { ListingsService } from './listings.service';
+import { FileUploadService } from '@heidi/storage';
+import { ConfigService } from '@heidi/config';
 
 @ApiTags('listings')
 @Controller('listings')
 @UseGuards(JwtAuthGuard)
 export class ListingController {
-  constructor(private readonly listingsService: ListingsService) {}
+  constructor(
+    private readonly listingsService: ListingsService,
+    private readonly fileUploadService: FileUploadService,
+    private readonly configService: ConfigService,
+  ) {}
 
   private getRoles(role?: string): UserRole[] {
     if (!role) {
@@ -733,5 +747,210 @@ export class ListingController {
   ) {
     this.ensureAdminRole(user?.role);
     return this.listingsService.archiveListing(id, user.userId, body.reviewNotes);
+  }
+
+  @Post(':id/hero-image')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Upload hero image for a listing',
+    description: 'Upload and process a hero image for a listing.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the listing',
+    example: 'lst_01J3MJG0YX6FT5PB9SJ9Y2KQW4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Hero image uploaded successfully',
+    type: UploadHeroImageResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Listing not found',
+    type: ListingNotFoundErrorResponseDto,
+  })
+  async uploadHeroImage(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+    @GetCurrentUser() user: CurrentUser,
+  ): Promise<UploadHeroImageResponseDto> {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // Validate image
+    await this.fileUploadService.validateImage(file);
+
+    // Process image
+    const processedFile = await this.fileUploadService.processImage(file);
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Generate storage key
+    const key = this.fileUploadService.generateListingHeroKey(id, processedFile.extension);
+
+    // Upload to storage
+    const imageUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    // Update listing in database
+    const roles = this.getRoles(user.role);
+    const listing = await this.listingsService.updateListing(id, user.userId, roles, {
+      heroImageUrl: imageUrl,
+    });
+
+    return {
+      listing,
+      imageUrl,
+    };
+  }
+
+  @Post(':id/media')
+  @UseInterceptors(FilesInterceptor('files', 10))
+  @HttpCode(HttpStatus.CREATED)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Upload media files for a listing',
+    description:
+      'Upload multiple media files (images, videos, documents, audio) for a listing. Supports up to 10 files.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the listing',
+    example: 'lst_01J3MJG0YX6FT5PB9SJ9Y2KQW4',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Media files uploaded successfully',
+    type: UploadMediaResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid files or validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Listing not found',
+    type: ListingNotFoundErrorResponseDto,
+  })
+  async uploadMedia(
+    @Param('id') id: string,
+    @UploadedFiles() files: any[],
+    @GetCurrentUser() _user: CurrentUser,
+  ): Promise<UploadMediaResponseDto> {
+    if (!files || files.length === 0) {
+      throw new BadRequestException('No files provided');
+    }
+
+    if (files.length > 10) {
+      throw new BadRequestException('Maximum 10 files allowed per upload');
+    }
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Verify listing exists
+    await this.listingsService.getListingById(id);
+
+    const uploadedMedia: ListingMediaDto[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+
+      // Detect media type
+      const { type: mediaType, mimeType } = await this.fileUploadService.detectMediaType(file);
+
+      // Validate based on type
+      switch (mediaType) {
+        case 'IMAGE':
+          await this.fileUploadService.validateImage(file);
+          break;
+        case 'VIDEO':
+          await this.fileUploadService.validateVideo(file);
+          break;
+        case 'DOCUMENT':
+          await this.fileUploadService.validateDocument(file);
+          break;
+        case 'AUDIO':
+          await this.fileUploadService.validateAudio(file);
+          break;
+        default:
+          throw new BadRequestException(`Unsupported file type: ${mimeType}`);
+      }
+
+      // Process image files only
+      let processedFile;
+      let finalExtension: string;
+      let finalMimeType: string;
+
+      if (mediaType === 'IMAGE') {
+        processedFile = await this.fileUploadService.processImage(file);
+        finalExtension = processedFile.extension;
+        finalMimeType = processedFile.mimeType;
+      } else {
+        // For non-image files, use as-is
+        const { fileTypeFromBuffer } = await import('file-type');
+        const detected = await fileTypeFromBuffer(file.buffer);
+        finalExtension = detected?.ext || this.getFileExtension(file.originalname);
+        finalMimeType = file.mimetype || detected?.mime || 'application/octet-stream';
+        processedFile = {
+          buffer: file.buffer,
+          mimeType: finalMimeType,
+          extension: finalExtension,
+          originalName: file.originalname,
+          size: file.size,
+        };
+      }
+
+      // Generate storage key
+      const key = this.fileUploadService.generateListingMediaKey(id, i, finalExtension);
+
+      // Upload to storage
+      const url = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+      // Create media record
+      const mediaRecord = await this.listingsService.createListingMedia(id, {
+        type: mediaType as ListingMediaType,
+        url,
+        altText: file.originalname,
+        order: i,
+      });
+
+      uploadedMedia.push(mediaRecord);
+    }
+
+    return {
+      media: uploadedMedia,
+    };
+  }
+
+  private getFileExtension(filename: string): string {
+    const parts = filename.split('.');
+    return parts.length > 1 ? parts[parts.length - 1] : '';
   }
 }
