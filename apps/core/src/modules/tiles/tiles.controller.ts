@@ -158,7 +158,7 @@ export class TilesController {
     @Body() dto: CreateTileDto,
     @GetCurrentUser() user: CurrentUser,
   ): Promise<TileResponseDto> {
-    const userId = user.sub || user.userId;
+    const userId = user.userId;
     const roles = this.getRoles(user.role);
     return this.tilesService.createTile(userId, roles, dto);
   }
@@ -208,7 +208,7 @@ export class TilesController {
     @Body() dto: UpdateTileDto,
     @GetCurrentUser() user: CurrentUser,
   ): Promise<TileResponseDto> {
-    const userId = user.sub || user.userId;
+    const userId = user.userId;
     const roles = this.getRoles(user.role);
     return this.tilesService.updateTile(id, userId, roles, dto);
   }
@@ -247,11 +247,8 @@ export class TilesController {
     description: 'Tile not found',
     type: NotFoundErrorResponseDto,
   })
-  async delete(
-    @Param('id') id: string,
-    @GetCurrentUser() user: CurrentUser,
-  ): Promise<void> {
-    const userId = user.sub || user.userId;
+  async delete(@Param('id') id: string, @GetCurrentUser() user: CurrentUser): Promise<void> {
+    const userId = user.userId;
     const roles = this.getRoles(user.role);
     return this.tilesService.deleteTile(id, userId, roles);
   }
