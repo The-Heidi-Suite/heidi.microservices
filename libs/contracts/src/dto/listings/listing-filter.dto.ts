@@ -1,3 +1,4 @@
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
@@ -43,78 +44,156 @@ const transformBooleanParam = (value: unknown) => {
 };
 
 export class ListingFilterDto {
+  @ApiPropertyOptional({ 
+    example: 'cleanup',
+    description: 'Search term to filter listings by title, summary, or content'
+  })
   @IsOptional()
   @IsString()
   search?: string;
 
+  @ApiPropertyOptional({ 
+    example: ['city_01HZXTY0YK3H2V4C5B6N7P8Q'],
+    isArray: true,
+    description: 'Filter by city IDs (comma-separated or array)'
+  })
   @IsOptional()
   @IsArray()
   @Transform(({ value }) => transformArrayParam(value))
   @IsString({ each: true })
   cityIds?: string[];
 
+  @ApiPropertyOptional({ 
+    example: ['c1a2b3c4-d5e6-7890-abcd-ef1234567890'],
+    isArray: true,
+    description: 'Filter by category IDs (comma-separated or array)'
+  })
   @IsOptional()
   @IsArray()
   @Transform(({ value }) => transformArrayParam(value))
   @IsString({ each: true })
   categoryIds?: string[];
 
+  @ApiPropertyOptional({ 
+    enum: ListingStatus, 
+    example: ListingStatus.PENDING,
+    description: 'Filter by listing status'
+  })
   @IsOptional()
   @IsEnum(ListingStatus)
   status?: ListingStatus;
 
+  @ApiPropertyOptional({ 
+    enum: ListingModerationStatus, 
+    example: ListingModerationStatus.PENDING,
+    description: 'Filter by moderation status'
+  })
   @IsOptional()
   @IsEnum(ListingModerationStatus)
   moderationStatus?: ListingModerationStatus;
 
+  @ApiPropertyOptional({ 
+    enum: ListingVisibility, 
+    example: ListingVisibility.PUBLIC,
+    description: 'Filter by visibility level'
+  })
   @IsOptional()
   @IsEnum(ListingVisibility)
   visibility?: ListingVisibility;
 
+  @ApiPropertyOptional({ 
+    enum: ListingSourceType, 
+    example: ListingSourceType.MANUAL,
+    description: 'Filter by source type'
+  })
   @IsOptional()
   @IsEnum(ListingSourceType)
   sourceType?: ListingSourceType;
 
+  @ApiPropertyOptional({ 
+    example: true,
+    description: 'Filter by featured status'
+  })
   @IsOptional()
   @IsBoolean()
   @Transform(({ value }) => transformBooleanParam(value))
   isFeatured?: boolean;
 
+  @ApiPropertyOptional({ 
+    example: ['en', 'es'],
+    isArray: true,
+    description: 'Filter by language codes (comma-separated or array)'
+  })
   @IsOptional()
   @IsArray()
   @Transform(({ value }) => transformArrayParam(value))
   @IsString({ each: true })
   languageCodes?: string[];
 
+  @ApiPropertyOptional({ 
+    example: '2025-01-01T00:00:00.000Z',
+    description: 'Filter listings published after this date'
+  })
   @IsOptional()
   @IsDateString()
   publishAfter?: string;
 
+  @ApiPropertyOptional({ 
+    example: '2025-12-31T23:59:59.000Z',
+    description: 'Filter listings published before this date'
+  })
   @IsOptional()
   @IsDateString()
   publishBefore?: string;
 
+  @ApiPropertyOptional({ 
+    example: '2025-01-20T00:00:00.000Z',
+    description: 'Filter listings with events starting after this date'
+  })
   @IsOptional()
   @IsDateString()
   upcomingAfter?: string;
 
+  @ApiPropertyOptional({ 
+    example: '2025-12-31T23:59:59.000Z',
+    description: 'Filter listings with events starting before this date'
+  })
   @IsOptional()
   @IsDateString()
   upcomingBefore?: string;
 
+  @ApiPropertyOptional({ 
+    example: 'createdAt',
+    description: 'Field to sort by (e.g., createdAt, title, publishAt)'
+  })
   @IsOptional()
   @IsString()
   sortBy?: string;
 
+  @ApiPropertyOptional({ 
+    enum: ['asc', 'desc'],
+    example: 'desc',
+    description: 'Sort direction'
+  })
   @IsOptional()
   @IsIn(['asc', 'desc'])
   sortDirection?: 'asc' | 'desc';
 
+  @ApiPropertyOptional({ 
+    example: 1,
+    description: 'Page number (1-indexed)',
+    default: 1
+  })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   page?: number;
 
+  @ApiPropertyOptional({ 
+    example: 20,
+    description: 'Number of items per page',
+    default: 20
+  })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
