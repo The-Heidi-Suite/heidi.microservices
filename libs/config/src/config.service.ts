@@ -158,6 +158,17 @@ export class ConfigService {
     };
   }
 
+  // Hetzner Object Storage configuration
+  get storageConfig() {
+    return {
+      endpoint: this.get<string>('storage.endpoint'),
+      region: this.get<string>('storage.region', 'fsn1'),
+      accessKeyId: this.get<string>('storage.accessKeyId'),
+      secretAccessKey: this.get<string>('storage.secretAccessKey'),
+      defaultBucket: this.get<string>('storage.defaultBucket'),
+    };
+  }
+
   // Swagger configuration
   get swaggerConfig() {
     return {
