@@ -62,6 +62,11 @@ const PERMISSIONS = [
     action: 'resolve',
     description: 'Resolve city category requests',
   },
+  // Tile/Ad permissions
+  { resource: 'tiles', action: 'create', description: 'Create ad tiles' },
+  { resource: 'tiles', action: 'read', description: 'View ad tiles' },
+  { resource: 'tiles', action: 'update', description: 'Update ad tiles' },
+  { resource: 'tiles', action: 'delete', description: 'Delete ad tiles' },
 ];
 
 // Define role-permission mappings
@@ -92,6 +97,12 @@ const ROLE_PERMISSIONS: Record<UserRole, Array<{ resource: string; action: strin
     { resource: 'city_categories', action: 'read' },
     { resource: 'category_requests', action: 'create' },
     { resource: 'category_requests', action: 'read' },
+
+    // Tile management
+    { resource: 'tiles', action: 'create' },
+    { resource: 'tiles', action: 'read' },
+    { resource: 'tiles', action: 'update' },
+    { resource: 'tiles', action: 'delete' },
   ],
   [UserRole.CITIZEN]: [
     // Citizens can create and view their own listings

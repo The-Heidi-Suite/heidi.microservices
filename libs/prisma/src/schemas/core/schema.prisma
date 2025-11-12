@@ -215,6 +215,54 @@ model ListingCity {
   @@map("listing_cities")
 }
 
+// Tile model - Ad tiles created by Super Admin and City Admins
+model Tile {
+  id                    String   @id @default(uuid())
+  slug                  String   @unique
+  backgroundImageUrl    String?
+  headerBackgroundColor String?  // Hex color code
+  header                String
+  subheader             String?
+  description           String?  // Content/description
+  contentBackgroundColor String? // Hex color code
+  websiteUrl            String?
+  openInExternalBrowser Boolean  @default(false) // false = in-app, true = external
+  displayOrder          Int      @default(0)
+  isActive              Boolean  @default(true)
+  publishAt              DateTime?
+  expireAt               DateTime?
+  createdByUserId        String?
+  lastEditedByUserId     String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  // Relations
+  cities                 TileCity[]
+
+  @@index([isActive])
+  @@index([publishAt])
+  @@index([expireAt])
+  @@index([displayOrder])
+  @@map("tiles")
+}
+
+model TileCity {
+  id           String   @id @default(uuid())
+  tileId       String
+  cityId       String
+  isPrimary    Boolean  @default(false)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tile Tile @relation(fields: [tileId], references: [id], onDelete: Cascade)
+
+  @@unique([tileId, cityId])
+  @@index([cityId])
+  @@index([tileId])
+  @@map("tile_cities")
+}
+
 model ListingMedia {
   id        String           @id @default(uuid())
   listingId String
