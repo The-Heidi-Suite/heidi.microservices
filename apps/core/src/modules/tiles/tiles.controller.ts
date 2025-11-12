@@ -26,14 +26,18 @@ import {
 import {
   CreateTileDto,
   TileFilterDto,
-  TileResponseDto,
   UpdateTileDto,
-  TileListResponseDto,
   ValidationErrorResponseDto,
   UnauthorizedErrorResponseDto,
-  ForbiddenErrorResponseDto,
-  NotFoundErrorResponseDto,
   UploadBackgroundImageResponseDto,
+  UploadBackgroundImageResponseDataDto,
+  CreateTileResponseDto,
+  UpdateTileResponseDto,
+  GetTileResponseDto,
+  ListTilesResponseDto,
+  DeleteTileResponseDto,
+  TileNotFoundErrorResponseDto,
+  TileForbiddenErrorResponseDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { UserRole } from '@prisma/client-core';
@@ -73,7 +77,7 @@ export class TilesController {
   @ApiResponse({
     status: 200,
     description: 'Tiles retrieved successfully',
-    type: TileListResponseDto,
+    type: ListTilesResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -98,14 +102,14 @@ export class TilesController {
   @ApiResponse({
     status: 200,
     description: 'Tile retrieved successfully',
-    type: TileResponseDto,
+    type: GetTileResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Tile not found',
-    type: NotFoundErrorResponseDto,
+    type: TileNotFoundErrorResponseDto,
   })
-  async getBySlug(@Param('slug') slug: string): Promise<TileResponseDto> {
+  async getBySlug(@Param('slug') slug: string) {
     return this.tilesService.getTileBySlug(slug);
   }
 
@@ -123,14 +127,14 @@ export class TilesController {
   @ApiResponse({
     status: 200,
     description: 'Tile retrieved successfully',
-    type: TileResponseDto,
+    type: GetTileResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Tile not found',
-    type: NotFoundErrorResponseDto,
+    type: TileNotFoundErrorResponseDto,
   })
-  async getById(@Param('id') id: string): Promise<TileResponseDto> {
+  async getById(@Param('id') id: string) {
     return this.tilesService.getTileById(id);
   }
 
@@ -148,7 +152,7 @@ export class TilesController {
   @ApiResponse({
     status: 201,
     description: 'Tile created successfully',
-    type: TileResponseDto,
+    type: CreateTileResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -163,12 +167,9 @@ export class TilesController {
   @ApiResponse({
     status: 403,
     description: 'Insufficient permissions',
-    type: ForbiddenErrorResponseDto,
+    type: TileForbiddenErrorResponseDto,
   })
-  async create(
-    @Body() dto: CreateTileDto,
-    @GetCurrentUser() user: CurrentUser,
-  ): Promise<TileResponseDto> {
+  async create(@Body() dto: CreateTileDto, @GetCurrentUser() user: CurrentUser) {
     const userId = user.userId;
     const roles = this.getRoles(user.role);
     return this.tilesService.createTile(userId, roles, dto);
@@ -192,7 +193,7 @@ export class TilesController {
   @ApiResponse({
     status: 200,
     description: 'Tile updated successfully',
-    type: TileResponseDto,
+    type: UpdateTileResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -207,18 +208,18 @@ export class TilesController {
   @ApiResponse({
     status: 403,
     description: 'Insufficient permissions',
-    type: ForbiddenErrorResponseDto,
+    type: TileForbiddenErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Tile not found',
-    type: NotFoundErrorResponseDto,
+    type: TileNotFoundErrorResponseDto,
   })
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateTileDto,
     @GetCurrentUser() user: CurrentUser,
-  ): Promise<TileResponseDto> {
+  ) {
     const userId = user.userId;
     const roles = this.getRoles(user.role);
     return this.tilesService.updateTile(id, userId, roles, dto);
@@ -242,6 +243,7 @@ export class TilesController {
   @ApiResponse({
     status: 204,
     description: 'Tile deleted successfully',
+    type: DeleteTileResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -251,14 +253,14 @@ export class TilesController {
   @ApiResponse({
     status: 403,
     description: 'Insufficient permissions',
-    type: ForbiddenErrorResponseDto,
+    type: TileForbiddenErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Tile not found',
-    type: NotFoundErrorResponseDto,
+    type: TileNotFoundErrorResponseDto,
   })
-  async delete(@Param('id') id: string, @GetCurrentUser() user: CurrentUser): Promise<void> {
+  async delete(@Param('id') id: string, @GetCurrentUser() user: CurrentUser) {
     const userId = user.userId;
     const roles = this.getRoles(user.role);
     return this.tilesService.deleteTile(id, userId, roles);
@@ -299,18 +301,18 @@ export class TilesController {
   @ApiResponse({
     status: 403,
     description: 'Insufficient permissions',
-    type: ForbiddenErrorResponseDto,
+    type: TileForbiddenErrorResponseDto,
   })
   @ApiResponse({
     status: 404,
     description: 'Tile not found',
-    type: NotFoundErrorResponseDto,
+    type: TileNotFoundErrorResponseDto,
   })
   async uploadBackgroundImage(
     @Param('id') id: string,
     @UploadedFile() file: any,
     @GetCurrentUser() user: CurrentUser,
-  ): Promise<UploadBackgroundImageResponseDto> {
+  ) {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
@@ -341,9 +343,10 @@ export class TilesController {
       backgroundImageUrl: imageUrl,
     });
 
+    // Return data - interceptor will wrap it
     return {
       tile,
       imageUrl,
-    };
+    } as UploadBackgroundImageResponseDataDto;
   }
 }

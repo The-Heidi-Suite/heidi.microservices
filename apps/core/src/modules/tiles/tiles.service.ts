@@ -9,7 +9,6 @@ import {
   TileResponseDto,
   TileCityDto,
   UpdateTileDto,
-  TileSortBy,
   TileSortDirection,
 } from '@heidi/contracts';
 import { UserContextService } from '@heidi/rbac';
