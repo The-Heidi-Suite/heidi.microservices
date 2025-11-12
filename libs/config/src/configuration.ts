@@ -186,6 +186,15 @@ export default () => ({
     password: process.env.REDIS_PASSWORD || '',
   },
 
+  // Hetzner Object Storage configuration
+  storage: {
+    endpoint: process.env.HETZNER_STORAGE_ENDPOINT, // e.g., https://fsn1.your-objectstorage.com
+    region: process.env.HETZNER_STORAGE_REGION || 'fsn1', // e.g., fsn1, nbg1
+    accessKeyId: process.env.HETZNER_STORAGE_ACCESS_KEY_ID,
+    secretAccessKey: process.env.HETZNER_STORAGE_SECRET_ACCESS_KEY,
+    defaultBucket: process.env.HETZNER_STORAGE_DEFAULT_BUCKET,
+  },
+
   // Email configuration
   systemEmailId: process.env.SYSTEM_EMAIL_ID,
 
