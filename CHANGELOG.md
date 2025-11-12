@@ -2,6 +2,59 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.15.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.14.0...v1.15.0) (2025-11-12)
+
+
+### 🔧 Chores
+
+* remove PM2 ecosystem configuration and related scripts from package.json ([7a17fbd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/7a17fbd639b29f86a48791cbe4d242040a66475c))
+* remove PM2 ecosystem configuration and related scripts from package.json ([bf04038](https://github.com/The-Heidi-Suite/heidi.microservices/commit/bf0403881948fb9818f49981a3e25792fe17ebd8))
+
+
+### ✨ Features
+
+* **auth:** simplify login process to email-only authentication ([7abcee5](https://github.com/The-Heidi-Suite/heidi.microservices/commit/7abcee53de9efe2fe865a36368b0ba2221852218))
+* **caddy:** add React frontend support and update environment variables ([ca607b7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ca607b77d7151dbaa3f822f72c45deba99fc1591))
+* **categories:** enhance CategoriesController and CategoriesService with city-specific category management ([db6e6d4](https://github.com/The-Heidi-Suite/heidi.microservices/commit/db6e6d4508d0c70020dbe3b51188cfae81b2849d))
+* **categories:** enhance CategoriesController and CategoriesService with improved API documentation and request handling ([45a7f87](https://github.com/The-Heidi-Suite/heidi.microservices/commit/45a7f871b25e72e2d959d0681d0c8e6524987e82))
+* **categories:** implement Categories module with CRUD operations and admin access control ([556438b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/556438b043fcadcbe163fc50ee213581f655128d))
+* **categories:** integrate RBAC and JWT for enhanced access control in CategoriesController ([d7c87a2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d7c87a2b8f26519b95bef1c076d1470dee8524ea))
+* **categories:** update error handling and enhance app module with new interceptors ([f1b2368](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f1b236805348c202840ae859c06703db7af2f953))
+* **core:** enhance CoreController and CoreService with detailed API documentation and DTO integration ([8f15d7a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/8f15d7add6847846938383d51e4973c661066bc4))
+* **core:** integrate Listings and Categories modules, enhance Swagger documentation ([f28eb01](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f28eb01319ae6e53b2d242634d69d9e94e620e0a))
+* **docker:** add Windows-specific Dockerfile for NestJS microservices (for development only) and enhance i18n service translation path handling ([aa9f428](https://github.com/The-Heidi-Suite/heidi.microservices/commit/aa9f428de0a40b8ba19d6401987c5a262fa6ed84))
+* **docker:** add Windows-specific Dockerfile for NestJS microservices (for development only) and enhance i18n service translation path handling ([96ed65f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/96ed65fe7354a87181ff1f29513cc3514b2a1322))
+* **dto:** add core and category response DTOs for enhanced data handling ([9989b68](https://github.com/The-Heidi-Suite/heidi.microservices/commit/9989b685fc0d8df8e039450dbe986016e6a90a08))
+* **errors:** add new error codes for verification and category-related issues ([899cd55](https://github.com/The-Heidi-Suite/heidi.microservices/commit/899cd551b7c7396c66a4643ae2f193f55609ef0e))
+* **i18n:** add email verification translations and enhance error messages ([84681cb](https://github.com/The-Heidi-Suite/heidi.microservices/commit/84681cb4fbe8d1abd79334e29b2006c94a0739d7))
+* **i18n:** add language support to user registration and creation ([59689d4](https://github.com/The-Heidi-Suite/heidi.microservices/commit/59689d46740d5008056c1a7d1f703b89ce2d7e34))
+* **i18n:** enhance verification process with language support ([1069147](https://github.com/The-Heidi-Suite/heidi.microservices/commit/106914755fab1e7338ba09695dbe57936efc0e8c))
+* **jwt:** enhance JWT module and strategy with forward reference for RBAC and Permission services ([5040b8a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5040b8a50cbe06027644dde54305ba756bf353b7))
+* **listings:** enhance FavoritesController and ListingController with detailed API documentation and DTO integration ([c67ec0a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c67ec0aa0c52ea2de5261250c3aec44c6b5980da))
+* **listings:** implement Favorites and Listings controllers with CRUD operations ([ada7d55](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ada7d554e6a46e14ab3b68993755a54c793eedb2))
+* **listings:** introduce DTOs for listing management ([edf483b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/edf483b70556e833674a118dcc90bb2558c23984))
+* **migrations:** add initial migration for city categories and category requests ([87809e7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/87809e7a76b20f66ad51810ad6c0ae8927a1f986))
+* **notification:** enhance notification module with error handling and new interceptors ([ee97ae5](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ee97ae53e4509726b9f3185834b640bceb9473c3))
+* **permissions:** expand permissions for city categories and category requests ([efca929](https://github.com/The-Heidi-Suite/heidi.microservices/commit/efca929a2cd66cd2ad14165a76b8af157b448e79))
+* **prisma:** add CityCategory and CategoryRequest models to schema ([64861ff](https://github.com/The-Heidi-Suite/heidi.microservices/commit/64861ff9f8f1a4a0d1effcae96ae08797d691a98))
+* **prisma:** enhance Listing model and introduce new related models ([7ff6ce5](https://github.com/The-Heidi-Suite/heidi.microservices/commit/7ff6ce5680c1a63b29b4c69e4bf4b429c6c269d7))
+* **seeding:** add category and initial admin seeding scripts ([4b6b0d3](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4b6b0d343cbf065dce10ce094f3554c984db3ff6))
+* **users:** update user registration and conversion to allow optional username and name fields ([4c41024](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4c41024c7b561cb69318f70cc52147c9a07213b7))
+* **validation:** enhance error handling and validation messages across user registration and conversion ([3df5248](https://github.com/The-Heidi-Suite/heidi.microservices/commit/3df524818ee2001c967fd39b60899a384f05cf8e))
+
+
+### 🐛 Bug Fixes
+
+* **i18n:** update registration error messages to require only email and password ([4a9c8b6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4a9c8b6e004a8b5bf03727e82144da954d535743))
+
+
+### ♻️ Code Refactoring
+
+* **auth:** update DTOs for guest conversion and registration ([22572aa](https://github.com/The-Heidi-Suite/heidi.microservices/commit/22572aabb1ead55661d408b42a0664fd62a99841))
+* **core:** simplify CoreController and CoreService by removing favorite management methods ([a6f3ac5](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a6f3ac5a8b358f611418715ab608219abbfab725))
+* **errors:** format translation calls for improved readability ([8dc22a2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/8dc22a23d15ecd5dd50d177163dd519b9698d5c6))
+* **prisma:** remove database connection logging for security ([7d74577](https://github.com/The-Heidi-Suite/heidi.microservices/commit/7d74577b64c372ac4cc99439a4c93c72c7f9ffae))
+
 ## [1.14.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.13.0...v1.14.0) (2025-11-07)
 
 
