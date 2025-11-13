@@ -12,6 +12,8 @@ import {
   TileSortDirection,
 } from '@heidi/contracts';
 import { UserContextService } from '@heidi/rbac';
+import { StorageService } from '@heidi/storage';
+import { ConfigService } from '@heidi/config';
 
 const tileWithRelations = Prisma.validator<Prisma.TileDefaultArgs>()({
   include: {
@@ -27,12 +29,33 @@ export class TilesService {
     private readonly prisma: PrismaCoreService,
     private readonly logger: LoggerService,
     private readonly userContext: UserContextService,
+    private readonly storageService: StorageService,
+    private readonly configService: ConfigService,
   ) {
     this.logger.setContext(TilesService.name);
   }
 
   private isAdmin(roles: UserRole[] = []) {
     return roles.includes(UserRole.SUPER_ADMIN) || roles.includes(UserRole.CITY_ADMIN);
+  }
+
+  private extractKeyFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      // Extract pathname and remove leading slash and bucket name
+      // Format: /bucket-name/tiles/tileId/background.webp
+      const pathname = urlObj.pathname;
+      // Remove leading slash and first segment (bucket name)
+      const parts = pathname.split('/').filter(Boolean);
+      if (parts.length > 1) {
+        return parts.slice(1).join('/');
+      }
+      return pathname.replace(/^\/[^\/]+\//, '');
+    } catch (error) {
+      this.logger.warn(`Failed to parse URL: ${url}`, error);
+      // Fallback: try to extract from pathname directly
+      return url.split('?')[0].replace(/^https?:\/\/[^\/]+\//, '');
+    }
   }
 
   private slugify(value: string) {
@@ -176,7 +199,6 @@ export class TilesService {
 
     const data: Prisma.TileCreateInput = {
       slug,
-      backgroundImageUrl: dto.backgroundImageUrl,
       headerBackgroundColor: dto.headerBackgroundColor,
       header: dto.header,
       subheader: dto.subheader,
@@ -266,10 +288,6 @@ export class TilesService {
       if (dto.slug !== undefined) {
         const slug = await this.ensureUniqueSlug(this.slugify(dto.slug), tileId);
         updateData.slug = slug;
-      }
-
-      if (dto.backgroundImageUrl !== undefined) {
-        updateData.backgroundImageUrl = dto.backgroundImageUrl;
       }
 
       if (dto.headerBackgroundColor !== undefined) {
@@ -470,6 +488,20 @@ export class TilesService {
             throw new ForbiddenException('You do not have access to delete this tile');
           }
         }
+      }
+    }
+
+    // Delete background image from storage if exists
+    if (existing.backgroundImageUrl) {
+      try {
+        const key = this.extractKeyFromUrl(existing.backgroundImageUrl);
+        const bucket = this.configService.storageConfig.defaultBucket;
+        if (bucket) {
+          await this.storageService.deleteFile({ bucket, key });
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to delete background image for tile ${tileId}`, error);
+        // Don't fail the delete operation if file cleanup fails
       }
     }
 
