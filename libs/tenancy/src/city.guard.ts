@@ -35,7 +35,8 @@ export class CityGuard implements CanActivate {
     }
 
     // Super Admin can access all cities
-    if (user.role === 'SUPER_ADMIN') {
+    // Handle both number (1) and string ('SUPER_ADMIN') roles for backward compatibility
+    if (user.role === 1 || user.role === 'SUPER_ADMIN') {
       return true;
     }
 

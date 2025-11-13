@@ -2,17 +2,18 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService as NestJwtService } from '@nestjs/jwt';
 import { LoggerService } from '@heidi/logger';
 import { ConfigService } from '@heidi/config';
+import { roleToNumber } from '@heidi/rbac';
 
 export interface CityAssignment {
   cityId: string;
-  role: string;
+  role: number;
   canManageAdmins: boolean;
 }
 
 export interface TokenPayload {
   sub: string; // user id
   email?: string; // Optional for guest users
-  role: string;
+  role: number; // Role as number: 1=SUPER_ADMIN, 2=CITY_ADMIN, 3=CITIZEN
   type: 'access' | 'refresh';
   isGuest?: boolean; // Flag to indicate guest user
   deviceId?: string; // Device ID for guest users
@@ -54,7 +55,7 @@ export class JwtTokenService {
   async generateAccessToken(
     userId: string,
     email: string | null,
-    role: string,
+    role: string | number,
     options?: {
       isGuest?: boolean;
       deviceId?: string;
@@ -65,17 +66,26 @@ export class JwtTokenService {
       permissions?: string[];
     },
   ): Promise<string> {
+    // Convert role to number if it's a string
+    const roleNumber = typeof role === 'string' ? roleToNumber(role) : role;
+
+    // Convert cityAssignments roles to numbers if needed
+    const cityAssignments = options?.cityAssignments?.map(assignment => ({
+      ...assignment,
+      role: typeof assignment.role === 'string' ? roleToNumber(assignment.role) : assignment.role,
+    }));
+
     const payload: TokenPayload = {
       sub: userId,
       ...(email && { email }),
-      role,
+      role: roleNumber,
       type: 'access',
       ...(options?.isGuest && { isGuest: options.isGuest }),
       ...(options?.deviceId && { deviceId: options.deviceId }),
       ...(options?.cityId && { cityId: options.cityId }),
       ...(options?.cityIds && { cityIds: options.cityIds }),
       ...(options?.selectedCityId && { selectedCityId: options.selectedCityId }),
-      ...(options?.cityAssignments && { cityAssignments: options.cityAssignments }),
+      ...(cityAssignments && { cityAssignments }),
       ...(options?.permissions && { permissions: options.permissions }),
     };
 
@@ -91,7 +101,7 @@ export class JwtTokenService {
   async generateRefreshToken(
     userId: string,
     email: string | null,
-    role: string,
+    role: string | number,
     options?: {
       isGuest?: boolean;
       deviceId?: string;
@@ -102,17 +112,26 @@ export class JwtTokenService {
       permissions?: string[];
     },
   ): Promise<string> {
+    // Convert role to number if it's a string
+    const roleNumber = typeof role === 'string' ? roleToNumber(role) : role;
+
+    // Convert cityAssignments roles to numbers if needed
+    const cityAssignments = options?.cityAssignments?.map(assignment => ({
+      ...assignment,
+      role: typeof assignment.role === 'string' ? roleToNumber(assignment.role) : assignment.role,
+    }));
+
     const payload: TokenPayload = {
       sub: userId,
       ...(email && { email }),
-      role,
+      role: roleNumber,
       type: 'refresh',
       ...(options?.isGuest && { isGuest: options.isGuest }),
       ...(options?.deviceId && { deviceId: options.deviceId }),
       ...(options?.cityId && { cityId: options.cityId }),
       ...(options?.cityIds && { cityIds: options.cityIds }),
       ...(options?.selectedCityId && { selectedCityId: options.selectedCityId }),
-      ...(options?.cityAssignments && { cityAssignments: options.cityAssignments }),
+      ...(cityAssignments && { cityAssignments }),
       ...(options?.permissions && { permissions: options.permissions }),
     };
 
@@ -128,7 +147,7 @@ export class JwtTokenService {
   async generateTokenPair(
     userId: string,
     email: string | null,
-    role: string,
+    role: string | number,
     options?: {
       isGuest?: boolean;
       deviceId?: string;
