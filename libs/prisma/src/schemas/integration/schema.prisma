@@ -42,6 +42,7 @@ enum IntegrationProvider {
   SLACK
   WEBHOOK
   CUSTOM
+  DESTINATION_ONE
 }
 
 // Integration logs - for tracking integration activity
