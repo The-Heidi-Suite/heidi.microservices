@@ -50,6 +50,7 @@ import { FileUploadService, StorageService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
 import { LoggerService } from '@heidi/logger';
 import { PrismaCoreService } from '@heidi/prisma';
+import { fromBuffer } from 'file-type';
 
 @ApiTags('listings')
 @Controller('listings')
@@ -941,8 +942,7 @@ export class ListingController {
         finalMimeType = processedFile.mimeType;
       } else {
         // For non-image files, use as-is
-        const { fileTypeFromBuffer } = await import('file-type');
-        const detected = await fileTypeFromBuffer(file.buffer);
+        const detected = await fromBuffer(file.buffer);
         finalExtension = detected?.ext || this.getFileExtension(file.originalname);
         finalMimeType = file.mimetype || detected?.mime || 'application/octet-stream';
         processedFile = {
