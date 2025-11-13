@@ -7,5 +7,13 @@
     "cancelText": "Wenn du dieses Konto nicht erstellt hast, kannst du",
     "cancelLinkText": "hier klicken, um abzubrechen",
     "fallback": "Falls die Schaltfläche nicht funktioniert, kopiere diesen Link und füge ihn in deinen Browser ein:"
+  },
+  "passwordReset": {
+    "subject": "Setze dein {appName} Passwort zurück",
+    "intro": "Wir haben eine Anfrage zum Zurücksetzen deines Passworts erhalten. Klicke auf die Schaltfläche unten, um es zurückzusetzen.",
+    "cta": "Passwort zurücksetzen",
+    "expiryNotice": "Dieser Link läuft in 1 Stunde ab.",
+    "securityNotice": "Wenn du keine Passwort-Zurücksetzung angefordert hast, ignoriere diese E-Mail bitte. Dein Passwort bleibt unverändert.",
+    "fallback": "Falls die Schaltfläche nicht funktioniert, kopiere diesen Link und füge ihn in deinen Browser ein:"
   }
 }

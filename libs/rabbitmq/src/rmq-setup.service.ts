@@ -86,7 +86,7 @@ export class RmqSetupService implements OnModuleInit {
       users: ['user.*', 'verification.verified'], // Add verification.verified for email verification updates
       core: ['core.*'],
       city: ['city.*'],
-      notification: ['user.created', 'user.updated', 'notification.*', 'verification.*'],
+      notification: ['user.created', 'user.updated', 'notification.*', 'verification.*', 'passwordReset.*',],
       integration: ['integration.*'],
       scheduler: ['schedule.*'],
       auth: ['user.*'],

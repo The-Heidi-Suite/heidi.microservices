@@ -7,5 +7,13 @@
     "cancelText": "Bu hesabı siz oluşturmadıysanız,",
     "cancelLinkText": "iptal etmek için buraya tıklayın",
     "fallback": "Düğme çalışmazsa bu bağlantıyı kopyalayıp tarayıcınıza yapıştırın:"
+  },
+  "passwordReset": {
+    "subject": "{appName} Şifrenizi Sıfırlayın",
+    "intro": "Şifrenizi sıfırlamak için bir istek aldık. Sıfırlamak için aşağıdaki düğmeye tıklayın.",
+    "cta": "Şifreyi Sıfırla",
+    "expiryNotice": "Bu bağlantı 1 saat içinde sona erecektir.",
+    "securityNotice": "Eğer şifre sıfırlama talebinde bulunmadıysanız, bu e-postayı görmezden gelebilirsiniz. Şifreniz değişmeden kalacaktır.",
+    "fallback": "Düğme çalışmazsa bu bağlantıyı kopyalayıp tarayıcınıza yapıştırın:"
   }
 }

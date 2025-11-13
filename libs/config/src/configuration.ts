@@ -168,6 +168,12 @@ export default () => ({
     gracePeriodDays: parseInt(process.env.TERMS_GRACE_PERIOD_DAYS || '7', 10),
   },
 
+  // Password reset configuration
+  passwordReset: {
+    expiryHours: parseInt(process.env.PASSWORD_RESET_EXPIRY_HOURS || '1', 10),
+    maxAttempts: parseInt(process.env.PASSWORD_RESET_MAX_ATTEMPTS || '3', 10),
+  },
+
   // RabbitMQ configuration
   rabbitmq: {
     host: process.env.RABBITMQ_HOST || 'localhost',

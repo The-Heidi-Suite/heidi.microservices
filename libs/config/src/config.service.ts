@@ -247,6 +247,15 @@ export class ConfigService {
     };
   }
 
+  // Password reset configuration
+  get passwordResetExpiryHours(): number {
+    return this.get<number>('passwordReset.expiryHours', 1);
+  }
+
+  get passwordResetMaxAttempts(): number {
+    return this.get<number>('passwordReset.maxAttempts', 3);
+  }
+
   // RabbitMQ configuration helpers
   get rabbitmqUrl(): string {
     return this.get<string>('rabbitmq.url', 'amqp://localhost:5672');

@@ -24,6 +24,8 @@ function getServiceNameFromPattern(pattern: string): string {
     terms: 'users', // Terms service is part of users service
     core: 'core',
     notification: 'notification',
+    passwordReset: 'notification',
+    verification: 'notification',
     city: 'city',
     integration: 'integration',
     schedule: 'scheduler',
