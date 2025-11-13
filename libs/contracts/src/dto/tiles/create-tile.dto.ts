@@ -55,14 +55,6 @@ export class CreateTileDto {
   slug?: string;
 
   @ApiPropertyOptional({
-    description: 'Background image URL for the tile',
-    example: 'https://example.com/images/tile-background.jpg',
-  })
-  @IsOptional()
-  @IsUrl()
-  backgroundImageUrl?: string;
-
-  @ApiPropertyOptional({
     description: 'Header background color in hex format',
     example: '#1E40AF',
     pattern: '^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$',

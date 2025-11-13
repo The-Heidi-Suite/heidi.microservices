@@ -10,11 +10,6 @@ export class UpdateTileDto extends PartialType(CreateTileDto) {
   slug?: string;
 
   @ApiPropertyOptional({
-    description: 'Background image URL for the tile',
-  })
-  backgroundImageUrl?: string;
-
-  @ApiPropertyOptional({
     description: 'Header background color in hex format',
   })
   headerBackgroundColor?: string;
