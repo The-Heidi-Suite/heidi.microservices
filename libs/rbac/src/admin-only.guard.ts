@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { SUPER_ADMIN_ONLY_KEY } from './decorators/super-admin-only.decorator';
 import { CITY_ADMIN_ONLY_KEY } from './decorators/city-admin-only.decorator';
 import { UserRole } from '@prisma/client-core';
+import { numberToRole } from './utils/role.utils';
 
 @Injectable()
 export class AdminOnlyGuard implements CanActivate {
@@ -30,7 +31,9 @@ export class AdminOnlyGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    const userRole = user.role as UserRole;
+    // Convert number role to enum if needed
+    const userRoleNumber = typeof user.role === 'number' ? user.role : null;
+    const userRole = userRoleNumber !== null ? numberToRole(userRoleNumber) : (user.role as UserRole);
 
     if (isSuperAdminOnly) {
       if (userRole !== UserRole.SUPER_ADMIN) {

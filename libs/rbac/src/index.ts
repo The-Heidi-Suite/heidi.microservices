@@ -13,3 +13,4 @@ export * from './decorators/permissions.decorator';
 export * from './decorators/super-admin-only.decorator';
 export * from './decorators/city-admin-only.decorator';
 export * from './decorators/terms-exempt.decorator';
+export * from './utils/role.utils';
