@@ -20,6 +20,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -764,6 +765,20 @@ export class ListingController {
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Hero image file to upload',
+        },
+      },
+      required: ['file'],
+    },
+  })
   @ApiOperation({
     summary: 'Upload hero image for a listing',
     description: 'Upload and process a hero image for a listing.',
@@ -853,6 +868,24 @@ export class ListingController {
   @UseInterceptors(FilesInterceptor('files', 10))
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+          description:
+            'Media files to upload (images, videos, documents, audio). Maximum 10 files.',
+        },
+      },
+      required: ['files'],
+    },
+  })
   @ApiOperation({
     summary: 'Upload media files for a listing',
     description:

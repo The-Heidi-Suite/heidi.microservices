@@ -33,6 +33,20 @@ export enum Weekday {
   SUNDAY = 'Sunday',
 }
 
+export class CreateListingCategoryReferenceDto {
+  @ApiProperty({
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+    description: 'UUID of the category to associate with this listing',
+  })
+  @IsUUID()
+  categoryId: string;
+
+  @ApiPropertyOptional({ enum: CategoryType, example: CategoryType.EVENT })
+  @IsOptional()
+  @IsEnum(CategoryType)
+  categoryType?: CategoryType;
+}
+
 export class ListingCategoryReferenceDto {
   @ApiPropertyOptional({ example: 'lc1a2b3c4-d5e6-7890-abcd-ef1234567890' })
   @IsOptional()
@@ -50,6 +64,31 @@ export class ListingCategoryReferenceDto {
   @IsOptional()
   @IsEnum(CategoryType)
   categoryType?: CategoryType;
+}
+
+export class CreateListingCityReferenceDto {
+  @ApiProperty({
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+    description: 'Identifier of the city to associate with this listing',
+  })
+  @IsString()
+  cityId: string;
+
+  @ApiPropertyOptional({
+    example: true,
+    description: 'Whether this is the primary city for the listing',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Display order for sorting cities',
+  })
+  @IsOptional()
+  @IsNumber()
+  displayOrder?: number;
 }
 
 export class ListingCityReferenceDto {
@@ -80,6 +119,55 @@ export class ListingCityReferenceDto {
   @IsOptional()
   @IsNumber()
   displayOrder?: number;
+}
+
+export class CreateListingMediaInputDto {
+  @ApiProperty({
+    enum: ListingMediaType,
+    example: ListingMediaType.IMAGE,
+    description: 'Type of media file',
+  })
+  @IsEnum(ListingMediaType)
+  type: ListingMediaType;
+
+  @ApiProperty({
+    example: 'https://cdn.example.com/listings/hero.jpg',
+    description: 'URL of the media file',
+  })
+  @IsUrl()
+  url: string;
+
+  @ApiPropertyOptional({
+    example: 'Community cleanup event photo',
+    description: 'Alternative text for accessibility',
+  })
+  @IsOptional()
+  @IsString()
+  altText?: string;
+
+  @ApiPropertyOptional({
+    example: 'Volunteers cleaning up the park',
+    description: 'Caption for the media',
+  })
+  @IsOptional()
+  @IsString()
+  caption?: string;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Display order for sorting media',
+  })
+  @IsOptional()
+  @IsNumber()
+  order?: number;
+
+  @ApiPropertyOptional({
+    example: { width: 1920, height: 1080 },
+    description: 'Additional metadata for the media',
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
 }
 
 export class ListingMediaInputDto {
@@ -130,6 +218,71 @@ export class ListingMediaInputDto {
   @ApiPropertyOptional({
     example: { width: 1920, height: 1080 },
     description: 'Additional metadata for the media',
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
+}
+
+export class CreateListingTimeIntervalInputDto {
+  @ApiPropertyOptional({
+    example: [Weekday.MONDAY, Weekday.WEDNESDAY, Weekday.FRIDAY],
+    isArray: true,
+    description: 'Days of the week when this interval applies',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEnum(Weekday, { each: true })
+  weekdays?: Weekday[];
+
+  @ApiProperty({
+    example: '2025-01-20T09:00:00.000Z',
+    description: 'Start date and time of the interval',
+  })
+  @IsDateString()
+  start: string;
+
+  @ApiProperty({
+    example: '2025-01-20T17:00:00.000Z',
+    description: 'End date and time of the interval',
+  })
+  @IsDateString()
+  end: string;
+
+  @ApiProperty({
+    example: 'America/New_York',
+    description: 'Timezone identifier (IANA format)',
+  })
+  @IsString()
+  tz: string;
+
+  @ApiProperty({
+    enum: ListingRecurrenceFreq,
+    example: ListingRecurrenceFreq.WEEKLY,
+    description: 'Recurrence frequency',
+  })
+  @IsEnum(ListingRecurrenceFreq)
+  freq: ListingRecurrenceFreq;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Interval between recurrences (e.g., every 2 weeks)',
+  })
+  @IsOptional()
+  @IsNumber()
+  interval?: number;
+
+  @ApiPropertyOptional({
+    example: '2025-12-31T23:59:59.000Z',
+    description: 'Date when recurrence should stop',
+  })
+  @IsOptional()
+  @IsDateString()
+  repeatUntil?: string;
+
+  @ApiPropertyOptional({
+    example: { note: 'Holiday schedule' },
+    description: 'Additional metadata for the time interval',
   })
   @IsOptional()
   @IsObject()
@@ -206,6 +359,47 @@ export class ListingTimeIntervalInputDto {
   metadata?: Record<string, unknown>;
 }
 
+export class CreateListingTimeIntervalExceptionInputDto {
+  @ApiProperty({
+    example: '2025-12-25',
+    description: 'Date of the exception (YYYY-MM-DD format)',
+  })
+  @IsDateString()
+  date: string;
+
+  @ApiPropertyOptional({
+    example: '10:00:00',
+    description: 'Opening time for this exception (HH:mm:ss format)',
+  })
+  @IsOptional()
+  @IsString()
+  opensAt?: string;
+
+  @ApiPropertyOptional({
+    example: '14:00:00',
+    description: 'Closing time for this exception (HH:mm:ss format)',
+  })
+  @IsOptional()
+  @IsString()
+  closesAt?: string;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Whether the location is closed on this date',
+  })
+  @IsOptional()
+  @IsBoolean()
+  isClosed?: boolean;
+
+  @ApiPropertyOptional({
+    example: { reason: 'Holiday hours' },
+    description: 'Additional metadata for the exception',
+  })
+  @IsOptional()
+  @IsObject()
+  metadata?: Record<string, unknown>;
+}
+
 export class ListingTimeIntervalExceptionInputDto {
   @ApiPropertyOptional({ example: 'ltie1a2b3c4-d5e6-7890-abcd-ef1234567890' })
   @IsOptional()
@@ -253,13 +447,7 @@ export class ListingTimeIntervalExceptionInputDto {
 }
 
 export class CreateListingDto {
-  @ApiPropertyOptional({
-    example: 'community-cleanup-day',
-    description: 'URL-friendly slug (auto-generated if not provided)',
-  })
-  @IsOptional()
-  @IsString()
-  slug?: string;
+  // slug is auto-generated from title, not provided during creation
 
   @ApiProperty({
     example: 'Community Cleanup Day',
@@ -424,40 +612,40 @@ export class CreateListingDto {
   ingestNotes?: string;
 
   @ApiPropertyOptional({
-    type: [ListingCategoryReferenceDto],
+    type: [CreateListingCategoryReferenceDto],
     description: 'Categories to associate with this listing',
   })
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => ListingCategoryReferenceDto)
-  categories?: ListingCategoryReferenceDto[];
+  @Type(() => CreateListingCategoryReferenceDto)
+  categories?: CreateListingCategoryReferenceDto[];
 
   @ApiPropertyOptional({
-    type: [ListingCityReferenceDto],
+    type: [CreateListingCityReferenceDto],
     description: 'Cities to associate with this listing',
   })
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => ListingCityReferenceDto)
-  cities?: ListingCityReferenceDto[];
+  @Type(() => CreateListingCityReferenceDto)
+  cities?: CreateListingCityReferenceDto[];
 
   @ApiPropertyOptional({
-    type: [ListingTimeIntervalInputDto],
+    type: [CreateListingTimeIntervalInputDto],
     description: 'Time intervals for recurring events',
   })
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => ListingTimeIntervalInputDto)
-  timeIntervals?: ListingTimeIntervalInputDto[];
+  @Type(() => CreateListingTimeIntervalInputDto)
+  timeIntervals?: CreateListingTimeIntervalInputDto[];
 
   @ApiPropertyOptional({
-    type: [ListingTimeIntervalExceptionInputDto],
+    type: [CreateListingTimeIntervalExceptionInputDto],
     description: 'Exceptions to recurring time intervals',
   })
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => ListingTimeIntervalExceptionInputDto)
-  timeIntervalExceptions?: ListingTimeIntervalExceptionInputDto[];
+  @Type(() => CreateListingTimeIntervalExceptionInputDto)
+  timeIntervalExceptions?: CreateListingTimeIntervalExceptionInputDto[];
 
   @ApiPropertyOptional({
     example: 'Central Park',

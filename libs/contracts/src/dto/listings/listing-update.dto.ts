@@ -1,9 +1,22 @@
 import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
-import { CreateListingDto } from './listing-create.dto';
+import {
+  CreateListingDto,
+  ListingCategoryReferenceDto,
+  ListingCityReferenceDto,
+  ListingTimeIntervalInputDto,
+  ListingTimeIntervalExceptionInputDto,
+} from './listing-create.dto';
 import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
 import { ListingModerationStatus, ListingStatus, ListingSourceType } from '@prisma/client-core';
 
 export class UpdateListingDto extends PartialType(CreateListingDto) {
+  @ApiPropertyOptional({
+    example: 'community-cleanup-day',
+    description: 'URL-friendly slug for the listing',
+  })
+  @IsOptional()
+  @IsString()
+  slug?: string;
   @ApiPropertyOptional({
     enum: ListingStatus,
     example: ListingStatus.PENDING,
@@ -62,4 +75,28 @@ export class UpdateListingDto extends PartialType(CreateListingDto) {
   @IsOptional()
   @IsEnum(ListingSourceType)
   sourceType?: ListingSourceType;
+
+  @ApiPropertyOptional({
+    type: [ListingCategoryReferenceDto],
+    description: 'Categories to associate with this listing (with id for updates)',
+  })
+  categories?: ListingCategoryReferenceDto[];
+
+  @ApiPropertyOptional({
+    type: [ListingCityReferenceDto],
+    description: 'Cities to associate with this listing (with id for updates)',
+  })
+  cities?: ListingCityReferenceDto[];
+
+  @ApiPropertyOptional({
+    type: [ListingTimeIntervalInputDto],
+    description: 'Time intervals for recurring events (with id for updates)',
+  })
+  timeIntervals?: ListingTimeIntervalInputDto[];
+
+  @ApiPropertyOptional({
+    type: [ListingTimeIntervalExceptionInputDto],
+    description: 'Exceptions to recurring time intervals (with id for updates)',
+  })
+  timeIntervalExceptions?: ListingTimeIntervalExceptionInputDto[];
 }
