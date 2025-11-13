@@ -2,11 +2,25 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 // Login Error Responses
 export class LoginUnauthorizedErrorResponseDto {
-  @ApiProperty({ example: 'UNAUTHORIZED', description: 'Error code' })
+  @ApiProperty({
+    example: 'ACCOUNT_NOT_FOUND',
+    description: 'Error code',
+    enum: ['ACCOUNT_NOT_FOUND', 'ACCOUNT_INACTIVE', 'INVALID_CREDENTIALS', 'LOGIN_ERROR'],
+  })
   errorCode: string;
 
-  @ApiProperty({ example: 'Invalid credentials', description: 'Error message' })
+  @ApiProperty({
+    example:
+      'No account found with email address: user@example.com. Please check your email or register for a new account.',
+    description: 'Error message',
+  })
   message: string;
+
+  @ApiProperty({
+    example: 'user@example.com',
+    description: 'Email address used for login attempt',
+  })
+  email: string;
 
   @ApiProperty({ example: '2024-01-01T00:00:00.000Z', description: 'Error timestamp' })
   timestamp: string;

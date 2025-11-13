@@ -99,6 +99,48 @@ export class AuthController {
     status: 401,
     description: 'Invalid credentials - user not found, inactive, or incorrect password',
     type: LoginUnauthorizedErrorResponseDto,
+    examples: {
+      accountNotFound: {
+        summary: 'Account not found',
+        value: {
+          errorCode: 'ACCOUNT_NOT_FOUND',
+          message:
+            'No account found with email address: user@example.com. Please check your email or register for a new account.',
+          email: 'user@example.com',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/login',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 401,
+        },
+      },
+      accountInactive: {
+        summary: 'Account inactive',
+        value: {
+          errorCode: 'ACCOUNT_INACTIVE',
+          message: 'Your account is inactive. Please contact support for assistance.',
+          email: 'user@example.com',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/login',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 401,
+        },
+      },
+      invalidCredentials: {
+        summary: 'Invalid password',
+        value: {
+          errorCode: 'INVALID_CREDENTIALS',
+          message: 'Invalid email or password. Please check your credentials and try again.',
+          email: 'user@example.com',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/login',
+          method: 'POST',
+          requestId: 'req_1234567890_abc123',
+          statusCode: 401,
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 403,

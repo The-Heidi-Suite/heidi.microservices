@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   ForbiddenException,
   Get,
   HttpCode,
@@ -39,12 +40,17 @@ import {
   UploadHeroImageResponseDto,
   UploadMediaResponseDto,
   ListingMediaDto,
+  DeleteMediaResponseDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
+import { AdminOnlyGuard, PermissionsGuard } from '@heidi/rbac';
 import { UserRole, ListingMediaType } from '@prisma/client-core';
 import { ListingsService } from './listings.service';
-import { FileUploadService } from '@heidi/storage';
+import { FileUploadService, StorageService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
+import { LoggerService } from '@heidi/logger';
+import { PrismaCoreService } from '@heidi/prisma';
+import { fromBuffer } from 'file-type';
 
 @ApiTags('listings')
 @Controller('listings')
@@ -54,7 +60,12 @@ export class ListingController {
     private readonly listingsService: ListingsService,
     private readonly fileUploadService: FileUploadService,
     private readonly configService: ConfigService,
-  ) {}
+    private readonly storageService: StorageService,
+    private readonly logger: LoggerService,
+    private readonly prisma: PrismaCoreService,
+  ) {
+    this.logger.setContext(ListingController.name);
+  }
 
   private getRoles(role?: string): UserRole[] {
     if (!role) {
@@ -785,11 +796,14 @@ export class ListingController {
   async uploadHeroImage(
     @Param('id') id: string,
     @UploadedFile() file: any,
-    @GetCurrentUser() user: CurrentUser,
+    @GetCurrentUser() _user: CurrentUser,
   ): Promise<UploadHeroImageResponseDto> {
     if (!file) {
       throw new BadRequestException('No file provided');
     }
+
+    // Get existing listing to check for old hero image
+    const existing = await this.listingsService.getListingById(id);
 
     // Validate image
     await this.fileUploadService.validateImage(file);
@@ -803,17 +817,31 @@ export class ListingController {
       throw new BadRequestException('Storage bucket is not configured');
     }
 
+    // Delete old hero image if exists
+    if (existing.heroImageUrl) {
+      try {
+        const oldKey = this.extractKeyFromUrl(existing.heroImageUrl);
+        await this.storageService.deleteFile({ bucket, key: oldKey });
+      } catch (error) {
+        this.logger.warn(`Failed to delete old hero image for listing ${id}`, error);
+        // Continue with upload even if old file deletion fails
+      }
+    }
+
     // Generate storage key
     const key = this.fileUploadService.generateListingHeroKey(id, processedFile.extension);
 
     // Upload to storage
     const imageUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
 
-    // Update listing in database
-    const roles = this.getRoles(user.role);
-    const listing = await this.listingsService.updateListing(id, user.userId, roles, {
-      heroImageUrl: imageUrl,
+    // Update listing heroImageUrl directly in database (bypassing DTO since heroImageUrl is not in UpdateListingDto)
+    await this.prisma.listing.update({
+      where: { id },
+      data: { heroImageUrl: imageUrl },
     });
+
+    // Refresh listing with relations
+    const listing = await this.listingsService.getListingById(id);
 
     return {
       listing,
@@ -914,8 +942,7 @@ export class ListingController {
         finalMimeType = processedFile.mimeType;
       } else {
         // For non-image files, use as-is
-        const { fileTypeFromBuffer } = await import('file-type');
-        const detected = await fileTypeFromBuffer(file.buffer);
+        const detected = await fromBuffer(file.buffer);
         finalExtension = detected?.ext || this.getFileExtension(file.originalname);
         finalMimeType = file.mimetype || detected?.mime || 'application/octet-stream';
         processedFile = {
@@ -949,8 +976,59 @@ export class ListingController {
     };
   }
 
+  @Delete(':id/media/:mediaId')
+  @UseGuards(AdminOnlyGuard, PermissionsGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Delete a media file from a listing',
+    description:
+      'Delete a specific media file from a listing. Removes both the file from storage and the database record.',
+  })
+  @ApiParam({ name: 'id', description: 'Listing ID' })
+  @ApiParam({ name: 'mediaId', description: 'Media ID to delete' })
+  @ApiResponse({
+    status: 200,
+    description: 'Media deleted successfully',
+    type: DeleteMediaResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Listing or media not found',
+    type: ListingNotFoundErrorResponseDto,
+  })
+  async deleteMedia(
+    @Param('id') id: string,
+    @Param('mediaId') mediaId: string,
+    @GetCurrentUser() user: CurrentUser,
+  ) {
+    const userId = user.userId;
+    const roles = this.getRoles(user.role);
+    await this.listingsService.deleteListingMedia(id, mediaId, userId, roles);
+    return { message: 'Media deleted successfully' };
+  }
+
   private getFileExtension(filename: string): string {
     const parts = filename.split('.');
     return parts.length > 1 ? parts[parts.length - 1] : '';
+  }
+
+  private extractKeyFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      // Extract pathname and remove leading slash and bucket name
+      // Format: /bucket-name/listings/listingId/media/file.ext
+      const pathname = urlObj.pathname;
+      // Remove leading slash and first segment (bucket name)
+      const parts = pathname.split('/').filter(Boolean);
+      if (parts.length > 1) {
+        return parts.slice(1).join('/');
+      }
+      return pathname.replace(/^\/[^\/]+\//, '');
+    } catch (error) {
+      this.logger.warn(`Failed to parse URL: ${url}`, error);
+      // Fallback: try to extract from pathname directly
+      return url.split('?')[0].replace(/^https?:\/\/[^\/]+\//, '');
+    }
   }
 }

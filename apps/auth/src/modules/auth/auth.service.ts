@@ -97,6 +97,83 @@ export class AuthService {
   }
 
   /**
+   * Check terms acceptance status (non-blocking)
+   * Returns default values if check fails or times out
+   */
+  private async checkTermsAcceptance(
+    userId: string,
+    cityAssignments: CityAssignment[],
+  ): Promise<{
+    requiresTermsAcceptance: boolean;
+    termsId: string | null;
+    latestVersion: string | null;
+    gracePeriodEndsAt: string | null;
+  }> {
+    const defaultTermsInfo = {
+      requiresTermsAcceptance: false,
+      termsId: null,
+      latestVersion: null,
+      gracePeriodEndsAt: null,
+    };
+
+    try {
+      const cityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : null;
+      const TERMS_CHECK_TIMEOUT = 500;
+
+      const acceptanceCheck = await firstValueFrom(
+        this.client
+          .send<
+            { hasAccepted: boolean; termsId: string | null; gracePeriodEndsAt: Date | null },
+            { userId: string; locale?: string; cityId?: string | null }
+          >(RabbitMQPatterns.TERMS_CHECK_ACCEPTANCE, {
+            userId,
+            cityId,
+          })
+          .pipe(timeout(TERMS_CHECK_TIMEOUT)),
+      );
+
+      if (acceptanceCheck.hasAccepted) {
+        return defaultTermsInfo;
+      }
+
+      // User hasn't accepted terms - get latest terms version
+      try {
+        const latestTerms = await firstValueFrom(
+          this.client
+            .send<
+              any,
+              { locale?: string; cityId?: string | null }
+            >(RabbitMQPatterns.TERMS_GET_LATEST, { cityId })
+            .pipe(timeout(TERMS_CHECK_TIMEOUT)),
+        );
+
+        return {
+          requiresTermsAcceptance: true,
+          termsId: latestTerms?.id || acceptanceCheck.termsId,
+          latestVersion: latestTerms?.version || null,
+          gracePeriodEndsAt: acceptanceCheck.gracePeriodEndsAt
+            ? new Date(acceptanceCheck.gracePeriodEndsAt).toISOString()
+            : null,
+        };
+      } catch (error) {
+        // If we can't get latest terms, return what we have from acceptance check
+        return {
+          requiresTermsAcceptance: true,
+          termsId: acceptanceCheck.termsId,
+          latestVersion: null,
+          gracePeriodEndsAt: acceptanceCheck.gracePeriodEndsAt
+            ? new Date(acceptanceCheck.gracePeriodEndsAt).toISOString()
+            : null,
+        };
+      }
+    } catch (error) {
+      // Terms check failed or timed out - return defaults (non-blocking)
+      this.logger.debug('Terms acceptance check failed or timed out', { userId, error });
+      return defaultTermsInfo;
+    }
+  }
+
+  /**
    * Login user - Using Saga pattern for distributed transaction
    * Login is now email-only since username is optional
    */
@@ -122,8 +199,9 @@ export class AuthService {
         throw error;
       }
 
-      if (!user || !user.isActive) {
-        failureReason = 'User not found or inactive';
+      if (!user) {
+        failureReason = `Account not found with email: ${dto.email}`;
+        this.logger.warn(`Login failed - Account not found for email: ${dto.email}`);
         await this.createAuditLog(
           null,
           AuthAction.LOGIN,
@@ -131,8 +209,34 @@ export class AuthService {
           failureReason,
           ipAddress,
           userAgent,
+          { email: dto.email },
         );
-        throw new UnauthorizedException('Invalid credentials');
+        throw new UnauthorizedException({
+          errorCode: 'ACCOUNT_NOT_FOUND',
+          message: `No account found with email address: ${dto.email}. Please check your email or register for a new account.`,
+          email: dto.email,
+        });
+      }
+
+      if (!user.isActive) {
+        failureReason = `Account is inactive for email: ${dto.email}`;
+        this.logger.warn(
+          `Login failed - Account inactive for email: ${dto.email}, userId: ${user.id}`,
+        );
+        await this.createAuditLog(
+          user.id,
+          AuthAction.LOGIN,
+          false,
+          failureReason,
+          ipAddress,
+          userAgent,
+          { email: dto.email },
+        );
+        throw new UnauthorizedException({
+          errorCode: 'ACCOUNT_INACTIVE',
+          message: `Your account is inactive. Please contact support for assistance.`,
+          email: dto.email,
+        });
       }
 
       // Check email verification (fail fast if email exists and not verified)
@@ -174,7 +278,10 @@ export class AuthService {
       // Verify password (only if email is verified or user has no email)
       const isPasswordValid = await bcrypt.compare(dto.password, user.password);
       if (!isPasswordValid) {
-        failureReason = 'Invalid password';
+        failureReason = `Invalid password for email: ${dto.email}`;
+        this.logger.warn(
+          `Login failed - Invalid password for email: ${dto.email}, userId: ${user.id}`,
+        );
         await this.createAuditLog(
           user.id,
           AuthAction.LOGIN,
@@ -182,8 +289,13 @@ export class AuthService {
           failureReason,
           ipAddress,
           userAgent,
+          { email: dto.email },
         );
-        throw new UnauthorizedException('Invalid credentials');
+        throw new UnauthorizedException({
+          errorCode: 'INVALID_CREDENTIALS',
+          message: 'Invalid email or password. Please check your credentials and try again.',
+          email: dto.email,
+        });
       }
 
       // Step 2: Load user's city assignments from core service via RabbitMQ
@@ -252,83 +364,8 @@ export class AuthService {
 
       this.logger.log(`User logged in successfully: ${user.id}`);
 
-      // Check terms acceptance status (non-blocking - don't wait if slow)
-      // Use Promise.race to ensure we don't block login if terms service is slow
-      const termsInfo: {
-        requiresTermsAcceptance: boolean;
-        termsId: string | null;
-        latestVersion: string | null;
-        gracePeriodEndsAt: string | null;
-      } = {
-        requiresTermsAcceptance: false,
-        termsId: null,
-        latestVersion: null,
-        gracePeriodEndsAt: null,
-      };
-
-      // Start terms check but don't wait for it - use Promise.race with short timeout
-      const termsCheckPromise = (async () => {
-        try {
-          // Get cityId from user's city assignments (use first city if available)
-          const cityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : null;
-          const acceptanceCheck = await firstValueFrom(
-            this.client
-              .send<
-                { hasAccepted: boolean; termsId: string | null; gracePeriodEndsAt: Date | null },
-                { userId: string; locale?: string; cityId?: string | null }
-              >(RabbitMQPatterns.TERMS_CHECK_ACCEPTANCE, {
-                userId: user.id,
-                cityId,
-              })
-              .pipe(timeout(500)), // Very short timeout - 500ms max
-          );
-
-          if (!acceptanceCheck.hasAccepted) {
-            // Get latest terms to include version
-            try {
-              const latestTerms = await firstValueFrom(
-                this.client
-                  .send<
-                    any,
-                    { locale?: string; cityId?: string | null }
-                  >(RabbitMQPatterns.TERMS_GET_LATEST, { cityId })
-                  .pipe(timeout(500)), // Very short timeout - 500ms max
-              );
-
-              return {
-                requiresTermsAcceptance: true,
-                termsId: latestTerms?.id || acceptanceCheck.termsId,
-                latestVersion: latestTerms?.version || null,
-                gracePeriodEndsAt: acceptanceCheck.gracePeriodEndsAt
-                  ? new Date(acceptanceCheck.gracePeriodEndsAt).toISOString()
-                  : null,
-              };
-            } catch (error) {
-              // If we can't get latest terms, still include what we have
-              return {
-                requiresTermsAcceptance: true,
-                termsId: acceptanceCheck.termsId,
-                latestVersion: null,
-                gracePeriodEndsAt: acceptanceCheck.gracePeriodEndsAt
-                  ? new Date(acceptanceCheck.gracePeriodEndsAt).toISOString()
-                  : null,
-              };
-            }
-          }
-          return termsInfo; // User has accepted, no action needed
-        } catch (error) {
-          // If terms check fails, return default (non-blocking)
-          return termsInfo;
-        }
-      })();
-
-      // Race against a timeout - if terms check takes longer than 500ms, skip it
-      const timeoutPromise = new Promise<typeof termsInfo>((resolve) =>
-        setTimeout(() => resolve(termsInfo), 500),
-      );
-
-      // Wait for whichever completes first (terms check or timeout)
-      const finalTermsInfo = await Promise.race([termsCheckPromise, timeoutPromise]);
+      // Check terms acceptance status (non-blocking - don't fail login if terms service is slow)
+      const finalTermsInfo = await this.checkTermsAcceptance(user.id, cityAssignments);
 
       return {
         user: {
@@ -350,8 +387,21 @@ export class AuthService {
       }
       // Log and convert other errors to UnauthorizedException
       failureReason = error instanceof Error ? error.message : 'Unknown error';
-      await this.createAuditLog(null, AuthAction.LOGIN, false, failureReason, ipAddress, userAgent);
-      throw new UnauthorizedException('Invalid credentials');
+      this.logger.error(`Login error for email: ${dto.email}`, error);
+      await this.createAuditLog(
+        null,
+        AuthAction.LOGIN,
+        false,
+        failureReason,
+        ipAddress,
+        userAgent,
+        { email: dto.email },
+      );
+      throw new UnauthorizedException({
+        errorCode: 'LOGIN_ERROR',
+        message: 'An error occurred during login. Please try again later.',
+        email: dto.email,
+      });
     }
   }
 

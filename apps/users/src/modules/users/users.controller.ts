@@ -300,9 +300,50 @@ export class UsersController {
     const photoUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
 
     // Update user profile in database
-    const profile = await this.usersService.updateProfile(userId, {
+    await this.usersService.updateProfile(userId, {
       profilePhotoUrl: photoUrl,
     });
+
+    // Get full profile with city assignments
+    const profileData = await this.usersService.getProfile(userId);
+
+    // Transform profile data to match DTO structure
+    const transformedProfileData = {
+      id: profileData.id,
+      email: profileData.email ?? '',
+      username: profileData.username ?? '',
+      firstName: profileData.firstName ?? '',
+      lastName: profileData.lastName ?? '',
+      role: profileData.role,
+      isActive: profileData.isActive,
+      createdAt:
+        profileData.createdAt instanceof Date
+          ? profileData.createdAt.toISOString()
+          : profileData.createdAt,
+      updatedAt:
+        profileData.updatedAt instanceof Date
+          ? profileData.updatedAt.toISOString()
+          : profileData.updatedAt,
+      cityAssignments: profileData.cityAssignments.map((assignment) => ({
+        cityId: assignment.cityId,
+        role: assignment.role,
+        canManageAdmins: assignment.canManageAdmins,
+        createdAt:
+          assignment.createdAt instanceof Date
+            ? assignment.createdAt.toISOString()
+            : assignment.createdAt,
+      })),
+    };
+
+    // Construct GetProfileResponseDto structure
+    const profile: GetProfileResponseDto = {
+      success: true,
+      data: transformedProfileData,
+      message: 'Profile photo uploaded successfully',
+      timestamp: new Date().toISOString(),
+      path: '/profile/photo',
+      statusCode: 200,
+    };
 
     return {
       profile,

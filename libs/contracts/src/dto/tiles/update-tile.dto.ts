@@ -1,5 +1,5 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateTileDto } from './create-tile.dto';
+import { CreateTileDto, TileCityReferenceDto } from './create-tile.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateTileDto extends PartialType(CreateTileDto) {
@@ -8,11 +8,6 @@ export class UpdateTileDto extends PartialType(CreateTileDto) {
     example: 'kiel-gift-card-promo',
   })
   slug?: string;
-
-  @ApiPropertyOptional({
-    description: 'Background image URL for the tile',
-  })
-  backgroundImageUrl?: string;
 
   @ApiPropertyOptional({
     description: 'Header background color in hex format',
@@ -71,6 +66,7 @@ export class UpdateTileDto extends PartialType(CreateTileDto) {
 
   @ApiPropertyOptional({
     description: 'Cities to associate with this tile',
+    type: [TileCityReferenceDto],
   })
-  cities?: CreateTileDto['cities'];
+  cities?: TileCityReferenceDto[];
 }

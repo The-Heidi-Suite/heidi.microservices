@@ -302,14 +302,6 @@ export class CreateListingDto {
   sourceUrl?: string;
 
   @ApiPropertyOptional({
-    example: 'https://cdn.example.com/listings/hero.jpg',
-    description: 'URL of the hero/featured image',
-  })
-  @IsOptional()
-  @IsUrl()
-  heroImageUrl?: string;
-
-  @ApiPropertyOptional({
     example: { tags: ['cleanup', 'volunteer'] },
     description: 'Additional metadata as key-value pairs',
   })
@@ -448,15 +440,6 @@ export class CreateListingDto {
   @ValidateNested({ each: true })
   @Type(() => ListingCityReferenceDto)
   cities?: ListingCityReferenceDto[];
-
-  @ApiPropertyOptional({
-    type: [ListingMediaInputDto],
-    description: 'Media files to associate with this listing',
-  })
-  @IsOptional()
-  @ValidateNested({ each: true })
-  @Type(() => ListingMediaInputDto)
-  media?: ListingMediaInputDto[];
 
   @ApiPropertyOptional({
     type: [ListingTimeIntervalInputDto],

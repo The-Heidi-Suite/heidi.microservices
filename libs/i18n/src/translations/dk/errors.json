@@ -48,5 +48,15 @@
   "CATEGORY_REQUEST_INVALID_STATUS": "Ugyldig status for kategoriansøgning.",
   "CITY_ACCESS_DENIED": "Du er ikke tilknyttet denne by.",
   "CITY_CATEGORY_MAPPING_NOT_FOUND": "Tilknytning mellem by og kategori blev ikke fundet.",
-  "REGISTRATION_FIELDS_REQUIRED": "E-mail og adgangskode er påkrævet til registrering"
+  "REGISTRATION_FIELDS_REQUIRED": "E-mail og adgangskode er påkrævet til registrering",
+  "ACCOUNT_NOT_FOUND": "Ingen konto fundet med denne e-mailadresse. Tjek venligst din e-mail eller registrer en ny konto.",
+  "ACCOUNT_INACTIVE": "Din konto er inaktiv. Kontakt venligst support for hjælp.",
+  "INVALID_CREDENTIALS": "Ugyldig e-mail eller adgangskode. Tjek venligst dine oplysninger og prøv igen.",
+  "LOGIN_ERROR": "Der opstod en fejl under login. Prøv venligst igen senere.",
+  "TILE_NOT_FOUND": "Flise ikke fundet",
+  "TILE_ACCESS_DENIED": "Du har ikke tilladelse til at udføre denne handling på fliser",
+  "TILE_CREATE_DENIED": "Kun administratorer kan oprette fliser",
+  "TILE_UPDATE_DENIED": "Kun administratorer kan opdatere fliser",
+  "TILE_DELETE_DENIED": "Kun administratorer kan slette fliser",
+  "TILE_CITY_ACCESS_DENIED": "Du har ikke adgang til at oprette fliser for en eller flere angivne byer"
 }

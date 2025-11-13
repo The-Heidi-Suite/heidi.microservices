@@ -1,21 +1,48 @@
 import { Module } from '@nestjs/common';
 import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
 import { TerminusModule } from '@nestjs/terminus';
+import { ThrottlerModule } from '@nestjs/throttler';
+
+// Shared libraries
 import { ConfigModule, ConfigService } from '@heidi/config';
 import { PrismaCityModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { RmqModule } from '@heidi/rabbitmq';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
-import { LoggingInterceptor } from '@heidi/interceptors';
+import {
+  LoggingInterceptor,
+  TimeoutInterceptor,
+  TransformInterceptor,
+  SuccessMessageService,
+} from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
+import { ErrorHandlingModule } from '@heidi/errors';
 import { TermsAcceptanceGuard } from '@heidi/rbac';
+
+// Local modules
 import { CityModule } from './modules/city/city.module';
 import { HealthController } from './health.controller';
 
 @Module({
   imports: [
+    // Configuration
     ConfigModule,
+
+    // Rate limiting
+    ThrottlerModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => [
+        {
+          ttl: configService.get<number>('throttle.ttl', 60) * 1000,
+          limit: configService.get<number>('throttle.limit', 100),
+        },
+      ],
+    }),
+
+    // Health checks
     TerminusModule,
+
+    // Shared libraries
     PrismaCityModule,
     LoggerModule,
     RmqModule.forRootAsync({
@@ -25,13 +52,38 @@ import { HealthController } from './health.controller';
     }),
     MetricsModule,
     I18nModule,
+    ErrorHandlingModule,
+
+    // Feature modules
     CityModule,
   ],
   controllers: [HealthController],
   providers: [
-    { provide: APP_INTERCEPTOR, useClass: LanguageInterceptor },
-    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
-    { provide: APP_INTERCEPTOR, useClass: MetricsInterceptor },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LanguageInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: MetricsInterceptor,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useFactory: (configService: ConfigService) => {
+        const timeoutMs = configService.get<number>('requestTimeoutMs', 30000);
+        return new TimeoutInterceptor(timeoutMs);
+      },
+      inject: [ConfigService],
+    },
+    SuccessMessageService,
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformInterceptor,
+    },
     {
       provide: APP_GUARD,
       useClass: TermsAcceptanceGuard,

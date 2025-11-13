@@ -10,3 +10,4 @@ export * from './listing-favorite.dto';
 export * from './category-response.dto';
 export * from './upload-hero-image-response.dto';
 export * from './upload-media-response.dto';
+export * from './delete-media-response.dto';
