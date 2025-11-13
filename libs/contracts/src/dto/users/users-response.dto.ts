@@ -227,8 +227,8 @@ export class UserDto {
   @ApiProperty({ example: 'Doe' })
   lastName: string;
 
-  @ApiProperty({ example: 'CITIZEN', enum: ['CITIZEN', 'CITY_ADMIN', 'SUPER_ADMIN'] })
-  role: string;
+  @ApiProperty({ example: 3, enum: [1, 2, 3], description: 'User role: 1=SUPER_ADMIN, 2=CITY_ADMIN, 3=CITIZEN' })
+  role: number;
 
   @ApiProperty({ example: true })
   isActive: boolean;
@@ -393,8 +393,8 @@ export class CityAssignmentDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174001' })
   cityId: string;
 
-  @ApiProperty({ example: 'CITIZEN', enum: ['CITIZEN', 'CITY_ADMIN'] })
-  role: string;
+  @ApiProperty({ example: 3, enum: [2, 3], description: 'Role: 2=CITY_ADMIN, 3=CITIZEN' })
+  role: number;
 
   @ApiProperty({ example: false })
   canManageAdmins: boolean;
