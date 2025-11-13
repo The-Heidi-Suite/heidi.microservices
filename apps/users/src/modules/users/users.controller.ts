@@ -438,4 +438,64 @@ export class UsersController {
       cityId: dto.cityId,
     });
   }
+
+  @Post('reset-password/request')
+  @Public()
+  @ApiOperation({
+    summary: 'Request password reset',
+    description: 'Request a password reset email to be sent',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', format: 'email' },
+      },
+      required: ['email'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset email sent (if account exists)',
+  })
+  @HttpCode(HttpStatus.OK)
+  async requestPasswordReset(
+    @Body() body: { email: string },
+    @GetLanguage() language: string,
+  ) {
+    return this.usersService.requestPasswordReset(body.email, language);
+  }
+
+  @Post('reset-password/confirm')
+  @Public()
+  @ApiOperation({
+    summary: 'Reset password',
+    description: 'Reset password using the token from the email',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        token: { type: 'string' },
+        newPassword: { type: 'string', minLength: 8 },
+      },
+      required: ['token', 'newPassword'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid or expired token',
+    type: BadRequestErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body() body: { token: string; newPassword: string },
+    @GetLanguage() language: string,
+  ) {
+    return this.usersService.resetPassword(body.token, body.newPassword, language);
+  }
 }
