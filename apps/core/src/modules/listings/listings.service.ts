@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaCoreService } from '@heidi/prisma';
 import { LoggerService } from '@heidi/logger';
+import { StorageService } from '@heidi/storage';
+import { ConfigService } from '@heidi/config';
 import {
   Prisma,
   ListingMediaType,
@@ -57,6 +59,8 @@ export class ListingsService {
   constructor(
     private readonly prisma: PrismaCoreService,
     private readonly logger: LoggerService,
+    private readonly storageService: StorageService,
+    private readonly configService: ConfigService,
   ) {
     this.logger.setContext(ListingsService.name);
   }
@@ -401,6 +405,66 @@ export class ListingsService {
     return this.mapListingMedia(created);
   }
 
+  async deleteListingMedia(
+    listingId: string,
+    mediaId: string,
+    _userId: string,
+    _roles: UserRole[],
+  ): Promise<void> {
+    // Verify listing exists
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+
+    // Get media record
+    const media = await this.prisma.listingMedia.findFirst({
+      where: { id: mediaId, listingId },
+    });
+
+    if (!media) {
+      throw new NotFoundException('Media not found');
+    }
+
+    // Delete file from storage
+    try {
+      const key = this.extractKeyFromUrl(media.url);
+      const bucket = this.configService.storageConfig.defaultBucket;
+      if (bucket) {
+        await this.storageService.deleteFile({ bucket, key });
+      }
+    } catch (error) {
+      this.logger.warn(`Failed to delete media file ${mediaId}`, error);
+    }
+
+    // Delete DB record
+    await this.prisma.listingMedia.delete({
+      where: { id: mediaId },
+    });
+  }
+
+  private extractKeyFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      // Extract pathname and remove leading slash and bucket name
+      // Format: /bucket-name/listings/listingId/media/file.ext
+      const pathname = urlObj.pathname;
+      // Remove leading slash and first segment (bucket name)
+      const parts = pathname.split('/').filter(Boolean);
+      if (parts.length > 1) {
+        return parts.slice(1).join('/');
+      }
+      return pathname.replace(/^\/[^\/]+\//, '');
+    } catch (error) {
+      this.logger.warn(`Failed to parse URL: ${url}`, error);
+      // Fallback: try to extract from pathname directly
+      return url.split('?')[0].replace(/^https?:\/\/[^\/]+\//, '');
+    }
+  }
+
   private mapListingMedia(media: any): ListingMediaDto {
     return {
       id: media.id,
@@ -568,7 +632,6 @@ export class ListingsService {
       expireAt,
       languageCode: dto.languageCode,
       sourceUrl: dto.sourceUrl,
-      heroImageUrl: dto.heroImageUrl,
       metadata: this.toJson(dto.metadata),
       createdByUserId: userId,
       lastEditedByUserId: userId,
@@ -621,19 +684,6 @@ export class ListingsService {
               cityId: city.cityId,
               isPrimary: city.isPrimary ?? index === 0,
               displayOrder: city.displayOrder ?? index,
-            })),
-          }
-        : undefined,
-      media: dto.media?.length
-        ? {
-            create: dto.media.map((media, index) => ({
-              ...(media.id ? { id: media.id } : {}),
-              type: media.type,
-              url: media.url,
-              altText: media.altText,
-              caption: media.caption,
-              order: media.order ?? index,
-              metadata: this.toJson(media.metadata),
             })),
           }
         : undefined,
@@ -722,10 +772,6 @@ export class ListingsService {
 
       if (dto.sourceUrl !== undefined) {
         updateData.sourceUrl = dto.sourceUrl;
-      }
-
-      if (dto.heroImageUrl !== undefined) {
-        updateData.heroImageUrl = dto.heroImageUrl;
       }
 
       if (dto.metadata !== undefined) {
@@ -948,7 +994,7 @@ export class ListingsService {
 
       await this.syncListingCategories(tx, listingId, dto.categories);
       await this.syncListingCities(tx, listingId, dto.cities);
-      await this.syncListingMedia(tx, listingId, dto.media);
+      // Media should not be updated via this endpoint - use upload/delete endpoints instead
       await this.syncListingTimeIntervals(tx, listingId, dto.timeIntervals);
       await this.syncListingTimeIntervalExceptions(tx, listingId, dto.timeIntervalExceptions);
 
