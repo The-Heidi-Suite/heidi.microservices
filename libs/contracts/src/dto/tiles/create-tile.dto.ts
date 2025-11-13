@@ -3,7 +3,6 @@ import {
   IsOptional,
   IsBoolean,
   IsUrl,
-  IsDateString,
   IsNumber,
   ValidateNested,
   IsArray,
@@ -11,6 +10,31 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateTileCityReferenceDto {
+  @ApiProperty({
+    description: 'City ID to associate with the tile',
+    example: 'city_01J3MJG0YX6FT5PB9SJ9Y2KQW4',
+  })
+  @IsString()
+  cityId: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether this is the primary city for the tile',
+    default: false,
+  })
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Display order for this city association',
+    default: 0,
+  })
+  @IsOptional()
+  @IsNumber()
+  displayOrder?: number;
+}
 
 export class TileCityReferenceDto {
   @ApiPropertyOptional({
@@ -46,14 +70,6 @@ export class TileCityReferenceDto {
 }
 
 export class CreateTileDto {
-  @ApiPropertyOptional({
-    description: 'URL-friendly slug for the tile (auto-generated from header if not provided)',
-    example: 'kiel-gift-card-promo',
-  })
-  @IsOptional()
-  @IsString()
-  slug?: string;
-
   @ApiPropertyOptional({
     description: 'Header background color in hex format',
     example: '#1E40AF',
@@ -135,28 +151,12 @@ export class CreateTileDto {
   isActive?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Publish date/time (ISO 8601)',
-    example: '2025-01-20T09:00:00.000Z',
-  })
-  @IsOptional()
-  @IsDateString()
-  publishAt?: string;
-
-  @ApiPropertyOptional({
-    description: 'Expiration date/time (ISO 8601)',
-    example: '2025-12-31T23:59:59.000Z',
-  })
-  @IsOptional()
-  @IsDateString()
-  expireAt?: string;
-
-  @ApiPropertyOptional({
     description: 'Cities to associate with this tile',
-    type: [TileCityReferenceDto],
+    type: [CreateTileCityReferenceDto],
   })
   @IsOptional()
   @ValidateNested({ each: true })
-  @Type(() => TileCityReferenceDto)
+  @Type(() => CreateTileCityReferenceDto)
   @IsArray()
-  cities?: TileCityReferenceDto[];
+  cities?: CreateTileCityReferenceDto[];
 }

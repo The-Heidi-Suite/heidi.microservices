@@ -1,5 +1,5 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateTileDto } from './create-tile.dto';
+import { CreateTileDto, TileCityReferenceDto } from './create-tile.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateTileDto extends PartialType(CreateTileDto) {
@@ -66,6 +66,7 @@ export class UpdateTileDto extends PartialType(CreateTileDto) {
 
   @ApiPropertyOptional({
     description: 'Cities to associate with this tile',
+    type: [TileCityReferenceDto],
   })
-  cities?: CreateTileDto['cities'];
+  cities?: TileCityReferenceDto[];
 }

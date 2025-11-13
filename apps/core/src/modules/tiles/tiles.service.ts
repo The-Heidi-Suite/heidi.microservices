@@ -193,8 +193,8 @@ export class TilesService {
       }
     }
 
-    const baseSlugCandidate = dto.slug ? this.slugify(dto.slug) : this.slugify(dto.header);
-    const baseSlug = baseSlugCandidate || this.slugify(`${dto.header}-${Date.now()}`);
+    // Generate slug from header (slug is auto-generated, not provided during creation)
+    const baseSlug = this.slugify(dto.header) || this.slugify(`tile-${Date.now()}`);
     const slug = await this.ensureUniqueSlug(baseSlug);
 
     const data: Prisma.TileCreateInput = {
@@ -208,14 +208,13 @@ export class TilesService {
       openInExternalBrowser: dto.openInExternalBrowser ?? false,
       displayOrder: dto.displayOrder ?? 0,
       isActive: dto.isActive ?? true,
-      publishAt: dto.publishAt ? new Date(dto.publishAt) : undefined,
-      expireAt: dto.expireAt ? new Date(dto.expireAt) : undefined,
+      // publishAt and expireAt are not set during creation
       createdByUserId: userId,
       lastEditedByUserId: userId,
       cities: dto.cities?.length
         ? {
             create: dto.cities.map((city, index) => ({
-              ...(city.id ? { id: city.id } : {}),
+              // id is not provided during creation (TileCity IDs are auto-generated)
               cityId: city.cityId,
               isPrimary: city.isPrimary ?? index === 0,
               displayOrder: city.displayOrder ?? index,
