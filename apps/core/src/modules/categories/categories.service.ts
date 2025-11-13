@@ -168,10 +168,8 @@ export class CategoriesService {
       orderBy: { addedAt: 'desc' },
     });
 
-    // Extract just the category objects
-    const categories = cityCategories.map((cc) => cc.category);
-
-    return this.buildCategoryHierarchy(categories);
+    // Return with displayName - will be null if not set, which means use category.name
+    return cityCategories;
   }
 
   async getCategoryById(categoryId: string) {
