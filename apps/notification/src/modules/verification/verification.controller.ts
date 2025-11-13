@@ -1,4 +1,5 @@
-import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { VerificationService } from './verification.service';
 import {
@@ -13,12 +14,15 @@ import {
   VerificationBadRequestErrorResponseDto,
   VerificationExpiredErrorResponseDto,
 } from '@heidi/contracts';
-import { GetLanguage } from '@heidi/i18n';
+import { GetLanguage, I18nService } from '@heidi/i18n';
 
 @ApiTags('Verification')
 @Controller('verification')
 export class VerificationController {
-  constructor(private readonly verificationService: VerificationService) {}
+  constructor(
+    private readonly verificationService: VerificationService,
+    private readonly i18nService: I18nService,
+  ) {}
 
   @Post('send')
   @HttpCode(HttpStatus.OK)
@@ -90,8 +94,43 @@ export class VerificationController {
     description: 'Verification link has expired',
     type: VerificationExpiredErrorResponseDto,
   })
-  async verifyTokenGet(@Query('token') token: string, @GetLanguage() language: string) {
-    return this.verificationService.verifyToken({ token }, language);
+  async verifyTokenGet(
+    @Query('token') token: string,
+    @GetLanguage() language: string,
+    @Res() res: Response,
+  ) {
+    try {
+      const result = await this.verificationService.verifyToken({ token }, language);
+      
+      // Get translated messages - use specific keys for each text element
+      const title =
+        this.i18nService.translate('success.EMAIL_VERIFIED_TITLE', undefined, language) ||
+        'Email Verified!';
+      const message =
+        this.i18nService.translate('success.EMAIL_VERIFIED_MESSAGE', undefined, language) ||
+        'Your email has been verified successfully!';
+      const subtitle =
+        this.i18nService.translate('success.EMAIL_VERIFIED_SUBTITLE', undefined, language) ||
+        'You can now close this window and continue using the app.';
+      
+      // Return HTML page
+      const html = this.generateSuccessHtml(title, message, subtitle);
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    } catch (error) {
+      // Handle errors and show error HTML page - translate the title
+      const title =
+        this.i18nService.translate('success.VERIFICATION_FAILED', undefined, language) ||
+        'Verification Failed';
+      const message =
+        error.response?.message || error.message || 'An error occurred during verification';
+      const errorCode = error.response?.errorCode || 'UNKNOWN_ERROR';
+      
+      const html = this.generateErrorHtml(title, message, errorCode);
+      res.status(error.status || 500);
+      res.setHeader('Content-Type', 'text/html');
+      res.send(html);
+    }
   }
 
   @Post('verify')
@@ -250,5 +289,219 @@ export class VerificationController {
   @ApiQuery({ name: 'type', enum: ['EMAIL', 'SMS'], required: true })
   async getStatus(@Param('userId') userId: string, @Query('type') type: 'EMAIL' | 'SMS') {
     return this.verificationService.getVerificationStatus(userId, type);
+  }
+
+  private generateSuccessHtml(title: string, message: string, subtitle: string): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title}</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 60px 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+          }
+          @keyframes slideUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .success-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 30px;
+            animation: scaleIn 0.5s ease-out 0.2s both;
+          }
+          @keyframes scaleIn {
+            from {
+              transform: scale(0);
+            }
+            to {
+              transform: scale(1);
+            }
+          }
+          .success-icon svg {
+            width: 50px;
+            height: 50px;
+            stroke: white;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+          }
+          h1 {
+            color: #1a202c;
+            font-size: 32px;
+            margin-bottom: 16px;
+            font-weight: 700;
+          }
+          p {
+            color: #4a5568;
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+          }
+          .subtitle {
+            color: #718096;
+            font-size: 14px;
+            margin-top: 20px;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="success-icon">
+            <svg viewBox="0 0 52 52">
+              <path d="M14 27l9 9 17-17"/>
+            </svg>
+          </div>
+          <h1>${title}</h1>
+          <p>${message}</p>
+          <p class="subtitle">${subtitle}</p>
+        </div>
+      </body>
+      </html>
+    `;
+  }
+
+  private generateErrorHtml(title: string, message: string, errorCode: string): string {
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title}</title>
+        <style>
+          * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+          }
+          .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 60px 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+          }
+          @keyframes slideUp {
+            from {
+              opacity: 0;
+              transform: translateY(30px);
+            }
+            to {
+              opacity: 1;
+              transform: translateY(0);
+            }
+          }
+          .error-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto 30px;
+            animation: scaleIn 0.5s ease-out 0.2s both;
+          }
+          @keyframes scaleIn {
+            from {
+              transform: scale(0);
+            }
+            to {
+              transform: scale(1);
+            }
+          }
+          .error-icon svg {
+            width: 50px;
+            height: 50px;
+            stroke: white;
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            fill: none;
+          }
+          h1 {
+            color: #1a202c;
+            font-size: 32px;
+            margin-bottom: 16px;
+            font-weight: 700;
+          }
+          p {
+            color: #4a5568;
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+          }
+          .error-code {
+            color: #a0aec0;
+            font-size: 12px;
+            margin-top: 20px;
+            font-family: monospace;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="error-icon">
+            <svg viewBox="0 0 52 52">
+              <line x1="16" y1="16" x2="36" y2="36"/>
+              <line x1="36" y1="16" x2="16" y2="36"/>
+            </svg>
+          </div>
+          <h1>${title}</h1>
+          <p>${message}</p>
+          <p class="error-code">Error Code: ${errorCode}</p>
+        </div>
+      </body>
+      </html>
+    `;
   }
 }

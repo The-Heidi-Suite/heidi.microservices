@@ -15,6 +15,7 @@ import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 import { TermsAcceptanceGuard } from '@heidi/rbac';
 import { NotificationModule } from './modules/notification/notification.module';
 import { VerificationModule } from './modules/verification/verification.module';
+import { PasswordResetModule } from './modules/password-reset/password-reset.module';
 import { HealthController } from './health.controller';
 import { ErrorHandlingModule } from '@heidi/errors';
 
@@ -34,6 +35,7 @@ import { ErrorHandlingModule } from '@heidi/errors';
     ErrorHandlingModule,
     NotificationModule,
     VerificationModule,
+    PasswordResetModule,
   ],
   controllers: [HealthController],
   providers: [
