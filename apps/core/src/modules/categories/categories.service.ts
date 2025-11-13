@@ -110,16 +110,24 @@ export class CategoriesService {
   }
 
   async listCityCategories(cityId: string) {
-    return this.prisma.cityCategory.findMany({
+    const cityCategories = await this.prisma.cityCategory.findMany({
       where: { cityId, isActive: true },
       include: {
         category: true,
       },
       orderBy: { addedAt: 'desc' },
     });
+
+    // Return with displayName - will be null if not set, which means use category.name
+    return cityCategories;
   }
 
-  async assignCategoryToCity(cityId: string, categoryId: string, addedBy: string) {
+  async assignCategoryToCity(
+    cityId: string,
+    categoryId: string,
+    addedBy: string,
+    displayName?: string,
+  ) {
     return this.prisma.cityCategory.upsert({
       where: {
         cityId_categoryId: {
@@ -131,11 +139,13 @@ export class CategoriesService {
         isActive: true,
         addedBy,
         addedAt: new Date(),
+        displayName: displayName !== undefined ? displayName : undefined, // Only update if provided
       },
       create: {
         cityId,
         categoryId,
         addedBy,
+        displayName: displayName ?? null, // Default to null if not provided
       },
       include: {
         category: true,
@@ -262,5 +272,42 @@ export class CategoriesService {
     });
 
     return Boolean(assignment);
+  }
+
+  async updateCityCategoryDisplayName(
+    cityId: string,
+    categoryId: string,
+    displayName: string | null,
+  ) {
+    const existing = await this.prisma.cityCategory.findUnique({
+      where: {
+        cityId_categoryId: {
+          cityId,
+          categoryId,
+        },
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
+    }
+
+    return this.prisma.cityCategory.update({
+      where: {
+        cityId_categoryId: {
+          cityId,
+          categoryId,
+        },
+      },
+      data: {
+        displayName,
+      },
+      include: {
+        category: true,
+      },
+    });
   }
 }
