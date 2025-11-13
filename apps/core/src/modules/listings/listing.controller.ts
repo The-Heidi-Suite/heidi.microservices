@@ -44,7 +44,7 @@ import {
   DeleteMediaResponseDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
-import { AdminOnlyGuard, PermissionsGuard } from '@heidi/rbac';
+import { AdminOnlyGuard, PermissionsGuard, numberToRole } from '@heidi/rbac';
 import { UserRole, ListingMediaType } from '@prisma/client-core';
 import { ListingsService } from './listings.service';
 import { FileUploadService, StorageService } from '@heidi/storage';
@@ -68,11 +68,18 @@ export class ListingController {
     this.logger.setContext(ListingController.name);
   }
 
-  private getRoles(role?: string): UserRole[] {
+  private getRoles(role?: string | number): UserRole[] {
     if (!role) {
       return [];
     }
 
+    // Handle number roles
+    if (typeof role === 'number') {
+      const roleEnum = numberToRole(role);
+      return roleEnum ? [roleEnum] : [];
+    }
+
+    // Handle string roles (backward compatibility)
     const normalized = role.toUpperCase() as keyof typeof UserRole;
     const mapped = UserRole[normalized];
 

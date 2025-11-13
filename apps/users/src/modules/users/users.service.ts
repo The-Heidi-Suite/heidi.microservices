@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { firstValueFrom, timeout } from 'rxjs';
 import { PrismaUsersService } from '@heidi/prisma';
-import { PermissionService } from '@heidi/rbac';
+import { PermissionService, roleToNumber } from '@heidi/rbac';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { UserRole } from '@prisma/client-core';
@@ -449,7 +449,11 @@ export class UsersService {
 
     return {
       ...user,
-      cityAssignments,
+      role: roleToNumber(user.role),
+      cityAssignments: cityAssignments.map(assignment => ({
+        ...assignment,
+        role: roleToNumber(assignment.role),
+      })),
     };
   }
 

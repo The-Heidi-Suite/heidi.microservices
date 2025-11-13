@@ -43,7 +43,7 @@ import {
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { UserRole } from '@prisma/client-core';
 import { TilesService } from './tiles.service';
-import { CityAdminOnly, AdminOnlyGuard, PermissionsGuard, RequiresPermission } from '@heidi/rbac';
+import { CityAdminOnly, AdminOnlyGuard, PermissionsGuard, RequiresPermission, numberToRole } from '@heidi/rbac';
 import { FileUploadService, StorageService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
 import { LoggerService } from '@heidi/logger';
@@ -64,11 +64,18 @@ export class TilesController {
     this.logger.setContext(TilesController.name);
   }
 
-  private getRoles(role?: string): UserRole[] {
+  private getRoles(role?: string | number): UserRole[] {
     if (!role) {
       return [];
     }
 
+    // Handle number roles
+    if (typeof role === 'number') {
+      const roleEnum = numberToRole(role);
+      return roleEnum ? [roleEnum] : [];
+    }
+
+    // Handle string roles (backward compatibility)
     const normalized = role.toUpperCase() as keyof typeof UserRole;
     const mapped = UserRole[normalized];
 
