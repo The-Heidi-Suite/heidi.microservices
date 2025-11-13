@@ -20,9 +20,15 @@
   "GUEST_LOGIN_SUCCESS": "Misafir girişi başarılı",
   "GUEST_CONVERTED": "Misafir başarıyla dönüştürüldü",
   "EMAIL_VERIFIED": "E-posta başarıyla doğrulandı",
+  "EMAIL_VERIFIED_TITLE": "E-posta Doğrulandı!",
+  "EMAIL_VERIFIED_MESSAGE": "E-postanız başarıyla doğrulandı!",
+  "EMAIL_VERIFIED_SUBTITLE": "Artık bu pencereyi kapatabilir ve uygulamayı kullanmaya devam edebilirsiniz.",
+  "VERIFICATION_FAILED": "Doğrulama Başarısız",
   "EMAIL_VERIFICATION_SENT": "Doğrulama e-postası başarıyla gönderildi",
   "EMAIL_VERIFICATION_RESENT": "Doğrulama e-postası başarıyla yeniden gönderildi",
   "VERIFICATION_ALREADY_CANCELLED": "Bu doğrulama bağlantısı zaten iptal edildi",
   "VERIFICATION_CANCELLED": "Doğrulama başarıyla iptal edildi",
+  "PASSWORD_RESET_EMAIL_SENT": "Şifre sıfırlama e-postası gönderildi",
+  "PASSWORD_RESET_IF_EXISTS": "Bu e-posta adresiyle bir hesap varsa, şifre sıfırlama bağlantısı gönderildi.",
   "OPERATION_SUCCESS": "İşlem başarıyla tamamlandı"
 }
