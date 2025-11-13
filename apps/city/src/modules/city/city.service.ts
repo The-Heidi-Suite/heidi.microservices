@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaCityService } from '@heidi/prisma';
 import { LoggerService } from '@heidi/logger';
-import { CreateCityDto, UpdateCityDto } from './dto';
+import { CreateCityDto, UpdateCityDto } from '@heidi/contracts';
 
 @Injectable()
 export class CityService {
@@ -16,15 +16,22 @@ export class CityService {
   }
 
   async findAll(country?: string) {
-    return this.prisma.city.findMany({
+    const cities = await this.prisma.city.findMany({
       where: country ? { country, isActive: true } : { isActive: true },
       orderBy: { name: 'asc' },
     });
+    return { items: cities };
   }
 
   async findOne(id: string) {
     const city = await this.prisma.city.findUnique({ where: { id } });
-    if (!city) throw new NotFoundException('City not found');
+    if (!city) {
+      throw new NotFoundException({
+        message: 'City not found',
+        errorCode: 'CITY_NOT_FOUND',
+        cityId: id,
+      });
+    }
     return city;
   }
 
@@ -54,10 +61,11 @@ export class CityService {
       where: { isActive: true },
     });
 
-    return cities.filter((city) => {
+    const nearbyCities = cities.filter((city) => {
       const distance = this.calculateDistance(lat, lng, city.latitude, city.longitude);
       return distance <= radiusKm;
     });
+    return { items: nearbyCities };
   }
 
   private calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
