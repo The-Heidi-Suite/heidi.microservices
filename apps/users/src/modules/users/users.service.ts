@@ -573,6 +573,7 @@ export class UsersService {
         devicePlatform: existingGuest.devicePlatform,
         userType: existingGuest.userType,
         createdAt: existingGuest.createdAt,
+        requiresTermsAcceptance: false, // Guests don't need to accept terms
       };
     }
 
@@ -612,7 +613,12 @@ export class UsersService {
     });
 
     this.logger.log(`Guest user created successfully: ${guestUser.id}`);
-    return guestUser;
+    
+    // Return guest user with requiresTermsAcceptance flag
+    return {
+      ...guestUser,
+      requiresTermsAcceptance: false, // Guests don't need to accept terms
+    };
   }
 
   /**
