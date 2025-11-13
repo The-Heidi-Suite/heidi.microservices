@@ -836,6 +836,7 @@ export class AuthService {
           deviceId: guestUser.deviceId,
           devicePlatform: guestUser.devicePlatform,
           userType: 'GUEST',
+          requiresTermsAcceptance: false, // Guests don't need to accept terms
         },
         ...tokens,
       };
