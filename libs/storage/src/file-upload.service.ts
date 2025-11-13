@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { StorageService } from './storage.service';
 import { LoggerService } from '@heidi/logger';
 import sharp from 'sharp';
+import { fromBuffer } from 'file-type';
 
 export interface FileValidationOptions {
   maxSize: number; // in bytes
@@ -77,8 +78,7 @@ export class FileUploadService {
     }
 
     // Detect actual file type from buffer
-    const { fileTypeFromBuffer } = await import('file-type');
-    const fileType = await fileTypeFromBuffer(file.buffer);
+    const fileType = await fromBuffer(file.buffer);
     if (!fileType) {
       throw new BadRequestException('Unable to detect file type');
     }
@@ -239,14 +239,9 @@ export class FileUploadService {
         acl: 'public-read',
       });
 
-      // Generate presigned URL for public access
-      // For Hetzner, we can generate a presigned URL or construct the public URL
-      // Using presigned URL for now (expires in 1 year for public assets)
-      const url = await this.storageService.generatePresignedUrl({
-        bucket,
-        key,
-        expiresIn: 31536000, // 1 year
-      });
+      // For public files, use the public URL instead of presigned URL
+      // Public URLs don't expire and are more efficient for public assets
+      const url = this.storageService.generatePublicUrl(bucket, key);
 
       return url;
     } catch (error) {
@@ -320,8 +315,7 @@ export class FileUploadService {
     type: 'IMAGE' | 'VIDEO' | 'DOCUMENT' | 'AUDIO' | 'OTHER';
     mimeType: string;
   }> {
-    const { fileTypeFromBuffer } = await import('file-type');
-    const fileType = await fileTypeFromBuffer(file.buffer);
+    const fileType = await fromBuffer(file.buffer);
     if (!fileType) {
       return { type: 'OTHER', mimeType: file.mimetype };
     }

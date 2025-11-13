@@ -236,9 +236,14 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
 
   /**
    * Generate a presigned URL for temporary file access
+   * Note: Maximum expiration is 7 days (604800 seconds) for AWS S3-compatible services
    */
   async generatePresignedUrl(options: GeneratePresignedUrlOptions): Promise<string> {
     const { bucket, key, expiresIn = 3600 } = options;
+
+    // AWS S3 presigned URLs have a maximum expiration of 7 days
+    const maxExpiration = 7 * 24 * 60 * 60; // 7 days in seconds
+    const validExpiresIn = Math.min(expiresIn, maxExpiration);
 
     try {
       const command = new GetObjectCommand({
@@ -246,11 +251,50 @@ export class StorageService implements OnModuleInit, OnModuleDestroy {
         Key: key,
       });
 
-      const url = await getSignedUrl(this.s3Client, command, { expiresIn });
+      const url = await getSignedUrl(this.s3Client, command, { expiresIn: validExpiresIn });
       return url;
     } catch (error) {
       this.logger.error(`Failed to generate presigned URL: ${bucket}/${key}`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Generate a public URL for files with public-read ACL
+   * For Hetzner Object Storage (S3-compatible), uses virtual-hosted style URLs
+   */
+  generatePublicUrl(bucket: string, key: string): string {
+    const storageConfig = this.configService.storageConfig;
+    const endpoint = storageConfig.endpoint;
+
+    if (!endpoint) {
+      throw new Error('Storage endpoint is not configured');
+    }
+
+    try {
+      // Parse the endpoint URL
+      const endpointUrl = new URL(endpoint);
+      const hostname = endpointUrl.hostname;
+
+      // For virtual-hosted style (forcePathStyle: false), the public URL is:
+      // https://{bucket}.{hostname}/{key}
+      // For Hetzner, the hostname might be like "fsn1.your-objectstorage.com"
+      // So the public URL would be: https://{bucket}.fsn1.your-objectstorage.com/{key}
+
+      // Extract the domain part (everything after the first dot)
+      const domainParts = hostname.split('.');
+      if (domainParts.length < 2) {
+        // Fallback to path-style if we can't parse the hostname
+        return `${endpoint}/${bucket}/${key}`;
+      }
+
+      // Construct virtual-hosted style URL: https://{bucket}.{hostname}/{key}
+      const publicUrl = `${endpointUrl.protocol}//${bucket}.${hostname}/${key}`;
+      return publicUrl;
+    } catch (error) {
+      this.logger.error(`Failed to generate public URL: ${bucket}/${key}`, error);
+      // Fallback to path-style URL
+      return `${endpoint}/${bucket}/${key}`;
     }
   }
 
