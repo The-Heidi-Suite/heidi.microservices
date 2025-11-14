@@ -675,6 +675,31 @@ export class CategoriesController {
     return this.categoriesService.listCategoryRequests({ cityId, status: parsedStatus });
   }
 
+  @Public()
+  @Get(':id')
+  @ApiOperation({
+    summary: 'Get category by ID',
+    description: 'Retrieve a specific category by its unique identifier, including its subcategories.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category retrieved successfully',
+    type: CategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Category not found',
+    type: CategoryNotFoundErrorResponseDto,
+  })
+  async getById(@Param('id') id: string) {
+    return this.categoriesService.getCategoryById(id);
+  }
+
   @ApiBearerAuth('JWT-auth')
   @Post('requests/:requestId/resolve')
   @ApiOperation({
