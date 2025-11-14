@@ -255,7 +255,10 @@ export class UsersService {
     const skip = (page - 1) * limit;
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
-        where: { deletedAt: null },
+        where: {
+          deletedAt: null,
+          userType: UserType.REGISTERED,
+        },
         skip,
         take: limit,
         select: {
@@ -270,7 +273,12 @@ export class UsersService {
           updatedAt: true,
         },
       }),
-      this.prisma.user.count({ where: { deletedAt: null } }),
+      this.prisma.user.count({
+        where: {
+          deletedAt: null,
+          userType: UserType.REGISTERED,
+        },
+      }),
     ]);
 
     // Convert role to number for each user (like login API does)
