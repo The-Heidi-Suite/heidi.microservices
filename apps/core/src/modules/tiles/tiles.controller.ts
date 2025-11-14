@@ -87,7 +87,7 @@ export class TilesController {
   @ApiOperation({
     summary: 'List tiles with filters',
     description:
-      'Retrieve tiles using flexible filters including city, active status, and date ranges. Supports pagination and sorting.',
+      'Retrieve tiles using flexible filters including search term, city, active status, and date ranges. Supports pagination and sorting. Search filters by header, subheader, or description.',
   })
   @ApiResponse({
     status: 200,
