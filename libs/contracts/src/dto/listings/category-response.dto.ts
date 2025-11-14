@@ -30,6 +30,13 @@ export class CategoryResponseDto {
 
   @ApiProperty({ example: '2025-01-10T08:30:00.000Z' })
   updatedAt: string;
+
+  @ApiPropertyOptional({
+    type: [CategoryResponseDto],
+    description: 'Subcategories nested under this category',
+  })
+  @Type(() => CategoryResponseDto)
+  children?: CategoryResponseDto[];
 }
 
 export class CityCategoryResponseDto {

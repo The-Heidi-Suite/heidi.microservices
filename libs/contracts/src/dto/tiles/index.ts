@@ -4,5 +4,6 @@ export * from './tile-response.dto';
 export * from './tile-filter.dto';
 export * from './tile-list-response.dto';
 export * from './upload-background-image-response.dto';
+export * from './upload-icon-image-response.dto';
 export * from './tile-response-wrapper.dto';
 export * from './tile-error-response.dto';

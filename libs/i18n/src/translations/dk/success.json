@@ -20,9 +20,15 @@
   "GUEST_LOGIN_SUCCESS": "Gæstlogin succesfuldt",
   "GUEST_CONVERTED": "Gæst konverteret succesfuldt",
   "EMAIL_VERIFIED": "E-mail verificeret succesfuldt",
+  "EMAIL_VERIFIED_TITLE": "E-mail verificeret!",
+  "EMAIL_VERIFIED_MESSAGE": "Din e-mail er blevet verificeret succesfuldt!",
+  "EMAIL_VERIFIED_SUBTITLE": "Du kan nu lukke dette vindue og fortsætte med at bruge appen.",
+  "VERIFICATION_FAILED": "Verificering mislykkedes",
   "EMAIL_VERIFICATION_SENT": "Verificerings-e-mail sendt succesfuldt",
   "EMAIL_VERIFICATION_RESENT": "Verificerings-e-mail sendt igen succesfuldt",
   "VERIFICATION_ALREADY_CANCELLED": "Dette verificeringslink er allerede blevet annulleret",
   "VERIFICATION_CANCELLED": "Verificering annulleret succesfuldt",
+  "PASSWORD_RESET_EMAIL_SENT": "E-mail til nulstilling af adgangskode sendt",
+  "PASSWORD_RESET_IF_EXISTS": "Hvis der findes en konto med denne e-mailadresse, er der sendt et link til nulstilling af adgangskode.",
   "OPERATION_SUCCESS": "Handling gennemført succesfuldt"
 }

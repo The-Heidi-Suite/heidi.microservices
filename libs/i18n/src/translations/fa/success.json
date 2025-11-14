@@ -20,9 +20,15 @@
   "GUEST_LOGIN_SUCCESS": "ورود مهمان با موفقیت انجام شد",
   "GUEST_CONVERTED": "مهمان با موفقیت تبدیل شد",
   "EMAIL_VERIFIED": "ایمیل با موفقیت تأیید شد",
+  "EMAIL_VERIFIED_TITLE": "ایمیل تأیید شد!",
+  "EMAIL_VERIFIED_MESSAGE": "ایمیل شما با موفقیت تأیید شد!",
+  "EMAIL_VERIFIED_SUBTITLE": "اکنون می‌توانید این پنجره را ببندید و به استفاده از برنامه ادامه دهید.",
+  "VERIFICATION_FAILED": "تأیید ناموفق بود",
   "EMAIL_VERIFICATION_SENT": "ایمیل تأیید با موفقیت ارسال شد",
   "EMAIL_VERIFICATION_RESENT": "ایمیل تأیید با موفقیت دوباره ارسال شد",
   "VERIFICATION_ALREADY_CANCELLED": "این لینک تأیید از قبل لغو شده است",
   "VERIFICATION_CANCELLED": "تأیید با موفقیت لغو شد",
+  "PASSWORD_RESET_EMAIL_SENT": "ایمیل بازنشانی رمز عبور ارسال شد",
+  "PASSWORD_RESET_IF_EXISTS": "اگر حسابی با این آدرس ایمیل وجود داشته باشد، لینک بازنشانی رمز عبور ارسال شده است.",
   "OPERATION_SUCCESS": "عملیات با موفقیت انجام شد"
 }

@@ -106,3 +106,37 @@ enum VerificationStatus {
   CANCELLED
   USED
 }
+
+// Password reset token model - for password reset functionality
+// Note: userId is stored as String (foreign key to User in users service)
+// Cross-service relationships are handled via IDs only (no FK constraints)
+model PasswordResetToken {
+  id          String                  @id @default(uuid())
+  userId      String                  // Reference to User.id from users service
+  token       String                  @unique // Secure token for reset link
+  email       String                  // Email address for password reset
+  expiresAt   DateTime                // Token expiration time (1 hour default)
+  usedAt      DateTime?               // When password was reset
+  attempts    Int                     @default(0) // Number of reset attempts
+  maxAttempts Int                     @default(3) // Maximum attempts allowed
+  status      PasswordResetStatus     @default(PENDING)
+  isUsed      Boolean                 @default(false) // One-time use flag
+  metadata    Json?                   // Additional metadata (ipAddress, userAgent, etc.)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+
+  @@index([userId])
+  @@index([token])
+  @@index([email])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+enum PasswordResetStatus {
+  PENDING
+  USED
+  EXPIRED
+  FAILED
+  CANCELLED
+}

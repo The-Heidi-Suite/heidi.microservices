@@ -90,6 +90,7 @@ export class TilesService {
       id: tile.id,
       slug: tile.slug,
       backgroundImageUrl: tile.backgroundImageUrl,
+      iconImageUrl: tile.iconImageUrl,
       headerBackgroundColor: tile.headerBackgroundColor,
       header: tile.header,
       subheader: tile.subheader,
@@ -383,6 +384,20 @@ export class TilesService {
     const where: Prisma.TileWhereInput = {};
     const andConditions: Prisma.TileWhereInput[] = [];
 
+    // Search filter - search in header, subheader, and description
+    if (filter.search) {
+      const searchTerm = filter.search.trim();
+      if (searchTerm) {
+        andConditions.push({
+          OR: [
+            { header: { contains: searchTerm, mode: 'insensitive' } },
+            { subheader: { contains: searchTerm, mode: 'insensitive' } },
+            { description: { contains: searchTerm, mode: 'insensitive' } },
+          ],
+        });
+      }
+    }
+
     if (filter.cityIds?.length) {
       where.cities = {
         some: {
@@ -500,6 +515,20 @@ export class TilesService {
         }
       } catch (error) {
         this.logger.warn(`Failed to delete background image for tile ${tileId}`, error);
+        // Don't fail the delete operation if file cleanup fails
+      }
+    }
+
+    // Delete icon image from storage if exists
+    if (existing.iconImageUrl) {
+      try {
+        const key = this.extractKeyFromUrl(existing.iconImageUrl);
+        const bucket = this.configService.storageConfig.defaultBucket;
+        if (bucket) {
+          await this.storageService.deleteFile({ bucket, key });
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to delete icon image for tile ${tileId}`, error);
         // Don't fail the delete operation if file cleanup fails
       }
     }

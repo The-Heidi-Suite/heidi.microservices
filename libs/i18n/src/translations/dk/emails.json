@@ -7,5 +7,13 @@
     "cancelText": "Hvis du ikke har oprettet denne konto, kan du",
     "cancelLinkText": "klikke her for at annullere",
     "fallback": "Hvis knappen ikke virker, så kopier og indsæt dette link i din browser:"
+  },
+  "passwordReset": {
+    "subject": "Nulstil din {appName} adgangskode",
+    "intro": "Vi har modtaget en anmodning om at nulstille din adgangskode. Klik på knappen nedenfor for at nulstille den.",
+    "cta": "Nulstil adgangskode",
+    "expiryNotice": "Dette link udløber om 1 time.",
+    "securityNotice": "Hvis du ikke har anmodet om at nulstille din adgangskode, kan du ignorere denne e-mail. Din adgangskode forbliver uændret.",
+    "fallback": "Hvis knappen ikke virker, så kopier og indsæt dette link i din browser:"
   }
 }

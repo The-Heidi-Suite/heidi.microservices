@@ -7,5 +7,13 @@
     "cancelText": "Hvis du ikke opprettet denne kontoen, kan du",
     "cancelLinkText": "klikke her for å avbryte",
     "fallback": "Hvis knappen ikke virker, kopier og lim inn denne lenken i nettleseren:"
+  },
+  "passwordReset": {
+    "subject": "Tilbakestill {appName} passordet ditt",
+    "intro": "Vi har mottatt en forespørsel om å tilbakestille passordet ditt. Klikk på knappen nedenfor for å tilbakestille det.",
+    "cta": "Tilbakestill passord",
+    "expiryNotice": "Denne lenken utløper om 1 time.",
+    "securityNotice": "Hvis du ikke ba om å tilbakestille passordet, kan du ignorere denne e-posten. Passordet ditt forblir uendret.",
+    "fallback": "Hvis knappen ikke virker, kopier og lim inn denne lenken i nettleseren:"
   }
 }

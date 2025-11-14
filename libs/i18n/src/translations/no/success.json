@@ -20,9 +20,15 @@
   "GUEST_LOGIN_SUCCESS": "Gjestinnlogging vellykket",
   "GUEST_CONVERTED": "Gjest konvertert vellykket",
   "EMAIL_VERIFIED": "E-post bekreftet vellykket",
+  "EMAIL_VERIFIED_TITLE": "E-post bekreftet!",
+  "EMAIL_VERIFIED_MESSAGE": "E-posten din er bekreftet vellykket!",
+  "EMAIL_VERIFIED_SUBTITLE": "Du kan nå lukke dette vinduet og fortsette å bruke appen.",
+  "VERIFICATION_FAILED": "Bekreftelse mislyktes",
   "EMAIL_VERIFICATION_SENT": "Bekreftelses-e-post sendt vellykket",
   "EMAIL_VERIFICATION_RESENT": "Bekreftelses-e-post sendt på nytt vellykket",
   "VERIFICATION_ALREADY_CANCELLED": "Denne bekreftelseslenken er allerede kansellert",
   "VERIFICATION_CANCELLED": "Bekreftelse kansellert vellykket",
+  "PASSWORD_RESET_EMAIL_SENT": "E-post for tilbakestilling av passord sendt",
+  "PASSWORD_RESET_IF_EXISTS": "Hvis det finnes en konto med denne e-postadressen, er det sendt en lenke for tilbakestilling av passord.",
   "OPERATION_SUCCESS": "Operasjon fullført vellykket"
 }
