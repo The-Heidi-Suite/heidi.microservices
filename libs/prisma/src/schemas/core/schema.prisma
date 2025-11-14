@@ -220,6 +220,7 @@ model Tile {
   id                    String   @id @default(uuid())
   slug                  String   @unique
   backgroundImageUrl    String?
+  iconImageUrl          String?
   headerBackgroundColor String?  // Hex color code
   header                String
   subheader             String?
