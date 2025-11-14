@@ -32,6 +32,7 @@ import {
   UnauthorizedErrorResponseDto,
   UploadBackgroundImageResponseDto,
   UploadBackgroundImageResponseDataDto,
+  UploadIconImageResponseDto,
   CreateTileResponseDto,
   UpdateTileResponseDto,
   GetTileResponseDto,
@@ -392,6 +393,119 @@ export class TilesController {
       tile,
       imageUrl,
     } as UploadBackgroundImageResponseDataDto;
+  }
+
+  @Post(':id/icon-image')
+  @UseGuards(AdminOnlyGuard, PermissionsGuard)
+  @CityAdminOnly()
+  @RequiresPermission('tiles', 'update')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Icon image file to upload',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiOperation({
+    summary: 'Upload icon image for a tile',
+    description:
+      'Upload and process an icon image for a tile. Only Super Admin and City Admin can upload images.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the tile',
+    example: 'tile_01J3MJG0YX6FT5PB9SJ9Y2KQW4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Icon image uploaded successfully',
+    type: UploadIconImageResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Insufficient permissions',
+    type: TileForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Tile not found',
+    type: TileNotFoundErrorResponseDto,
+  })
+  async uploadIconImage(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+    @GetCurrentUser() _user: CurrentUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // Get existing tile to check for old icon image
+    const existing = await this.tilesService.getTileById(id);
+
+    // Validate image
+    await this.fileUploadService.validateImage(file);
+
+    // Process image
+    const processedFile = await this.fileUploadService.processImage(file);
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Delete old icon image if exists
+    if (existing.iconImageUrl) {
+      try {
+        const oldKey = this.extractKeyFromUrl(existing.iconImageUrl);
+        await this.storageService.deleteFile({ bucket, key: oldKey });
+      } catch (error) {
+        this.logger.warn(`Failed to delete old icon image for tile ${id}`, error);
+        // Continue with upload even if old file deletion fails
+      }
+    }
+
+    // Generate storage key
+    const key = this.fileUploadService.generateTileIconKey(id, processedFile.extension);
+
+    // Upload to storage
+    const imageUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    // Update tile iconImageUrl directly in database
+    await this.prisma.tile.update({
+      where: { id },
+      data: { iconImageUrl: imageUrl },
+    });
+
+    // Refresh tile with relations
+    const tile = await this.tilesService.getTileById(id);
+
+    // Return data - interceptor will wrap it
+    return {
+      tile,
+      imageUrl,
+    };
   }
 
   private extractKeyFromUrl(url: string): string {

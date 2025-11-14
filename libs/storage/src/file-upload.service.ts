@@ -258,6 +258,13 @@ export class FileUploadService {
   }
 
   /**
+   * Generate storage key for tile icon image
+   */
+  generateTileIconKey(tileId: string, extension: string): string {
+    return `tiles/${tileId}/icon.${extension}`;
+  }
+
+  /**
    * Generate storage key for listing hero image
    */
   generateListingHeroKey(listingId: string, extension: string): string {

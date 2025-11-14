@@ -47,6 +47,13 @@ export class TileResponseDto {
   backgroundImageUrl: string | null;
 
   @ApiPropertyOptional({
+    description: 'Icon image URL',
+    example: 'https://example.com/images/tile-icon.png',
+    nullable: true,
+  })
+  iconImageUrl: string | null;
+
+  @ApiPropertyOptional({
     description: 'Header background color in hex format',
     example: '#1E40AF',
     nullable: true,
