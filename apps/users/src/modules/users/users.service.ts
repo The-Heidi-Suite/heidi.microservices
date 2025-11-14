@@ -273,7 +273,19 @@ export class UsersService {
       this.prisma.user.count({ where: { deletedAt: null } }),
     ]);
 
-    return { users, total, page, limit, pages: Math.ceil(total / limit) };
+    // Convert role to number for each user (like login API does)
+    const usersWithNumberRole = users.map((user) => ({
+      ...user,
+      role: roleToNumber(user.role),
+    }));
+
+    return {
+      users: usersWithNumberRole,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {
@@ -296,7 +308,12 @@ export class UsersService {
     });
 
     if (!user) throw new NotFoundException('User not found');
-    return user;
+
+    // Convert role to number (like login API does)
+    return {
+      ...user,
+      role: roleToNumber(user.role),
+    };
   }
 
   /**
