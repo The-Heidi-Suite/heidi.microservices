@@ -383,6 +383,20 @@ export class TilesService {
     const where: Prisma.TileWhereInput = {};
     const andConditions: Prisma.TileWhereInput[] = [];
 
+    // Search filter - search in header, subheader, and description
+    if (filter.search) {
+      const searchTerm = filter.search.trim();
+      if (searchTerm) {
+        andConditions.push({
+          OR: [
+            { header: { contains: searchTerm, mode: 'insensitive' } },
+            { subheader: { contains: searchTerm, mode: 'insensitive' } },
+            { description: { contains: searchTerm, mode: 'insensitive' } },
+          ],
+        });
+      }
+    }
+
     if (filter.cityIds?.length) {
       where.cities = {
         some: {

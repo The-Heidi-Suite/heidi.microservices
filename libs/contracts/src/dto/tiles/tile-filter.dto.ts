@@ -24,6 +24,14 @@ export enum TileSortDirection {
 
 export class TileFilterDto {
   @ApiPropertyOptional({
+    description: 'Search term to filter tiles by header, subheader, or description',
+    example: 'gift card',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
     description: 'Filter by city IDs',
     type: [String],
     example: ['city_01J3MJG0YX6FT5PB9SJ9Y2KQW4'],
