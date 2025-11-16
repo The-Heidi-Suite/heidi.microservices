@@ -122,7 +122,7 @@ services:
       - integration
       - admin
     healthcheck:
-      test: ['CMD-SHELL', 'wget --spider -q http://localhost:2019/metrics || curl -f http://localhost:2019/metrics || exit 1']
+      test: ['CMD-SHELL', 'pgrep -f "caddy run" > /dev/null || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
