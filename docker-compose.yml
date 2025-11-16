@@ -668,11 +668,12 @@ services:
       retries: 3
       start_period: 40s
 
-# Volumes section removed - using bind mounts to ./data/ directory instead
-# This ensures data persists on the host filesystem and is easier to backup
-# Data is stored in: ./data/{service-name}/
-# volumes:
-#   (no named volumes needed - using bind mounts)
+# Volumes section
+# Most services use bind mounts to ./data/ directory for easier backup
+# pgAdmin uses a named volume to avoid permission issues
+volumes:
+  pgadmin_data:
+    driver: local
 
 networks:
   backend:
