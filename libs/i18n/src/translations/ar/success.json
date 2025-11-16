@@ -20,9 +20,15 @@
   "GUEST_LOGIN_SUCCESS": "تم تسجيل دخول الضيف بنجاح",
   "GUEST_CONVERTED": "تم تحويل الضيف بنجاح",
   "EMAIL_VERIFIED": "تم التحقق من البريد الإلكتروني بنجاح",
+  "EMAIL_VERIFIED_TITLE": "تم التحقق من البريد الإلكتروني!",
+  "EMAIL_VERIFIED_MESSAGE": "تم التحقق من بريدك الإلكتروني بنجاح!",
+  "EMAIL_VERIFIED_SUBTITLE": "يمكنك الآن إغلاق هذه النافذة ومواصلة استخدام التطبيق.",
+  "VERIFICATION_FAILED": "فشل التحقق",
   "EMAIL_VERIFICATION_SENT": "تم إرسال بريد التحقق بنجاح",
   "EMAIL_VERIFICATION_RESENT": "تم إعادة إرسال بريد التحقق بنجاح",
   "VERIFICATION_ALREADY_CANCELLED": "تم إلغاء رابط التحقق هذا بالفعل",
   "VERIFICATION_CANCELLED": "تم إلغاء التحقق بنجاح",
+  "PASSWORD_RESET_EMAIL_SENT": "تم إرسال بريد إعادة تعيين كلمة المرور",
+  "PASSWORD_RESET_IF_EXISTS": "إذا كان يوجد حساب بهذا البريد الإلكتروني، فقد تم إرسال رابط إعادة تعيين كلمة المرور.",
   "OPERATION_SUCCESS": "تمت العملية بنجاح"
 }

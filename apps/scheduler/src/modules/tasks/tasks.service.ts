@@ -78,12 +78,23 @@ export class TasksService implements OnModuleInit {
     this.logger.log(`Executing task: ${task.name}`);
 
     try {
-      this.client.emit(RabbitMQPatterns.SCHEDULE_EXECUTE, {
-        taskId: task.id,
-        name: task.name,
-        payload: task.payload,
-        timestamp: new Date().toISOString(),
-      });
+      // Check if task payload contains integrationId for integration sync
+      if (task.payload && task.payload.integrationId) {
+        this.logger.log(`Task ${task.name} contains integrationId, triggering integration sync`);
+        this.client.emit(RabbitMQPatterns.INTEGRATION_SYNC, {
+          integrationId: task.payload.integrationId,
+          taskId: task.id,
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        // Default task execution
+        this.client.emit(RabbitMQPatterns.SCHEDULE_EXECUTE, {
+          taskId: task.id,
+          name: task.name,
+          payload: task.payload,
+          timestamp: new Date().toISOString(),
+        });
+      }
 
       await this.prisma.schedule.update({
         where: { id: task.id },

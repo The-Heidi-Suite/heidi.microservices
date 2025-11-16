@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { firstValueFrom, timeout } from 'rxjs';
 import { PrismaAuthService } from '@heidi/prisma';
-import { PermissionService } from '@heidi/rbac';
+import { PermissionService, roleToNumber } from '@heidi/rbac';
 import { JwtTokenService, CityAssignment } from '@heidi/jwt';
 import { RedisService } from '@heidi/redis';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
@@ -310,7 +310,7 @@ export class AuthService {
 
       const cityAssignments: CityAssignment[] = dbAssignments.map((a) => ({
         cityId: a.cityId,
-        role: a.role,
+        role: roleToNumber(a.role),
         canManageAdmins: a.canManageAdmins,
       }));
 
@@ -372,7 +372,7 @@ export class AuthService {
           id: user.id,
           email: user.email,
           username: user.username,
-          role: user.role,
+          role: roleToNumber(user.role),
           userType: 'REGISTERED',
           firstName: user.firstName,
           lastName: user.lastName,
@@ -487,7 +487,7 @@ export class AuthService {
 
         cityAssignments = dbAssignments.map((a) => ({
           cityId: a.cityId,
-          role: a.role,
+          role: roleToNumber(a.role),
           canManageAdmins: a.canManageAdmins,
         }));
 
@@ -836,6 +836,7 @@ export class AuthService {
           deviceId: guestUser.deviceId,
           devicePlatform: guestUser.devicePlatform,
           userType: 'GUEST',
+          requiresTermsAcceptance: false, // Guests don't need to accept terms
         },
         ...tokens,
       };
@@ -904,7 +905,7 @@ export class AuthService {
 
         cityAssignments = dbAssignments.map((a) => ({
           cityId: a.cityId,
-          role: a.role,
+          role: roleToNumber(a.role),
           canManageAdmins: a.canManageAdmins,
         }));
       } catch (error) {
@@ -964,7 +965,7 @@ export class AuthService {
           id: registeredUser.id,
           email: registeredUser.email,
           username: registeredUser.username,
-          role: registeredUser.role,
+          role: roleToNumber(registeredUser.role),
           userType: registeredUser.userType,
           firstName: registeredUser.firstName,
           lastName: registeredUser.lastName,

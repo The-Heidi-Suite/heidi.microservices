@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { TokenPayload } from './jwt.service';
 import { PrismaCoreService } from '@heidi/prisma';
-import { PermissionService } from '@heidi/rbac';
+import { PermissionService, numberToRole, roleToNumber } from '@heidi/rbac';
 import { ConfigService } from '@heidi/config';
 
 @Injectable()
@@ -41,25 +41,30 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         },
       });
 
+      // Convert enum roles to numbers
       cityAssignments = dbAssignments.map((a) => ({
         cityId: a.cityId,
-        role: a.role,
+        role: roleToNumber(a.role),
         canManageAdmins: a.canManageAdmins,
       }));
     }
 
     const cityIds = cityAssignments.map((assignment) => assignment.cityId);
 
+    // Convert payload role number to enum for permission service
+    const roleEnum =
+      typeof payload.role === 'number' ? numberToRole(payload.role) : (payload.role as any);
+
     // Load user's permissions - use token permissions if available, otherwise fetch
     let permissions = payload.permissions || [];
     if (permissions.length === 0) {
-      permissions = await this.permissionService.getUserPermissions(payload.role as any);
+      permissions = await this.permissionService.getUserPermissions(roleEnum);
     }
 
     return {
       userId: payload.sub,
       email: payload.email,
-      role: payload.role,
+      role: payload.role, // Keep as number
       sub: payload.sub, // For compatibility
       cityId: payload.selectedCityId || payload.cityId,
       selectedCityId: payload.selectedCityId || payload.cityId,

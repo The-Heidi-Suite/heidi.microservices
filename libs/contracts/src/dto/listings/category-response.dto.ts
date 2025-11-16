@@ -30,6 +30,13 @@ export class CategoryResponseDto {
 
   @ApiProperty({ example: '2025-01-10T08:30:00.000Z' })
   updatedAt: string;
+
+  @ApiPropertyOptional({
+    type: [CategoryResponseDto],
+    description: 'Subcategories nested under this category',
+  })
+  @Type(() => CategoryResponseDto)
+  children?: CategoryResponseDto[];
 }
 
 export class CityCategoryResponseDto {
@@ -41,6 +48,12 @@ export class CityCategoryResponseDto {
 
   @ApiProperty({ example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890' })
   categoryId: string;
+
+  @ApiPropertyOptional({
+    example: 'Local Events',
+    description: 'Custom display name for this city. Falls back to category name if not set.',
+  })
+  displayName?: string | null;
 
   @ApiProperty({ example: true })
   isActive: boolean;
@@ -63,6 +76,16 @@ export class AssignCategoryToCityDto {
   })
   @IsUUID()
   categoryId: string;
+
+  @ApiPropertyOptional({
+    example: 'Local Events',
+    description: 'Custom display name for this city. If not provided, uses the category name.',
+    maxLength: 255,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  displayName?: string;
 }
 
 export class RequestCategoryDto {
@@ -135,6 +158,18 @@ export class ResolveCategoryRequestDto {
   @IsString()
   @MaxLength(500)
   notes?: string;
+}
+
+export class UpdateCityCategoryDisplayNameDto {
+  @ApiPropertyOptional({
+    example: 'Local Events',
+    description: 'Custom display name for this city. Set to null to use default category name.',
+    maxLength: 255,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  displayName?: string | null;
 }
 
 export class CategoryRequestFilterDto {

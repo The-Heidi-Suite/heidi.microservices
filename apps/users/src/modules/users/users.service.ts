@@ -3,11 +3,12 @@ import {
   NotFoundException,
   ConflictException,
   UnauthorizedException,
+  BadRequestException,
   Inject,
 } from '@nestjs/common';
 import { firstValueFrom, timeout } from 'rxjs';
 import { PrismaUsersService } from '@heidi/prisma';
-import { PermissionService } from '@heidi/rbac';
+import { PermissionService, roleToNumber } from '@heidi/rbac';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { UserRole } from '@prisma/client-core';
@@ -22,6 +23,7 @@ import {
 } from '@heidi/contracts';
 import { SagaOrchestratorService } from '@heidi/saga';
 import { ErrorCode } from '@heidi/errors';
+import { I18nService } from '@heidi/i18n';
 
 @Injectable()
 export class UsersService {
@@ -32,6 +34,7 @@ export class UsersService {
     private readonly permissionService: PermissionService,
     @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly sagaOrchestrator: SagaOrchestratorService,
+    private readonly i18nService: I18nService,
     logger: LoggerService,
   ) {
     this.logger = logger;
@@ -252,7 +255,10 @@ export class UsersService {
     const skip = (page - 1) * limit;
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
-        where: { deletedAt: null },
+        where: {
+          deletedAt: null,
+          userType: UserType.REGISTERED,
+        },
         skip,
         take: limit,
         select: {
@@ -267,10 +273,27 @@ export class UsersService {
           updatedAt: true,
         },
       }),
-      this.prisma.user.count({ where: { deletedAt: null } }),
+      this.prisma.user.count({
+        where: {
+          deletedAt: null,
+          userType: UserType.REGISTERED,
+        },
+      }),
     ]);
 
-    return { users, total, page, limit, pages: Math.ceil(total / limit) };
+    // Convert role to number for each user (like login API does)
+    const usersWithNumberRole = users.map((user) => ({
+      ...user,
+      role: roleToNumber(user.role),
+    }));
+
+    return {
+      users: usersWithNumberRole,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {
@@ -293,7 +316,12 @@ export class UsersService {
     });
 
     if (!user) throw new NotFoundException('User not found');
-    return user;
+
+    // Convert role to number (like login API does)
+    return {
+      ...user,
+      role: roleToNumber(user.role),
+    };
   }
 
   /**
@@ -449,7 +477,11 @@ export class UsersService {
 
     return {
       ...user,
-      cityAssignments,
+      role: roleToNumber(user.role),
+      cityAssignments: cityAssignments.map(assignment => ({
+        ...assignment,
+        role: roleToNumber(assignment.role),
+      })),
     };
   }
 
@@ -566,6 +598,7 @@ export class UsersService {
         devicePlatform: existingGuest.devicePlatform,
         userType: existingGuest.userType,
         createdAt: existingGuest.createdAt,
+        requiresTermsAcceptance: false, // Guests don't need to accept terms
       };
     }
 
@@ -605,7 +638,12 @@ export class UsersService {
     });
 
     this.logger.log(`Guest user created successfully: ${guestUser.id}`);
-    return guestUser;
+    
+    // Return guest user with requiresTermsAcceptance flag
+    return {
+      ...guestUser,
+      requiresTermsAcceptance: false, // Guests don't need to accept terms
+    };
   }
 
   /**
@@ -759,5 +797,92 @@ export class UsersService {
 
     this.logger.log(`Email verified for user: ${userId}`);
     return user;
+  }
+
+  /**
+   * Request password reset - sends email with reset link
+   */
+  async requestPasswordReset(email: string, language?: string) {
+    this.logger.log(`Password reset requested for email: ${email}`);
+
+    // Translate the message using i18nService
+    const message =
+      this.i18nService.translate('success.PASSWORD_RESET_IF_EXISTS', undefined, language) ||
+      'If an account with that email exists, a password reset link has been sent.';
+
+    // Find user by email
+    const user = await this.findByEmail(email);
+    if (!user) {
+      // Don't reveal if user exists or not (security best practice)
+      this.logger.warn(`Password reset requested for non-existent email: ${email}`);
+      return { message };
+    }
+
+    // Emit password reset requested event
+    this.client.emit(RabbitMQPatterns.PASSWORD_RESET_REQUESTED, {
+      userId: user.id,
+      email: user.email,
+      metadata: {
+        firstName: user.firstName,
+        lastName: user.lastName,
+        preferredLanguage: language,
+      },
+    });
+
+    this.logger.log(`Password reset email queued for user: ${user.id}`);
+    return { message };
+  }
+
+  /**
+   * Reset password using token
+   */
+  async resetPassword(token: string, newPassword: string, language?: string) {
+    this.logger.log(`Password reset attempt with token`);
+
+    // Verify token via notification service
+    let tokenData;
+    try {
+      tokenData = await firstValueFrom(
+        this.client
+          .send<{ valid: boolean; userId: string; email: string; resetTokenId: string }>(
+            RabbitMQPatterns.PASSWORD_RESET_VERIFY,
+            { token },
+          )
+          .pipe(timeout(10000)),
+      );
+    } catch (error) {
+      this.logger.error('Failed to verify password reset token', error);
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    if (!tokenData || !tokenData.valid) {
+      throw new BadRequestException('Invalid or expired password reset token');
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update user password
+    await this.prisma.user.update({
+      where: { id: tokenData.userId },
+      data: { password: hashedPassword },
+    });
+
+    // Mark token as used
+    this.client.emit(RabbitMQPatterns.PASSWORD_RESET_MARK_USED, {
+      token,
+    });
+
+    // Emit password reset completed event
+    this.client.emit(RabbitMQPatterns.PASSWORD_RESET_COMPLETED, {
+      userId: tokenData.userId,
+      email: tokenData.email,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Password reset completed for user: ${tokenData.userId}`);
+    return {
+      message: 'Password has been reset successfully',
+    };
   }
 }

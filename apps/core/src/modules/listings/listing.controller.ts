@@ -20,6 +20,7 @@ import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -43,7 +44,7 @@ import {
   DeleteMediaResponseDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
-import { AdminOnlyGuard, PermissionsGuard } from '@heidi/rbac';
+import { AdminOnlyGuard, PermissionsGuard, numberToRole } from '@heidi/rbac';
 import { UserRole, ListingMediaType } from '@prisma/client-core';
 import { ListingsService } from './listings.service';
 import { FileUploadService, StorageService } from '@heidi/storage';
@@ -67,11 +68,18 @@ export class ListingController {
     this.logger.setContext(ListingController.name);
   }
 
-  private getRoles(role?: string): UserRole[] {
+  private getRoles(role?: string | number): UserRole[] {
     if (!role) {
       return [];
     }
 
+    // Handle number roles
+    if (typeof role === 'number') {
+      const roleEnum = numberToRole(role);
+      return roleEnum ? [roleEnum] : [];
+    }
+
+    // Handle string roles (backward compatibility)
     const normalized = role.toUpperCase() as keyof typeof UserRole;
     const mapped = UserRole[normalized];
 
@@ -764,6 +772,20 @@ export class ListingController {
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Hero image file to upload',
+        },
+      },
+      required: ['file'],
+    },
+  })
   @ApiOperation({
     summary: 'Upload hero image for a listing',
     description: 'Upload and process a hero image for a listing.',
@@ -853,6 +875,24 @@ export class ListingController {
   @UseInterceptors(FilesInterceptor('files', 10))
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: {
+            type: 'string',
+            format: 'binary',
+          },
+          description:
+            'Media files to upload (images, videos, documents, audio). Maximum 10 files.',
+        },
+      },
+      required: ['files'],
+    },
+  })
   @ApiOperation({
     summary: 'Upload media files for a listing',
     description:

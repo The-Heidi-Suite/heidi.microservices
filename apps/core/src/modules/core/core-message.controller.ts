@@ -105,4 +105,27 @@ export class CoreMessageController {
       throw error; // Throwing error causes NestJS to NACK the message
     }
   }
+
+  @MessagePattern(RabbitMQPatterns.INTEGRATION_SYNC_LISTING)
+  async syncListingFromIntegration(
+    @Payload() data: { integrationId: string; listingData: any; timestamp: string },
+  ) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.INTEGRATION_SYNC_LISTING} for integrationId: ${data.integrationId}, externalId: ${data.listingData?.externalId}`,
+    );
+
+    try {
+      const result = await this.coreService.syncListingFromIntegration(data.listingData);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.INTEGRATION_SYNC_LISTING} for externalId: ${data.listingData?.externalId} (will ACK)`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.INTEGRATION_SYNC_LISTING} for externalId: ${data.listingData?.externalId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
 }

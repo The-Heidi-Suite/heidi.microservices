@@ -1,6 +1,7 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { UserContextService } from '../user-context.service';
 import { UserRole } from '@prisma/client-core';
+import { numberToRole } from '../utils/role.utils';
 
 @Injectable()
 export class CityManagementGuard implements CanActivate {
@@ -14,7 +15,9 @@ export class CityManagementGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    const userRole = user.role as UserRole;
+    // Convert number role to enum if needed
+    const userRoleNumber = typeof user.role === 'number' ? user.role : null;
+    const userRole = userRoleNumber !== null ? numberToRole(userRoleNumber) : (user.role as UserRole);
     const userId = user.sub || user.userId;
 
     // Super Admin can manage all cities

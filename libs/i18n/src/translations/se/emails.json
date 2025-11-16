@@ -7,5 +7,13 @@
     "cancelText": "Om du inte skapade kontot kan du",
     "cancelLinkText": "klicka här för att avbryta",
     "fallback": "Om knappen inte fungerar, kopiera och klistra in denna länk i din webbläsare:"
+  },
+  "passwordReset": {
+    "subject": "Återställ ditt {appName} lösenord",
+    "intro": "Vi har mottagit en begäran om att återställa ditt lösenord. Klicka på knappen nedan för att återställa det.",
+    "cta": "Återställ lösenord",
+    "expiryNotice": "Denna länk gäller i 1 timme.",
+    "securityNotice": "Om du inte begärde att återställa lösenordet kan du ignorera detta mejl. Ditt lösenord förblir oförändrat.",
+    "fallback": "Om knappen inte fungerar, kopiera och klistra in denna länk i din webbläsare:"
   }
 }

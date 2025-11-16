@@ -22,6 +22,10 @@ export class SuccessMessageService {
     'POST:/profile/me/change-password': 'PASSWORD_CHANGED',
     'GET:/profile/me': 'PROFILE_RETRIEVED',
 
+    // Password reset routes
+    'POST:/reset-password/request': 'PASSWORD_RESET_EMAIL_SENT',
+    'POST:/reset-password/confirm': 'PASSWORD_CHANGED',
+
     // Auth routes
     'POST:/login': 'LOGIN_SUCCESS',
     'POST:/logout': 'LOGOUT_SUCCESS',

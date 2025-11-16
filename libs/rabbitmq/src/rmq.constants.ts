@@ -92,6 +92,7 @@ export const RabbitMQPatterns = {
   // Integration events
   INTEGRATION_WEBHOOK: 'integration.webhook',
   INTEGRATION_SYNC: 'integration.sync',
+  INTEGRATION_SYNC_LISTING: 'integration.syncListing',
 
   // Scheduler events
   SCHEDULE_EXECUTE: 'schedule.execute',
@@ -104,6 +105,14 @@ export const RabbitMQPatterns = {
   TERMS_GET_LATEST: 'terms.getLatest',
   TERMS_CHECK_ACCEPTANCE: 'terms.checkAcceptance',
   TERMS_GET_USER_VERSION: 'terms.getUserVersion',
+
+  // Password reset events
+  PASSWORD_RESET_REQUESTED: 'passwordReset.requested',
+  PASSWORD_RESET_SENT: 'passwordReset.sent',
+  PASSWORD_RESET_COMPLETED: 'passwordReset.completed',
+  PASSWORD_RESET_FAILED: 'passwordReset.failed',
+  PASSWORD_RESET_VERIFY: 'passwordReset.verify',
+  PASSWORD_RESET_MARK_USED: 'passwordReset.markUsed',
 } as const;
 
 /**

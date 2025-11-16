@@ -20,9 +20,15 @@
   "GUEST_LOGIN_SUCCESS": "Guest login successful",
   "GUEST_CONVERTED": "Guest converted successfully",
   "EMAIL_VERIFIED": "Email verified successfully",
+  "EMAIL_VERIFIED_TITLE": "Email Verified!",
+  "EMAIL_VERIFIED_MESSAGE": "Your email has been verified successfully!",
+  "EMAIL_VERIFIED_SUBTITLE": "You can now close this window and continue using the app.",
+  "VERIFICATION_FAILED": "Verification Failed",
   "EMAIL_VERIFICATION_SENT": "Verification email sent successfully",
   "EMAIL_VERIFICATION_RESENT": "Verification email resent successfully",
   "VERIFICATION_ALREADY_CANCELLED": "This verification link has already been cancelled",
   "VERIFICATION_CANCELLED": "Verification cancelled successfully",
+  "PASSWORD_RESET_EMAIL_SENT": "Password reset email sent",
+  "PASSWORD_RESET_IF_EXISTS": "If an account with that email exists, a password reset link has been sent.",
   "OPERATION_SUCCESS": "Operation completed successfully"
 }

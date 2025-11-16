@@ -3,6 +3,7 @@ import { Reflector } from '@nestjs/core';
 import { PERMISSIONS_KEY } from './decorators/permissions.decorator';
 import { PermissionService } from './permission.service';
 import { UserRole } from '@prisma/client-core';
+import { numberToRole } from './utils/role.utils';
 
 @Injectable()
 export class PermissionsGuard implements CanActivate {
@@ -29,7 +30,9 @@ export class PermissionsGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    const userRole = user.role as UserRole;
+    // Convert number role to enum if needed
+    const userRoleNumber = typeof user.role === 'number' ? user.role : null;
+    const userRole = userRoleNumber !== null ? numberToRole(userRoleNumber) : (user.role as UserRole);
 
     // Super Admin has all permissions
     if (userRole === UserRole.SUPER_ADMIN) {

@@ -602,8 +602,8 @@ export class ListingsService {
     dto: CreateListingDto,
   ): Promise<ListingResponseDto> {
     const isAdmin = this.isAdmin(roles);
-    const baseSlugCandidate = dto.slug ? this.slugify(dto.slug) : this.slugify(dto.title);
-    const baseSlug = baseSlugCandidate || this.slugify(`${dto.title}-${Date.now()}`);
+    // Generate slug from title (slug is auto-generated, not provided during creation)
+    const baseSlug = this.slugify(dto.title) || this.slugify(`listing-${Date.now()}`);
     const slug = await this.ensureUniqueSlug(baseSlug);
 
     const visibility = isAdmin
@@ -668,7 +668,7 @@ export class ListingsService {
       categories: dto.categories?.length
         ? {
             create: dto.categories.map((category) => ({
-              ...(category.id ? { id: category.id } : {}),
+              // id is not provided during creation (ListingCategory IDs are auto-generated)
               category: {
                 connect: {
                   id: category.categoryId,
@@ -680,7 +680,7 @@ export class ListingsService {
       cities: dto.cities?.length
         ? {
             create: dto.cities.map((city, index) => ({
-              ...(city.id ? { id: city.id } : {}),
+              // id is not provided during creation (ListingCity IDs are auto-generated)
               cityId: city.cityId,
               isPrimary: city.isPrimary ?? index === 0,
               displayOrder: city.displayOrder ?? index,
@@ -690,7 +690,7 @@ export class ListingsService {
       timeIntervals: dto.timeIntervals?.length
         ? {
             create: dto.timeIntervals.map((interval) => ({
-              ...(interval.id ? { id: interval.id } : {}),
+              // id is not provided during creation (ListingTimeInterval IDs are auto-generated)
               weekdays: interval.weekdays ?? [],
               start: new Date(interval.start),
               end: new Date(interval.end),
@@ -705,7 +705,7 @@ export class ListingsService {
       timeIntervalExceptions: dto.timeIntervalExceptions?.length
         ? {
             create: dto.timeIntervalExceptions.map((exception) => ({
-              ...(exception.id ? { id: exception.id } : {}),
+              // id is not provided during creation (ListingTimeIntervalException IDs are auto-generated)
               date: new Date(exception.date),
               opensAt: exception.opensAt,
               closesAt: exception.closesAt,

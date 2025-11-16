@@ -2,6 +2,7 @@ import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@
 import { UserContextService } from '../user-context.service';
 import { PermissionService } from '../permission.service';
 import { UserRole } from '@prisma/client-core';
+import { numberToRole } from '../utils/role.utils';
 
 @Injectable()
 export class ContentModerationGuard implements CanActivate {
@@ -18,7 +19,9 @@ export class ContentModerationGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    const userRole = user.role as UserRole;
+    // Convert number role to enum if needed
+    const userRoleNumber = typeof user.role === 'number' ? user.role : null;
+    const userRole = userRoleNumber !== null ? numberToRole(userRoleNumber) : (user.role as UserRole);
     const userId = user.sub || user.userId;
 
     // Super Admin can moderate all content
