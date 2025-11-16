@@ -61,11 +61,11 @@
     "docker:prune:images": "docker image prune -a -f",
     "docker:clean": "docker compose down -v && docker system prune -f",
     "docker:disk-usage": "docker system df",
+    "backup:data": "./scripts/backup-data.sh",
+    "data:list": "ls -lh ./data/",
+    "data:size": "du -sh ./data/*",
     "commit": "cz",
     "release": "standard-version",
-    "release:minor": "standard-version --release-as minor",
-    "release:major": "standard-version --release-as major",
-    "release:patch": "standard-version --release-as patch",
     "release:dry": "standard-version --dry-run"
   },
   "dependencies": {

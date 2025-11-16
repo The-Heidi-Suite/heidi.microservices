@@ -1,5 +1,13 @@
 # Docker Compose configuration for HEIDI microservices
 #
+# ⚠️  DATA PERSISTENCE ⚠️
+# All infrastructure data is stored in ./data/ directory using bind mounts.
+# This means:
+# - Data persists when containers are stopped (docker compose down)
+# - Data is visible and accessible on your host machine
+# - Easy to backup: just copy the ./data/ folder
+# - Safe from accidental docker volume prune operations
+#
 # BUILD MEMORY OPTIMIZATION:
 # If you encounter "cannot allocate memory" errors during builds:
 # 1. Use sequential builds: yarn docker:build:sequential (or npm run docker:build:sequential)
@@ -18,7 +26,7 @@ services:
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ./data/postgres:/var/lib/postgresql/data
       - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-heidi}']
@@ -42,7 +50,7 @@ services:
     ports:
       - '${REDIS_PORT:-6379}:6379'
     volumes:
-      - redis_data:/data
+      - ./data/redis:/data
     healthcheck:
       test: ['CMD-SHELL', 'if [ -n "$$REDIS_PASSWORD" ]; then redis-cli -a "$$REDIS_PASSWORD" ping; else redis-cli ping; fi']
       interval: 10s
@@ -64,7 +72,7 @@ services:
       - '${RABBITMQ_MANAGEMENT_PORT:-15672}:15672'
       - '${RABBITMQ_PROMETHEUS_PORT:-15692}:15692'
     volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
+      - ./data/rabbitmq:/var/lib/rabbitmq
       - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     healthcheck:
       test: ['CMD', 'rabbitmq-diagnostics', 'ping']
@@ -98,8 +106,8 @@ services:
       - '${CADDY_HTTPS_PORT:-443}:443/udp'
     volumes:
       - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      - ./data/caddy:/data
+      - ./data/caddy-config:/config
       # Mount React build folder (set REACT_BUILD_PATH in .env)
       - ${REACT_BUILD_PATH:-../heidi-frontend/build}:/var/www/frontend:ro
     networks:
@@ -210,7 +218,7 @@ services:
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./infra/prometheus/alerts:/etc/prometheus/alerts:ro
-      - prometheus_data:/prometheus
+      - ./data/prometheus:/prometheus
     networks:
       - backend
     depends_on:
@@ -238,7 +246,7 @@ services:
       - '${ALERTMANAGER_PORT:-9093}:9093'
     volumes:
       - ./infra/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
-      - alertmanager_data:/alertmanager
+      - ./data/alertmanager:/alertmanager
     networks:
       - backend
     depends_on:
@@ -263,7 +271,7 @@ services:
     ports:
       - '${GRAFANA_PORT:-3000}:3000'
     volumes:
-      - grafana_data:/var/lib/grafana
+      - ./data/grafana:/var/lib/grafana
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./infra/grafana/provisioning/dashboards:/var/lib/grafana/dashboards:ro
     networks:
@@ -288,7 +296,7 @@ services:
     ports:
       - '${PGADMIN_PORT:-5050}:80'
     volumes:
-      - pgadmin_data:/var/lib/pgadmin
+      - ./data/pgadmin:/var/lib/pgadmin
     networks:
       - backend
     depends_on:
@@ -660,16 +668,11 @@ services:
       retries: 3
       start_period: 40s
 
-volumes:
-  postgres_data:
-  redis_data:
-  rabbitmq_data:
-  prometheus_data:
-  alertmanager_data:
-  grafana_data:
-  pgadmin_data:
-  caddy_data:
-  caddy_config:
+# Volumes section removed - using bind mounts to ./data/ directory instead
+# This ensures data persists on the host filesystem and is easier to backup
+# Data is stored in: ./data/{service-name}/
+# volumes:
+#   (no named volumes needed - using bind mounts)
 
 networks:
   backend:

@@ -59,6 +59,11 @@ TODO.md
 # Docker
 docker-compose.override.yml
 
+# Infrastructure data (persistent volumes)
+# Data is stored in ./data/ using bind mounts for persistence
+/data/
+!/data/.gitkeep
+
 # Yarn
 .yarn/*
 !.yarn/patches
