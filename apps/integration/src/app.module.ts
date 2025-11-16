@@ -10,6 +10,7 @@ import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
 import { LoggingInterceptor } from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
 import { IntegrationModule } from './modules/integration/integration.module';
+import { DestinationOneModule } from './modules/destination-one/destination-one.module';
 import { HealthController } from './health.controller';
 
 @Module({
@@ -26,6 +27,7 @@ import { HealthController } from './health.controller';
     }),
     MetricsModule,
     I18nModule,
+    DestinationOneModule,
     IntegrationModule,
   ],
   controllers: [HealthController],
