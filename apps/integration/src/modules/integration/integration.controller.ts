@@ -17,7 +17,7 @@ export class IntegrationController {
 
   @Post('integrations/:id/sync')
   async syncIntegration(@Param('id') id: string) {
-    return this.integrationService.syncDestinationOne(id);
+    return this.integrationService.syncIntegration(id);
   }
 
   @Post('webhooks/:provider')

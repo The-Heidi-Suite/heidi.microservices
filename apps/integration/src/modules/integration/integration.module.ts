@@ -2,11 +2,11 @@ import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { IntegrationController } from './integration.controller';
 import { IntegrationService } from './integration.service';
-import { DestinationOneService } from './destination-one.service';
+import { DestinationOneModule } from '../destination-one/destination-one.module';
 
 @Module({
-  imports: [HttpModule],
+  imports: [HttpModule, DestinationOneModule],
   controllers: [IntegrationController],
-  providers: [IntegrationService, DestinationOneService],
+  providers: [IntegrationService],
 })
 export class IntegrationModule {}

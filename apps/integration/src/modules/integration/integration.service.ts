@@ -5,7 +5,7 @@ import { PrismaIntegrationService } from '@heidi/prisma';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { firstValueFrom } from 'rxjs';
-import { DestinationOneService } from './destination-one.service';
+import { DestinationOneService } from '../destination-one/destination-one.service';
 
 @Injectable()
 export class IntegrationService {
@@ -34,6 +34,22 @@ export class IntegrationService {
     });
   }
 
+  // Generic dispatcher for syncing by provider
+  async syncIntegration(integrationId: string) {
+    const integration = await this.prisma.integration.findUnique({ where: { id: integrationId } });
+    if (!integration) {
+      throw new Error(`Integration ${integrationId} not found`);
+    }
+
+    switch (integration.provider) {
+      case 'DESTINATION_ONE':
+        return this.destinationOneService.syncIntegration(integrationId);
+      default:
+        throw new Error(`Unsupported integration provider: ${integration.provider}`);
+    }
+  }
+
+  // Explicit method retained for direct calls/tests
   async syncDestinationOne(integrationId: string) {
     this.logger.log(`Syncing destination_one integration: ${integrationId}`);
 
@@ -63,7 +79,7 @@ export class IntegrationService {
     );
 
     try {
-      const result = await this.syncDestinationOne(data.integrationId);
+      const result = await this.syncIntegration(data.integrationId);
       this.logger.debug(
         `Successfully processed integration sync for integrationId: ${data.integrationId} (will ACK)`,
       );
