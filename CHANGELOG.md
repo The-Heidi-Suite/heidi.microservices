@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.17.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.16.0...v1.17.0) (2025-11-16)
+
+
+### ✨ Features
+
+* **infrastructure:** implement data persistence and backup functionality ([fbce5d2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/fbce5d2e0538730439ff717aec5bd499d33c3977))
+
 ## [1.16.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.15.0...v1.16.0) (2025-11-16)
 
 
