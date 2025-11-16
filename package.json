@@ -16,7 +16,7 @@
     "build:integration": "nest build integration",
     "build:admin": "nest build admin",
     "build:terminal": "nest build terminal",
-    "dev:all": "concurrently --names AUTH,CORE,USERS,CITY,NOTIF,SCHED -c bgBlue.bold,bgMagenta.bold,bgCyan.bold,bgGreen.bold,bgYellow.bold,bgRed.bold \"npm run dev:auth\" \"npm run dev:core\" \"npm run dev:users\" \"npm run dev:city\" \"npm run dev:notification\" \"npm run dev:schedule\"",
+    "dev:all": "concurrently --names AUTH,CORE,USERS,CITY,NOTIF,SCHED,INTEG -c bgBlue.bold,bgMagenta.bold,bgCyan.bold,bgGreen.bold,bgYellow.bold,bgRed.bold,bgBlack.bold \"npm run dev:auth\" \"npm run dev:core\" \"npm run dev:users\" \"npm run dev:city\" \"npm run dev:notification\" \"npm run dev:schedule\" \"npm run dev:integration\"",
     "dev:auth": "nest start auth --watch",
     "dev:core": "nest start core --watch",
     "dev:users": "nest start users --watch",
