@@ -133,6 +133,62 @@ export class DestinationOneService {
     }
   }
 
+  /**
+   * Fetches all items for a given type using pagination parameters.
+   * If the API ignores pagination params, it will still return items and stop after the first page.
+   */
+  private async fetchDataPaginatedForType(
+    config: DestinationOneConfig,
+    type: string,
+  ): Promise<DestinationOneItem[]> {
+    const baseUrl = config.baseUrl || 'https://meta.et4.de/rest.ashx/search/';
+    const template = config.template || 'ET2014A_LIGHT_MULTI.json';
+    const pageSize = (config as any).pageSize || 100;
+
+    let page = 1;
+    const allItems: DestinationOneItem[] = [];
+
+    // Loop with an upper bound to avoid infinite loops in case API ignores pagination
+    for (; page <= 1000; page++) {
+      const params = new URLSearchParams({
+        experience: config.experience,
+        licensekey: config.licensekey,
+        template,
+        type,
+      });
+      // Common pagination params (best-effort)
+      params.append('page', `${page}`);
+      params.append('pagesize', `${pageSize}`);
+
+      const url = `${baseUrl}?${params.toString()}`;
+      this.logger.debug(
+        `Fetching page ${page} for type="${type}" from destination_one: ${url.replace(config.licensekey, '***')}`,
+      );
+
+      const response = await firstValueFrom(
+        this.http.get<DestinationOneResponse>(url, {
+          timeout: 30000,
+        }),
+      );
+
+      const pageItems = response.data?.results?.[0]?.items || [];
+      allItems.push(...pageItems);
+
+      const count = response.data?.results?.[0]?.count ?? pageItems.length;
+      const overallcount = response.data?.results?.[0]?.overallcount ?? allItems.length;
+
+      // Break conditions:
+      // - No items returned
+      // - Retrieved items count reached or exceeded overall count (when provided)
+      // - Returned count less than requested pageSize (likely last page)
+      if (pageItems.length === 0) break;
+      if (overallcount && allItems.length >= overallcount) break;
+      if (count < pageSize) break;
+    }
+
+    return allItems;
+  }
+
   private generateSyncHash(item: DestinationOneItem): string {
     const hashData = {
       id: item.id,
@@ -265,8 +321,24 @@ export class DestinationOneService {
     let errorCount = 0;
 
     try {
-      const response = await this.fetchData(config);
-      const items = response.results[0]?.items || [];
+      // Fetch items per type (best coverage) with pagination; fall back to single fetch if no typeFilter
+      let items: DestinationOneItem[] = [];
+      const processedIds = new Set<string>();
+
+      if (config.typeFilter && config.typeFilter.length > 0) {
+        for (const t of config.typeFilter) {
+          const typeItems = await this.fetchDataPaginatedForType(config, t);
+          for (const it of typeItems) {
+            if (!processedIds.has(it.id)) {
+              items.push(it);
+              processedIds.add(it.id);
+            }
+          }
+        }
+      } else {
+        const response = await this.fetchData(config);
+        items = response.results[0]?.items || [];
+      }
 
       this.logger.log(`Processing ${items.length} items from destination_one API`);
 

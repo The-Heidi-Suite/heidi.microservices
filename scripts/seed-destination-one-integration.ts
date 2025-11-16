@@ -45,9 +45,12 @@ async function seed() {
   const experience = process.env.DO_EXPERIENCE?.trim() || 'heidi-app-kiel';
   const template = process.env.DO_TEMPLATE?.trim() || 'ET2014A_LIGHT_MULTI.json';
   const baseUrl = process.env.DO_BASE_URL?.trim() || 'https://meta.et4.de/rest.ashx/search/';
-  const types = process.env.DO_TYPES?.split(',')
-    .map((t) => t.trim())
-    .filter(Boolean) || ['Gastro'];
+  const types = process.env.DO_TYPES
+    ? process.env.DO_TYPES.split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : // Default to all major Destination One types we support (skip City, Area, Package)
+      ['Hotel', 'Event', 'Gastro', 'Tour', 'POI', 'Article'];
   const name = process.env.INTEGRATION_NAME?.trim() || 'Destination One - Kiel';
   const isActive = (process.env.INTEGRATION_ACTIVE ?? 'true').toLowerCase() !== 'false';
 
@@ -59,14 +62,48 @@ async function seed() {
     cityId,
     typeFilter: types,
     enabled: isActive,
-    // Minimal default mapping; adjust as needed
+    // Expanded default mapping; skip City/Area/Package
     categoryMappings: {
-      Restaurant: 'restaurant',
-      Bar: 'bar',
-      Café: 'cafe',
-      Hotelrestaurant: 'hotel-restaurant',
-      'Eisdiele/Eiscafé': 'ice-cream',
-      Bistro: 'bistro',
+      // Type → our top-level buckets
+      Hotel: 'hotels-and-stays',
+      Event: 'events',
+      Gastro: 'food-and-drink',
+      Tour: 'tours',
+      POI: 'points-of-interest',
+      Article: 'articles-and-stories',
+
+      // Gastro subcategories
+      Restaurant: 'restaurants',
+      Bar: 'food-bars-nightlife',
+      Pub: 'food-bars-nightlife',
+      Brewery: 'food-bars-nightlife',
+      Café: 'food-cafes-bakeries',
+      'Eisdiele/Eiscafé': 'food-cafes-bakeries',
+      Bistro: 'food-restaurants-bistros',
+
+      // Hotels subcategories
+      'Hotel Garni': 'hotels-and-stays',
+      'Boutique Hotel': 'hotels-boutique',
+      'Business Hotel': 'hotels-business',
+      'Budget Hotel': 'hotels-budget-stays',
+
+      // POI subcategories
+      Museum: 'poi-museums-galleries',
+      Gallery: 'poi-museums-galleries',
+      Park: 'poi-parks-nature',
+      Nature: 'poi-parks-nature',
+      Landmark: 'poi-historic-landmarks',
+      'Historic Site': 'poi-historic-landmarks',
+
+      // Tours subcategories
+      'Guided Tour': 'tours-guided',
+      'Self-Guided Route': 'tours-self-guided',
+      Family: 'tours-family-experiences',
+
+      // Articles subcategories
+      Guide: 'articles-city-guides',
+      Story: 'articles-community-stories',
+      'Insider Tip': 'articles-insider-tips',
     },
   };
 
