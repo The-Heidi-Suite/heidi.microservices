@@ -7,12 +7,7 @@ import { CityEmailThemeService } from '../verification/services/city-email-theme
 
 @Module({
   controllers: [PasswordResetController, PasswordResetMessageController],
-  providers: [
-    PasswordResetService,
-    EmailPasswordResetStrategy,
-    CityEmailThemeService,
-  ],
+  providers: [PasswordResetService, EmailPasswordResetStrategy, CityEmailThemeService],
   exports: [PasswordResetService],
 })
 export class PasswordResetModule {}
-

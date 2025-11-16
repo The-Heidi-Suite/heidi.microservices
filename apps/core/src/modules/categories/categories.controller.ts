@@ -679,7 +679,8 @@ export class CategoriesController {
   @Get(':id')
   @ApiOperation({
     summary: 'Get category by ID',
-    description: 'Retrieve a specific category by its unique identifier, including its subcategories.',
+    description:
+      'Retrieve a specific category by its unique identifier, including its subcategories.',
   })
   @ApiParam({
     name: 'id',

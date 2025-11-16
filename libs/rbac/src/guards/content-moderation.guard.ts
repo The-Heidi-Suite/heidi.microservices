@@ -21,7 +21,8 @@ export class ContentModerationGuard implements CanActivate {
 
     // Convert number role to enum if needed
     const userRoleNumber = typeof user.role === 'number' ? user.role : null;
-    const userRole = userRoleNumber !== null ? numberToRole(userRoleNumber) : (user.role as UserRole);
+    const userRole =
+      userRoleNumber !== null ? numberToRole(userRoleNumber) : (user.role as UserRole);
     const userId = user.sub || user.userId;
 
     // Super Admin can moderate all content

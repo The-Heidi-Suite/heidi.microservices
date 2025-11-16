@@ -227,7 +227,11 @@ export class UserDto {
   @ApiProperty({ example: 'Doe' })
   lastName: string;
 
-  @ApiProperty({ example: 3, enum: [1, 2, 3], description: 'User role: 1=SUPER_ADMIN, 2=CITY_ADMIN, 3=CITIZEN' })
+  @ApiProperty({
+    example: 3,
+    enum: [1, 2, 3],
+    description: 'User role: 1=SUPER_ADMIN, 2=CITY_ADMIN, 3=CITIZEN',
+  })
   role: number;
 
   @ApiProperty({ example: true })

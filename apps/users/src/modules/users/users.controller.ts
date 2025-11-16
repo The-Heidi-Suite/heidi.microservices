@@ -459,10 +459,7 @@ export class UsersController {
     description: 'Password reset email sent (if account exists)',
   })
   @HttpCode(HttpStatus.OK)
-  async requestPasswordReset(
-    @Body() body: { email: string },
-    @GetLanguage() language: string,
-  ) {
+  async requestPasswordReset(@Body() body: { email: string }, @GetLanguage() language: string) {
     return this.usersService.requestPasswordReset(body.email, language);
   }
 

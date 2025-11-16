@@ -1,4 +1,14 @@
-import { Controller, Post, Get, Body, Param, Query, HttpCode, HttpStatus, Res } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  HttpCode,
+  HttpStatus,
+  Res,
+} from '@nestjs/common';
 import { Response } from 'express';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { VerificationService } from './verification.service';
@@ -101,7 +111,7 @@ export class VerificationController {
   ) {
     try {
       const result = await this.verificationService.verifyToken({ token }, language);
-      
+
       // Get translated messages - use specific keys for each text element
       const title =
         this.i18nService.translate('success.EMAIL_VERIFIED_TITLE', undefined, language) ||
@@ -112,7 +122,7 @@ export class VerificationController {
       const subtitle =
         this.i18nService.translate('success.EMAIL_VERIFIED_SUBTITLE', undefined, language) ||
         'You can now close this window and continue using the app.';
-      
+
       // Return HTML page
       const html = this.generateSuccessHtml(title, message, subtitle);
       res.setHeader('Content-Type', 'text/html');
@@ -125,7 +135,7 @@ export class VerificationController {
       const message =
         error.response?.message || error.message || 'An error occurred during verification';
       const errorCode = error.response?.errorCode || 'UNKNOWN_ERROR';
-      
+
       const html = this.generateErrorHtml(title, message, errorCode);
       res.status(error.status || 500);
       res.setHeader('Content-Type', 'text/html');

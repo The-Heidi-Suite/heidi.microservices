@@ -478,7 +478,7 @@ export class UsersService {
     return {
       ...user,
       role: roleToNumber(user.role),
-      cityAssignments: cityAssignments.map(assignment => ({
+      cityAssignments: cityAssignments.map((assignment) => ({
         ...assignment,
         role: roleToNumber(assignment.role),
       })),
@@ -638,7 +638,7 @@ export class UsersService {
     });
 
     this.logger.log(`Guest user created successfully: ${guestUser.id}`);
-    
+
     // Return guest user with requiresTermsAcceptance flag
     return {
       ...guestUser,
@@ -844,10 +844,12 @@ export class UsersService {
     try {
       tokenData = await firstValueFrom(
         this.client
-          .send<{ valid: boolean; userId: string; email: string; resetTokenId: string }>(
-            RabbitMQPatterns.PASSWORD_RESET_VERIFY,
-            { token },
-          )
+          .send<{
+            valid: boolean;
+            userId: string;
+            email: string;
+            resetTokenId: string;
+          }>(RabbitMQPatterns.PASSWORD_RESET_VERIFY, { token })
           .pipe(timeout(10000)),
       );
     } catch (error) {

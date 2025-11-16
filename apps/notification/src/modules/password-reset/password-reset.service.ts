@@ -34,11 +34,7 @@ export class PasswordResetService {
   /**
    * Send password reset email
    */
-  async sendPasswordResetEmail(
-    email: string,
-    userId: string,
-    metadata?: Record<string, any>,
-  ) {
+  async sendPasswordResetEmail(email: string, userId: string, metadata?: Record<string, any>) {
     // Cancel any existing pending reset tokens for this user
     await this.prisma.passwordResetToken.updateMany({
       where: {
@@ -88,11 +84,12 @@ export class PasswordResetService {
       id: resetToken.id,
       email,
       expiresAt: resetToken.expiresAt,
-      message: this.i18nService.translate(
-        'success.PASSWORD_RESET_EMAIL_SENT',
-        undefined,
-        metadata?.preferredLanguage,
-      ) || 'Password reset email sent',
+      message:
+        this.i18nService.translate(
+          'success.PASSWORD_RESET_EMAIL_SENT',
+          undefined,
+          metadata?.preferredLanguage,
+        ) || 'Password reset email sent',
     };
   }
 
@@ -105,11 +102,9 @@ export class PasswordResetService {
     });
 
     if (!resetToken) {
-      const msg = this.i18nService.translate(
-        'errors.PASSWORD_RESET_TOKEN_INVALID',
-        undefined,
-        language,
-      ) || 'Invalid password reset token';
+      const msg =
+        this.i18nService.translate('errors.PASSWORD_RESET_TOKEN_INVALID', undefined, language) ||
+        'Invalid password reset token';
       throw new NotFoundException({
         errorCode: 'PASSWORD_RESET_TOKEN_INVALID',
         message: msg,
@@ -117,11 +112,9 @@ export class PasswordResetService {
     }
 
     if (resetToken.isUsed || resetToken.status === 'USED') {
-      const msg = this.i18nService.translate(
-        'errors.PASSWORD_RESET_TOKEN_USED',
-        undefined,
-        language,
-      ) || 'Password reset token has already been used';
+      const msg =
+        this.i18nService.translate('errors.PASSWORD_RESET_TOKEN_USED', undefined, language) ||
+        'Password reset token has already been used';
       throw new BadRequestException({
         errorCode: 'PASSWORD_RESET_TOKEN_USED',
         message: msg,
@@ -129,11 +122,9 @@ export class PasswordResetService {
     }
 
     if (resetToken.status === 'CANCELLED') {
-      const msg = this.i18nService.translate(
-        'errors.PASSWORD_RESET_TOKEN_CANCELLED',
-        undefined,
-        language,
-      ) || 'Password reset token has been cancelled';
+      const msg =
+        this.i18nService.translate('errors.PASSWORD_RESET_TOKEN_CANCELLED', undefined, language) ||
+        'Password reset token has been cancelled';
       throw new BadRequestException({
         errorCode: 'PASSWORD_RESET_TOKEN_CANCELLED',
         message: msg,
@@ -145,11 +136,9 @@ export class PasswordResetService {
         where: { id: resetToken.id },
         data: { status: 'EXPIRED' },
       });
-      const msg = this.i18nService.translate(
-        'errors.PASSWORD_RESET_TOKEN_EXPIRED',
-        undefined,
-        language,
-      ) || 'Password reset link has expired';
+      const msg =
+        this.i18nService.translate('errors.PASSWORD_RESET_TOKEN_EXPIRED', undefined, language) ||
+        'Password reset link has expired';
       throw new UnprocessableEntityException({
         errorCode: 'PASSWORD_RESET_TOKEN_EXPIRED',
         message: msg,
@@ -161,11 +150,9 @@ export class PasswordResetService {
         where: { id: resetToken.id },
         data: { status: 'FAILED' },
       });
-      const msg = this.i18nService.translate(
-        'errors.PASSWORD_RESET_MAX_ATTEMPTS',
-        undefined,
-        language,
-      ) || 'Maximum password reset attempts exceeded';
+      const msg =
+        this.i18nService.translate('errors.PASSWORD_RESET_MAX_ATTEMPTS', undefined, language) ||
+        'Maximum password reset attempts exceeded';
       throw new UnprocessableEntityException({
         errorCode: 'PASSWORD_RESET_MAX_ATTEMPTS',
         message: msg,
@@ -195,4 +182,3 @@ export class PasswordResetService {
     });
   }
 }
-

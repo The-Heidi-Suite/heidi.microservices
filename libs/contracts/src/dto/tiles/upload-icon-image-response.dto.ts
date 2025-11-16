@@ -34,4 +34,3 @@ export class UploadIconImageResponseDto {
   @ApiProperty({ example: 200 })
   statusCode: number;
 }
-

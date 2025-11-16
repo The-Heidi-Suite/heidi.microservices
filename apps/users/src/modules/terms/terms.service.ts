@@ -370,13 +370,13 @@ export class TermsService {
    */
   async getAcceptanceStatus(userId: string, locale?: string): Promise<any> {
     const targetLocale = locale || this.defaultLocale;
-    
+
     // Check if user is a guest
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { userType: true },
     });
-    
+
     // Guests don't need to accept terms
     if (user && user.userType === 'GUEST') {
       return {
@@ -388,7 +388,7 @@ export class TermsService {
         gracePeriodEndsAt: null,
       };
     }
-    
+
     // For registered users, check actual acceptance status
     const acceptanceCheck = await this.hasUserAcceptedLatestTerms(userId, targetLocale);
     const acceptedVersion = await this.getUserAcceptedVersion(userId);

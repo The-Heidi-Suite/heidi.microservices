@@ -70,7 +70,7 @@ export class JwtTokenService {
     const roleNumber = typeof role === 'string' ? roleToNumber(role) : role;
 
     // Convert cityAssignments roles to numbers if needed
-    const cityAssignments = options?.cityAssignments?.map(assignment => ({
+    const cityAssignments = options?.cityAssignments?.map((assignment) => ({
       ...assignment,
       role: typeof assignment.role === 'string' ? roleToNumber(assignment.role) : assignment.role,
     }));
@@ -116,7 +116,7 @@ export class JwtTokenService {
     const roleNumber = typeof role === 'string' ? roleToNumber(role) : role;
 
     // Convert cityAssignments roles to numbers if needed
-    const cityAssignments = options?.cityAssignments?.map(assignment => ({
+    const cityAssignments = options?.cityAssignments?.map((assignment) => ({
       ...assignment,
       role: typeof assignment.role === 'string' ? roleToNumber(assignment.role) : assignment.role,
     }));

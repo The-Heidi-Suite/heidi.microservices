@@ -36,9 +36,7 @@ export class PasswordResetMessageController {
         data.metadata,
       );
 
-      this.logger.log(
-        `Password reset email sent to ${data.email} for user ${data.userId}`,
-      );
+      this.logger.log(`Password reset email sent to ${data.email} for user ${data.userId}`);
 
       return { success: true, message: 'Password reset email sent' };
     } catch (error) {
@@ -60,4 +58,3 @@ export class PasswordResetMessageController {
     await this.passwordResetService.markTokenAsUsed(data.token);
   }
 }
-

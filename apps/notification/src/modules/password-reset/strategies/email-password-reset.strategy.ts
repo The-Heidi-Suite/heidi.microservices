@@ -24,11 +24,10 @@ export class EmailPasswordResetStrategy {
       this.configService.get<string>('frontendBaseUrl') ||
       this.configService.get<string>('clientURL') ||
       'http://localhost:4200';
-    
+
     // Get default expiry hours from config
-    this.defaultExpiryHours = 
-      this.configService.get<number>('passwordReset.expiryHours') || 1;
-    
+    this.defaultExpiryHours = this.configService.get<number>('passwordReset.expiryHours') || 1;
+
     this.logger.setContext(EmailPasswordResetStrategy.name);
   }
 
@@ -108,18 +107,12 @@ export class EmailPasswordResetStrategy {
     expiryHours: number,
   ): string {
     const intro =
-      this.i18nService.translate(
-        'emails.passwordReset.intro',
-        undefined,
-        preferredLanguage,
-      ) || 'We received a request to reset your password. Click the button below to reset it.';
+      this.i18nService.translate('emails.passwordReset.intro', undefined, preferredLanguage) ||
+      'We received a request to reset your password. Click the button below to reset it.';
     const ctaText =
-      this.i18nService.translate(
-        'emails.passwordReset.cta',
-        undefined,
-        preferredLanguage,
-      ) || 'Reset Password';
-    
+      this.i18nService.translate('emails.passwordReset.cta', undefined, preferredLanguage) ||
+      'Reset Password';
+
     // Dynamic expiry notice based on hours
     const expiryText = expiryHours === 1 ? '1 hour' : `${expiryHours} hours`;
     const expiryNotice =
@@ -136,11 +129,8 @@ export class EmailPasswordResetStrategy {
       ) ||
       'If you did not request a password reset, please ignore this email. Your password will remain unchanged.';
     const fallback =
-      this.i18nService.translate(
-        'emails.passwordReset.fallback',
-        undefined,
-        preferredLanguage,
-      ) || 'If the button does not work, copy and paste this link into your browser:';
+      this.i18nService.translate('emails.passwordReset.fallback', undefined, preferredLanguage) ||
+      'If the button does not work, copy and paste this link into your browser:';
 
     // Use city theme colors or defaults
     const headerBackgroundColor =
@@ -213,4 +203,3 @@ export class EmailPasswordResetStrategy {
     `;
   }
 }
-

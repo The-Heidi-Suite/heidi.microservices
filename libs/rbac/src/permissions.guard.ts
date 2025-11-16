@@ -32,7 +32,8 @@ export class PermissionsGuard implements CanActivate {
 
     // Convert number role to enum if needed
     const userRoleNumber = typeof user.role === 'number' ? user.role : null;
-    const userRole = userRoleNumber !== null ? numberToRole(userRoleNumber) : (user.role as UserRole);
+    const userRole =
+      userRoleNumber !== null ? numberToRole(userRoleNumber) : (user.role as UserRole);
 
     // Super Admin has all permissions
     if (userRole === UserRole.SUPER_ADMIN) {

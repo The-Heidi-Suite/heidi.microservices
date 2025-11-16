@@ -60,4 +60,3 @@ export class PasswordResetController {
     return this.passwordResetService.verifyResetToken(body.token, language);
   }
 }
-
