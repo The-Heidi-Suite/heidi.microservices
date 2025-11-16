@@ -377,6 +377,16 @@ api.$DEV_IP.nip.io {
         }
     }
 
+    # pgAdmin - Database administration tool
+    handle /pgadmin* {
+        reverse_proxy pgadmin:80 {
+            header_up X-Forwarded-Proto https
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up Host {host}
+        }
+    }
+
     # Default response for unmatched routes
     handle {
         respond "Not Found" 404
