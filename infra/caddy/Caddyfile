@@ -378,8 +378,21 @@ api.$DEV_IP.nip.io {
     }
 
     # pgAdmin - Database administration tool
+    # pgAdmin needs path stripping to work behind reverse proxy
     handle /pgadmin* {
+        uri strip_prefix /pgadmin
         reverse_proxy pgadmin:80 {
+            header_up X-Forwarded-Proto https
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up Host {host}
+            header_up X-Script-Name /pgadmin
+        }
+    }
+
+    # Redis Commander - Redis administration tool
+    handle /redis* {
+        reverse_proxy redis-commander:8081 {
             header_up X-Forwarded-Proto https
             header_up X-Real-IP {remote_host}
             header_up X-Forwarded-For {remote_host}
