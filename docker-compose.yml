@@ -297,6 +297,7 @@ services:
       - '${PGADMIN_PORT:-5050}:80'
     volumes:
       - ./data/pgadmin:/var/lib/pgadmin
+      - ./infra/pgadmin/fix-permissions.sh:/fix-permissions.sh:ro
     networks:
       - backend
     depends_on:
@@ -307,6 +308,8 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+    # Fix permissions on startup - pgAdmin runs as UID 5050
+    entrypoint: ["/bin/sh", "/fix-permissions.sh"]
 
   # Redis Admin: Redis Commander
   redis-commander:
