@@ -325,12 +325,13 @@ model ListingTimeIntervalException {
 }
 
 model CityCategory {
-  id         String   @id @default(uuid())
-  cityId     String
-  categoryId String
-  isActive   Boolean  @default(true)
-  addedBy    String?
-  addedAt    DateTime @default(now())
+  id          String   @id @default(uuid())
+  cityId      String
+  categoryId  String
+  displayName String?  // Custom display name for this city (defaults to category.name if null)
+  isActive    Boolean  @default(true)
+  addedBy     String?
+  addedAt     DateTime @default(now())
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 

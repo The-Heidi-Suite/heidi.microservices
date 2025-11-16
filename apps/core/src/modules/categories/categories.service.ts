@@ -82,10 +82,61 @@ export class CategoriesService {
     return rootCategories;
   }
 
+  /**
+   * Build hierarchical category structure with children nested inside parents
+   */
+  private buildCategoryHierarchy(categories: any[]): any[] {
+    const categoryMap = new Map<string, any>();
+    const rootCategories: any[] = [];
+
+    // First pass: Create a map of all categories and add children array
+    categories.forEach((category) => {
+      categoryMap.set(category.id, {
+        ...category,
+        children: [],
+      });
+    });
+
+    // Second pass: Build the hierarchy
+    categories.forEach((category) => {
+      const categoryWithChildren = categoryMap.get(category.id);
+
+      if (category.parentId) {
+        // This is a subcategory, add it to its parent's children array
+        const parent = categoryMap.get(category.parentId);
+        if (parent) {
+          parent.children.push(categoryWithChildren);
+        } else {
+          // Parent not found in list, treat as root
+          rootCategories.push(categoryWithChildren);
+        }
+      } else {
+        // This is a root category
+        rootCategories.push(categoryWithChildren);
+      }
+    });
+
+    // Remove empty children arrays for cleaner output
+    const removeEmptyChildren = (cat: any) => {
+      if (cat.children && cat.children.length === 0) {
+        delete cat.children;
+      } else if (cat.children && cat.children.length > 0) {
+        cat.children.forEach(removeEmptyChildren);
+      }
+    };
+
+    rootCategories.forEach(removeEmptyChildren);
+
+    return rootCategories;
+  }
+
   async listCategories() {
+    const categories = await this.prisma.category.findMany({
     const categories = await this.prisma.category.findMany({
       orderBy: [{ type: 'asc' }, { name: 'asc' }],
     });
+
+    return this.buildCategoryHierarchy(categories);
 
     return this.buildCategoryHierarchy(categories);
   }
@@ -161,6 +212,7 @@ export class CategoriesService {
 
   async listCityCategories(cityId: string) {
     const cityCategories = await this.prisma.cityCategory.findMany({
+    const cityCategories = await this.prisma.cityCategory.findMany({
       where: { cityId, isActive: true },
       include: {
         category: true,
@@ -195,7 +247,33 @@ export class CategoriesService {
     };
   }
 
-  async assignCategoryToCity(cityId: string, categoryId: string, addedBy: string) {
+  async getCategoryById(categoryId: string) {
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      throw new NotFoundException({ errorCode: 'CATEGORY_NOT_FOUND' });
+    }
+
+    // Get all subcategories (children)
+    const children = await this.prisma.category.findMany({
+      where: { parentId: categoryId },
+      orderBy: { name: 'asc' },
+    });
+
+    return {
+      ...category,
+      ...(children.length > 0 ? { children } : {}),
+    };
+  }
+
+  async assignCategoryToCity(
+    cityId: string,
+    categoryId: string,
+    addedBy: string,
+    displayName?: string,
+  ) {
     return this.prisma.cityCategory.upsert({
       where: {
         cityId_categoryId: {
@@ -207,11 +285,13 @@ export class CategoriesService {
         isActive: true,
         addedBy,
         addedAt: new Date(),
+        displayName: displayName !== undefined ? displayName : undefined, // Only update if provided
       },
       create: {
         cityId,
         categoryId,
         addedBy,
+        displayName: displayName ?? null, // Default to null if not provided
       },
       include: {
         category: true,
@@ -338,5 +418,42 @@ export class CategoriesService {
     });
 
     return Boolean(assignment);
+  }
+
+  async updateCityCategoryDisplayName(
+    cityId: string,
+    categoryId: string,
+    displayName: string | null,
+  ) {
+    const existing = await this.prisma.cityCategory.findUnique({
+      where: {
+        cityId_categoryId: {
+          cityId,
+          categoryId,
+        },
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
+    }
+
+    return this.prisma.cityCategory.update({
+      where: {
+        cityId_categoryId: {
+          cityId,
+          categoryId,
+        },
+      },
+      data: {
+        displayName,
+      },
+      include: {
+        category: true,
+      },
+    });
   }
 }

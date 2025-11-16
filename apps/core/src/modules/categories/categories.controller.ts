@@ -38,6 +38,7 @@ import {
   ForbiddenErrorResponseDto,
   CreateCategoryDto,
   UpdateCategoryDto,
+  UpdateCityCategoryDisplayNameDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { CategoryRequestStatus, UserRole } from '@prisma/client-core';
@@ -262,7 +263,7 @@ export class CategoriesController {
   })
   @HttpCode(HttpStatus.OK)
   @SuperAdminOnly()
-  async delete(@Param('id') id: string, @GetCurrentUser() user: CurrentUser) {
+  async delete(@Param('id') id: string, @GetCurrentUser() _user: CurrentUser) {
     return this.categoriesService.deleteCategory(id);
   }
 
@@ -351,7 +352,12 @@ export class CategoriesController {
     @GetCurrentUser() user: CurrentUser,
     @Body() dto: AssignCategoryToCityDto,
   ) {
-    return this.categoriesService.assignCategoryToCity(cityId, dto.categoryId, user.userId);
+    return this.categoriesService.assignCategoryToCity(
+      cityId,
+      dto.categoryId,
+      user.userId,
+      dto.displayName,
+    );
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -395,9 +401,84 @@ export class CategoriesController {
   async removeCategory(
     @Param('cityId') cityId: string,
     @Param('categoryId') categoryId: string,
-    @GetCurrentUser() user: CurrentUser,
+    @GetCurrentUser() _user: CurrentUser,
   ) {
     return this.categoriesService.removeCategoryFromCity(cityId, categoryId);
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Patch('cities/:cityId/categories/:categoryId/display-name')
+  @ApiOperation({
+    summary: 'Update category display name for city',
+    description:
+      'Update the custom display name for a category in a specific city. City admins can update for their cities, super admins can update for any city.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiBody({
+    type: UpdateCityCategoryDisplayNameDto,
+    examples: {
+      set: {
+        summary: 'Set custom display name',
+        value: {
+          displayName: 'Local Events',
+        },
+      },
+      reset: {
+        summary: 'Reset to default category name',
+        value: {
+          displayName: null,
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Display name updated successfully',
+    type: CityCategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'City Admin or Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City/category assignment not found',
+    type: CategoryAssignmentNotFoundErrorResponseDto,
+  })
+  @CityAdminOnly()
+  async updateDisplayName(
+    @Param('cityId') cityId: string,
+    @Param('categoryId') categoryId: string,
+    @GetCurrentUser() user: CurrentUser,
+    @Body() dto: UpdateCityCategoryDisplayNameDto,
+  ) {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
+      if (!hasAccess) {
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
+      }
+    }
+
+    return this.categoriesService.updateCityCategoryDisplayName(
+      cityId,
+      categoryId,
+      dto.displayName ?? null,
+    );
   }
 
   @ApiBearerAuth('JWT-auth')
