@@ -2,6 +2,111 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.16.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.15.0...v1.16.0) (2025-11-16)
+
+
+### 🔧 Chores
+
+* **package-lock:** remove peer dependencies and update devOptional to dev for several packages ([e70707a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e70707a19c8e53be29e7e15604390b68a41a425f))
+* **release:** 1.15.0 [skip ci] ([cf95160](https://github.com/The-Heidi-Suite/heidi.microservices/commit/cf95160c6fdcf2f694634bf80bed1c8bd4a411f6))
+
+
+### 🐛 Bug Fixes
+
+* **package:** update dev:all script to include integration service in concurrent development setup ([635ee0e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/635ee0ecfbaf2220f9b8035a76a49ba26adb9e66))
+
+
+### ✨ Features
+
+* **auth:** enhance login error handling with detailed responses ([1bf3abd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1bf3abd2a3a0cb9646cc10d00d47b603c44d12ca))
+* **auth:** implement non-blocking terms acceptance check during login ([df220d6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/df220d6334228a303958cd14ea261a5b1dcf77d7))
+* **categories:** add updateDisplayName endpoint and enhance category assignment ([4cac83c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4cac83ccfde73c785ce9654c60f5106ecfdbc980))
+* **categories:** add updateDisplayName endpoint and enhance category assignment ([0b2dc79](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0b2dc79c6259829fff104f49c0bb41ed09f962a8))
+* **categories:** enhance error handling and update category-related DTOs ([b998b27](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b998b2733ffc50c5c3dd8048826d902f65cca026))
+* **categories:** implement category retrieval and hierarchical structure ([631e177](https://github.com/The-Heidi-Suite/heidi.microservices/commit/631e17728895801bf8ae95d68af9a6ba678568bd))
+* **categories:** implement category retrieval and hierarchical structure ([25d8cfa](https://github.com/The-Heidi-Suite/heidi.microservices/commit/25d8cfa65f304c89b0557df688a0d48ecc8b5d0c))
+* **categories:** implement hierarchical category structure and enhance category retrieval ([3a91bf6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/3a91bf6bca844d576f2d7871025debc0996a030d))
+* **city:** add CityMessageController for handling city-related messages ([a812319](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a812319fce29fd25345cfd985e473914b6d35b4a))
+* **city:** add email theme metadata to Kiel city record ([3dec15a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/3dec15a751af74272a1feba87ae7903cbd633ae2))
+* **cityCategory:** add displayName field to CityCategory model and update migration ([f7771b9](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f7771b95c3d40b4adf90a70d6150193ba1e5dc17))
+* **city:** enhance city module with Swagger documentation and new features ([10fe847](https://github.com/The-Heidi-Suite/heidi.microservices/commit/10fe847f6d0beb94ce7ccf30c84da2d9862033cc))
+* **city:** refactor city DTOs and introduce new response structures ([a5c434d](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a5c434db4362826d07eee6144e3bf3aeb42bc67d))
+* **dependencies:** update file-type package and add new dependencies ([ca352ea](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ca352ea60f3b023f1bf79f7ae2f4ad6b38210720))
+* **dto:** add new integration response DTOs and update exports ([6e9c74e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/6e9c74e088500289220abf33f7e1b2c0e92a972a))
+* **dtos:** add new response DTOs for media uploads ([e71c9b0](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e71c9b08e449535314ecd20ee086a360f18a84ea))
+* **dto:** update integration DTOs and restructure exports ([5488fab](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5488fab772fef06b93ad0f18ffda460b9afd8f94))
+* **i18n:** add new error messages for account management across multiple languages ([1da4b61](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1da4b61cdb2c21a7ae08836702d6f90d9f260d2e))
+* **i18n:** add new tile-related error messages in multiple languages ([61d687c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/61d687ce141500a6686707e7206e7b3dd8880738))
+* **i18n:** update email verification subjects to include app name ([c30e1f4](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c30e1f46a776a1de97d002a8614fff8c5e23ba18))
+* **integration:** add DESTINATION_ONE to IntegrationProvider enum and update migration ([5887691](https://github.com/The-Heidi-Suite/heidi.microservices/commit/58876916de10910a8fc3bdd8efd22b07faac7523))
+* **integration:** add DestinationOne module and service for API integration ([2bc4340](https://github.com/The-Heidi-Suite/heidi.microservices/commit/2bc4340bc5335e3a23a10ac63abb561adb538c69))
+* **integration:** add seeding script for Destination One integration ([046bb8b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/046bb8b50c5d165221c5a5fa05cc7bd06ced78eb))
+* **integration:** enhance main application setup and add Swagger documentation ([55b1bfd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/55b1bfdf6eb3fbeea2a989bf78bf6f6791d42349))
+* **integration:** implement DestinationOne service and update integration module ([a638787](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a63878715a185be7e15268741759751a987616fa))
+* **integration:** implement paginated data fetching for Destination One service ([cf991af](https://github.com/The-Heidi-Suite/heidi.microservices/commit/cf991af2f940a55d9697305efff171c78c8ff5ee))
+* **integration:** implement syncListingFromIntegration method and update CoreMessageController ([25b683f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/25b683fc284cd335a61a29ff38ae92d03d6a1dfc))
+* **listings:** add DeleteMediaResponseDto and update index file ([d05f99e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d05f99e6132e0b37ab5c79436d5b28b53399fdba))
+* **listings:** enhance listing creation and update DTOs with new structures and validations ([d5baaed](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d5baaed7268237be8e347fb2d4c65b631dfa5419))
+* **listings:** implement media deletion functionality in ListingController and ListingsService ([a0d120a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a0d120adbb603ed72d8e9ca722c04dc4232e057d))
+* **listings:** implement media upload functionality in ListingController ([f0b31c5](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f0b31c53cc45eaa6847708fe4239644562463430))
+* **migrations:** add initial migration for tiles and tile_cities tables ([1872bdb](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1872bdbea56ffc2da2d150ca9f7d21339a751b88))
+* **notification:** add cityId support and CityEmailThemeService for email customization ([919fd34](https://github.com/The-Heidi-Suite/heidi.microservices/commit/919fd343785e28ff0ed65e1087cc2caebf24eb98))
+* **notification:** add default email theme configuration ([849f7ff](https://github.com/The-Heidi-Suite/heidi.microservices/commit/849f7ffac87f58e5ca5aacab87dfcfe9853e27e3))
+* **notification:** add SendNotificationDto for structured notification data ([34f9f53](https://github.com/The-Heidi-Suite/heidi.microservices/commit/34f9f5349a57a9d6cc7db4e54f6812944b8ed4a6))
+* **notification:** enhance email verification with city-themed customization ([89ec872](https://github.com/The-Heidi-Suite/heidi.microservices/commit/89ec8723fd226680b48b9115ef324957943c0c65))
+* **password-reset:** add password reset functionality with request and confirmation endpoints ([4258989](https://github.com/The-Heidi-Suite/heidi.microservices/commit/42589893cb8f18ebdfd15c330d5bbaff6d5c94d9))
+* **password-reset:** add password reset functionality with request and confirmation endpoints ([f1fc446](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f1fc446888e0f9605e1217f8cde387b792cc181b))
+* **password-reset:** implement password reset configuration and localization support ([83cae22](https://github.com/The-Heidi-Suite/heidi.microservices/commit/83cae229126a236d3a35a5db69676598369f4842))
+* **password-reset:** implement password reset configuration and localization support ([76ee6a2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/76ee6a2b1631587811241985ea60142c8a3d1641))
+* **password-reset:** implement password reset module with email functionality ([b451459](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b45145990103c3641804bcba5c08008930ea121e))
+* **password-reset:** implement password reset module with email functionality ([a17b9cb](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a17b9cb77925f37a0e60599baf5194633e77228c))
+* **rbac:** add role utility functions and update guards to handle numeric user roles ([1ab0ffa](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1ab0ffadbc5a924034b8ac60a7b8ceaf130db0dc))
+* **storage:** add AWS SDK for S3 and update storage configuration ([27a876a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/27a876a4ddc24a2debc2436cfd633ffff4656f14))
+* **storage:** add Hetzner Object Storage configuration ([9e7ac54](https://github.com/The-Heidi-Suite/heidi.microservices/commit/9e7ac54b0bf7104b39b7c3a66ba437111671c877))
+* **storage:** implement file upload service for image, video, document, and audio processing ([a67f2a6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a67f2a6c7b251ae0c72419fdf33daa6e0ce866cf))
+* **storage:** implement Storage module and service for Hetzner Object Storage ([84d8d2c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/84d8d2ce04fada156b328b5c395fe976d0ed2b63))
+* **tasks:** enhance task execution logic to support integration sync ([bc81cb7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/bc81cb7b5e36d48e8d370ae8329c795222817db9))
+* **terms:** update guest user terms acceptance handling ([9bda015](https://github.com/The-Heidi-Suite/heidi.microservices/commit/9bda015363473df1f7add9c20bb46ca8ed36ea49))
+* **terms:** update guest user terms acceptance handling ([c090aea](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c090aea33b8c97080d452ecc61dbfa4eec363ab1))
+* **tile:** add Tile and TileCity models with permissions for ad management ([12a55c6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/12a55c6b24b0db0d120cef28bc18ef65c463c71d))
+* **tile:** add tile-related DTOs for managing tiles and their associations ([23b9f3e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/23b9f3ee448f16a799279f0002532d4fd0123459))
+* **tile:** implement Tiles module with controller and service for tile management ([b4e9ffd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b4e9ffde62aff1cf1d70e6edb2d4c0a9e002bdb1))
+* **tiles:** add background image upload functionality to TilesController ([85fe8d0](https://github.com/The-Heidi-Suite/heidi.microservices/commit/85fe8d0f7bda75dc1dd8efcec521eac6c4c25a9e))
+* **tiles:** add icon image upload functionality for tiles ([085658a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/085658a616b42cc0d960dd2f774e5ad95f61585e))
+* **tiles:** add icon image upload functionality for tiles ([c152161](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c152161c84800ec2cac2b768d352ae3aad30b780))
+* **tiles:** add new response DTOs for tile operations and error handling ([4724798](https://github.com/The-Heidi-Suite/heidi.microservices/commit/47247989ebfeb164f8c0850ef595f0dd9203dca1))
+* **tiles:** add search filter for tiles by header, subheader, and description ([4e436ed](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4e436ed28c5b94c14241c686142de09d57a3ded6))
+* **tiles:** add search filter for tiles by header, subheader, and description ([37de5ab](https://github.com/The-Heidi-Suite/heidi.microservices/commit/37de5ab465168c3cf11017a54572ef3b81f6e0e4))
+* **tiles:** enhance background image upload and management ([2b28a00](https://github.com/The-Heidi-Suite/heidi.microservices/commit/2b28a0053903b24df65bee37a084ebe224acf532))
+* **tiles:** enhance tile creation and update DTOs with new city reference structure ([566ecd1](https://github.com/The-Heidi-Suite/heidi.microservices/commit/566ecd1ac3b18f62e2b2f2e9a78bc88cd4cf3265))
+* **tiles:** update response DTOs and refactor controller methods ([ba5b6b6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ba5b6b65083cbe57633ef9bd139a40f9611540d0))
+* **users:** add profilePhotoUrl column to users table ([4179b7c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4179b7cd12e4d92d4b1fb4dc530f954f3d4eb760))
+* **users:** convert user roles to numeric values in user retrieval methods ([4581e3e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4581e3efb0fb3597bef20b9dfd0d7b7c3cf14d8d))
+* **users:** convert user roles to numeric values in user retrieval methods ([7dc19b1](https://github.com/The-Heidi-Suite/heidi.microservices/commit/7dc19b14492f27bfdfdd3ff1f53ee83ba3416cf8))
+* **users:** enhance profile photo upload and response structure ([5744e05](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5744e05dee65c1ff669947c8fc5f6b7564bafbda))
+* **users:** filter user retrieval by userType in UsersService ([95911a0](https://github.com/The-Heidi-Suite/heidi.microservices/commit/95911a07f16c7bdfa0056700353caa69ed8a2e95))
+* **users:** filter user retrieval by userType in UsersService ([06cd9f3](https://github.com/The-Heidi-Suite/heidi.microservices/commit/06cd9f394024f5d8eddde87973395a4736045dda))
+* **users:** implement profile photo upload functionality ([d12317f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d12317f506914f68b5b81f5ef9c19dba7ad1d872))
+* **users:** include cityId in user data handling ([6cfb772](https://github.com/The-Heidi-Suite/heidi.microservices/commit/6cfb772ffccc664123d59c1f8c1d74136c3c20b3))
+
+
+### ♻️ Code Refactoring
+
+* **auth, users, listings, tiles:** standardize role handling to numeric values ([ed4eaf9](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ed4eaf924e90baa82da506aeb1b1b71b758494ea))
+* **categories:** simplify category hierarchy building and remove unused methods ([84cf589](https://github.com/The-Heidi-Suite/heidi.microservices/commit/84cf5897fb4fbc9a1ee52a0c5d63f5340c5e6bdf))
+* **categories:** streamline error message formatting in CategoriesController ([e664038](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e6640381e9119a71972a54a953b5ecac60964b99))
+* **dtos:** improve formatting and organization in tile DTOs ([57448bf](https://github.com/The-Heidi-Suite/heidi.microservices/commit/57448bf6147f0f293f9efabcb318655619034a37))
+* **dtos:** standardize ApiProperty formatting and enhance documentation ([9d8ad7f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/9d8ad7f16d91d93bbe4ae5bc7517acb0cfa88499))
+* **dto:** update user role representation to numeric values for consistency ([e81c26c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e81c26c024c8ebd497b77b3c8ef35c383fbc0ee8))
+* **errors:** format translation calls for improved readability ([84760ca](https://github.com/The-Heidi-Suite/heidi.microservices/commit/84760ca3489fcfe1704b435fe2b8bedc7a8a2abc))
+* **favorites:** streamline error message formatting in FavoritesController ([f2920d2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f2920d2b328e761d9a924dcc8101655f8f9ac08e))
+* **integration:** remove DestinationOne service and update integration logic ([ee4c68a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ee4c68abe4d7bba49e699f850410d5dc87dcef15))
+* **jwt:** update role handling to use numeric values for improved consistency ([b1b278d](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b1b278d4fd13f7817577c84080712511b208c526))
+* **notification:** clean up code formatting and improve readability ([a4c0b12](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a4c0b1273476555c0883a6f82efbed230c820f92))
+* **notification:** migrate SendNotificationDto to shared contracts and remove local DTO files ([5fe83fd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5fe83fdcfe513f0a7c5c806d577bab360d785e37))
+* **tiles:** remove backgroundImageUrl from CreateTileDto and UpdateTileDto ([0a0ebba](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0a0ebbaa6795dc3a55d71945c1970e26fc43ecab))
+* **tiles:** simplify user ID retrieval and streamline error message formatting ([82510ae](https://github.com/The-Heidi-Suite/heidi.microservices/commit/82510ae2957733edf5a4678cf98189d8e6b2ae81))
+
 ## [1.15.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.14.0...v1.15.0) (2025-11-12)
 
 
