@@ -122,7 +122,7 @@ services:
       - integration
       - admin
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:2019/metrics']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:2019/metrics || curl -f http://localhost:2019/metrics || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -144,7 +144,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:9187/metrics']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:9187/metrics || curl -f http://localhost:9187/metrics || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -166,7 +166,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:9121/metrics']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:9121/metrics || curl -f http://localhost:9121/metrics || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -195,7 +195,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:9100/metrics']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:9100/metrics 2>/dev/null || curl -sf http://localhost:9100/metrics >/dev/null || (echo >/dev/tcp/localhost/9100) || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -227,7 +227,7 @@ services:
       - node-exporter
       - rabbitmq
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:9090/-/healthy']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:9090/-/healthy || curl -f http://localhost:9090/-/healthy || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -252,7 +252,7 @@ services:
     depends_on:
       - prometheus
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:9093/-/healthy']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:9093/-/healthy || curl -f http://localhost:9093/-/healthy || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -279,7 +279,7 @@ services:
     depends_on:
       - prometheus
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3000/api/health']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3000/api/health || curl -f http://localhost:3000/api/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -303,7 +303,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost/misc/ping']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost/misc/ping || curl -f http://localhost/misc/ping || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -326,7 +326,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:8081/health']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:8081/health || curl -f http://localhost:8081/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -356,7 +356,7 @@ services:
       - admin
       # - terminal  # FUTURE SERVICE - Uncomment when activating terminal service
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost/health']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost/health || curl -f http://localhost/health || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -388,7 +388,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3001/healthz']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3001/healthz || curl -f http://localhost:3001/healthz || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -421,7 +421,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3002/healthz']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3002/healthz || curl -f http://localhost:3002/healthz || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -454,7 +454,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3003/healthz']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3003/healthz || curl -f http://localhost:3003/healthz || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -487,7 +487,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3004/healthz']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3004/healthz || curl -f http://localhost:3004/healthz || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -520,7 +520,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3005/healthz']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3005/healthz || curl -f http://localhost:3005/healthz || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -553,7 +553,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3006/healthz']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3006/healthz || curl -f http://localhost:3006/healthz || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -586,7 +586,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3007/healthz']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3007/healthz || curl -f http://localhost:3007/healthz || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -619,7 +619,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3008/healthz']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3008/healthz || curl -f http://localhost:3008/healthz || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -662,7 +662,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:3009/healthz']
+      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3009/healthz || curl -f http://localhost:3009/healthz || exit 1']
       interval: 30s
       timeout: 10s
       retries: 3
