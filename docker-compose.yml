@@ -296,7 +296,7 @@ services:
     ports:
       - '${PGADMIN_PORT:-5050}:80'
     volumes:
-      - ./data/pgadmin:/var/lib/pgadmin
+      - pgadmin_data:/var/lib/pgadmin
     networks:
       - backend
     depends_on:
