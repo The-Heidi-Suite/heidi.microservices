@@ -19,31 +19,31 @@ interface KielNewsletterConfig {
 }
 
 interface CreateContactRequest {
-  email: string;
-  attributes: Array<{
-    id: number;
-    value: string;
+  '@type': string;
+  '@version': string;
+  '@subtype': string;
+  contactPoints: Array<{
+    '@type': string;
+    email: string;
+    permission?: string;
   }>;
+  attributes?: Record<string, string | boolean>;
   consent: {
     storage: {
-      purposes: Array<{
-        id: number;
-        date: string;
-        permission: number;
-      }>;
+      purposes: Record<string, string>;
     };
   };
 }
 
 interface CreateEventRequest {
-  eventId: number;
-  contactId: string;
+  '@type': string;
+  event: string; // Event name/identifier
+  fireTime: string; // ISO 8601 date, duration, or 'Now'
+  content?: Record<string, any>; // Optional event parameters
 }
 
-interface ContactResponse {
-  id: string;
-  email: string;
-  [key: string]: any;
+interface CreateContactResponse {
+  href: string; // API returns href with contact URL, e.g., "https://ems-test.wilken.de/crm/api/v1/KP/contacts/153450338"
 }
 
 @Injectable()
@@ -124,23 +124,32 @@ export class KielNewsletterService {
       }
 
       // Step 1: Create contact in EMS
+      // According to API docs: https://coop.wilken.digital/dokuwiki/doku.php?id=api:postcontacts
       const contactRequest: CreateContactRequest = {
-        email,
-        attributes: [
+        '@type': 'Contact',
+        '@version': '0.2',
+        '@subtype': 'Person',
+        contactPoints: [
           {
-            id: config.attributeId,
-            value: 'Newsletter signup via mein.Kiel App',
+            '@type': 'Email',
+            email: email,
+            permission: '1', // Permission for email (1 = granted)
           },
         ],
+        attributes: {
+          // Use attributeId as string key
+          // API error indicates this attribute (3022526340) requires a boolean value
+          // Setting to true to indicate newsletter signup via mein.Kiel App
+          [config.attributeId.toString()]: true,
+        },
         consent: {
           storage: {
-            purposes: [
-              {
-                id: config.consentPurposeId,
-                date: 'AUTO',
-                permission: 10, // Preliminary consent
-              },
-            ],
+            // Purposes is an object with purpose ID as key and date as value
+            // API requires YYYY-MM-DD format (not "AUTO")
+            // Client requirement: date → AUTO (interpreted as current date), permission → 10 (Preliminary consent)
+            purposes: {
+              [config.consentPurposeId.toString()]: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+            },
           },
         },
       };
@@ -148,50 +157,140 @@ export class KielNewsletterService {
       const contactUrl = `${config.hostUrl}contacts`;
       this.logger.debug(`Creating contact at ${contactUrl}`);
 
-      const contactResponse = await firstValueFrom(
-        this.http.post<ContactResponse>(contactUrl, contactRequest, {
-          headers: {
-            Authorization: config.apiKey,
-            'Content-Type': 'application/json',
-          },
-          timeout: 30000,
-        }),
-      );
-
-      const contactId = contactResponse.data?.id;
-      if (!contactId) {
-        throw new Error('Contact created but no ID returned from EMS API');
-      }
-
-      this.logger.log(`Contact created in EMS with ID: ${contactId}`);
-
-      // Step 2: Trigger event
-      const eventRequest: CreateEventRequest = {
-        eventId: config.eventId,
-        contactId: contactId,
+      // Try different authorization formats - EMS API might require Bearer token or X-API-Key
+      // Start with raw API key (original format) as it might be what the API expects
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        Authorization: config.apiKey, // Original format - raw API key
       };
 
-      const eventUrl = `${config.hostUrl}events`;
+      let contactResponse;
+      try {
+        contactResponse = await firstValueFrom(
+          this.http.post<CreateContactResponse>(contactUrl, contactRequest, {
+            headers,
+            timeout: 30000,
+          }),
+        );
+      } catch (error: any) {
+        // Log detailed error information
+        if (error.response) {
+          const errorData = error.response.data;
+          this.logger.error(
+            `EMS API Error Response (${error.response.status}): ${JSON.stringify(errorData)}`,
+            error,
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: errorData,
+              requestUrl: contactUrl,
+              requestHeaders: headers,
+              requestBody: contactRequest,
+            },
+          );
+        } else if (error.request) {
+          this.logger.error('EMS API Request Error (no response)', error, {
+            message: error.message,
+            code: (error as any).code,
+            requestUrl: contactUrl,
+          });
+        } else {
+          this.logger.error('EMS API Error', error);
+        }
+
+        // Re-throw the error - no fallback authorization formats needed
+        throw error;
+      }
+
+      // API returns { href: "https://ems-test.wilken.de/crm/api/v1/KP/contacts/153450338" }
+      // Extract contact ID from href URL
+      const href = contactResponse.data?.href;
+      if (!href) {
+        const missingHrefError = new Error('Contact created but no href returned from EMS API');
+        this.logger.error('Contact response missing href', missingHrefError, {
+          responseData: JSON.stringify(contactResponse.data, null, 2),
+        });
+        throw missingHrefError;
+      }
+
+      // Extract contact ID from href: /crm/api/v1/KIEL/contacts/{id}
+      const hrefMatch = href.match(/\/contacts\/(\d+)$/);
+      if (!hrefMatch || !hrefMatch[1]) {
+        const invalidHrefError = new Error(`Invalid href format returned from EMS API: ${href}`);
+        this.logger.error('Invalid href format', invalidHrefError, {
+          href,
+          responseData: JSON.stringify(contactResponse.data, null, 2),
+        });
+        throw invalidHrefError;
+      }
+
+      const contactIdString = hrefMatch[1];
+      this.logger.log(`Contact created in EMS with ID: ${contactIdString} (from href: ${href})`);
+
+      // Step 2: Trigger event
+      // According to API docs: https://coop.wilken.digital/dokuwiki/doku.php?id=api:createevent
+      // Using email endpoint: POST {host}/crm/api/v1/{mandator}/contacts/email/{email}/events
+      // This is more reliable than using contact ID
+      // Use explicit ISO timestamp instead of "Now" for better reliability
+      // Format should match API example: 2018-11-28T15:48:00+0100 (no colon in timezone)
+      const now = new Date();
+      const fireTime = now
+        .toISOString()
+        .replace(/\.\d{3}Z$/, '+0000')
+        .replace(/([+-])(\d{2}):(\d{2})$/, '$1$2$3'); // Format: 2018-11-28T15:48:00+0100
+
+      const eventRequest: CreateEventRequest = {
+        '@type': 'Event',
+        event: config.eventId.toString(), // Event identifier as string (e.g., "3022526329")
+        fireTime: fireTime, // ISO 8601 format with timezone
+      };
+
+      // Use email endpoint instead of contact ID endpoint
+      // According to API docs example: POST /crm/api/v1/ENERGY/contacts/email/test@test.com/events
+      // The API expects the email unencoded in the URL path
+      const eventUrl = `${config.hostUrl}contacts/email/${email}/events`;
       this.logger.debug(`Triggering event at ${eventUrl}`);
 
       let eventTriggered = false;
       try {
-        await firstValueFrom(
+        // Use same authorization format that worked for contact creation (raw API key)
+        const eventHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+          Authorization: config.apiKey,
+        };
+
+        const eventResponse = await firstValueFrom(
           this.http.post(eventUrl, eventRequest, {
-            headers: {
-              Authorization: config.apiKey,
-              'Content-Type': 'application/json',
-            },
+            headers: eventHeaders,
             timeout: 30000,
           }),
         );
         eventTriggered = true;
-        this.logger.log(`Event triggered for contact ${contactId}`);
-      } catch (error: any) {
-        this.logger.error(
-          `Failed to trigger event for contact ${contactId}: ${error?.message}`,
-          error,
+        this.logger.log(
+          `Event triggered for contact ${contactIdString} (email: ${email}) - Status: ${eventResponse.status} ${eventResponse.statusText}`,
         );
+      } catch (error: any) {
+        if (error.response) {
+          const errorData = error.response.data;
+          this.logger.error(
+            `Failed to trigger event for contact ${contactIdString} (email: ${email}) (${error.response.status}): ${JSON.stringify(errorData)}`,
+            error,
+            {
+              status: error.response.status,
+              statusText: error.response.statusText,
+              data: errorData,
+              requestUrl: eventUrl,
+              requestBody: eventRequest,
+              email,
+              contactId: contactIdString,
+            },
+          );
+        } else {
+          this.logger.error(
+            `Failed to trigger event for contact ${contactIdString} (email: ${email})`,
+            error,
+          );
+        }
         // Continue even if event trigger fails - contact is already created
       }
 
@@ -200,7 +299,7 @@ export class KielNewsletterService {
         data: {
           userId,
           email,
-          emsContactId: contactId,
+          emsContactId: contactIdString, // Store as string
           status: NewsletterSubscriptionStatus.PENDING,
           emsEventTriggered: eventTriggered,
         },
@@ -209,7 +308,7 @@ export class KielNewsletterService {
       // Log the activity
       await this.logSubscriptionActivity(subscription.id, 'newsletter_subscription', {
         email,
-        contactId,
+        contactId: contactIdString,
         eventTriggered,
       });
 
@@ -219,7 +318,22 @@ export class KielNewsletterService {
 
       return subscription;
     } catch (error: any) {
-      this.logger.error(`Failed to subscribe ${email} to newsletter`, error);
+      // Enhanced error logging
+      const errorDetails: any = {
+        message: error?.message || 'Unknown error',
+        userId,
+        email,
+      };
+
+      if (error.response) {
+        errorDetails.apiError = {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+        };
+      }
+
+      this.logger.error(`Failed to subscribe ${email} to newsletter`, error, errorDetails);
 
       // Log the error
       try {
@@ -227,6 +341,8 @@ export class KielNewsletterService {
           userId,
           email,
           error: error?.message || 'Unknown error',
+          apiError: error.response?.data || null,
+          statusCode: error.response?.status || null,
         });
       } catch (logError) {
         this.logger.error('Failed to log subscription error', logError);
