@@ -116,7 +116,11 @@ export class ListingsService {
     return value as Prisma.InputJsonValue;
   }
 
-  private mapListing(listing: ListingWithRelations): ListingResponseDto {
+  private mapListing(
+    listing: ListingWithRelations,
+    options: { isFavorite?: boolean } = {},
+  ): ListingResponseDto {
+    const isFavorite = options.isFavorite ?? false;
     return {
       id: listing.id,
       slug: listing.slug,
@@ -137,6 +141,7 @@ export class ListingsService {
       viewCount: listing.viewCount,
       likeCount: listing.likeCount,
       shareCount: listing.shareCount,
+      isFavorite,
       createdByUserId: listing.createdByUserId,
       lastEditedByUserId: listing.lastEditedByUserId,
       reviewedBy: listing.reviewedBy,
@@ -219,6 +224,24 @@ export class ListingsService {
           metadata: exception.metadata as Record<string, unknown> | null,
         })),
     };
+  }
+
+  private async getFavoriteListingIds(userId: string, listingIds: string[]): Promise<Set<string>> {
+    if (!listingIds.length) {
+      return new Set();
+    }
+
+    const favorites = await this.prisma.userFavorite.findMany({
+      where: {
+        userId,
+        listingId: {
+          in: listingIds,
+        },
+      },
+      select: { listingId: true },
+    });
+
+    return new Set(favorites.map((favorite) => favorite.listingId));
   }
 
   private async syncListingCategories(
@@ -1011,7 +1034,7 @@ export class ListingsService {
     });
   }
 
-  async getListingById(listingId: string): Promise<ListingResponseDto> {
+  async getListingById(listingId: string, userId?: string): Promise<ListingResponseDto> {
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },
       include: listingWithRelations.include,
@@ -1021,10 +1044,16 @@ export class ListingsService {
       throw new NotFoundException('Listing not found');
     }
 
-    return this.mapListing(listing);
+    let isFavorite = false;
+    if (userId) {
+      const favoriteIds = await this.getFavoriteListingIds(userId, [listing.id]);
+      isFavorite = favoriteIds.has(listing.id);
+    }
+
+    return this.mapListing(listing, { isFavorite });
   }
 
-  async getListingBySlug(slug: string): Promise<ListingResponseDto> {
+  async getListingBySlug(slug: string, userId?: string): Promise<ListingResponseDto> {
     const listing = await this.prisma.listing.findUnique({
       where: { slug },
       include: listingWithRelations.include,
@@ -1034,7 +1063,13 @@ export class ListingsService {
       throw new NotFoundException('Listing not found');
     }
 
-    return this.mapListing(listing);
+    let isFavorite = false;
+    if (userId) {
+      const favoriteIds = await this.getFavoriteListingIds(userId, [listing.id]);
+      isFavorite = favoriteIds.has(listing.id);
+    }
+
+    return this.mapListing(listing, { isFavorite });
   }
 
   private buildListingWhere(
@@ -1145,7 +1180,7 @@ export class ListingsService {
     return where;
   }
 
-  async listListings(filter: ListingFilterDto = {} as ListingFilterDto) {
+  async listListings(filter: ListingFilterDto = {} as ListingFilterDto, userId?: string) {
     const page = filter.page && filter.page > 0 ? filter.page : 1;
     const pageSizeCandidate = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 20;
     const pageSize = Math.min(pageSizeCandidate, 100);
@@ -1177,7 +1212,17 @@ export class ListingsService {
       this.prisma.listing.count({ where }),
     ]);
 
-    const items = rows.map((row) => this.mapListing(row));
+    let favoriteIds: Set<string> | undefined;
+    if (userId) {
+      favoriteIds = await this.getFavoriteListingIds(
+        userId,
+        rows.map((row) => row.id),
+      );
+    }
+
+    const items = rows.map((row) =>
+      this.mapListing(row, { isFavorite: favoriteIds?.has(row.id) ?? false }),
+    );
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     return {
@@ -1354,7 +1399,7 @@ export class ListingsService {
         id: favorite.id,
         userId: favorite.userId,
         listingId: favorite.listingId,
-        listing: this.mapListing(favorite.listing),
+        listing: this.mapListing(favorite.listing, { isFavorite: true }),
         createdAt: favorite.createdAt,
       };
     } catch (error: any) {
@@ -1420,7 +1465,7 @@ export class ListingsService {
     return favorites.map((f) => ({
       id: f.id,
       listingId: f.listingId,
-      listing: this.mapListing(f.listing),
+      listing: this.mapListing(f.listing, { isFavorite: true }),
       createdAt: f.createdAt,
     }));
   }

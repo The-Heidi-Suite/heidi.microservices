@@ -232,8 +232,11 @@ export class ListingController {
       },
     },
   })
-  async list(@Query() filter: ListingFilterDto) {
-    return this.listingsService.listListings(filter);
+  async list(
+    @Query() filter: ListingFilterDto,
+    @GetCurrentUser('userId') userId?: string,
+  ) {
+    return this.listingsService.listListings(filter, userId);
   }
 
   @Public()
@@ -257,8 +260,11 @@ export class ListingController {
     description: 'Listing not found',
     type: ListingNotFoundErrorResponseDto,
   })
-  async getBySlug(@Param('slug') slug: string): Promise<ListingResponseDto> {
-    return this.listingsService.getListingBySlug(slug);
+  async getBySlug(
+    @Param('slug') slug: string,
+    @GetCurrentUser('userId') userId?: string,
+  ): Promise<ListingResponseDto> {
+    return this.listingsService.getListingBySlug(slug, userId);
   }
 
   @Public()
@@ -282,8 +288,11 @@ export class ListingController {
     description: 'Listing not found',
     type: ListingNotFoundErrorResponseDto,
   })
-  async getById(@Param('id') id: string): Promise<ListingResponseDto> {
-    return this.listingsService.getListingById(id);
+  async getById(
+    @Param('id') id: string,
+    @GetCurrentUser('userId') userId?: string,
+  ): Promise<ListingResponseDto> {
+    return this.listingsService.getListingById(id, userId);
   }
 
   @Post()
