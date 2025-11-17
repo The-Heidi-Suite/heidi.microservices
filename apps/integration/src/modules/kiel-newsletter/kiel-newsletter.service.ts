@@ -63,22 +63,15 @@ export class KielNewsletterService {
 
     // Initialize default config from ConfigService
     // Priority: 1. Database Integration record, 2. ConfigService (from env vars), 3. Hardcoded defaults
-    const kielNewsletterConfig = this.configService.get<{
-      clientId: string;
-      hostUrl: string;
-      apiKey: string;
-      attributeId: number;
-      eventId: number;
-      consentPurposeId: number;
-    }>('kielNewsletter');
+    const kielNewsletterConfig = this.configService.kielNewsletterConfig;
 
     this.defaultConfig = {
-      clientId: kielNewsletterConfig?.clientId || 'KIEL',
-      hostUrl: kielNewsletterConfig?.hostUrl || 'https://wlk-ems.com/crm/api/v1/KIEL/',
-      apiKey: kielNewsletterConfig?.apiKey || '',
-      attributeId: kielNewsletterConfig?.attributeId || 3022526340,
-      eventId: kielNewsletterConfig?.eventId || 3022526329,
-      consentPurposeId: kielNewsletterConfig?.consentPurposeId || 1005,
+      clientId: kielNewsletterConfig.clientId,
+      hostUrl: kielNewsletterConfig.hostUrl,
+      apiKey: kielNewsletterConfig.apiKey,
+      attributeId: kielNewsletterConfig.attributeId,
+      eventId: kielNewsletterConfig.eventId,
+      consentPurposeId: kielNewsletterConfig.consentPurposeId,
     };
   }
 
