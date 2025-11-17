@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@heidi/config';
 import { PrismaIntegrationModule } from '@heidi/prisma';
 import { LoggerModule } from '@heidi/logger';
 import { RmqModule } from '@heidi/rabbitmq';
+import { JwtModule } from '@heidi/jwt';
 import { MetricsModule, MetricsInterceptor } from '@heidi/metrics';
 import { LoggingInterceptor } from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
@@ -25,6 +26,7 @@ import { HealthController } from './health.controller';
       inject: [ConfigService],
       useFactory: () => ({ serviceName: 'integration' }),
     }),
+    JwtModule.register(),
     MetricsModule,
     I18nModule,
     DestinationOneModule,

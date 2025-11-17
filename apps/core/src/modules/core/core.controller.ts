@@ -1,20 +1,43 @@
-import { Body, Controller, Get, Post, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  Post,
+  Query,
+  UseGuards,
+  HttpCode,
+  HttpStatus,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { CoreService } from './core.service';
 import { JwtAuthGuard } from '@heidi/jwt';
+import { CityContextService } from '@heidi/tenancy';
 import {
   CoreOperationRequestDto,
   CoreOperationResponseDto,
   CoreStatusResponseDto,
   UnauthorizedErrorResponseDto,
   ValidationErrorResponseDto,
+  ParkingSpacesResponseDto,
 } from '@heidi/contracts';
 
 @ApiTags('core')
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class CoreController {
-  constructor(private readonly coreService: CoreService) {}
+  constructor(
+    private readonly coreService: CoreService,
+    private readonly cityContextService: CityContextService,
+  ) {}
 
   @Get('status')
   @ApiBearerAuth('JWT-auth')
@@ -97,5 +120,68 @@ export class CoreController {
   @HttpCode(HttpStatus.ACCEPTED)
   executeOperation(@Body() payload: CoreOperationRequestDto) {
     return this.coreService.executeOperation(payload);
+  }
+
+  @Get('parking/spaces')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get parking spaces for a city',
+    description:
+      'Returns list of parking spaces with capacity utilization, status, and location. Requires parking feature to be enabled for the city.',
+  })
+  @ApiQuery({
+    name: 'cityId',
+    required: false,
+    description: 'City ID (optional, uses city context if not provided)',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Parking spaces retrieved successfully',
+    type: ParkingSpacesResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'City ID is required',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Parking feature not enabled for this city',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  async getParkingSpaces(@Query('cityId') cityId?: string) {
+    const contextCityId = this.cityContextService.getCityId();
+    const targetCityId = cityId || contextCityId;
+
+    if (!targetCityId) {
+      throw new BadRequestException('City ID is required');
+    }
+
+    try {
+      const spaces = await this.coreService.getParkingSpaces(targetCityId);
+
+      // Get last sync time from the first space or current time
+      const lastSyncAt =
+        spaces.length > 0 && spaces[0].lastUpdate
+          ? new Date(spaces[0].lastUpdate).toISOString()
+          : new Date().toISOString();
+
+      return {
+        spaces,
+        lastSyncAt,
+        total: spaces.length,
+      };
+    } catch (error: any) {
+      if (error.message?.includes('not enabled')) {
+        throw new ForbiddenException('Parking feature is not enabled for this city');
+      }
+      throw error;
+    }
   }
 }

@@ -287,6 +287,20 @@ export class FileUploadService {
   }
 
   /**
+   * Generate storage key for category image
+   */
+  generateCategoryImageKey(categoryId: string, extension: string): string {
+    return `categories/${categoryId}/image.${extension}`;
+  }
+
+  /**
+   * Generate storage key for category icon
+   */
+  generateCategoryIconKey(categoryId: string, extension: string): string {
+    return `categories/${categoryId}/icon.${extension}`;
+  }
+
+  /**
    * Get file extension from filename
    */
   private getFileExtension(filename: string): string {

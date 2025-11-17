@@ -11,7 +11,15 @@ set -e
 
 # Load environment variables
 if [ -f .env ]; then
-  export $(cat .env | grep -v '^#' | xargs)
+  set -a
+  while IFS= read -r line || [ -n "$line" ]; do
+    # Skip empty lines and comments
+    [[ "$line" =~ ^[[:space:]]*# ]] && continue
+    [[ -z "${line// }" ]] && continue
+    # Export the variable (handles KEY=value format safely)
+    eval "export $line" 2>/dev/null || true
+  done < .env
+  set +a
 fi
 
 # Auto-detect if running from host (where postgres hostname doesn't resolve)

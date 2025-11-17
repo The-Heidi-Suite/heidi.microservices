@@ -128,4 +128,31 @@ export class CoreMessageController {
       throw error; // Throwing error causes NestJS to NACK the message
     }
   }
+
+  @MessagePattern(RabbitMQPatterns.PARKING_SPACE_SYNC)
+  async handleParkingSpaceSync(
+    @Payload() data: { integrationId: string; cityId: string; parkingData: any; timestamp: string },
+  ) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.PARKING_SPACE_SYNC} for integrationId: ${data.integrationId}, cityId: ${data.cityId}, parkingSiteId: ${data.parkingData?.parkingSiteId || data.parkingData?.id}`,
+    );
+
+    try {
+      await this.coreService.syncParkingSpace({
+        integrationId: data.integrationId,
+        cityId: data.cityId,
+        parkingData: data.parkingData,
+      });
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.PARKING_SPACE_SYNC} for parkingSiteId: ${data.parkingData?.parkingSiteId || data.parkingData?.id} (will ACK)`,
+      );
+      return { success: true };
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.PARKING_SPACE_SYNC} for parkingSiteId: ${data.parkingData?.parkingSiteId || data.parkingData?.id} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
 }

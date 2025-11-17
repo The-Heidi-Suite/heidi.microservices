@@ -11,10 +11,13 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -39,17 +42,48 @@ import {
   CreateCategoryDto,
   UpdateCategoryDto,
   UpdateCityCategoryDisplayNameDto,
+  UploadCategoryImageResponseDto,
+  UploadCategoryIconResponseDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { CategoryRequestStatus, UserRole } from '@prisma/client-core';
 import { CategoriesService } from './categories.service';
 import { AdminOnlyGuard, SuperAdminOnly, CityAdminOnly } from '@heidi/rbac';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { FileUploadService, StorageService } from '@heidi/storage';
+import { ConfigService } from '@heidi/config';
+import { LoggerService } from '@heidi/logger';
+import { PrismaCoreService } from '@heidi/prisma';
 
 @ApiTags('categories')
 @Controller('categories')
 @UseGuards(JwtAuthGuard, AdminOnlyGuard)
 export class CategoriesController {
-  constructor(private readonly categoriesService: CategoriesService) {}
+  constructor(
+    private readonly categoriesService: CategoriesService,
+    private readonly fileUploadService: FileUploadService,
+    private readonly configService: ConfigService,
+    private readonly storageService: StorageService,
+    private readonly logger: LoggerService,
+    private readonly prisma: PrismaCoreService,
+  ) {
+    this.logger.setContext(CategoriesController.name);
+  }
+
+  private extractKeyFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const parts = pathname.split('/').filter(Boolean);
+      if (parts.length > 1) {
+        return parts.slice(1).join('/');
+      }
+      return pathname.replace(/^\/[^\/]+\//, '');
+    } catch (error) {
+      this.logger.warn(`Failed to parse URL: ${url}`, error);
+      return url.split('?')[0].replace(/^https?:\/\/[^\/]+\//, '');
+    }
+  }
 
   private parseRequestStatus(
     value?: string | CategoryRequestStatus,
@@ -673,6 +707,298 @@ export class CategoriesController {
 
     const parsedStatus = this.parseRequestStatus(query.status);
     return this.categoriesService.listCategoryRequests({ cityId, status: parsedStatus });
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Post(':id/image')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Category image file to upload',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiOperation({
+    summary: 'Upload category image',
+    description: 'Upload and process an image for a category. Only Super Admin can upload images.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category image uploaded successfully',
+    type: UploadCategoryImageResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Category not found',
+    type: CategoryNotFoundErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async uploadImage(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+    @GetCurrentUser() _user: CurrentUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    const existing = await this.categoriesService.getCategoryById(id);
+
+    await this.fileUploadService.validateImage(file);
+    const processedFile = await this.fileUploadService.processImage(file);
+
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    if (existing.imageUrl) {
+      try {
+        const oldKey = this.extractKeyFromUrl(existing.imageUrl);
+        await this.storageService.deleteFile({ bucket, key: oldKey });
+      } catch (error) {
+        this.logger.warn(`Failed to delete old image for category ${id}`, error);
+      }
+    }
+
+    const key = this.fileUploadService.generateCategoryImageKey(id, processedFile.extension);
+    const imageUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    await this.prisma.category.update({
+      where: { id },
+      data: { imageUrl },
+    });
+
+    const category = await this.categoriesService.getCategoryById(id);
+    return { category, imageUrl };
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Post(':id/icon')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Category icon file to upload',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiOperation({
+    summary: 'Upload category icon',
+    description: 'Upload and process an icon for a category. Only Super Admin can upload icons.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Category icon uploaded successfully',
+    type: UploadCategoryIconResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Category not found',
+    type: CategoryNotFoundErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async uploadIcon(
+    @Param('id') id: string,
+    @UploadedFile() file: any,
+    @GetCurrentUser() _user: CurrentUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    const existing = await this.categoriesService.getCategoryById(id);
+
+    await this.fileUploadService.validateImage(file);
+    const processedFile = await this.fileUploadService.processImage(file);
+
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    if (existing.iconUrl) {
+      try {
+        const oldKey = this.extractKeyFromUrl(existing.iconUrl);
+        await this.storageService.deleteFile({ bucket, key: oldKey });
+      } catch (error) {
+        this.logger.warn(`Failed to delete old icon for category ${id}`, error);
+      }
+    }
+
+    const key = this.fileUploadService.generateCategoryIconKey(id, processedFile.extension);
+    const iconUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    await this.prisma.category.update({
+      where: { id },
+      data: { iconUrl },
+    });
+
+    const category = await this.categoriesService.getCategoryById(id);
+    return { category, iconUrl };
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Delete(':id/image')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete category image',
+    description: 'Remove the image from a category. Only Super Admin can delete images.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Category image deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Category not found',
+    type: CategoryNotFoundErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async deleteImage(@Param('id') id: string, @GetCurrentUser() _user: CurrentUser) {
+    const category = await this.categoriesService.getCategoryById(id);
+
+    if (category.imageUrl) {
+      try {
+        const key = this.extractKeyFromUrl(category.imageUrl);
+        const bucket = this.configService.storageConfig.defaultBucket;
+        if (bucket) {
+          await this.storageService.deleteFile({ bucket, key });
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to delete image for category ${id}`, error);
+      }
+
+      await this.prisma.category.update({
+        where: { id },
+        data: { imageUrl: null },
+      });
+    }
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Delete(':id/icon')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete category icon',
+    description: 'Remove the icon from a category. Only Super Admin can delete icons.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'Category icon deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Category not found',
+    type: CategoryNotFoundErrorResponseDto,
+  })
+  @SuperAdminOnly()
+  async deleteIcon(@Param('id') id: string, @GetCurrentUser() _user: CurrentUser) {
+    const category = await this.categoriesService.getCategoryById(id);
+
+    if (category.iconUrl) {
+      try {
+        const key = this.extractKeyFromUrl(category.iconUrl);
+        const bucket = this.configService.storageConfig.defaultBucket;
+        if (bucket) {
+          await this.storageService.deleteFile({ bucket, key });
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to delete icon for category ${id}`, error);
+      }
+
+      await this.prisma.category.update({
+        where: { id },
+        data: { iconUrl: null },
+      });
+    }
   }
 
   @Public()

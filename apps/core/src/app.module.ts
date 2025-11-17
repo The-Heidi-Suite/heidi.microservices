@@ -22,6 +22,7 @@ import { JwtModule } from '@heidi/jwt';
 import { RBACModule } from '@heidi/rbac';
 import { ErrorHandlingModule } from '@heidi/errors';
 import { StorageModule } from '@heidi/storage';
+import { TenancyModule } from '@heidi/tenancy';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { StorageModule } from '@heidi/storage';
     JwtModule.register(),
     RBACModule,
     ErrorHandlingModule,
+    TenancyModule,
     CoreModule,
     ListingsModule,
     CategoriesModule,

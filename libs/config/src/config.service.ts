@@ -273,4 +273,16 @@ export class ConfigService {
   get logLevel(): string {
     return this.get<string>('logLevel', 'info');
   }
+
+  // Kiel Newsletter (E-Marketing Suite) configuration
+  get kielNewsletterConfig() {
+    return {
+      clientId: this.get<string>('kielNewsletter.clientId', 'KIEL'),
+      hostUrl: this.get<string>('kielNewsletter.hostUrl', 'https://wlk-ems.com/crm/api/v1/KIEL/'),
+      apiKey: this.get<string>('kielNewsletter.apiKey', ''),
+      attributeId: this.get<number>('kielNewsletter.attributeId', 3022526340),
+      eventId: this.get<number>('kielNewsletter.eventId', 3022526329),
+      consentPurposeId: this.get<number>('kielNewsletter.consentPurposeId', 1005),
+    };
+  }
 }
