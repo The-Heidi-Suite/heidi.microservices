@@ -1362,6 +1362,86 @@ export class ListingsService {
     });
   }
 
+  async toggleFavorite(userId: string, listingId: string, isFavorite: boolean) {
+    this.logger.log(
+      `${isFavorite ? 'Adding' : 'Removing'} favorite: userId=${userId}, listingId=${listingId}`,
+    );
+
+    try {
+      const listing = await this.prisma.listing.findUnique({
+        where: { id: listingId },
+        include: listingWithRelations.include,
+      });
+
+      if (!listing) {
+        throw new NotFoundException('Listing not found');
+      }
+
+      if (isFavorite) {
+        // Add favorite
+        const favorite = await this.prisma.userFavorite.upsert({
+          where: {
+            userId_listingId: {
+              userId,
+              listingId,
+            },
+          },
+          update: {},
+          create: {
+            userId,
+            listingId,
+          },
+          include: {
+            listing: {
+              include: listingWithRelations.include,
+            },
+          },
+        });
+
+        this.logger.log(`Favorite added successfully: ${favorite.id}`);
+        return {
+          id: favorite.id,
+          userId: favorite.userId,
+          listingId: favorite.listingId,
+          listing: this.mapListing(favorite.listing, { isFavorite: true }),
+          createdAt: favorite.createdAt,
+        };
+      } else {
+        // Remove favorite
+        const favorite = await this.prisma.userFavorite.findUnique({
+          where: {
+            userId_listingId: {
+              userId,
+              listingId,
+            },
+          },
+        });
+
+        if (!favorite) {
+          throw new NotFoundException('Favorite not found');
+        }
+
+        await this.prisma.userFavorite.delete({
+          where: {
+            userId_listingId: {
+              userId,
+              listingId,
+            },
+          },
+        });
+
+        this.logger.log(`Favorite removed successfully`);
+        return { success: true, message: 'Favorite removed successfully' };
+      }
+    } catch (error: any) {
+      if (error.code === 'P2002') {
+        throw new BadRequestException('Listing already in favorites');
+      }
+      this.logger.error(`Failed to ${isFavorite ? 'add' : 'remove'} favorite`, error);
+      throw error;
+    }
+  }
+
   async addFavorite(userId: string, listingId: string) {
     this.logger.log(`Adding favorite: userId=${userId}, listingId=${listingId}`);
 
