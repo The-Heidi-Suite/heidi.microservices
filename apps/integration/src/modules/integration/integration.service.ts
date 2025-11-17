@@ -7,6 +7,7 @@ import { LoggerService } from '@heidi/logger';
 import { firstValueFrom } from 'rxjs';
 import { DestinationOneService } from '../destination-one/destination-one.service';
 import { MobilithekParkingService } from '../mobilithek-parking/mobilithek-parking.service';
+import { KielNewsletterService } from '../kiel-newsletter/kiel-newsletter.service';
 
 @Injectable()
 export class IntegrationService {
@@ -18,6 +19,7 @@ export class IntegrationService {
     private readonly http: HttpService,
     private readonly destinationOneService: DestinationOneService,
     private readonly mobilithekParkingService: MobilithekParkingService,
+    private readonly kielNewsletterService: KielNewsletterService,
     logger: LoggerService,
   ) {
     this.logger = logger;
@@ -142,5 +144,19 @@ export class IntegrationService {
       this.logger.error(`HTTP request failed: ${url}`, error);
       throw error;
     }
+  }
+
+  /**
+   * Subscribe a user to the newsletter
+   */
+  async subscribeToNewsletter(userId: string, email: string) {
+    return this.kielNewsletterService.subscribeToNewsletter(userId, email);
+  }
+
+  /**
+   * Get newsletter subscription status for a user
+   */
+  async getSubscriptionStatus(userId: string) {
+    return this.kielNewsletterService.getSubscriptionStatus(userId);
   }
 }
