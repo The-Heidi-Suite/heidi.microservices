@@ -14,6 +14,30 @@ export class CategoryResponseDto {
   slug: string;
 
   @ApiPropertyOptional({
+    example: 'Discover and participate in local community events',
+    description: 'Detailed description of the category',
+  })
+  description?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Connect with your community',
+    description: 'Short subtitle for the category',
+  })
+  subtitle?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'https://storage.example.com/categories/cat123/image.webp',
+    description: 'Category banner/hero image URL',
+  })
+  imageUrl?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'https://storage.example.com/categories/cat123/icon.webp',
+    description: 'Category icon image URL',
+  })
+  iconUrl?: string | null;
+
+  @ApiPropertyOptional({
     enum: CategoryType,
     example: CategoryType.EVENT,
   })
