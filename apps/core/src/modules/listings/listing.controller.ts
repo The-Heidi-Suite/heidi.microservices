@@ -232,10 +232,7 @@ export class ListingController {
       },
     },
   })
-  async list(
-    @Query() filter: ListingFilterDto,
-    @GetCurrentUser('userId') userId?: string,
-  ) {
+  async list(@Query() filter: ListingFilterDto, @GetCurrentUser('userId') userId?: string) {
     return this.listingsService.listListings(filter, userId);
   }
 
