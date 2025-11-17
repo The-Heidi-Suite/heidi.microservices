@@ -2,10 +2,20 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PrismaCoreService } from '@heidi/prisma';
 import { CreateCategoryDto, UpdateCategoryDto } from '@heidi/contracts';
 import { CategoryRequestStatus, Prisma } from '@prisma/client-core';
+import { StorageService } from '@heidi/storage';
+import { ConfigService } from '@heidi/config';
+import { LoggerService } from '@heidi/logger';
 
 @Injectable()
 export class CategoriesService {
-  constructor(private readonly prisma: PrismaCoreService) {}
+  constructor(
+    private readonly prisma: PrismaCoreService,
+    private readonly storageService: StorageService,
+    private readonly configService: ConfigService,
+    private readonly logger: LoggerService,
+  ) {
+    this.logger.setContext(CategoriesService.name);
+  }
 
   private slugify(value: string) {
     return value
@@ -13,6 +23,21 @@ export class CategoriesService {
       .trim()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '');
+  }
+
+  private extractKeyFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      const pathname = urlObj.pathname;
+      const parts = pathname.split('/').filter(Boolean);
+      if (parts.length > 1) {
+        return parts.slice(1).join('/');
+      }
+      return pathname.replace(/^\/[^\/]+\//, '');
+    } catch (error) {
+      this.logger.warn(`Failed to parse URL: ${url}`, error);
+      return url.split('?')[0].replace(/^https?:\/\/[^\/]+\//, '');
+    }
   }
 
   private async ensureUniqueCategorySlug(baseSlug: string, currentId?: string) {
@@ -98,6 +123,8 @@ export class CategoriesService {
     const data: Prisma.CategoryCreateInput = {
       name: dto.name,
       slug,
+      description: dto.description ?? null,
+      subtitle: dto.subtitle ?? null,
       type: dto.type ?? null,
       isActive: dto.isActive ?? true,
     };
@@ -121,6 +148,14 @@ export class CategoriesService {
     if (dto.slug !== undefined) {
       const baseSlug = this.slugify(dto.slug);
       updateData.slug = await this.ensureUniqueCategorySlug(baseSlug, categoryId);
+    }
+
+    if (dto.description !== undefined) {
+      updateData.description = dto.description;
+    }
+
+    if (dto.subtitle !== undefined) {
+      updateData.subtitle = dto.subtitle;
     }
 
     if (dto.type !== undefined) {
@@ -152,6 +187,41 @@ export class CategoriesService {
 
     if (usageCount > 0) {
       throw new BadRequestException({ errorCode: 'CATEGORY_IN_USE' });
+    }
+
+    // Get category to check for images
+    const category = await this.prisma.category.findUnique({
+      where: { id: categoryId },
+    });
+
+    if (!category) {
+      throw new NotFoundException({ errorCode: 'CATEGORY_NOT_FOUND' });
+    }
+
+    // Delete image from storage if exists
+    if (category.imageUrl) {
+      try {
+        const key = this.extractKeyFromUrl(category.imageUrl);
+        const bucket = this.configService.storageConfig.defaultBucket;
+        if (bucket) {
+          await this.storageService.deleteFile({ bucket, key });
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to delete image for category ${categoryId}`, error);
+      }
+    }
+
+    // Delete icon from storage if exists
+    if (category.iconUrl) {
+      try {
+        const key = this.extractKeyFromUrl(category.iconUrl);
+        const bucket = this.configService.storageConfig.defaultBucket;
+        if (bucket) {
+          await this.storageService.deleteFile({ bucket, key });
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to delete icon for category ${categoryId}`, error);
+      }
     }
 
     return this.prisma.category.delete({

@@ -175,6 +175,9 @@ export class ListingResponseDto {
   @ApiProperty({ example: 10 })
   shareCount: number;
 
+  @ApiProperty({ example: false })
+  isFavorite: boolean;
+
   @ApiPropertyOptional({ example: 'user_01HZXTY0YK3H2V4C5B6N7P8Q' })
   createdByUserId?: string | null;
 
