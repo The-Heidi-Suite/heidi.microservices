@@ -1,11 +1,9 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   HttpCode,
   HttpStatus,
-  Param,
   Post,
   UseGuards,
 } from '@nestjs/common';
@@ -13,7 +11,6 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiOperation,
-  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -21,10 +18,8 @@ import { GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import {
   AddFavoriteDto,
   AddFavoriteResponseDto,
-  BadRequestErrorResponseDto,
   FavoriteListingDto,
   ListingNotFoundErrorResponseDto,
-  FavoriteNotFoundErrorResponseDto,
   RemoveFavoriteResponseDto,
   UnauthorizedErrorResponseDto,
   ValidationErrorResponseDto,
@@ -40,17 +35,25 @@ export class FavoritesController {
   @Post()
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Add listing to favorites',
+    summary: 'Toggle listing favorite status',
     description:
-      "Add a listing to the current user's favorites (works for both guest and registered users)",
+      "Add or remove a listing from the current user's favorites based on the isFavorite field",
   })
   @ApiBody({
     type: AddFavoriteDto,
     examples: {
-      default: {
+      add: {
         summary: 'Add listing to favorites',
         value: {
           listingId: '123e4567-e89b-12d3-a456-426614174000',
+          isFavorite: true,
+        },
+      },
+      remove: {
+        summary: 'Remove listing from favorites',
+        value: {
+          listingId: '123e4567-e89b-12d3-a456-426614174000',
+          isFavorite: false,
         },
       },
     },
@@ -59,6 +62,11 @@ export class FavoritesController {
     status: 201,
     description: 'Listing added to favorites successfully',
     type: AddFavoriteResponseDto,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Listing removed from favorites successfully',
+    type: RemoveFavoriteResponseDto,
   })
   @ApiResponse({
     status: 400,
@@ -75,7 +83,7 @@ export class FavoritesController {
           requestId: 'req_1234567890_abc123',
           statusCode: 400,
           details: {
-            message: ['listingId must be a UUID', 'listingId should not be empty'],
+            message: ['listingId must be a UUID', 'isFavorite must be a boolean'],
           },
         },
       },
@@ -88,51 +96,16 @@ export class FavoritesController {
   })
   @ApiResponse({
     status: 404,
-    description: 'Listing not found',
+    description: 'Listing not found or favorite not found',
     type: ListingNotFoundErrorResponseDto,
   })
-  @HttpCode(HttpStatus.CREATED)
-  async addFavorite(@GetCurrentUser('userId') userId: string, @Body() body: AddFavoriteDto) {
-    return this.listingsService.addFavorite(userId, body.listingId);
-  }
-
-  @Delete(':listingId')
-  @ApiBearerAuth('JWT-auth')
-  @ApiOperation({
-    summary: 'Remove listing from favorites',
-    description: "Remove a listing from the current user's favorites",
-  })
-  @ApiParam({
-    name: 'listingId',
-    description: 'Listing identifier',
-    example: '123e4567-e89b-12d3-a456-426614174000',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Listing removed from favorites successfully',
-    type: RemoveFavoriteResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Favorite not found',
-    type: FavoriteNotFoundErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Bad request',
-    type: BadRequestErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Authentication required',
-    type: UnauthorizedErrorResponseDto,
-  })
-  @HttpCode(HttpStatus.OK)
-  async removeFavorite(
-    @GetCurrentUser('userId') userId: string,
-    @Param('listingId') listingId: string,
-  ) {
-    return this.listingsService.removeFavorite(userId, listingId);
+  async toggleFavorite(@GetCurrentUser('userId') userId: string, @Body() body: AddFavoriteDto) {
+    const result = await this.listingsService.toggleFavorite(
+      userId,
+      body.listingId,
+      body.isFavorite,
+    );
+    return result;
   }
 
   @Get()

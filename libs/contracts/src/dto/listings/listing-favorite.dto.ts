@@ -1,15 +1,22 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsUUID } from 'class-validator';
+import { IsBoolean, IsUUID } from 'class-validator';
 import { ListingResponseDto } from './listing-response.dto';
 
 export class AddFavoriteDto {
   @ApiProperty({
     example: '123e4567-e89b-12d3-a456-426614174000',
-    description: 'Identifier of the listing to add to favorites',
+    description: 'Identifier of the listing to add or remove from favorites',
   })
   @IsUUID()
   listingId: string;
+
+  @ApiProperty({
+    example: true,
+    description: 'Set to true to add favorite, false to remove favorite',
+  })
+  @IsBoolean()
+  isFavorite: boolean;
 }
 
 export class FavoriteListingDto {
