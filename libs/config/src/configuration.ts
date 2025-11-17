@@ -231,4 +231,14 @@ export default () => ({
 
   // Frontend Base URL (for verification links)
   frontendBaseUrl: process.env.CLIENT_URL || 'http://localhost:3000',
+
+  // Kiel Newsletter (E-Marketing Suite) configuration
+  kielNewsletter: {
+    clientId: process.env.KIEL_NEWSLETTER_CLIENT_ID || 'KIEL',
+    hostUrl: process.env.KIEL_NEWSLETTER_HOST_URL || 'https://wlk-ems.com/crm/api/v1/KIEL/',
+    apiKey: process.env.KIEL_NEWSLETTER_API_KEY || '',
+    attributeId: parseInt(process.env.KIEL_NEWSLETTER_ATTRIBUTE_ID || '3022526340', 10),
+    eventId: parseInt(process.env.KIEL_NEWSLETTER_EVENT_ID || '3022526329', 10),
+    consentPurposeId: parseInt(process.env.KIEL_NEWSLETTER_CONSENT_PURPOSE_ID || '1005', 10),
+  },
 });

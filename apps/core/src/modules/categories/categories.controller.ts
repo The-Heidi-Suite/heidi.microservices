@@ -729,8 +729,7 @@ export class CategoriesController {
   })
   @ApiOperation({
     summary: 'Upload category image',
-    description:
-      'Upload and process an image for a category. Only Super Admin can upload images.',
+    description: 'Upload and process an image for a category. Only Super Admin can upload images.',
   })
   @ApiParam({
     name: 'id',
@@ -823,8 +822,7 @@ export class CategoriesController {
   })
   @ApiOperation({
     summary: 'Upload category icon',
-    description:
-      'Upload and process an icon for a category. Only Super Admin can upload icons.',
+    description: 'Upload and process an icon for a category. Only Super Admin can upload icons.',
   })
   @ApiParam({
     name: 'id',

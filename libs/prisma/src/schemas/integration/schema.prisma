@@ -44,6 +44,7 @@ enum IntegrationProvider {
   CUSTOM
   DESTINATION_ONE
   MOBILITHEK_PARKING
+  KIEL_NEWSLETTER
 }
 
 // Integration logs - for tracking integration activity
@@ -64,4 +65,34 @@ model IntegrationLog {
   @@index([createdAt])
   @@index([status])
   @@map("integration_logs")
+}
+
+// NewsletterSubscription model - for tracking newsletter subscriptions via E-Marketing Suite
+// Note: userId is stored as String (foreign key to User in auth/users service)
+// Cross-service relationships are handled via IDs only (no FK constraints)
+model NewsletterSubscription {
+  id                String                     @id @default(uuid())
+  userId            String                     // Reference to User.id from auth/users service
+  email             String
+  emsContactId      String?                    // EMS contact ID returned from API
+  status            NewsletterSubscriptionStatus @default(PENDING)
+  emsEventTriggered Boolean                    @default(false)
+  subscribedAt      DateTime                   @default(now())
+  confirmedAt       DateTime?
+  createdAt         DateTime                   @default(now())
+  updatedAt         DateTime                   @updatedAt
+
+  @@unique([userId])
+  @@unique([email])
+  @@index([userId])
+  @@index([email])
+  @@index([status])
+  @@map("newsletter_subscriptions")
+}
+
+enum NewsletterSubscriptionStatus {
+  PENDING      // Initial subscription, awaiting double-opt-in confirmation
+  CONFIRMED    // Double-opt-in confirmed by user
+  ACTIVE       // Active subscription
+  UNSUBSCRIBED // User unsubscribed
 }

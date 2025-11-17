@@ -25,9 +25,7 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
       }
 
       if (result instanceof Promise) {
-        return result
-          .then(() => true)
-          .catch(() => true);
+        return result.then(() => true).catch(() => true);
       }
 
       if (this.isObservable(result)) {
