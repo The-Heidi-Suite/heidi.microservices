@@ -43,6 +43,7 @@ enum IntegrationProvider {
   WEBHOOK
   CUSTOM
   DESTINATION_ONE
+  MOBILITHEK_PARKING
 }
 
 // Integration logs - for tracking integration activity

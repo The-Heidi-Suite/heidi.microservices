@@ -380,6 +380,66 @@ model UserFavorite {
   @@map("user_favorites")
 }
 
+// ParkingSpace - Cached parking data from Mobilithek integration
+// Based on Smart Data Models OffStreetParking schema
+model ParkingSpace {
+  id                    String   @id @default(uuid())
+  cityId                String   // Reference to City.id from city database
+  integrationId         String   // Reference to Integration.id from integration database
+  parkingSiteId         String   // Unique ID from Mobilithek API
+  name                  String?
+  description           String?
+  type                  String   @default("OffStreetParking")
+
+  // Location
+  latitude              Decimal  @db.Decimal(9, 6)
+  longitude             Decimal  @db.Decimal(9, 6)
+  address               String?
+
+  // Capacity information
+  totalSpotNumber       Int?
+  occupiedSpotNumber    Int?
+  availableSpotNumber   Int?
+  occupancy             Decimal? @db.Decimal(5, 4) // 0-1 ratio
+
+  // Vehicle type slots (based on Smart Data Models schema)
+  fourWheelerSlots      Json?    // { availableSlotNumber, totalSlotNumber, occupiedSlotNumber }
+  twoWheelerSlots       Json?    // { availableSlotNumber, totalSlotNumber, occupiedSlotNumber }
+  unclassifiedSlots     Json?    // { availableSpotNumber, totalSpotNumber, occupiedSpotNumber }
+
+  // Status
+  status                String?  // open, closed, unknown
+  outOfServiceSlotNumber Int?
+
+  // Categories and metadata
+  category              Json?    // Array of category strings
+  allowedVehicleType    Json?    // Array of allowed vehicle types
+  chargeType            Json?    // Array of charge types
+  acceptedPaymentMethod Json?    // Array of payment methods
+
+  // Pricing
+  priceRatePerMinute    Decimal? @db.Decimal(10, 4)
+  priceCurrency         String?
+
+  // Timestamps
+  occupancyModified     DateTime?
+  observationDateTime   DateTime?
+  lastSyncAt            DateTime @default(now())
+
+  // Additional metadata from API
+  metadata              Json?    // Store full API response for reference
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@unique([cityId, parkingSiteId])
+  @@index([cityId])
+  @@index([integrationId])
+  @@index([parkingSiteId])
+  @@index([status])
+  @@map("parking_spaces")
+}
+
 enum UserRole {
   SUPER_ADMIN
   CITY_ADMIN
