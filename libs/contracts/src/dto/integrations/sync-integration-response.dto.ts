@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class SyncIntegrationResponseDto {
+export class SyncIntegrationDataDto {
   @ApiProperty({ example: 'job_01HZY3QG9J6S7WQ1V3D4', description: 'Background job ID' })
   jobId: string;
 
@@ -25,4 +25,24 @@ export class SyncIntegrationResponseDto {
     description: 'Optional message',
   })
   message?: string;
+}
+
+export class SyncIntegrationResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: SyncIntegrationDataDto })
+  data: SyncIntegrationDataDto;
+
+  @ApiProperty({ example: 'Integration sync initiated successfully' })
+  message: string;
+
+  @ApiProperty({ example: '2025-01-17T19:42:44.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/integrations/123e4567-e89b-12d3-a456-426614174000/sync' })
+  path: string;
+
+  @ApiProperty({ example: 202, description: 'HTTP status code' })
+  statusCode: number;
 }
