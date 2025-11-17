@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.18.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.17.0...v1.18.0) (2025-11-17)
+
+
+### 🐛 Bug Fixes
+
+* **docker:** update healthcheck commands in docker-compose.yml for improved reliability ([26dea68](https://github.com/The-Heidi-Suite/heidi.microservices/commit/26dea68233d241582b8ebfe753249b342aa72d5c))
+* **rabbitmq:** update integration sync listing constant for consistency ([bc209f1](https://github.com/The-Heidi-Suite/heidi.microservices/commit/bc209f1feb3dc5dccb06f704c7dbba5e25f058cc))
+
+
+### 🔧 Chores
+
+* **docker:** configure pgAdmin for reverse proxy support in docker-compose.yml and Caddyfile ([8f4109f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/8f4109f9a6bd99beedced78412ce51148908fe6c))
+* **docker:** refine volume configuration in docker-compose.yml ([1bc871e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1bc871e6947892deacab195e37d70b30db5b448a))
+* **docker:** update healthcheck command for Caddy service in docker-compose.yml ([9797a0d](https://github.com/The-Heidi-Suite/heidi.microservices/commit/9797a0d3ccfe5279d0938169fb8819420dc9d666))
+* **docker:** update healthcheck command for redis service in docker-compose.yml ([223de35](https://github.com/The-Heidi-Suite/heidi.microservices/commit/223de35ff89d77ffc28d10bd8310a190ca3e3fd9))
+* **docker:** update pgAdmin volume configuration in docker-compose.yml ([de3612b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/de3612b742cae8c6bfa8f9ce771ed816437b1563))
+
+
+### ♻️ Code Refactoring
+
+* **categories:** clean up API operation descriptions and streamline imports ([a621ddb](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a621ddb19add6f4e1361ea40c904078424e931cd))
+* **config:** streamline KielNewsletter configuration retrieval ([5a3984b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5a3984bcd7d68615fcf8cc60795c80feddd8b267))
+* **docker:** remove permissions fix script from pgAdmin configuration in docker-compose.yml ([60d8d6f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/60d8d6fa530d2c20ea71b977ce2dc1289a0083c3))
+
+
+### ✨ Features
+
+* **categories:** implement image and icon upload functionality for categories ([062832b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/062832b6cd0209041b7d3ad22b9a40cdcaaead4f))
+* **docker:** add permissions fix script for pgAdmin in docker-compose.yml ([d82ed22](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d82ed22ce6bd0928d4524c614c795399c651afe8))
+* **favorites:** implement toggle favorite functionality for listings ([670b06e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/670b06eab0cc4ebfafffc3a2b15c115ba5e7374c))
+* **integration:** add Kiel Newsletter integration and subscription model ([63bc1cd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/63bc1cd0eb0b9d302735c19973b32031bb92bcce))
+* **integration:** add KielNewsletter module and service for newsletter subscriptions ([ca7187b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ca7187b4950236dfebd71db9b56ee39f05661a19))
+* **integration:** add Mobilithek Parking integration seeding script and configuration ([ff6303d](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ff6303de4fedd357b06090f09f77d8843ca20eb2))
+* **integration:** add MobilithekParking module and service for parking data integration ([f39335e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f39335e3039db6a6764a3cd691c03e5b3000d04b))
+* **integration:** implement newsletter subscription endpoint and service integration ([c3457de](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c3457de9005d56d800c45674bcf7718d32c178f5))
+* **integration:** integrate JWT authentication and enhance access control ([d5baa5c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d5baa5c4533a09ac5afddcc47c4b4b4a45aee5c6))
+* **listings:** enhance listing retrieval with user favorites ([11b67e9](https://github.com/The-Heidi-Suite/heidi.microservices/commit/11b67e910788be6f61cf2b5e93567f795fcd605b))
+* **parking:** add ParkingSpace DTO and update integration exports ([e234200](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e234200f88ef7dbf46f727219038dbed632c534e))
+* **parking:** add ParkingSpace model and Mobilithek integration support ([c2e55ad](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c2e55ad114b7420ea8e0030c4593cd9f2b72d5a3))
+* **parking:** integrate parking space synchronization and retrieval ([a4f2634](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a4f2634f5d3329893def4c5f6e6f6351902530a9))
+* **seeding:** add city categories seeding script for Kiel ([aaf4966](https://github.com/The-Heidi-Suite/heidi.microservices/commit/aaf4966e8e97ee06d8813b25582857fccd9db105))
+* **seeding:** add new seed scripts for Mobilithek Parking and Kiel Newsletter integrations ([c1cbe4e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c1cbe4e914fcb8402a3ff8013f343f3f1c837d59))
+* **seeding:** update seed scripts and improve environment variable loading ([9df26cf](https://github.com/The-Heidi-Suite/heidi.microservices/commit/9df26cf1d9f17c4a607ba31066b2732b44dc3fba))
+
 ## [1.17.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.16.0...v1.17.0) (2025-11-16)
 
 
