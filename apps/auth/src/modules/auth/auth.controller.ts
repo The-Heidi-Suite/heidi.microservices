@@ -233,11 +233,54 @@ export class AuthController {
     summary: 'Assign city admin',
     description: 'Assign a user as admin for a specific city (Super Admin only)',
   })
-  @ApiBody({ type: AssignCityAdminDto })
+  @ApiBody({
+    type: AssignCityAdminDto,
+    examples: {
+      assignCityAdmin: {
+        summary: 'Assign as City Admin',
+        value: {
+          userId: '123e4567-e89b-12d3-a456-426614174001',
+          cityId: '123e4567-e89b-12d3-a456-426614174002',
+          role: 2, // CITY_ADMIN
+        },
+      },
+      assignCitizen: {
+        summary: 'Change back to Citizen',
+        value: {
+          userId: '123e4567-e89b-12d3-a456-426614174001',
+          cityId: '123e4567-e89b-12d3-a456-426614174002',
+          role: 3, // CITIZEN
+        },
+      },
+    },
+  })
   @ApiResponse({
     status: 201,
     description: 'City admin assigned successfully',
     type: AssignCityAdminResponseDto,
+    content: {
+      'application/json': {
+        example: {
+          success: true,
+          data: {
+            success: true,
+            assignment: {
+              id: '123e4567-e89b-12d3-a456-426614174000',
+              userId: '123e4567-e89b-12d3-a456-426614174001',
+              cityId: '123e4567-e89b-12d3-a456-426614174002',
+              role: 2,
+              canManageAdmins: true,
+              assignedBy: '123e4567-e89b-12d3-a456-426614174003',
+              createdAt: '2024-01-01T00:00:00.000Z',
+            },
+          },
+          message: 'City admin assigned successfully',
+          timestamp: '2024-01-01T00:00:00.000Z',
+          path: '/assign-city-admin',
+          statusCode: 201,
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 400,
@@ -262,9 +305,9 @@ export class AuthController {
   @HttpCode(HttpStatus.CREATED)
   async assignCityAdmin(
     @Body() dto: AssignCityAdminDto,
-    @GetCurrentUser('userId') requesterId: string,
+    @GetCurrentUser() user: any,
   ) {
-    return this.authService.assignCityAdmin(dto, requesterId);
+    return this.authService.assignCityAdmin(dto, user.userId, user.role);
   }
 
   @Get('cities')

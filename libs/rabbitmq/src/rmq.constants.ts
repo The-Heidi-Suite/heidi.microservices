@@ -62,6 +62,7 @@ export const RabbitMQPatterns = {
   USER_CREATE_GUEST: 'user.createGuest',
   USER_FIND_BY_DEVICE: 'user.findByDevice',
   USER_CONVERT_GUEST: 'user.convertGuest',
+  USER_UPDATE_ROLE: 'user.updateRole',
 
   // Core request-response patterns
   CORE_GET_USER_CITIES: 'core.getUserCities',

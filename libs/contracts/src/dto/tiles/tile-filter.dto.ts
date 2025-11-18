@@ -7,7 +7,7 @@ import {
   IsNumber,
   IsEnum,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export enum TileSortBy {
@@ -21,6 +21,19 @@ export enum TileSortDirection {
   ASC = 'asc',
   DESC = 'desc',
 }
+
+const transformBooleanParam = (value: unknown) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  if (typeof value === 'string') {
+    return value.toLowerCase() === 'true';
+  }
+  return Boolean(value);
+};
 
 export class TileFilterDto {
   @ApiPropertyOptional({
@@ -48,7 +61,7 @@ export class TileFilterDto {
   })
   @IsOptional()
   @IsBoolean()
-  @Type(() => Boolean)
+  @Transform(({ value }) => transformBooleanParam(value))
   isActive?: boolean;
 
   @ApiPropertyOptional({
