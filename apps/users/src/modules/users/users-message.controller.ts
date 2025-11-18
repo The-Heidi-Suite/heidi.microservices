@@ -226,4 +226,25 @@ export class UsersMessageController {
       // The event will be lost if processing fails, which is expected behavior for events
     }
   }
+
+  @MessagePattern(RabbitMQPatterns.USER_UPDATE_ROLE)
+  async updateRole(@Payload() data: { userId: string; role: string; updatedBy?: string }) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_UPDATE_ROLE} for userId: ${data.userId}, role: ${data.role}`,
+    );
+
+    try {
+      const result = await this.usersService.updateUserRole(data.userId, data.role, data.updatedBy);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_UPDATE_ROLE} for userId: ${data.userId} (will ACK)`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_UPDATE_ROLE} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
 }
