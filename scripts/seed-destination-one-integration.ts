@@ -43,7 +43,7 @@ async function seed() {
   const licensekey = requiredEnv('DO_LICENSEKEY');
 
   const experience = process.env.DO_EXPERIENCE?.trim() || 'heidi-app-kiel';
-  const template = process.env.DO_TEMPLATE?.trim() || 'ET2014A_LIGHT_MULTI.json';
+  const template = process.env.DO_TEMPLATE?.trim() || 'ET2014A_MULTI.json';
   const baseUrl = process.env.DO_BASE_URL?.trim() || 'https://meta.et4.de/rest.ashx/search/';
   const types = process.env.DO_TYPES
     ? process.env.DO_TYPES.split(',')

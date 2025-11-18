@@ -5,8 +5,20 @@ import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabb
 import { LoggerService } from '@heidi/logger';
 import { firstValueFrom } from 'rxjs';
 import { createHash } from 'crypto';
-import { ListingRecurrenceFreq } from '@prisma/client-core';
+import { ListingRecurrenceFreq, CategoryType } from '@prisma/client-core';
 import { DestinationOneConfig } from '@heidi/contracts';
+
+interface DestinationOneFacet {
+  value: string;
+  count: number;
+  q: string;
+  label: string;
+}
+
+interface DestinationOneFacetGroup {
+  field: string;
+  facets: DestinationOneFacet[];
+}
 
 interface DestinationOneItem {
   global_id: string;
@@ -20,6 +32,8 @@ interface DestinationOneItem {
   zip?: string;
   street?: string;
   phone?: string;
+  web?: string;
+  email?: string;
   geo?: { main?: { latitude: number; longitude: number } };
   media_objects?: Array<{
     rel?: string;
@@ -39,17 +53,23 @@ interface DestinationOneItem {
   }>;
   company?: string;
   district?: string;
+  cuisine_types?: string[];
+  features?: string[];
+}
+
+interface DestinationOneResult {
+  status: string;
+  count: number;
+  overallcount: number;
+  channels?: any[];
+  facetGroups?: DestinationOneFacetGroup[];
+  items: DestinationOneItem[];
 }
 
 interface DestinationOneResponse {
   count: number;
   overallcount: number;
-  results: Array<{
-    status: string;
-    count: number;
-    overallcount: number;
-    items: DestinationOneItem[];
-  }>;
+  results: DestinationOneResult[];
 }
 
 interface TransformedListingData {
@@ -68,6 +88,7 @@ interface TransformedListingData {
   geoLng?: number;
   timezone?: string;
   contactPhone?: string;
+  contactEmail?: string;
   website?: string;
   heroImageUrl?: string;
   categorySlugs: string[];
@@ -80,6 +101,18 @@ interface TransformedListingData {
     interval: number;
   }>;
 }
+
+/**
+ * Maps Destination One item types to root category slugs and CategoryType
+ */
+const TYPE_TO_ROOT_CATEGORY: Record<string, { slug: string; categoryType: CategoryType }> = {
+  Gastro: { slug: 'food-and-drink', categoryType: CategoryType.GASTRO },
+  Event: { slug: 'events', categoryType: CategoryType.EVENT },
+  Tour: { slug: 'tours', categoryType: CategoryType.TOUR },
+  POI: { slug: 'points-of-interest', categoryType: CategoryType.POI },
+  Hotel: { slug: 'hotels-and-stays', categoryType: CategoryType.HOTEL },
+  Article: { slug: 'articles-and-stories', categoryType: CategoryType.ARTICLE },
+};
 
 @Injectable()
 export class DestinationOneService {
@@ -97,12 +130,13 @@ export class DestinationOneService {
 
   async fetchData(config: DestinationOneConfig): Promise<DestinationOneResponse> {
     const baseUrl = config.baseUrl || 'https://meta.et4.de/rest.ashx/search/';
-    const template = config.template || 'ET2014A_LIGHT_MULTI.json';
+    const template = config.template || 'ET2014A_MULTI.json';
 
     const params = new URLSearchParams({
       experience: config.experience,
       licensekey: config.licensekey,
       template,
+      facets: 'true',
     });
 
     if (config.typeFilter && config.typeFilter.length > 0) {
@@ -120,9 +154,15 @@ export class DestinationOneService {
           timeout: 30000,
         }),
       );
+      const itemsCount = response.data.results[0]?.items.length || 0;
+      const facetGroupsCount = response.data.results[0]?.facetGroups?.length || 0;
       this.logger.log(
-        `Fetched ${response.data.results[0]?.items.length || 0} items from destination_one API`,
+        `Fetched ${itemsCount} items and ${facetGroupsCount} facet groups from destination_one API`,
       );
+      if (facetGroupsCount > 0) {
+        const facetFields = response.data.results[0]?.facetGroups?.map((fg) => fg.field) || [];
+        this.logger.debug(`Facet fields found: ${facetFields.join(', ')}`);
+      }
       return response.data;
     } catch (error: any) {
       this.logger.error(
@@ -136,17 +176,19 @@ export class DestinationOneService {
   /**
    * Fetches all items for a given type using pagination parameters.
    * If the API ignores pagination params, it will still return items and stop after the first page.
+   * Returns both items and facetGroups from the last page (facets are typically the same across pages).
    */
   private async fetchDataPaginatedForType(
     config: DestinationOneConfig,
     type: string,
-  ): Promise<DestinationOneItem[]> {
+  ): Promise<{ items: DestinationOneItem[]; facetGroups?: DestinationOneFacetGroup[] }> {
     const baseUrl = config.baseUrl || 'https://meta.et4.de/rest.ashx/search/';
-    const template = config.template || 'ET2014A_LIGHT_MULTI.json';
+    const template = config.template || 'ET2014A_MULTI.json';
     const pageSize = (config as any).pageSize || 100;
 
     let page = 1;
     const allItems: DestinationOneItem[] = [];
+    let lastFacetGroups: DestinationOneFacetGroup[] | undefined;
 
     // Loop with an upper bound to avoid infinite loops in case API ignores pagination
     for (; page <= 1000; page++) {
@@ -155,6 +197,7 @@ export class DestinationOneService {
         licensekey: config.licensekey,
         template,
         type,
+        facets: 'true',
       });
       // Common pagination params (best-effort)
       params.append('page', `${page}`);
@@ -174,6 +217,11 @@ export class DestinationOneService {
       const pageItems = response.data?.results?.[0]?.items || [];
       allItems.push(...pageItems);
 
+      // Store facetGroups from this page (they should be consistent across pages)
+      if (response.data?.results?.[0]?.facetGroups) {
+        lastFacetGroups = response.data.results[0].facetGroups;
+      }
+
       const count = response.data?.results?.[0]?.count ?? pageItems.length;
       const overallcount = response.data?.results?.[0]?.overallcount ?? allItems.length;
 
@@ -186,7 +234,7 @@ export class DestinationOneService {
       if (count < pageSize) break;
     }
 
-    return allItems;
+    return { items: allItems, facetGroups: lastFacetGroups };
   }
 
   private generateSyncHash(item: DestinationOneItem): string {
@@ -226,8 +274,15 @@ export class DestinationOneService {
     item: DestinationOneItem,
     config: DestinationOneConfig,
   ): TransformedListingData {
+    // Get content from texts (prefer HTML details, fallback to plain text, then teaser)
+    const detailsHtml = item.texts?.find(
+      (t) => t.rel === 'details' && t.type === 'text/html',
+    )?.value;
+    const detailsPlain = item.texts?.find(
+      (t) => t.rel === 'details' && t.type === 'text/plain',
+    )?.value;
     const teaserText = item.texts?.find((t) => t.rel === 'teaser')?.value || '';
-    const content = teaserText || item.title || '';
+    const content = detailsHtml || detailsPlain || teaserText || item.title || '';
 
     const slug = this.slugify(item.title || `item-${item.id}`);
 
@@ -236,15 +291,38 @@ export class DestinationOneService {
 
     const heroImage = item.media_objects?.find((m) => m.rel === 'default')?.url;
 
-    const categorySlugs: string[] = [];
-    if (config.categoryMappings && item.categories) {
+    // Get root category for this item type
+    const rootCategory = TYPE_TO_ROOT_CATEGORY[item.type];
+    const rootSlug = rootCategory?.slug;
+
+    // Build category slugs
+    const categorySlugsSet = new Set<string>();
+
+    // Always include root category slug for the type
+    if (rootSlug) {
+      categorySlugsSet.add(rootSlug);
+    }
+
+    // Process item.categories with manual mappings and automatic fallback
+    if (item.categories && item.categories.length > 0) {
       for (const doCategory of item.categories) {
-        const mappedSlug = config.categoryMappings[doCategory];
-        if (mappedSlug) {
-          categorySlugs.push(mappedSlug);
+        let categorySlug: string | undefined;
+
+        // Check manual mapping first
+        if (config.categoryMappings && config.categoryMappings[doCategory]) {
+          categorySlug = config.categoryMappings[doCategory];
+        } else if (rootSlug) {
+          // Automatic strategy: rootSlug + slugified category value
+          categorySlug = `${rootSlug}-${this.slugify(doCategory)}`;
+        }
+
+        if (categorySlug) {
+          categorySlugsSet.add(categorySlug);
         }
       }
     }
+
+    const categorySlugs = Array.from(categorySlugsSet);
 
     const timeIntervals = item.timeIntervals?.map((ti) => ({
       weekdays: this.convertWeekdays(ti.weekdays),
@@ -271,6 +349,8 @@ export class DestinationOneService {
       geoLng: item.geo?.main?.longitude,
       timezone: item.timeIntervals?.[0]?.tz,
       contactPhone: item.phone,
+      contactEmail: item.email,
+      website: item.web,
       heroImageUrl: heroImage,
       categorySlugs,
       timeIntervals,
@@ -324,20 +404,89 @@ export class DestinationOneService {
       // Fetch items per type (best coverage) with pagination; fall back to single fetch if no typeFilter
       let items: DestinationOneItem[] = [];
       const processedIds = new Set<string>();
+      const categoryFacets: Array<{
+        type: string;
+        field: string;
+        value: string;
+        label: string;
+      }> = [];
 
       if (config.typeFilter && config.typeFilter.length > 0) {
         for (const t of config.typeFilter) {
-          const typeItems = await this.fetchDataPaginatedForType(config, t);
-          for (const it of typeItems) {
+          const result = await this.fetchDataPaginatedForType(config, t);
+          for (const it of result.items) {
             if (!processedIds.has(it.id)) {
               items.push(it);
               processedIds.add(it.id);
+            }
+          }
+
+          // Collect facet categories for this type
+          if (result.facetGroups) {
+            for (const facetGroup of result.facetGroups) {
+              // Focus on 'category' field for now, but can extend to others later
+              if (facetGroup.field === 'category') {
+                for (const facet of facetGroup.facets) {
+                  categoryFacets.push({
+                    type: t,
+                    field: facetGroup.field,
+                    value: facet.value,
+                    label: facet.label,
+                  });
+                }
+              }
             }
           }
         }
       } else {
         const response = await this.fetchData(config);
         items = response.results[0]?.items || [];
+
+        // Collect facet categories from single fetch
+        if (response.results[0]?.facetGroups) {
+          for (const facetGroup of response.results[0].facetGroups) {
+            if (facetGroup.field === 'category') {
+              // For single fetch without type filter, we need to infer type from items
+              // Group facets by the most common type in items that match this facet
+              // For simplicity, we'll collect all and let Core handle deduplication
+              for (const facet of facetGroup.facets) {
+                // Try to find a matching item to infer type
+                const matchingItem = items.find((item) => item.categories?.includes(facet.value));
+                const inferredType = matchingItem?.type || 'Unknown';
+                categoryFacets.push({
+                  type: inferredType,
+                  field: facetGroup.field,
+                  value: facet.value,
+                  label: facet.label,
+                });
+              }
+            }
+          }
+        }
+      }
+
+      // Send category sync message to Core before processing listings
+      if (categoryFacets.length > 0) {
+        try {
+          this.logger.log(`Sending ${categoryFacets.length} category facets to Core for sync`);
+          await firstValueFrom(
+            this.client.send(RabbitMQPatterns.INTEGRATION_SYNC_CATEGORIES, {
+              integrationId,
+              cityId: config.cityId,
+              provider: 'DESTINATION_ONE',
+              categoryMappings: config.categoryMappings || {},
+              categoryFacets,
+              timestamp: new Date().toISOString(),
+            }),
+          );
+          this.logger.log('Category facets sync message sent successfully');
+        } catch (error: any) {
+          this.logger.error(
+            `Failed to send category facets sync message: ${error?.message}`,
+            error,
+          );
+          // Don't fail the entire sync if category sync fails
+        }
       }
 
       this.logger.log(`Processing ${items.length} items from destination_one API`);
