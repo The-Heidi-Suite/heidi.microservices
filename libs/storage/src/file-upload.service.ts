@@ -265,6 +265,13 @@ export class FileUploadService {
   }
 
   /**
+   * Generate storage key for city header image
+   */
+  generateCityHeaderKey(cityId: string, extension: string): string {
+    return `cities/${cityId}/header.${extension}`;
+  }
+
+  /**
    * Generate storage key for listing hero image
    */
   generateListingHeroKey(listingId: string, extension: string): string {
