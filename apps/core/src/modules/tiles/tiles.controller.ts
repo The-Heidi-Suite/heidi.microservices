@@ -251,7 +251,7 @@ export class TilesController {
   @UseGuards(AdminOnlyGuard, PermissionsGuard)
   @CityAdminOnly()
   @RequiresPermission('tiles', 'delete')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Delete a tile',
@@ -263,7 +263,7 @@ export class TilesController {
     example: 'tile_01J3MJG0YX6FT5PB9SJ9Y2KQW4',
   })
   @ApiResponse({
-    status: 204,
+    status: 200,
     description: 'Tile deleted successfully',
     type: DeleteTileResponseDto,
   })

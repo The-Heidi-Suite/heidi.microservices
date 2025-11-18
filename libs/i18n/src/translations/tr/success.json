@@ -30,5 +30,12 @@
   "VERIFICATION_CANCELLED": "Doğrulama başarıyla iptal edildi",
   "PASSWORD_RESET_EMAIL_SENT": "Şifre sıfırlama e-postası gönderildi",
   "PASSWORD_RESET_IF_EXISTS": "Bu e-posta adresiyle bir hesap varsa, şifre sıfırlama bağlantısı gönderildi.",
+  "TILES_RETRIEVED": "Karolar başarıyla alındı",
+  "TILE_RETRIEVED": "Karo başarıyla alındı",
+  "TILE_CREATED": "Karo başarıyla oluşturuldu",
+  "TILE_UPDATED": "Karo başarıyla güncellendi",
+  "TILE_DELETED": "Karo başarıyla silindi",
+  "TILE_BACKGROUND_IMAGE_UPLOADED": "Karo arka plan resmi başarıyla yüklendi",
+  "TILE_ICON_IMAGE_UPLOADED": "Karo simge resmi başarıyla yüklendi",
   "OPERATION_SUCCESS": "İşlem başarıyla tamamlandı"
 }

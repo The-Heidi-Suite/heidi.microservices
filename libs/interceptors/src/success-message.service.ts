@@ -47,6 +47,16 @@ export class SuccessMessageService {
     'POST:/verification/resend': 'EMAIL_VERIFICATION_RESENT',
     'GET:/verification/cancel': 'VERIFICATION_CANCELLED',
     'POST:/verification/cancel': 'VERIFICATION_CANCELLED',
+    
+    // Tiles routes
+    'GET:/tiles': 'TILES_RETRIEVED',
+    'GET:/tiles/slug/:slug': 'TILE_RETRIEVED',
+    'GET:/tiles/:id': 'TILE_RETRIEVED',
+    'POST:/tiles': 'TILE_CREATED',
+    'PATCH:/tiles/:id': 'TILE_UPDATED',
+    'DELETE:/tiles/:id': 'TILE_DELETED',
+    'POST:/tiles/:id/background-image': 'TILE_BACKGROUND_IMAGE_UPLOADED',
+    'POST:/tiles/:id/icon-image': 'TILE_ICON_IMAGE_UPLOADED',
   };
 
   /**
@@ -68,7 +78,13 @@ export class SuccessMessageService {
 
     // Try pattern matching for dynamic routes
     for (const [routePattern, messageKey] of Object.entries(this.routeMap)) {
-      const [routeMethod, routePath] = routePattern.split(':');
+      // Split only on the first colon to separate method from path
+      const colonIndex = routePattern.indexOf(':');
+      if (colonIndex === -1) continue;
+      
+      const routeMethod = routePattern.substring(0, colonIndex);
+      const routePath = routePattern.substring(colonIndex + 1);
+      
       if (routeMethod === method) {
         if (this.matchesRoutePattern(cleanPath, routePath)) {
           return messageKey;
