@@ -30,5 +30,12 @@
   "VERIFICATION_CANCELLED": "Bekreftelse kansellert vellykket",
   "PASSWORD_RESET_EMAIL_SENT": "E-post for tilbakestilling av passord sendt",
   "PASSWORD_RESET_IF_EXISTS": "Hvis det finnes en konto med denne e-postadressen, er det sendt en lenke for tilbakestilling av passord.",
+  "TILES_RETRIEVED": "Fliser hentet vellykket",
+  "TILE_RETRIEVED": "Flis hentet vellykket",
+  "TILE_CREATED": "Flis opprettet vellykket",
+  "TILE_UPDATED": "Flis oppdatert vellykket",
+  "TILE_DELETED": "Flis slettet vellykket",
+  "TILE_BACKGROUND_IMAGE_UPLOADED": "Flisens bakgrunnsbilde lastet opp vellykket",
+  "TILE_ICON_IMAGE_UPLOADED": "Flisens ikonbilde lastet opp vellykket",
   "OPERATION_SUCCESS": "Operasjon fullført vellykket"
 }

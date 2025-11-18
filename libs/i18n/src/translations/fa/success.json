@@ -30,5 +30,12 @@
   "VERIFICATION_CANCELLED": "تأیید با موفقیت لغو شد",
   "PASSWORD_RESET_EMAIL_SENT": "ایمیل بازنشانی رمز عبور ارسال شد",
   "PASSWORD_RESET_IF_EXISTS": "اگر حسابی با این آدرس ایمیل وجود داشته باشد، لینک بازنشانی رمز عبور ارسال شده است.",
+  "TILES_RETRIEVED": "کاشی‌ها با موفقیت بازیابی شدند",
+  "TILE_RETRIEVED": "کاشی با موفقیت بازیابی شد",
+  "TILE_CREATED": "کاشی با موفقیت ایجاد شد",
+  "TILE_UPDATED": "کاشی با موفقیت به‌روزرسانی شد",
+  "TILE_DELETED": "کاشی با موفقیت حذف شد",
+  "TILE_BACKGROUND_IMAGE_UPLOADED": "تصویر پس‌زمینه کاشی با موفقیت آپلود شد",
+  "TILE_ICON_IMAGE_UPLOADED": "تصویر آیکون کاشی با موفقیت آپلود شد",
   "OPERATION_SUCCESS": "عملیات با موفقیت انجام شد"
 }

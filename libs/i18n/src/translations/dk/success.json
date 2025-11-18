@@ -30,5 +30,12 @@
   "VERIFICATION_CANCELLED": "Verificering annulleret succesfuldt",
   "PASSWORD_RESET_EMAIL_SENT": "E-mail til nulstilling af adgangskode sendt",
   "PASSWORD_RESET_IF_EXISTS": "Hvis der findes en konto med denne e-mailadresse, er der sendt et link til nulstilling af adgangskode.",
+  "TILES_RETRIEVED": "Fliser hentet succesfuldt",
+  "TILE_RETRIEVED": "Flise hentet succesfuldt",
+  "TILE_CREATED": "Flise oprettet succesfuldt",
+  "TILE_UPDATED": "Flise opdateret succesfuldt",
+  "TILE_DELETED": "Flise slettet succesfuldt",
+  "TILE_BACKGROUND_IMAGE_UPLOADED": "Flisens baggrundsbillede uploadet succesfuldt",
+  "TILE_ICON_IMAGE_UPLOADED": "Flisens ikonbillede uploadet succesfuldt",
   "OPERATION_SUCCESS": "Handling gennemført succesfuldt"
 }
