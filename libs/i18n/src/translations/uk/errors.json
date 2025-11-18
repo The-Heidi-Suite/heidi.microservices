@@ -4,6 +4,8 @@
   "NOT_FOUND": "Ресурс не знайдено",
   "UNAUTHORIZED": "Несанкціонований доступ",
   "FORBIDDEN": "Заборонено - недостатньо прав",
+  "SUPER_ADMIN_REQUIRED": "Цей маршрут вимагає роль Super Admin",
+  "CITY_ADMIN_OR_SUPER_ADMIN_REQUIRED": "Цей маршрут вимагає роль City Admin або Super Admin",
   "CONFLICT": "Конфлікт ресурсів",
   "BAD_REQUEST": "Невірний запит",
   "DATABASE_CONNECTION_ERROR": "Помилка підключення до бази даних",

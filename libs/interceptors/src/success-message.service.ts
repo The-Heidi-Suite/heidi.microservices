@@ -68,7 +68,13 @@ export class SuccessMessageService {
 
     // Try pattern matching for dynamic routes
     for (const [routePattern, messageKey] of Object.entries(this.routeMap)) {
-      const [routeMethod, routePath] = routePattern.split(':');
+      // Split only on the first colon to separate method from path
+      const colonIndex = routePattern.indexOf(':');
+      if (colonIndex === -1) continue;
+      
+      const routeMethod = routePattern.substring(0, colonIndex);
+      const routePath = routePattern.substring(colonIndex + 1);
+      
       if (routeMethod === method) {
         if (this.matchesRoutePattern(cleanPath, routePath)) {
           return messageKey;
