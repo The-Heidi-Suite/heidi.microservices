@@ -61,6 +61,13 @@ export class CityDto {
   metadata?: any;
 
   @ApiPropertyOptional({
+    description: 'Header image URL for the city',
+    example: 'https://cdn.example.com/cities/city-id/header.webp',
+    nullable: true,
+  })
+  headerImageUrl?: string | null;
+
+  @ApiPropertyOptional({
     description: 'Parent city ID for hierarchical relationships',
     example: '123e4567-e89b-12d3-a456-426614174001',
     nullable: true,

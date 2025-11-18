@@ -9,9 +9,26 @@ import {
   Query,
   HttpCode,
   HttpStatus,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiParam, ApiQuery } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+  ApiParam,
+  ApiQuery,
+  ApiConsumes,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { CityService } from './city.service';
+import { FileUploadService, StorageService } from '@heidi/storage';
+import { ConfigService } from '@heidi/config';
+import { LoggerService } from '@heidi/logger';
+import { PrismaCityService } from '@heidi/prisma';
 import {
   CreateCityDto,
   UpdateCityDto,
@@ -27,7 +44,16 @@ import {
 @ApiTags('city')
 @Controller()
 export class CityController {
-  constructor(private readonly cityService: CityService) {}
+  constructor(
+    private readonly cityService: CityService,
+    private readonly fileUploadService: FileUploadService,
+    private readonly configService: ConfigService,
+    private readonly storageService: StorageService,
+    private readonly logger: LoggerService,
+    private readonly prisma: PrismaCityService,
+  ) {
+    this.logger.setContext(CityController.name);
+  }
 
   @Get()
   @ApiOperation({
@@ -323,5 +349,175 @@ export class CityController {
   @HttpCode(HttpStatus.OK)
   async delete(@Param('id') id: string) {
     return this.cityService.delete(id);
+  }
+
+  @Post(':id/header-image')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload header image for a city',
+    description: 'Upload and process a header image for a city.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the city',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Header image file to upload',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Header image uploaded successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City not found',
+    type: CityNotFoundErrorResponseDto,
+  })
+  async uploadHeaderImage(@Param('id') id: string, @UploadedFile() file: any) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // Get existing city to check for old header image
+    const existing = await this.cityService.findOne(id);
+
+    // Validate image
+    await this.fileUploadService.validateImage(file);
+
+    // Process image
+    const processedFile = await this.fileUploadService.processImage(file);
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Delete old header image if exists
+    if (existing.headerImageUrl) {
+      try {
+        const oldKey = this.extractKeyFromUrl(existing.headerImageUrl);
+        await this.storageService.deleteFile({ bucket, key: oldKey });
+      } catch (error) {
+        this.logger.warn(`Failed to delete old header image for city ${id}`, error);
+        // Continue with upload even if old file deletion fails
+      }
+    }
+
+    // Generate storage key
+    const key = this.fileUploadService.generateCityHeaderKey(id, processedFile.extension);
+
+    // Upload to storage
+    const imageUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    // Update city headerImageUrl directly in database
+    await this.prisma.city.update({
+      where: { id },
+      data: { headerImageUrl: imageUrl },
+    });
+
+    // Refresh city
+    const city = await this.cityService.findOne(id);
+
+    return {
+      city,
+      imageUrl,
+    };
+  }
+
+  @Delete(':id/header-image')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Delete header image for a city',
+    description: 'Delete the header image for a city from storage and database.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the city',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Header image deleted successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City not found or header image not found',
+    type: CityNotFoundErrorResponseDto,
+  })
+  async deleteHeaderImage(@Param('id') id: string) {
+    // Get existing city to check for header image
+    const existing = await this.cityService.findOne(id);
+
+    if (!existing.headerImageUrl) {
+      throw new BadRequestException('City does not have a header image');
+    }
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Delete image from storage
+    try {
+      const key = this.extractKeyFromUrl(existing.headerImageUrl);
+      await this.storageService.deleteFile({ bucket, key });
+    } catch (error) {
+      this.logger.warn(`Failed to delete header image from storage for city ${id}`, error);
+      // Continue with database update even if file deletion fails
+    }
+
+    // Update city headerImageUrl to null
+    await this.prisma.city.update({
+      where: { id },
+      data: { headerImageUrl: null },
+    });
+
+    // Refresh city
+    const city = await this.cityService.findOne(id);
+
+    return {
+      city,
+      message: 'Header image deleted successfully',
+    };
+  }
+
+  private extractKeyFromUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      // Extract pathname and remove leading slash and bucket name
+      // Format: /bucket-name/cities/cityId/header.webp
+      const pathname = urlObj.pathname;
+      // Remove leading slash and first segment (bucket name)
+      const parts = pathname.split('/').filter(Boolean);
+      if (parts.length > 1) {
+        return parts.slice(1).join('/');
+      }
+      return pathname.replace(/^\/[^\/]+\//, '');
+    } catch (error) {
+      this.logger.warn(`Failed to parse URL: ${url}`, error);
+      // Fallback: try to extract from pathname directly
+      return url.split('?')[0].replace(/^https?:\/\/[^\/]+\//, '');
+    }
   }
 }
