@@ -1,6 +1,6 @@
 {
   "name": "heidi.microservices",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "description": "NestJS microservices monorepo for HEIDI platform",
   "private": true,
   "license": "MIT",
@@ -37,6 +37,8 @@
     "seed:city-categories": "bash ./scripts/seed-wrapper.sh scripts/seed-city-categories.ts",
     "seed:permissions": "bash ./scripts/seed-wrapper.sh scripts/seed-permissions.ts",
     "seed:destination-one": "bash ./scripts/seed-wrapper.sh scripts/seed-destination-one-integration.ts",
+    "seed:mobilithek-parking": "bash ./scripts/seed-wrapper.sh scripts/seed-mobilithek-parking-integration.ts",
+    "seed:kiel-newsletter": "bash ./scripts/seed-wrapper.sh scripts/seed-kiel-newsletter-integration.ts",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
     "format": "prettier --write \"**/*.{ts,json,md}\"",
     "test": "jest",

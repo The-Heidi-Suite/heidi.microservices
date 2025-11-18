@@ -6,6 +6,8 @@ import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabb
 import { LoggerService } from '@heidi/logger';
 import { firstValueFrom } from 'rxjs';
 import { DestinationOneService } from '../destination-one/destination-one.service';
+import { MobilithekParkingService } from '../mobilithek-parking/mobilithek-parking.service';
+import { KielNewsletterService } from '../kiel-newsletter/kiel-newsletter.service';
 
 @Injectable()
 export class IntegrationService {
@@ -16,6 +18,8 @@ export class IntegrationService {
     @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly http: HttpService,
     private readonly destinationOneService: DestinationOneService,
+    private readonly mobilithekParkingService: MobilithekParkingService,
+    private readonly kielNewsletterService: KielNewsletterService,
     logger: LoggerService,
   ) {
     this.logger = logger;
@@ -44,6 +48,8 @@ export class IntegrationService {
     switch (integration.provider) {
       case 'DESTINATION_ONE':
         return this.destinationOneService.syncIntegration(integrationId);
+      case 'MOBILITHEK_PARKING':
+        return this.mobilithekParkingService.syncIntegration(integrationId);
       default:
         throw new Error(`Unsupported integration provider: ${integration.provider}`);
     }
@@ -138,5 +144,19 @@ export class IntegrationService {
       this.logger.error(`HTTP request failed: ${url}`, error);
       throw error;
     }
+  }
+
+  /**
+   * Subscribe a user to the newsletter
+   */
+  async subscribeToNewsletter(userId: string, email: string) {
+    return this.kielNewsletterService.subscribeToNewsletter(userId, email);
+  }
+
+  /**
+   * Get newsletter subscription status for a user
+   */
+  async getSubscriptionStatus(userId: string) {
+    return this.kielNewsletterService.getSubscriptionStatus(userId);
   }
 }

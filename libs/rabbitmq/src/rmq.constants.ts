@@ -93,6 +93,7 @@ export const RabbitMQPatterns = {
   INTEGRATION_WEBHOOK: 'integration.webhook',
   INTEGRATION_SYNC: 'integration.sync',
   INTEGRATION_SYNC_LISTING: 'core.syncListing',
+  PARKING_SPACE_SYNC: 'core.syncParkingSpace',
 
   // Scheduler events
   SCHEDULE_EXECUTE: 'schedule.execute',
