@@ -18,6 +18,7 @@ import {
   BulkNotificationDto,
   CreateFirebaseProjectDto,
   UpdateFirebaseProjectDto,
+  CreateCityFirebaseProjectDto,
   FirebaseProjectResponseDto,
 } from '@heidi/contracts';
 import { JwtAuthGuard } from '@heidi/jwt';
@@ -85,6 +86,22 @@ export class NotificationController {
     @Body() dto: CreateFirebaseProjectDto,
   ): Promise<FirebaseProjectResponseDto> {
     return this.notificationService.createFirebaseProject(dto);
+  }
+
+  @Post('cities/:cityId/firebase-project')
+  @SuperAdminOnly()
+  @ApiOperation({ summary: 'Create or replace Firebase project config for a city' })
+  @ApiParam({ name: 'cityId', description: 'City ID' })
+  @ApiResponse({
+    status: 200,
+    description: 'Firebase project configuration saved for the city',
+    type: FirebaseProjectResponseDto,
+  })
+  async upsertCityFirebaseProject(
+    @Param('cityId') cityId: string,
+    @Body() dto: CreateCityFirebaseProjectDto,
+  ): Promise<FirebaseProjectResponseDto> {
+    return this.notificationService.upsertCityFirebaseProject(cityId, dto);
   }
 
   @Patch('firebase-projects/:id')

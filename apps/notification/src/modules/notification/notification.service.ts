@@ -7,6 +7,7 @@ import {
   BulkNotificationDto,
   CreateFirebaseProjectDto,
   UpdateFirebaseProjectDto,
+  CreateCityFirebaseProjectDto,
   FirebaseProjectResponseDto,
 } from '@heidi/contracts';
 import { FirebaseProjectManager } from '../fcm/firebase-project-manager.service';
@@ -271,6 +272,69 @@ export class NotificationService implements OnModuleInit {
     });
 
     // Reload projects to cache the new one
+    await this.firebaseProjectManager.onModuleInit();
+
+    return {
+      id: project.id,
+      cityId: project.cityId || undefined,
+      projectId: project.projectId,
+      projectName: project.projectName,
+      isActive: project.isActive,
+      isDefault: project.isDefault,
+      metadata: project.metadata as any,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+    };
+  }
+
+  /**
+   * Create or update Firebase project for a specific city
+   */
+  async upsertCityFirebaseProject(
+    cityId: string,
+    dto: CreateCityFirebaseProjectDto,
+  ): Promise<FirebaseProjectResponseDto> {
+    // Verify city exists
+    const city = await firstValueFrom(
+      this.client
+        .send<any, { id: string }>(RabbitMQPatterns.CITY_FIND_BY_ID, { id: cityId })
+        .pipe(timeout(10000)),
+    ).catch(() => null);
+
+    if (!city) {
+      throw new NotFoundException(`City with ID ${cityId} not found`);
+    }
+
+    const encryptedCredentials = this.firebaseProjectManager.encrypt(dto.credentials);
+
+    const updateData: any = {
+      projectId: dto.projectId,
+      projectName: dto.projectName,
+      credentials: encryptedCredentials as any,
+      isActive: true,
+      isDefault: false,
+    };
+
+    if (dto.metadata !== undefined) {
+      updateData.metadata = dto.metadata;
+    }
+
+    const project = await this.prisma.firebaseProject.upsert({
+      where: { cityId },
+      update: updateData,
+      create: {
+        cityId,
+        projectId: dto.projectId,
+        projectName: dto.projectName,
+        credentials: encryptedCredentials as any,
+        metadata: dto.metadata ?? {},
+        isActive: true,
+        isDefault: false,
+      },
+    });
+
+    // Refresh Firebase app cache so future notifications use the new credentials
+    this.firebaseProjectManager.clearCache(project.id);
     await this.firebaseProjectManager.onModuleInit();
 
     return {
