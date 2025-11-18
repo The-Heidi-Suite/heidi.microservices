@@ -3,7 +3,10 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { PrismaNotificationService } from '@heidi/prisma';
+import { I18nService } from '@heidi/i18n';
 import { EmailService } from './email.service';
+import { FCMPushService } from '../fcm/fcm-push.service';
+import { SendNotificationDto } from '@heidi/contracts';
 import { firstValueFrom, timeout } from 'rxjs';
 
 @Controller()
@@ -13,6 +16,8 @@ export class NotificationMessageController {
   constructor(
     private readonly prisma: PrismaNotificationService,
     private readonly emailService: EmailService,
+    private readonly fcmPushService: FCMPushService,
+    private readonly i18nService: I18nService,
     @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     logger: LoggerService,
   ) {
@@ -31,6 +36,10 @@ export class NotificationMessageController {
       subject?: string;
       content: string;
       metadata?: any;
+      translationKey?: string;
+      translationParams?: Record<string, any>;
+      cityId?: string;
+      fcmData?: { [key: string]: string };
     },
   ) {
     // If notificationId is not provided, create a notification record first
@@ -66,6 +75,15 @@ export class NotificationMessageController {
       // Route by channel
       if (data.channel === 'EMAIL') {
         await this.handleEmailNotification({ ...data, notificationId });
+      } else if (data.channel === 'PUSH') {
+        await this.handlePushNotification({
+          ...data,
+          notificationId,
+          translationKey: data.translationKey,
+          translationParams: data.translationParams,
+          cityId: data.cityId,
+          fcmData: data.fcmData,
+        });
       } else if (data.channel === 'SMS') {
         // SMS implementation can be added later
         this.logger.warn(`SMS channel not yet implemented for notification ${notificationId}`);
@@ -100,6 +118,97 @@ export class NotificationMessageController {
         error,
       );
       throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  /**
+   * Handle push notification delivery
+   */
+  private async handlePushNotification(data: {
+    notificationId: string;
+    userId: string;
+    type: string;
+    subject?: string;
+    content: string;
+    metadata?: any;
+    translationKey?: string;
+    translationParams?: Record<string, any>;
+    cityId?: string;
+    fcmData?: { [key: string]: string };
+  }): Promise<void> {
+    try {
+      // Get language from request context (if available) or metadata
+      const requestLanguage = this.i18nService.getLanguage();
+
+      // Build SendNotificationDto from data
+      const dto: SendNotificationDto = {
+        userId: data.userId,
+        type: data.type as any,
+        channel: 'PUSH',
+        subject: data.subject,
+        content: data.content,
+        cityId: data.cityId || data.metadata?.cityId,
+        fcmData: data.fcmData || data.metadata?.fcmData,
+        translationKey: data.translationKey || data.metadata?.translationKey,
+        translationParams: data.translationParams || data.metadata?.translationParams,
+        metadata: data.metadata,
+      };
+
+      // Send push notification with translation support
+      await this.fcmPushService.sendPushNotification(dto, requestLanguage);
+
+      // Update notification status to SENT
+      await this.updateNotificationStatus(data.notificationId, 'SENT');
+
+      // Store resolved language in metadata
+      const notification = await this.prisma.notification.findUnique({
+        where: { id: data.notificationId },
+        select: { metadata: true },
+      });
+
+      const existingMetadata =
+        notification?.metadata &&
+        typeof notification.metadata === 'object' &&
+        !Array.isArray(notification.metadata)
+          ? (notification.metadata as Record<string, any>)
+          : {};
+
+      await this.prisma.notification.update({
+        where: { id: data.notificationId },
+        data: {
+          metadata: {
+            ...existingMetadata,
+            resolvedLanguage: requestLanguage,
+          },
+        },
+      });
+
+      // Emit NOTIFICATION_SENT event
+      this.client.emit(RabbitMQPatterns.NOTIFICATION_SENT, {
+        notificationId: data.notificationId,
+        userId: data.userId,
+        channel: 'PUSH',
+        timestamp: new Date().toISOString(),
+      });
+
+      this.logger.log(`Push notification sent successfully: ${data.notificationId}`);
+    } catch (error) {
+      this.logger.error(`Failed to send push notification: ${data.notificationId}`, error);
+
+      // Update notification status to FAILED
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      await this.updateNotificationStatus(data.notificationId, 'FAILED', errorMessage);
+
+      // Emit NOTIFICATION_FAILED event
+      this.client.emit(RabbitMQPatterns.NOTIFICATION_FAILED, {
+        notificationId: data.notificationId,
+        userId: data.userId,
+        channel: 'PUSH',
+        reason: errorMessage,
+        timestamp: new Date().toISOString(),
+      });
+
+      throw error;
     }
   }
 
