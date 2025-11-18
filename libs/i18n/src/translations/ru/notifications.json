@@ -1,0 +1,30 @@
+{
+  "welcome": {
+    "title": "Добро пожаловать в {appName}!",
+    "body": "Привет, {firstName}, добро пожаловать в {appName}. Мы рады, что вы здесь."
+  },
+  "info": {
+    "title": "Информация",
+    "body": "{content}"
+  },
+  "warning": {
+    "title": "Предупреждение",
+    "body": "{content}"
+  },
+  "error": {
+    "title": "Ошибка",
+    "body": "{content}"
+  },
+  "success": {
+    "title": "Успех",
+    "body": "{content}"
+  },
+  "alert": {
+    "title": "Тревога",
+    "body": "{content}"
+  },
+  "generic": {
+    "title": "{subject}",
+    "body": "{content}"
+  }
+}

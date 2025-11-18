@@ -1,0 +1,30 @@
+{
+  "welcome": {
+    "title": "Velkommen til {appName}!",
+    "body": "Hei {firstName}, velkommen til {appName}. Vi er glade for å ha deg her."
+  },
+  "info": {
+    "title": "Informasjon",
+    "body": "{content}"
+  },
+  "warning": {
+    "title": "Advarsel",
+    "body": "{content}"
+  },
+  "error": {
+    "title": "Feil",
+    "body": "{content}"
+  },
+  "success": {
+    "title": "Suksess",
+    "body": "{content}"
+  },
+  "alert": {
+    "title": "Alarm",
+    "body": "{content}"
+  },
+  "generic": {
+    "title": "{subject}",
+    "body": "{content}"
+  }
+}
