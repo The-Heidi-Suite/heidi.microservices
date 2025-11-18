@@ -152,6 +152,31 @@ Generates cryptographically secure random secrets for JWT and other sensitive co
 
 ---
 
+### 🌐 `seed-firebase-project.ts`
+
+Seed or update a Firebase project configuration (per city or default Heidi app).
+
+**Usage (via wrapper):**
+
+```bash
+./scripts/seed-wrapper.sh scripts/seed-firebase-project.ts \
+  --cityId=15f0b1d4-4f6b-4ac7-b9f5-6e4c1c2c9c0b \
+  --projectId=kiel-staging \
+  --projectName="Kiel Staging" \
+  --credentialsPath=./kiel-staging-firebase-adminsdk.json
+```
+
+**Options:**
+
+- `--projectId` (required): Firebase project ID
+- `--projectName` (required): Human-readable label
+- `--credentialsPath` (required): Path to the service-account JSON file
+- `--cityId`: City ID that should use this Firebase project (omit for default Heidi app)
+- `--isDefault`: Mark this project as the Heidi default (cannot combine with `cityId`)
+- `--metadata`: Optional JSON string with extra metadata, e.g. `--metadata='{"region":"europe-west1"}'`
+
+The script encrypts credentials with `FCM_ENCRYPTION_KEY` (or fallback) before writing to the `firebase_projects` table.
+
 ### 🚀 `init-production.sh`
 
 Production initialization script for first-time setup.

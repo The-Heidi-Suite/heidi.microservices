@@ -1,5 +1,5 @@
 import { IsString, IsOptional, IsBoolean, IsObject } from 'class-validator';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional, OmitType } from '@nestjs/swagger';
 
 export class CreateFirebaseProjectDto {
   @ApiPropertyOptional({
@@ -160,3 +160,8 @@ export class FirebaseProjectResponseDto {
   })
   updatedAt: Date;
 }
+
+export class CreateCityFirebaseProjectDto extends OmitType(CreateFirebaseProjectDto, [
+  'cityId',
+  'isDefault',
+] as const) {}
