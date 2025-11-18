@@ -126,27 +126,48 @@ export class FirebaseProjectManager implements OnModuleInit {
 
   /**
    * Decrypt Firebase credentials
+   *
+   * Supports both:
+   * - Encrypted objects stored as JSON (preferred)
+   * - Encrypted payloads stored as JSON strings (as used by seed scripts)
+   * - Legacy plain credentials objects (returned as-is)
    */
   private decrypt(encryptedData: string | any): any {
-    if (typeof encryptedData === 'object' && encryptedData.encrypted) {
+    let payload: any = encryptedData;
+
+    // If stored as a JSON string, try to parse it first
+    if (typeof payload === 'string') {
+      try {
+        const parsed = JSON.parse(payload);
+        // If parsed object looks like our encrypted payload, use it
+        if (parsed && typeof parsed === 'object' && 'encrypted' in parsed) {
+          payload = parsed;
+        } else {
+          // Parsed to a normal object (likely legacy plain credentials)
+          return parsed;
+        }
+      } catch {
+        // Not JSON – treat as legacy/unencrypted and return as-is
+        return payload;
+      }
+    }
+
+    // Encrypted object case
+    if (typeof payload === 'object' && payload.encrypted) {
       const algorithm = 'aes-256-gcm';
       const key = crypto.scryptSync(this.encryptionKey, 'salt', 32);
-      const decipher = crypto.createDecipheriv(
-        algorithm,
-        key,
-        Buffer.from(encryptedData.iv, 'hex'),
-      );
+      const decipher = crypto.createDecipheriv(algorithm, key, Buffer.from(payload.iv, 'hex'));
 
-      decipher.setAuthTag(Buffer.from(encryptedData.authTag, 'hex'));
+      decipher.setAuthTag(Buffer.from(payload.authTag, 'hex'));
 
-      let decrypted = decipher.update(encryptedData.encrypted, 'hex', 'utf8');
+      let decrypted = decipher.update(payload.encrypted, 'hex', 'utf8');
       decrypted += decipher.final('utf8');
 
       return JSON.parse(decrypted);
     }
 
     // Legacy: if not encrypted, return as-is (for migration)
-    return encryptedData;
+    return payload;
   }
 
   /**
@@ -161,7 +182,7 @@ export class FirebaseProjectManager implements OnModuleInit {
       }
     } else {
       // Clear all
-      for (const [_id, app] of this.appCache.entries()) {
+      for (const [, app] of this.appCache.entries()) {
         app.delete();
       }
       this.appCache.clear();
