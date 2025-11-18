@@ -14,24 +14,27 @@ datasource db {
 // Note: userId is stored as String (foreign key to User in auth/users service)
 // Cross-service relationships are handled via IDs only (no FK constraints)
 model Notification {
-  id        String             @id @default(uuid())
-  userId    String             // Reference to User.id from auth/users service
-  type      NotificationType
-  channel   NotificationChannel
-  subject   String?
-  content   String
-  metadata  Json?
-  status    NotificationStatus @default(PENDING)
-  sentAt    DateTime?
-  readAt    DateTime?
-  createdAt DateTime           @default(now())
-  updatedAt DateTime           @updatedAt
+  id               String             @id @default(uuid())
+  userId           String             // Reference to User.id from auth/users service
+  type             NotificationType
+  channel          NotificationChannel
+  subject          String?
+  content          String
+  emailTemplate    String?            // Email template identifier
+  firebaseProjectId String?           // Reference to FirebaseProject.id
+  metadata         Json?
+  status           NotificationStatus @default(PENDING)
+  sentAt           DateTime?
+  readAt           DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 
   @@index([userId])
   @@index([status])
   @@index([createdAt])
   @@index([type])
   @@index([channel])
+  @@index([firebaseProjectId])
   @@map("notifications")
 }
 
@@ -139,4 +142,26 @@ enum PasswordResetStatus {
   EXPIRED
   FAILED
   CANCELLED
+}
+
+// FirebaseProject model - Manages Firebase projects per city
+// Note: cityId is stored as String (foreign key to City in city service)
+// Cross-service relationships are handled via IDs only (no FK constraints)
+model FirebaseProject {
+  id          String   @id @default(uuid())
+  cityId      String?  // Optional - null means default project for Heidi app
+  projectId   String   // Firebase project ID
+  projectName String   // Human-readable name
+  credentials Json     // Encrypted Firebase service account credentials
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false) // Default project for Heidi app
+  metadata    Json?    // Additional configuration
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([cityId]) // One project per city (null cityId = default)
+  @@index([cityId])
+  @@index([isActive])
+  @@index([isDefault])
+  @@map("firebase_projects")
 }
