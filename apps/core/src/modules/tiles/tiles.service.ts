@@ -477,7 +477,11 @@ export class TilesService {
     };
   }
 
-  async deleteTile(tileId: string, userId: string, roles: UserRole[]): Promise<void> {
+  async deleteTile(
+    tileId: string,
+    userId: string,
+    roles: UserRole[],
+  ): Promise<{ message: string }> {
     if (!this.isAdmin(roles)) {
       throw new ForbiddenException('Only admins can delete tiles');
     }
@@ -536,5 +540,7 @@ export class TilesService {
     await this.prisma.tile.delete({
       where: { id: tileId },
     });
+
+    return { message: 'Tile deleted successfully' };
   }
 }

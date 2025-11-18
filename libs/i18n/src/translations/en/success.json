@@ -30,5 +30,12 @@
   "VERIFICATION_CANCELLED": "Verification cancelled successfully",
   "PASSWORD_RESET_EMAIL_SENT": "Password reset email sent",
   "PASSWORD_RESET_IF_EXISTS": "If an account with that email exists, a password reset link has been sent.",
+  "TILES_RETRIEVED": "Tiles retrieved successfully",
+  "TILE_RETRIEVED": "Tile retrieved successfully",
+  "TILE_CREATED": "Tile created successfully",
+  "TILE_UPDATED": "Tile updated successfully",
+  "TILE_DELETED": "Tile deleted successfully",
+  "TILE_BACKGROUND_IMAGE_UPLOADED": "Tile background image uploaded successfully",
+  "TILE_ICON_IMAGE_UPLOADED": "Tile icon image uploaded successfully",
   "OPERATION_SUCCESS": "Operation completed successfully"
 }

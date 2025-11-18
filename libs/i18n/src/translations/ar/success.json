@@ -30,5 +30,12 @@
   "VERIFICATION_CANCELLED": "تم إلغاء التحقق بنجاح",
   "PASSWORD_RESET_EMAIL_SENT": "تم إرسال بريد إعادة تعيين كلمة المرور",
   "PASSWORD_RESET_IF_EXISTS": "إذا كان يوجد حساب بهذا البريد الإلكتروني، فقد تم إرسال رابط إعادة تعيين كلمة المرور.",
+  "TILES_RETRIEVED": "تم استرجاع البلاط بنجاح",
+  "TILE_RETRIEVED": "تم استرجاع البلاط بنجاح",
+  "TILE_CREATED": "تم إنشاء البلاط بنجاح",
+  "TILE_UPDATED": "تم تحديث البلاط بنجاح",
+  "TILE_DELETED": "تم حذف البلاط بنجاح",
+  "TILE_BACKGROUND_IMAGE_UPLOADED": "تم تحميل صورة خلفية البلاط بنجاح",
+  "TILE_ICON_IMAGE_UPLOADED": "تم تحميل صورة أيقونة البلاط بنجاح",
   "OPERATION_SUCCESS": "تمت العملية بنجاح"
 }

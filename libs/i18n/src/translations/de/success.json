@@ -30,5 +30,12 @@
   "VERIFICATION_CANCELLED": "Bestätigung erfolgreich storniert",
   "PASSWORD_RESET_EMAIL_SENT": "Passwort-Zurücksetzungs-E-Mail gesendet",
   "PASSWORD_RESET_IF_EXISTS": "Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde ein Link zum Zurücksetzen des Passworts gesendet.",
+  "TILES_RETRIEVED": "Kacheln erfolgreich abgerufen",
+  "TILE_RETRIEVED": "Kachel erfolgreich abgerufen",
+  "TILE_CREATED": "Kachel erfolgreich erstellt",
+  "TILE_UPDATED": "Kachel erfolgreich aktualisiert",
+  "TILE_DELETED": "Kachel erfolgreich gelöscht",
+  "TILE_BACKGROUND_IMAGE_UPLOADED": "Kachel-Hintergrundbild erfolgreich hochgeladen",
+  "TILE_ICON_IMAGE_UPLOADED": "Kachel-Symbolbild erfolgreich hochgeladen",
   "OPERATION_SUCCESS": "Vorgang erfolgreich abgeschlossen"
 }
