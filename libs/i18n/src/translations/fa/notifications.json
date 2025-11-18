@@ -1,0 +1,30 @@
+{
+  "welcome": {
+    "title": "به {appName} خوش آمدید!",
+    "body": "سلام {firstName}، به {appName} خوش آمدید. خوشحالیم که اینجا هستید."
+  },
+  "info": {
+    "title": "اطلاعات",
+    "body": "{content}"
+  },
+  "warning": {
+    "title": "هشدار",
+    "body": "{content}"
+  },
+  "error": {
+    "title": "خطا",
+    "body": "{content}"
+  },
+  "success": {
+    "title": "موفقیت",
+    "body": "{content}"
+  },
+  "alert": {
+    "title": "هشدار",
+    "body": "{content}"
+  },
+  "generic": {
+    "title": "{subject}",
+    "body": "{content}"
+  }
+}

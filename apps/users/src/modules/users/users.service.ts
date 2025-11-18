@@ -296,6 +296,103 @@ export class UsersService {
     };
   }
 
+  /**
+   * Find users by city ID
+   */
+  async findByCity(cityId: string, page = 1, limit = 100) {
+    const skip = (page - 1) * limit;
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where: {
+          cityId,
+          isActive: true,
+          deletedAt: null,
+          userType: UserType.REGISTERED,
+        },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          role: true,
+          firstName: true,
+          lastName: true,
+          cityId: true,
+          preferredLanguage: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          cityId,
+          isActive: true,
+          deletedAt: null,
+          userType: UserType.REGISTERED,
+        },
+      }),
+    ]);
+
+    return {
+      users,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
+  }
+
+  /**
+   * Find all active users (paginated)
+   */
+  async findAllActive(page = 1, limit = 100) {
+    const skip = (page - 1) * limit;
+    const [users, total] = await Promise.all([
+      this.prisma.user.findMany({
+        where: {
+          isActive: true,
+          deletedAt: null,
+          userType: UserType.REGISTERED,
+        },
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          email: true,
+          username: true,
+          role: true,
+          firstName: true,
+          lastName: true,
+          cityId: true,
+          preferredLanguage: true,
+          isActive: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.user.count({
+        where: {
+          isActive: true,
+          deletedAt: null,
+          userType: UserType.REGISTERED,
+        },
+      }),
+    ]);
+
+    return {
+      users,
+      total,
+      page,
+      limit,
+      pages: Math.ceil(total / limit),
+    };
+  }
+
   async findOne(id: string) {
     const user = await this.prisma.user.findFirst({
       where: { id, deletedAt: null },
@@ -309,6 +406,8 @@ export class UsersService {
         devicePlatform: true,
         firstName: true,
         lastName: true,
+        cityId: true,
+        preferredLanguage: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -455,6 +554,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         profilePhotoUrl: true,
+        preferredLanguage: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -491,13 +591,25 @@ export class UsersService {
   async updateProfile(userId: string, dto: UpdateProfileDto) {
     this.logger.log(`Updating profile for user: ${userId}`);
 
+    // Validate preferredLanguage if provided
+    if (dto.preferredLanguage) {
+      const supportedLanguages = this.i18nService.getSupportedLanguages();
+      if (!supportedLanguages.includes(dto.preferredLanguage)) {
+        throw new BadRequestException(
+          `Unsupported language: ${dto.preferredLanguage}. Supported languages: ${supportedLanguages.join(', ')}`,
+        );
+      }
+    }
+
+    const updateData: any = {};
+    if (dto.firstName !== undefined) updateData.firstName = dto.firstName;
+    if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
+    if (dto.profilePhotoUrl !== undefined) updateData.profilePhotoUrl = dto.profilePhotoUrl;
+    if (dto.preferredLanguage !== undefined) updateData.preferredLanguage = dto.preferredLanguage;
+
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: {
-        firstName: dto.firstName,
-        lastName: dto.lastName,
-        profilePhotoUrl: dto.profilePhotoUrl,
-      },
+      data: updateData,
       select: {
         id: true,
         email: true,
@@ -506,6 +618,7 @@ export class UsersService {
         firstName: true,
         lastName: true,
         profilePhotoUrl: true,
+        preferredLanguage: true,
         updatedAt: true,
       },
     });
@@ -516,6 +629,39 @@ export class UsersService {
     });
 
     this.logger.log(`Profile updated for user: ${userId}`);
+    return user;
+  }
+
+  /**
+   * Update user's preferred language
+   */
+  async updatePreferredLanguage(userId: string, language: string) {
+    this.logger.log(`Updating preferred language for user: ${userId} to ${language}`);
+
+    // Validate language
+    const supportedLanguages = this.i18nService.getSupportedLanguages();
+    if (!supportedLanguages.includes(language)) {
+      throw new BadRequestException(
+        `Unsupported language: ${language}. Supported languages: ${supportedLanguages.join(', ')}`,
+      );
+    }
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { preferredLanguage: language },
+      select: {
+        id: true,
+        preferredLanguage: true,
+        updatedAt: true,
+      },
+    });
+
+    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
+      userId: user.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Preferred language updated for user: ${userId}`);
     return user;
   }
 
@@ -836,7 +982,7 @@ export class UsersService {
   /**
    * Reset password using token
    */
-  async resetPassword(token: string, newPassword: string, language?: string) {
+  async resetPassword(token: string, newPassword: string, _language?: string) {
     this.logger.log(`Password reset attempt with token`);
 
     // Verify token via notification service

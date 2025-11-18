@@ -47,6 +47,6 @@ if ! ping -c 1 postgres >/dev/null 2>&1; then
   export ADMIN_DATABASE_URL=$(echo ${ADMIN_DATABASE_URL:-} | sed 's/@postgres:5432/@localhost:5432/')
 fi
 
-# Run the seed script
+# Run the seed script (forward all additional CLI args to the underlying script)
 echo "🌱 Running seed script: $SEED_SCRIPT"
-npx ts-node -r tsconfig-paths/register "$SEED_SCRIPT"
+npx ts-node -r tsconfig-paths/register "$SEED_SCRIPT" "${@:2}"

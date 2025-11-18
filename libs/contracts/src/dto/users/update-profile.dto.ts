@@ -25,4 +25,12 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   profilePhotoUrl?: string;
+
+  @ApiPropertyOptional({
+    description: 'Preferred language code (ISO 639-1, e.g., en, de, ar)',
+    example: 'en',
+  })
+  @IsString()
+  @IsOptional()
+  preferredLanguage?: string;
 }

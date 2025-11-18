@@ -41,6 +41,39 @@ export class SendNotificationDto {
   content: string;
 
   @ApiPropertyOptional({
+    description: 'City ID for city-specific Firebase project',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @IsString()
+  @IsOptional()
+  cityId?: string;
+
+  @ApiPropertyOptional({
+    description: 'FCM-specific data payload',
+    example: { action: 'open_screen', screen: 'notifications' },
+  })
+  @IsObject()
+  @IsOptional()
+  fcmData?: { [key: string]: string };
+
+  @ApiPropertyOptional({
+    description: 'Translation key for multi-language support (e.g., notifications.welcome.title)',
+    example: 'notifications.welcome.title',
+  })
+  @IsString()
+  @IsOptional()
+  translationKey?: string;
+
+  @ApiPropertyOptional({
+    description:
+      'Parameters for translation interpolation (e.g., { appName: "Heidi", firstName: "John" })',
+    example: { appName: 'Heidi', firstName: 'John', cityName: 'Berlin' },
+  })
+  @IsObject()
+  @IsOptional()
+  translationParams?: Record<string, any>;
+
+  @ApiPropertyOptional({
     description: 'Optional metadata for the notification',
     example: { recipientEmail: 'user@example.com' },
   })
