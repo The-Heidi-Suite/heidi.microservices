@@ -1033,4 +1033,48 @@ export class UsersService {
       message: 'Password has been reset successfully',
     };
   }
+
+  /**
+   * Update user role
+   * Used when assigning city admin or updating roles via core service
+   */
+  async updateUserRole(userId: string, role: string, updatedBy?: string) {
+    this.logger.log(`Updating user role: userId=${userId}, role=${role}, updatedBy=${updatedBy}`);
+
+    // Normalize role
+    const normalizedRole = role.toUpperCase() as UserRole;
+
+    // Verify user exists
+    await this.findOne(userId);
+
+    // Update user role
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { role: normalizedRole },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        role: true,
+        firstName: true,
+        lastName: true,
+        updatedAt: true,
+      },
+    });
+
+    // Emit user updated event
+    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
+      userId: user.id,
+      action: 'ROLE_UPDATED',
+      newRole: normalizedRole,
+      updatedBy,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`User role updated successfully: userId=${userId}, newRole=${normalizedRole}`);
+    return {
+      success: true,
+      user,
+    };
+  }
 }

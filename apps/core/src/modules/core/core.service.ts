@@ -12,6 +12,7 @@ import {
   Prisma,
 } from '@prisma/client-core';
 import { CoreOperationRequestDto, CoreOperationResponseDto } from '@heidi/contracts';
+import { roleToNumber } from '@heidi/rbac';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
@@ -142,9 +143,32 @@ export class CoreService implements OnModuleInit {
     }
   }
 
-  async assignCityAdmin(userId: string, cityId: string) {
-    this.logger.log(`Assigning city admin: userId=${userId}, cityId=${cityId}`);
+  async assignCityAdmin(
+    userId: string,
+    cityId: string,
+    role: string | number,
+    assignedBy: string,
+    canManageAdmins?: boolean,
+  ) {
+    this.logger.log(
+      `Assigning city admin: userId=${userId}, cityId=${cityId}, role=${role}, assignedBy=${assignedBy}, canManageAdmins=${canManageAdmins}`,
+    );
 
+    // Normalize role - handle both string and number formats
+    let normalizedRole: UserRole;
+    if (typeof role === 'number') {
+      // Convert number to enum (1=SUPER_ADMIN, 2=CITY_ADMIN, 3=CITIZEN)
+      const roleMap: Record<number, UserRole> = {
+        1: UserRole.SUPER_ADMIN,
+        2: UserRole.CITY_ADMIN,
+        3: UserRole.CITIZEN,
+      };
+      normalizedRole = roleMap[role] || UserRole.CITIZEN;
+    } else {
+      normalizedRole = role.toUpperCase() as UserRole;
+    }
+
+    // Create or update the city assignment
     const assignment = await this.prisma.userCityAssignment.upsert({
       where: {
         userId_cityId: {
@@ -153,15 +177,17 @@ export class CoreService implements OnModuleInit {
         },
       },
       update: {
-        role: UserRole.CITY_ADMIN,
-        canManageAdmins: true,
+        role: normalizedRole,
+        canManageAdmins: canManageAdmins ?? true,
         isActive: true,
+        assignedBy,
       },
       create: {
         userId,
         cityId,
-        role: UserRole.CITY_ADMIN,
-        canManageAdmins: true,
+        role: normalizedRole,
+        canManageAdmins: canManageAdmins ?? true,
+        assignedBy,
       },
       select: {
         id: true,
@@ -169,13 +195,38 @@ export class CoreService implements OnModuleInit {
         cityId: true,
         role: true,
         canManageAdmins: true,
+        assignedBy: true,
         createdAt: true,
       },
     });
 
+    // Always update user's role in the users table to match the assignment
+    // This ensures the role is updated even when changing back to CITIZEN
+    try {
+      this.logger.log(`Updating user role in users table: userId=${userId}, role=${normalizedRole}`);
+      
+      // Emit event to users service to update the role
+      await firstValueFrom(
+        this.client.send(RabbitMQPatterns.USER_UPDATE_ROLE, {
+          userId,
+          role: normalizedRole,
+          updatedBy: assignedBy,
+        }),
+      );
+
+      this.logger.log(`User role updated successfully in users table: userId=${userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to update user role in users table: userId=${userId}`, error);
+      // Don't fail the assignment if role update fails
+      // The assignment is still created, just log the error
+    }
+
     return {
       success: true,
-      assignment,
+      assignment: {
+        ...assignment,
+        role: roleToNumber(assignment.role), // Convert enum string to number
+      },
     };
   }
 

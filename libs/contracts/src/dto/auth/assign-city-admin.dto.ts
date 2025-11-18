@@ -1,6 +1,5 @@
-import { IsUUID, IsEnum, IsNotEmpty } from 'class-validator';
+import { IsUUID, IsNumber, IsNotEmpty, IsIn } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
-import { UserRole } from '@prisma/client-core';
 
 export class AssignCityAdminDto {
   @ApiProperty({
@@ -22,11 +21,12 @@ export class AssignCityAdminDto {
   cityId: string;
 
   @ApiProperty({
-    description: 'Role to assign (CITY_ADMIN or ADMIN)',
-    enum: UserRole,
-    example: UserRole.CITY_ADMIN,
+    description: 'Role to assign: 1=SUPER_ADMIN, 2=CITY_ADMIN, 3=CITIZEN',
+    example: 2,
+    enum: [1, 2, 3],
   })
-  @IsEnum(UserRole)
+  @IsNumber()
+  @IsIn([1, 2, 3], { message: 'Role must be 1 (SUPER_ADMIN), 2 (CITY_ADMIN), or 3 (CITIZEN)' })
   @IsNotEmpty()
-  role: UserRole;
+  role: number;
 }

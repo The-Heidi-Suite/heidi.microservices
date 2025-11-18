@@ -262,7 +262,7 @@ export class ValidateTokenResponseDto {
   statusCode: number;
 }
 
-// Assign City Admin Response
+// Assign City Admin Assignment Data (inner structure)
 export class AssignCityAdminResponseDataDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000' })
   id: string;
@@ -273,16 +273,38 @@ export class AssignCityAdminResponseDataDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174002' })
   cityId: string;
 
-  @ApiProperty({ example: 'CITY_ADMIN', enum: ['CITY_ADMIN'] })
-  role: string;
+  @ApiProperty({
+    example: 2,
+    enum: [1, 2, 3],
+    description: 'User role: 1=SUPER_ADMIN, 2=CITY_ADMIN, 3=CITIZEN',
+  })
+  role: number;
+
+  @ApiProperty({ example: true })
+  canManageAdmins: boolean;
+
+  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174003' })
+  assignedBy: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  createdAt: string;
+}
+
+// Wrapper for the actual response structure from core service
+export class AssignCityAdminResponseWrapperDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: AssignCityAdminResponseDataDto })
+  assignment: AssignCityAdminResponseDataDto;
 }
 
 export class AssignCityAdminResponseDto {
   @ApiProperty({ example: true })
   success: boolean;
 
-  @ApiProperty({ type: AssignCityAdminResponseDataDto })
-  data: AssignCityAdminResponseDataDto;
+  @ApiProperty({ type: AssignCityAdminResponseWrapperDto })
+  data: AssignCityAdminResponseWrapperDto;
 
   @ApiProperty({ example: 'City admin assigned successfully', description: 'Success message' })
   message: string;

@@ -86,13 +86,29 @@ export class CoreMessageController {
   }
 
   @MessagePattern(RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN)
-  async assignCityAdmin(@Payload() data: { userId: string; cityId: string }) {
+  async assignCityAdmin(
+    @Payload()
+    data: {
+      userId: string;
+      cityId: string;
+      role: string | number;
+      assignedBy: string;
+      canGrantManageAdmins: boolean;
+      canManageAdmins?: boolean;
+    },
+  ) {
     this.logger.log(
-      `Received message: ${RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN} for userId: ${data.userId}, cityId: ${data.cityId}`,
+      `Received message: ${RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN} for userId: ${data.userId}, cityId: ${data.cityId}, role: ${data.role}, assignedBy: ${data.assignedBy}`,
     );
 
     try {
-      const result = await this.coreService.assignCityAdmin(data.userId, data.cityId);
+      const result = await this.coreService.assignCityAdmin(
+        data.userId,
+        data.cityId,
+        data.role,
+        data.assignedBy,
+        data.canManageAdmins,
+      );
       this.logger.debug(
         `Successfully processed message: ${RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN} for userId: ${data.userId}, cityId: ${data.cityId} (will ACK)`,
       );
