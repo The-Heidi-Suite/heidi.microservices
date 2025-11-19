@@ -4,9 +4,11 @@ import { CoreMessageController } from './core-message.controller';
 import { CoreService } from './core.service';
 import { LoggerModule } from '@heidi/logger';
 import { PrismaCoreModule } from '@heidi/prisma';
+import { TranslationModule } from '@heidi/translations';
+import { ConfigModule } from '@heidi/config';
 
 @Module({
-  imports: [LoggerModule, PrismaCoreModule], // For message controller logging
+  imports: [LoggerModule, PrismaCoreModule, TranslationModule, ConfigModule], // For message controller logging
   controllers: [CoreController, CoreMessageController],
   providers: [CoreService],
 })

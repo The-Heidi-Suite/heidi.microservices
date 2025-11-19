@@ -3,6 +3,8 @@ import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabb
 import { RedisService } from '@heidi/redis';
 import { LoggerService } from '@heidi/logger';
 import { PrismaCoreService } from '@heidi/prisma';
+import { TranslationService } from '@heidi/translations';
+import { ConfigService } from '@heidi/config';
 import {
   UserRole,
   ListingStatus,
@@ -16,16 +18,39 @@ import {
 import { CoreOperationRequestDto, CoreOperationResponseDto } from '@heidi/contracts';
 import { roleToNumber } from '@heidi/rbac';
 import { firstValueFrom } from 'rxjs';
+import { createHash } from 'crypto';
 
 @Injectable()
 export class CoreService implements OnModuleInit {
+  private readonly defaultSourceLocale: string;
+  private readonly supportedLocales: string[];
+  private readonly translatableFields = ['title', 'summary', 'description'];
+
   constructor(
     @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     private readonly redis: RedisService,
     private readonly prisma: PrismaCoreService,
+    private readonly translationService: TranslationService,
+    private readonly configService: ConfigService,
     private readonly logger: LoggerService,
   ) {
     this.logger.setContext(CoreService.name);
+    this.defaultSourceLocale = this.configService.get<string>(
+      'translations.defaultSourceLocale',
+      'en',
+    );
+    this.supportedLocales = this.configService.get<string[]>('i18n.supportedLanguages') || [
+      'de',
+      'en',
+      'dk',
+      'no',
+      'se',
+      'ar',
+      'fa',
+      'tr',
+      'ru',
+      'uk',
+    ];
   }
 
   async onModuleInit() {
@@ -388,6 +413,9 @@ export class CoreService implements OnModuleInit {
           },
         });
 
+        // Trigger translations for changed translatable fields
+        await this.triggerTranslationsForListing(existing.id, listingData);
+
         return { action: 'updated', listingId: existing.id };
       }
 
@@ -475,7 +503,74 @@ export class CoreService implements OnModuleInit {
       },
     });
 
+    // Trigger translations for new listing
+    await this.triggerTranslationsForListing(listing.id, listingData);
+
     return { action: 'created', listingId: listing.id };
+  }
+
+  /**
+   * Helper method to compute source hash for a field value
+   */
+  private computeSourceHash(text: string): string {
+    return createHash('sha256')
+      .update(text || '')
+      .digest('hex');
+  }
+
+  /**
+   * Trigger translations for listing fields
+   * The translation service will check sourceHash and skip unchanged fields
+   */
+  private async triggerTranslationsForListing(
+    listingId: string,
+    listingData: {
+      title: string;
+      summary?: string;
+      content: string;
+    },
+  ): Promise<void> {
+    const targetLocales = this.supportedLocales.filter(
+      (locale) => locale !== this.defaultSourceLocale,
+    );
+
+    if (targetLocales.length === 0) {
+      return; // No target locales to translate to
+    }
+
+    // Map field names to values (content is stored as 'description' in translations)
+    const fieldMapping: Record<string, { value: string; fieldName: string }> = {
+      title: { value: listingData.title, fieldName: 'title' },
+      summary: { value: listingData.summary || '', fieldName: 'summary' },
+      description: { value: listingData.content, fieldName: 'description' },
+    };
+
+    for (const [fieldKey, fieldData] of Object.entries(fieldMapping)) {
+      if (!fieldData.value || fieldData.value.trim().length === 0) {
+        continue; // Skip empty fields
+      }
+
+      const sourceHash = this.computeSourceHash(fieldData.value);
+
+      try {
+        // Publish translation job
+        // The translation service will check sourceHash internally and skip if unchanged
+        this.client.emit(RabbitMQPatterns.TRANSLATION_AUTO_TRANSLATE, {
+          entityType: 'listing',
+          entityId: listingId,
+          field: fieldData.fieldName,
+          sourceLocale: this.defaultSourceLocale,
+          targetLocales,
+          text: fieldData.value,
+          sourceHash,
+        });
+      } catch (error: any) {
+        this.logger.error(
+          `Error checking translation for listing ${listingId}, field ${fieldKey}: ${error?.message}`,
+        );
+        // Continue with other fields even if one fails
+      }
+    }
   }
 
   /**

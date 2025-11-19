@@ -12,6 +12,7 @@ import {
   SuccessMessageService,
 } from '@heidi/interceptors';
 import { I18nModule, LanguageInterceptor } from '@heidi/i18n';
+import { TranslationModule } from '@heidi/translations';
 import { TermsAcceptanceGuard } from '@heidi/rbac';
 import { CoreModule } from './modules/core/core.module';
 import { ListingsModule } from './modules/listings/listings.module';
@@ -38,6 +39,7 @@ import { TenancyModule } from '@heidi/tenancy';
     RedisModule,
     MetricsModule,
     I18nModule,
+    TranslationModule,
     JwtModule.register(),
     RBACModule,
     ErrorHandlingModule,
