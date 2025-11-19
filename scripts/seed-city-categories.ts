@@ -21,6 +21,7 @@ import 'tsconfig-paths/register';
 
 import { PrismaClient as CityPrismaClient } from '@prisma/client-city';
 import { PrismaClient as CorePrismaClient, UserRole } from '@prisma/client-core';
+import { CATEGORY_ASSETS, getCityHeaderImageUrl } from './assets/category-assets-mapping';
 
 const cityPrisma = new CityPrismaClient();
 const corePrisma = new CorePrismaClient();
@@ -82,6 +83,15 @@ const KIEL_DISPLAY_NAMES: Record<string, string> = {
   'other-partner-content': 'Partner-Inhalte',
   'other-legacy-content': 'Altbestand',
   'other-miscellaneous': 'Verschiedenes',
+
+  // Shopping (new category)
+  shopping: 'nach-herzenslust-shoppen',
+
+  // Culture (new category)
+  culture: 'kiel-kultur',
+  'culture-museums': 'Museen & Ausstellungen',
+  'culture-theater': 'Theater & Aufführungen',
+  'culture-art': 'Kunst & Galerien',
 };
 
 async function getKielCityId(): Promise<string> {
@@ -125,7 +135,12 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
   let skipped = 0;
 
   for (const category of categories) {
-    const displayName = KIEL_DISPLAY_NAMES[category.slug] || category.name;
+    const assetMapping = CATEGORY_ASSETS[category.slug];
+    const displayName =
+      assetMapping?.displayName || KIEL_DISPLAY_NAMES[category.slug] || category.name;
+    const displayOrder = assetMapping?.displayOrder || 99; // Default to end if not specified
+    const headerBackgroundColor = assetMapping?.headerBackgroundColor || null;
+    const contentBackgroundColor = assetMapping?.contentBackgroundColor || null;
 
     try {
       const existing = await corePrisma.cityCategory.findUnique({
@@ -142,24 +157,34 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
           where: { id: existing.id },
           data: {
             displayName,
+            displayOrder,
+            headerBackgroundColor,
+            contentBackgroundColor,
             isActive: true,
             addedBy,
           },
         });
         updated++;
-        console.log(`↻ Updated city category: ${category.name} → "${displayName}"`);
+        console.log(
+          `↻ Updated city category: ${category.name} → "${displayName}" (order: ${displayOrder})`,
+        );
       } else {
         await corePrisma.cityCategory.create({
           data: {
             cityId,
             categoryId: category.id,
             displayName,
+            displayOrder,
+            headerBackgroundColor,
+            contentBackgroundColor,
             isActive: true,
             addedBy,
           },
         });
         created++;
-        console.log(`✓ Created city category: ${category.name} → "${displayName}"`);
+        console.log(
+          `✓ Created city category: ${category.name} → "${displayName}" (order: ${displayOrder})`,
+        );
       }
     } catch (error) {
       console.error(
@@ -177,6 +202,29 @@ async function seed() {
   try {
     const cityId = await getKielCityId();
     console.log(`✓ Found Kiel city (ID: ${cityId})`);
+
+    // Update city header image if not set
+    const city = await cityPrisma.city.findUnique({
+      where: { id: cityId },
+      select: { headerImageUrl: true },
+    });
+
+    // Preserve existing storage URL if it's already set (starts with http/https)
+    if (
+      !city?.headerImageUrl ||
+      (!city.headerImageUrl.startsWith('http://') && !city.headerImageUrl.startsWith('https://'))
+    ) {
+      const headerImageUrl = getCityHeaderImageUrl('kiel');
+      if (headerImageUrl) {
+        await cityPrisma.city.update({
+          where: { id: cityId },
+          data: { headerImageUrl },
+        });
+        console.log(`✓ Set city header image: ${headerImageUrl}`);
+      }
+    } else {
+      console.log(`ℹ City header image already set (storage URL): ${city.headerImageUrl}`);
+    }
 
     // Optionally get a city admin ID to set as addedBy
     const cityAdmin = await corePrisma.userCityAssignment.findFirst({

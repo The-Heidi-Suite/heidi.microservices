@@ -17,6 +17,7 @@
 import 'tsconfig-paths/register';
 
 import { PrismaClient, CategoryType } from '@prisma/client-core';
+import { CATEGORY_ASSETS, getCategoryImageUrl } from './assets/category-assets-mapping';
 
 const prisma = new PrismaClient();
 
@@ -25,6 +26,12 @@ type CategorySeed = {
   slug: string;
   type?: CategoryType;
   isActive?: boolean;
+  subtitle?: string;
+  description?: string;
+  imageUrl?: string;
+  iconUrl?: string;
+  headerBackgroundColor?: string;
+  contentBackgroundColor?: string;
   children?: CategorySeed[];
 };
 
@@ -98,6 +105,22 @@ const CATEGORY_SEEDS: CategorySeed[] = [
     ],
   },
   {
+    name: 'Shopping',
+    slug: 'shopping',
+    type: CategoryType.POI, // Shopping is fed from POI data
+    children: [],
+  },
+  {
+    name: 'Culture',
+    slug: 'culture',
+    type: CategoryType.OTHER, // Using OTHER for now, could add CULTURE to enum later
+    children: [
+      { name: 'Museums & Exhibitions', slug: 'culture-museums', type: CategoryType.OTHER },
+      { name: 'Theater & Performances', slug: 'culture-theater', type: CategoryType.OTHER },
+      { name: 'Art & Galleries', slug: 'culture-art', type: CategoryType.OTHER },
+    ],
+  },
+  {
     name: 'Hotels & Stays',
     slug: 'hotels-and-stays',
     type: CategoryType.HOTEL,
@@ -143,21 +166,48 @@ async function seedCategoryTree(seed: CategorySeed, parentId?: string) {
   const parentIdValue = parentId ?? null;
   const isActive = seed.isActive ?? true;
 
+  // Get asset mapping for this category
+  const assetMapping = CATEGORY_ASSETS[seed.slug];
+
   const existing = await prisma.category.findUnique({
     where: { slug: seed.slug },
   });
 
+  // Preserve existing storage URL if it's already set (starts with http/https)
+  let imageUrl: string | null = null;
+  if (
+    existing?.imageUrl &&
+    (existing.imageUrl.startsWith('http://') || existing.imageUrl.startsWith('https://'))
+  ) {
+    imageUrl = existing.imageUrl;
+  } else {
+    // Use local path from mapping (will be updated to storage URL by upload script)
+    imageUrl = assetMapping
+      ? getCategoryImageUrl(assetMapping.imageFileName)
+      : seed.imageUrl || null;
+  }
+
   let categoryId: string;
+
+  const categoryData = {
+    name: seed.name,
+    type: seed.type ?? null,
+    isActive,
+    parentId: parentIdValue,
+    subtitle: seed.subtitle || assetMapping?.subtitle || null,
+    description: seed.description || assetMapping?.description || null,
+    imageUrl: imageUrl || null,
+    iconUrl: seed.iconUrl || null,
+    headerBackgroundColor:
+      seed.headerBackgroundColor || assetMapping?.headerBackgroundColor || null,
+    contentBackgroundColor:
+      seed.contentBackgroundColor || assetMapping?.contentBackgroundColor || null,
+  };
 
   if (existing) {
     await prisma.category.update({
       where: { id: existing.id },
-      data: {
-        name: seed.name,
-        type: seed.type ?? null,
-        isActive,
-        parentId: parentIdValue,
-      },
+      data: categoryData,
     });
     categoryId = existing.id;
     summary.updated += 1;
@@ -165,11 +215,8 @@ async function seedCategoryTree(seed: CategorySeed, parentId?: string) {
   } else {
     const created = await prisma.category.create({
       data: {
-        name: seed.name,
+        ...categoryData,
         slug: seed.slug,
-        type: seed.type ?? null,
-        isActive,
-        parentId: parentIdValue,
       },
     });
     categoryId = created.id;
