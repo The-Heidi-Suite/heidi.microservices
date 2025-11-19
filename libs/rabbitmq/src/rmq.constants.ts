@@ -118,6 +118,9 @@ export const RabbitMQPatterns = {
   PASSWORD_RESET_FAILED: 'passwordReset.failed',
   PASSWORD_RESET_VERIFY: 'passwordReset.verify',
   PASSWORD_RESET_MARK_USED: 'passwordReset.markUsed',
+
+  // Translation events
+  TRANSLATION_AUTO_TRANSLATE: 'translation.autoTranslate',
 } as const;
 
 /**
