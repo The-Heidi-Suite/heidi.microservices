@@ -539,6 +539,48 @@ export class UsersService {
   }
 
   /**
+   * Restore a deleted/inactive user (Super Admin only)
+   */
+  async restore(id: string) {
+    // Find user including deleted ones
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        deletedAt: true,
+        isActive: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException({ errorCode: ErrorCode.AUTH_USER_NOT_FOUND });
+    }
+
+    // Check if user is already active and not deleted
+    if (user.isActive && !user.deletedAt) {
+      throw new BadRequestException({ errorCode: ErrorCode.USER_ALREADY_ACTIVE });
+    }
+
+    // Restore user (set deletedAt to null and isActive to true)
+    await this.prisma.user.update({
+      where: { id },
+      data: { deletedAt: null, isActive: true },
+    });
+
+    // Emit user updated event
+    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
+      userId: id,
+      action: 'USER_RESTORED',
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`User restored: ${id}`);
+    return { message: 'User restored successfully' };
+  }
+
+  /**
    * Get current user profile
    */
   async getProfile(userId: string) {

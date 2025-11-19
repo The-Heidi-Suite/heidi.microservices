@@ -37,6 +37,7 @@ import {
   CreateUserResponseDto,
   UpdateUserResponseDto,
   DeleteUserResponseDto,
+  RestoreUserResponseDto,
   GetProfileResponseDto,
   UpdateProfileResponseDto,
   ChangePasswordResponseDto,
@@ -53,7 +54,7 @@ import {
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { GetLanguage } from '@heidi/i18n';
-import { AdminOnlyGuard } from '@heidi/rbac';
+import { AdminOnlyGuard, SuperAdminOnly } from '@heidi/rbac';
 import { FileUploadService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
 
@@ -210,6 +211,38 @@ export class UsersController {
   })
   async delete(@Param('id') id: string) {
     return this.usersService.delete(id);
+  }
+
+  @Patch(':id/restore')
+  @ApiBearerAuth('JWT-auth')
+  @SuperAdminOnly()
+  @ApiOperation({
+    summary: 'Restore user',
+    description: 'Restore a deleted/inactive user by ID (Super Admin only)',
+  })
+  @ApiParam({ name: 'id', description: 'User ID (UUID)' })
+  @ApiResponse({
+    status: 200,
+    description: 'User restored successfully',
+    type: RestoreUserResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'User is already active',
+    type: BadRequestErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'Forbidden - Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  async restore(@Param('id') id: string) {
+    return this.usersService.restore(id);
   }
 
   @Get('profile/me')
