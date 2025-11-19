@@ -14,6 +14,8 @@ import {
 import { UserContextService } from '@heidi/rbac';
 import { StorageService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
+import { TranslationService } from '@heidi/translations';
+import { I18nService } from '@heidi/i18n';
 
 const tileWithRelations = Prisma.validator<Prisma.TileDefaultArgs>()({
   include: {
@@ -31,6 +33,8 @@ export class TilesService {
     private readonly userContext: UserContextService,
     private readonly storageService: StorageService,
     private readonly configService: ConfigService,
+    private readonly translationService: TranslationService,
+    private readonly i18nService: I18nService,
   ) {
     this.logger.setContext(TilesService.name);
   }
@@ -112,6 +116,46 @@ export class TilesService {
         isPrimary: city.isPrimary,
         displayOrder: city.displayOrder,
       })),
+    };
+  }
+
+  /**
+   * Apply translations to tile fields based on current request language
+   */
+  private async applyTileTranslations(
+    tile: TileWithRelations,
+    dto: TileResponseDto,
+  ): Promise<TileResponseDto> {
+    const locale = this.i18nService.getLanguage();
+    const defaultLocale = this.configService.get<string>('i18n.defaultLanguage', 'en');
+
+    if (!locale || locale === defaultLocale) {
+      return dto;
+    }
+
+    const [header, subheader, description] = await Promise.all([
+      this.translationService.getTranslation('tile', tile.id, 'header', locale, dto.header),
+      this.translationService.getTranslation(
+        'tile',
+        tile.id,
+        'subheader',
+        locale,
+        dto.subheader ?? '',
+      ),
+      this.translationService.getTranslation(
+        'tile',
+        tile.id,
+        'description',
+        locale,
+        dto.description ?? '',
+      ),
+    ]);
+
+    return {
+      ...dto,
+      header,
+      subheader,
+      description,
     };
   }
 
@@ -229,7 +273,8 @@ export class TilesService {
       include: tileWithRelations.include,
     });
 
-    return this.mapTile(tile);
+    const tileDto = this.mapTile(tile);
+    return this.applyTileTranslations(tile, tileDto);
   }
 
   async updateTile(
@@ -350,7 +395,8 @@ export class TilesService {
         throw new NotFoundException('Tile not found after update');
       }
 
-      return this.mapTile(refreshed);
+      const tileDto = this.mapTile(refreshed);
+      return this.applyTileTranslations(refreshed, tileDto);
     });
   }
 
@@ -364,7 +410,8 @@ export class TilesService {
       throw new NotFoundException('Tile not found');
     }
 
-    return this.mapTile(tile);
+    const dto = this.mapTile(tile);
+    return this.applyTileTranslations(tile, dto);
   }
 
   async getTileBySlug(slug: string): Promise<TileResponseDto> {
@@ -377,7 +424,8 @@ export class TilesService {
       throw new NotFoundException('Tile not found');
     }
 
-    return this.mapTile(tile);
+    const dto = this.mapTile(tile);
+    return this.applyTileTranslations(tile, dto);
   }
 
   private buildTileWhere(filter: TileFilterDto = {} as TileFilterDto): Prisma.TileWhereInput {
@@ -463,7 +511,12 @@ export class TilesService {
       this.prisma.tile.count({ where }),
     ]);
 
-    const items = rows.map((row) => this.mapTile(row));
+    const items = await Promise.all(
+      rows.map(async (row) => {
+        const dto = this.mapTile(row);
+        return this.applyTileTranslations(row, dto);
+      }),
+    );
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     return {
