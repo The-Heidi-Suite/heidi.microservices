@@ -9,9 +9,11 @@ import {
   ListingModerationStatus,
   ListingSourceType,
   ListingRecurrenceFreq,
+  CategoryType,
   Prisma,
 } from '@prisma/client-core';
 import { CoreOperationRequestDto, CoreOperationResponseDto } from '@heidi/contracts';
+import { roleToNumber } from '@heidi/rbac';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
@@ -142,9 +144,32 @@ export class CoreService implements OnModuleInit {
     }
   }
 
-  async assignCityAdmin(userId: string, cityId: string) {
-    this.logger.log(`Assigning city admin: userId=${userId}, cityId=${cityId}`);
+  async assignCityAdmin(
+    userId: string,
+    cityId: string,
+    role: string | number,
+    assignedBy: string,
+    canManageAdmins?: boolean,
+  ) {
+    this.logger.log(
+      `Assigning city admin: userId=${userId}, cityId=${cityId}, role=${role}, assignedBy=${assignedBy}, canManageAdmins=${canManageAdmins}`,
+    );
 
+    // Normalize role - handle both string and number formats
+    let normalizedRole: UserRole;
+    if (typeof role === 'number') {
+      // Convert number to enum (1=SUPER_ADMIN, 2=CITY_ADMIN, 3=CITIZEN)
+      const roleMap: Record<number, UserRole> = {
+        1: UserRole.SUPER_ADMIN,
+        2: UserRole.CITY_ADMIN,
+        3: UserRole.CITIZEN,
+      };
+      normalizedRole = roleMap[role] || UserRole.CITIZEN;
+    } else {
+      normalizedRole = role.toUpperCase() as UserRole;
+    }
+
+    // Create or update the city assignment
     const assignment = await this.prisma.userCityAssignment.upsert({
       where: {
         userId_cityId: {
@@ -153,15 +178,17 @@ export class CoreService implements OnModuleInit {
         },
       },
       update: {
-        role: UserRole.CITY_ADMIN,
-        canManageAdmins: true,
+        role: normalizedRole,
+        canManageAdmins: canManageAdmins ?? true,
         isActive: true,
+        assignedBy,
       },
       create: {
         userId,
         cityId,
-        role: UserRole.CITY_ADMIN,
-        canManageAdmins: true,
+        role: normalizedRole,
+        canManageAdmins: canManageAdmins ?? true,
+        assignedBy,
       },
       select: {
         id: true,
@@ -169,13 +196,40 @@ export class CoreService implements OnModuleInit {
         cityId: true,
         role: true,
         canManageAdmins: true,
+        assignedBy: true,
         createdAt: true,
       },
     });
 
+    // Always update user's role in the users table to match the assignment
+    // This ensures the role is updated even when changing back to CITIZEN
+    try {
+      this.logger.log(
+        `Updating user role in users table: userId=${userId}, role=${normalizedRole}`,
+      );
+
+      // Emit event to users service to update the role
+      await firstValueFrom(
+        this.client.send(RabbitMQPatterns.USER_UPDATE_ROLE, {
+          userId,
+          role: normalizedRole,
+          updatedBy: assignedBy,
+        }),
+      );
+
+      this.logger.log(`User role updated successfully in users table: userId=${userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to update user role in users table: userId=${userId}`, error);
+      // Don't fail the assignment if role update fails
+      // The assignment is still created, just log the error
+    }
+
     return {
       success: true,
-      assignment,
+      assignment: {
+        ...assignment,
+        role: roleToNumber(assignment.role), // Convert enum string to number
+      },
     };
   }
 
@@ -195,6 +249,7 @@ export class CoreService implements OnModuleInit {
     geoLng?: number;
     timezone?: string;
     contactPhone?: string;
+    contactEmail?: string;
     website?: string;
     heroImageUrl?: string;
     categorySlugs: string[];
@@ -291,6 +346,7 @@ export class CoreService implements OnModuleInit {
             geoLng: listingData.geoLng ? new Prisma.Decimal(listingData.geoLng) : undefined,
             timezone: listingData.timezone,
             contactPhone: listingData.contactPhone,
+            contactEmail: listingData.contactEmail,
             website: listingData.website,
             heroImageUrl: listingData.heroImageUrl,
           },
@@ -328,6 +384,7 @@ export class CoreService implements OnModuleInit {
         geoLng: listingData.geoLng ? new Prisma.Decimal(listingData.geoLng) : undefined,
         timezone: listingData.timezone,
         contactPhone: listingData.contactPhone,
+        contactEmail: listingData.contactEmail,
         website: listingData.website,
         heroImageUrl: listingData.heroImageUrl,
         categories:
@@ -365,6 +422,160 @@ export class CoreService implements OnModuleInit {
     });
 
     return { action: 'created', listingId: listing.id };
+  }
+
+  /**
+   * Maps Destination One item types to root category slugs and CategoryType
+   * Must match the mapping in destination-one.service.ts
+   */
+  private readonly TYPE_TO_ROOT_CATEGORY: Record<
+    string,
+    { slug: string; categoryType: CategoryType }
+  > = {
+    Gastro: { slug: 'food-and-drink', categoryType: CategoryType.GASTRO },
+    Event: { slug: 'events', categoryType: CategoryType.EVENT },
+    Tour: { slug: 'tours', categoryType: CategoryType.TOUR },
+    POI: { slug: 'points-of-interest', categoryType: CategoryType.POI },
+    Hotel: { slug: 'hotels-and-stays', categoryType: CategoryType.HOTEL },
+    Article: { slug: 'articles-and-stories', categoryType: CategoryType.ARTICLE },
+  };
+
+  private slugify(value: string): string {
+    return value
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '');
+  }
+
+  async syncCategoriesFromIntegration(data: {
+    cityId: string;
+    categoryFacets: Array<{ type: string; field: string; value: string; label: string }>;
+  }): Promise<{
+    created: number;
+    updated: number;
+    cityCategoriesCreated: number;
+    cityCategoriesUpdated: number;
+  }> {
+    this.logger.log(
+      `Syncing categories from integration for city ${data.cityId}, ${data.categoryFacets.length} facets`,
+    );
+
+    let categoriesCreated = 0;
+    let categoriesUpdated = 0;
+    let cityCategoriesCreated = 0;
+    let cityCategoriesUpdated = 0;
+
+    // Group facets by type to process them together
+    const facetsByType = new Map<string, Array<{ field: string; value: string; label: string }>>();
+    for (const facet of data.categoryFacets) {
+      if (!facetsByType.has(facet.type)) {
+        facetsByType.set(facet.type, []);
+      }
+      facetsByType.get(facet.type)!.push(facet);
+    }
+
+    for (const [type, facets] of facetsByType.entries()) {
+      const rootCategoryInfo = this.TYPE_TO_ROOT_CATEGORY[type];
+      if (!rootCategoryInfo) {
+        this.logger.warn(`Unknown type "${type}" in category facets, skipping`);
+        continue;
+      }
+
+      // Find or create root category
+      const rootCategory = await this.prisma.category.findUnique({
+        where: { slug: rootCategoryInfo.slug },
+      });
+
+      if (!rootCategory) {
+        this.logger.warn(
+          `Root category with slug "${rootCategoryInfo.slug}" not found. Please ensure categories are seeded.`,
+        );
+        continue;
+      }
+
+      // Process each facet
+      for (const facet of facets) {
+        if (facet.field !== 'category') {
+          // Only process 'category' field for now
+          continue;
+        }
+
+        // Determine slug to use (automatic strategy: rootSlug + slugified facet label)
+        const categorySlug = `${rootCategoryInfo.slug}-${this.slugify(facet.label)}`;
+
+        // Upsert Category
+        const category = await this.prisma.category.upsert({
+          where: { slug: categorySlug },
+          update: {
+            name: facet.label,
+            type: rootCategoryInfo.categoryType,
+            parentId: rootCategory.id,
+            isActive: true,
+          },
+          create: {
+            name: facet.label,
+            slug: categorySlug,
+            type: rootCategoryInfo.categoryType,
+            parentId: rootCategory.id,
+            isActive: true,
+          },
+        });
+
+        if (category.createdAt.getTime() === category.updatedAt.getTime()) {
+          categoriesCreated++;
+        } else {
+          categoriesUpdated++;
+        }
+
+        // Check if CityCategory exists before upsert
+        const existingCityCategory = await this.prisma.cityCategory.findUnique({
+          where: {
+            cityId_categoryId: {
+              cityId: data.cityId,
+              categoryId: category.id,
+            },
+          },
+        });
+
+        // Upsert CityCategory
+        await this.prisma.cityCategory.upsert({
+          where: {
+            cityId_categoryId: {
+              cityId: data.cityId,
+              categoryId: category.id,
+            },
+          },
+          update: {
+            displayName: facet.label,
+            isActive: true,
+          },
+          create: {
+            cityId: data.cityId,
+            categoryId: category.id,
+            displayName: facet.label,
+            isActive: true,
+          },
+        });
+
+        if (!existingCityCategory) {
+          cityCategoriesCreated++;
+        } else {
+          cityCategoriesUpdated++;
+        }
+      }
+    }
+
+    this.logger.log(
+      `Category sync completed: ${categoriesCreated} categories created, ${categoriesUpdated} updated, ${cityCategoriesCreated} city categories created, ${cityCategoriesUpdated} updated`,
+    );
+
+    return {
+      created: categoriesCreated,
+      updated: categoriesUpdated,
+      cityCategoriesCreated,
+      cityCategoriesUpdated,
+    };
   }
 
   async syncParkingSpace(data: {

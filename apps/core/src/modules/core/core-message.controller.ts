@@ -86,13 +86,29 @@ export class CoreMessageController {
   }
 
   @MessagePattern(RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN)
-  async assignCityAdmin(@Payload() data: { userId: string; cityId: string }) {
+  async assignCityAdmin(
+    @Payload()
+    data: {
+      userId: string;
+      cityId: string;
+      role: string | number;
+      assignedBy: string;
+      canGrantManageAdmins: boolean;
+      canManageAdmins?: boolean;
+    },
+  ) {
     this.logger.log(
-      `Received message: ${RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN} for userId: ${data.userId}, cityId: ${data.cityId}`,
+      `Received message: ${RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN} for userId: ${data.userId}, cityId: ${data.cityId}, role: ${data.role}, assignedBy: ${data.assignedBy}`,
     );
 
     try {
-      const result = await this.coreService.assignCityAdmin(data.userId, data.cityId);
+      const result = await this.coreService.assignCityAdmin(
+        data.userId,
+        data.cityId,
+        data.role,
+        data.assignedBy,
+        data.canManageAdmins,
+      );
       this.logger.debug(
         `Successfully processed message: ${RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN} for userId: ${data.userId}, cityId: ${data.cityId} (will ACK)`,
       );
@@ -150,6 +166,39 @@ export class CoreMessageController {
     } catch (error) {
       this.logger.error(
         `Error processing message: ${RabbitMQPatterns.PARKING_SPACE_SYNC} for parkingSiteId: ${data.parkingData?.parkingSiteId || data.parkingData?.id} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.INTEGRATION_SYNC_CATEGORIES)
+  async syncCategoriesFromIntegration(
+    @Payload()
+    data: {
+      integrationId: string;
+      cityId: string;
+      provider: string;
+      categoryFacets: Array<{ type: string; field: string; value: string; label: string }>;
+      timestamp: string;
+    },
+  ) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.INTEGRATION_SYNC_CATEGORIES} for integrationId: ${data.integrationId}, cityId: ${data.cityId}, facets: ${data.categoryFacets.length}`,
+    );
+
+    try {
+      const result = await this.coreService.syncCategoriesFromIntegration({
+        cityId: data.cityId,
+        categoryFacets: data.categoryFacets,
+      });
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.INTEGRATION_SYNC_CATEGORIES} for integrationId: ${data.integrationId} (will ACK)`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.INTEGRATION_SYNC_CATEGORIES} for integrationId: ${data.integrationId} (will NACK)`,
         error,
       );
       throw error; // Throwing error causes NestJS to NACK the message

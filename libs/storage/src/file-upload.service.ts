@@ -265,6 +265,13 @@ export class FileUploadService {
   }
 
   /**
+   * Generate storage key for city header image
+   */
+  generateCityHeaderKey(cityId: string, extension: string): string {
+    return `cities/${cityId}/header.${extension}`;
+  }
+
+  /**
    * Generate storage key for listing hero image
    */
   generateListingHeroKey(listingId: string, extension: string): string {
@@ -298,6 +305,22 @@ export class FileUploadService {
    */
   generateCategoryIconKey(categoryId: string, extension: string): string {
     return `categories/${categoryId}/icon.${extension}`;
+  }
+
+  /**
+   * Generate storage key for category asset image (used for seeding)
+   * Returns: categories/{categoryId}/image.{extension}
+   */
+  generateCategoryAssetKey(categoryId: string, extension: string): string {
+    return `categories/${categoryId}/image.${extension}`;
+  }
+
+  /**
+   * Generate storage key for city header asset image (used for seeding)
+   * Returns: cities/{cityId}/header.{extension}
+   */
+  generateCityHeaderAssetKey(cityId: string, extension: string): string {
+    return `cities/${cityId}/header.${extension}`;
   }
 
   /**

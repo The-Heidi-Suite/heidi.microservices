@@ -190,6 +190,50 @@ export class UsersMessageController {
     }
   }
 
+  @MessagePattern(RabbitMQPatterns.USER_FIND_BY_CITY)
+  async findByCity(@Payload() data: { cityId: string; page?: number; limit?: number }) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_FIND_BY_CITY} for cityId: ${data.cityId}`,
+    );
+
+    try {
+      const result = await this.usersService.findByCity(
+        data.cityId,
+        data.page || 1,
+        data.limit || 100,
+      );
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_FIND_BY_CITY} for cityId: ${data.cityId} (will ACK)`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_FIND_BY_CITY} for cityId: ${data.cityId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.USER_FIND_ALL_ACTIVE)
+  async findAllActive(@Payload() data: { page?: number; limit?: number }) {
+    this.logger.log(`Received message: ${RabbitMQPatterns.USER_FIND_ALL_ACTIVE}`);
+
+    try {
+      const result = await this.usersService.findAllActive(data.page || 1, data.limit || 100);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_FIND_ALL_ACTIVE} (will ACK)`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_FIND_ALL_ACTIVE} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
   @EventPattern(RabbitMQPatterns.VERIFICATION_VERIFIED)
   async handleVerificationVerified(
     @Payload()
@@ -224,6 +268,27 @@ export class UsersMessageController {
       );
       // Note: For @EventPattern, errors are logged but don't NACK since it's fire-and-forget
       // The event will be lost if processing fails, which is expected behavior for events
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.USER_UPDATE_ROLE)
+  async updateRole(@Payload() data: { userId: string; role: string; updatedBy?: string }) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_UPDATE_ROLE} for userId: ${data.userId}, role: ${data.role}`,
+    );
+
+    try {
+      const result = await this.usersService.updateUserRole(data.userId, data.role, data.updatedBy);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_UPDATE_ROLE} for userId: ${data.userId} (will ACK)`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_UPDATE_ROLE} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
     }
   }
 }

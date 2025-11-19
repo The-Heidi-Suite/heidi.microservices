@@ -28,7 +28,10 @@ export class AdminOnlyGuard implements CanActivate {
     const user = request.user;
 
     if (!user) {
-      throw new ForbiddenException('User not authenticated');
+      throw new ForbiddenException({
+        errorCode: 'UNAUTHORIZED',
+        message: 'Unauthorized',
+      });
     }
 
     // Convert number role to enum if needed
@@ -38,14 +41,20 @@ export class AdminOnlyGuard implements CanActivate {
 
     if (isSuperAdminOnly) {
       if (userRole !== UserRole.SUPER_ADMIN) {
-        throw new ForbiddenException('This route requires Super Admin role');
+        throw new ForbiddenException({
+          errorCode: 'SUPER_ADMIN_REQUIRED',
+          message: 'This route requires Super Admin role',
+        });
       }
       return true;
     }
 
     if (isCityAdminOnly) {
       if (userRole !== UserRole.SUPER_ADMIN && userRole !== UserRole.CITY_ADMIN) {
-        throw new ForbiddenException('This route requires City Admin or Super Admin role');
+        throw new ForbiddenException({
+          errorCode: 'CITY_ADMIN_OR_SUPER_ADMIN_REQUIRED',
+          message: 'This route requires City Admin or Super Admin role',
+        });
       }
       return true;
     }

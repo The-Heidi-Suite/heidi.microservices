@@ -1,0 +1,166 @@
+import { Injectable, Inject } from '@nestjs/common';
+import { I18nService } from '@heidi/i18n';
+import { ConfigService } from '@heidi/config';
+import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
+import { LoggerService } from '@heidi/logger';
+import { SendNotificationDto } from '@heidi/contracts';
+import { firstValueFrom, timeout } from 'rxjs';
+
+@Injectable()
+export class FCMTranslationService {
+  private readonly logger: LoggerService;
+  private readonly defaultLanguage: string;
+
+  constructor(
+    private readonly i18nService: I18nService,
+    private readonly configService: ConfigService,
+    @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
+    logger: LoggerService,
+  ) {
+    this.logger = logger;
+    this.logger.setContext(FCMTranslationService.name);
+    this.defaultLanguage = this.configService.get<string>('i18n.defaultLanguage', 'en');
+  }
+
+  /**
+   * Resolve language priority: user.preferredLanguage → user.metadata.preferredLanguage → requestLanguage → default
+   */
+  resolveLanguage(user: any, requestLanguage?: string): string {
+    // 1. Check user.preferredLanguage (from database)
+    if (user?.preferredLanguage && typeof user.preferredLanguage === 'string') {
+      return user.preferredLanguage;
+    }
+
+    // 2. Check user.metadata.preferredLanguage (legacy support)
+    if (user?.metadata) {
+      const metadata = user.metadata;
+      if (typeof metadata === 'object' && !Array.isArray(metadata)) {
+        const preferred = metadata.preferredLanguage || metadata.language || metadata.locale;
+        if (preferred && typeof preferred === 'string' && preferred.trim() !== '') {
+          return preferred;
+        }
+      }
+    }
+
+    // 3. Check request language (Accept-Language header)
+    if (requestLanguage && requestLanguage.trim() !== '') {
+      return requestLanguage;
+    }
+
+    // 4. Use system default
+    return this.defaultLanguage;
+  }
+
+  /**
+   * Translate notification using translation key
+   */
+  translateNotification(key: string, params?: Record<string, any>, language?: string): string {
+    return this.i18nService.translate(key, params, language);
+  }
+
+  /**
+   * Get notification content (title and body) with translation support
+   */
+  async getNotificationContent(
+    dto: SendNotificationDto,
+    user: any,
+    requestLanguage?: string,
+  ): Promise<{ title: string; body: string }> {
+    const language = this.resolveLanguage(user, requestLanguage);
+
+    // If translation key is provided, use translation
+    if (dto.translationKey) {
+      // Build translation params with user data and provided params
+      const translationParams = await this.buildTranslationParams(
+        dto.translationParams || {},
+        user,
+        dto.cityId,
+      );
+
+      // For notifications, translation key should point to a base key (e.g., notifications.welcome)
+      // We'll get both title and body from the base key
+      // If key already includes .title or .body, extract the base
+      let baseKey = dto.translationKey;
+      if (baseKey.endsWith('.title') || baseKey.endsWith('.body')) {
+        baseKey = baseKey.replace(/\.(title|body)$/, '');
+      }
+
+      // Get title and body from the base key
+      const titleKey = `${baseKey}.title`;
+      const bodyKey = `${baseKey}.body`;
+      return {
+        title: this.translateNotification(titleKey, translationParams, language),
+        body: this.translateNotification(bodyKey, translationParams, language),
+      };
+    }
+
+    // Fallback to provided subject/content or use generic translation
+    if (dto.subject && dto.content) {
+      return {
+        title: dto.subject,
+        body: dto.content,
+      };
+    }
+
+    // Use generic translation with provided content
+    const translationParams = await this.buildTranslationParams(
+      {
+        ...(dto.translationParams || {}),
+        subject: dto.subject || '',
+        content: dto.content || '',
+      },
+      user,
+      dto.cityId,
+    );
+
+    return {
+      title: this.translateNotification('notifications.generic.title', translationParams, language),
+      body: this.translateNotification('notifications.generic.body', translationParams, language),
+    };
+  }
+
+  /**
+   * Build translation parameters from user data and provided params
+   */
+  private async buildTranslationParams(
+    providedParams: Record<string, any>,
+    user: any,
+    cityId?: string,
+  ): Promise<Record<string, any>> {
+    const params: Record<string, any> = {
+      ...providedParams,
+    };
+
+    // Add user data
+    if (user?.firstName) {
+      params.firstName = user.firstName;
+    }
+    if (user?.lastName) {
+      params.lastName = user.lastName;
+    }
+
+    // Add city name if cityId is provided
+    if (cityId) {
+      try {
+        const city = await firstValueFrom(
+          this.client
+            .send<any, { id: string }>(RabbitMQPatterns.CITY_FIND_BY_ID, { id: cityId })
+            .pipe(timeout(5000)),
+        );
+        if (city?.name) {
+          params.cityName = city.name;
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to fetch city name for cityId: ${cityId}`, error);
+      }
+    }
+
+    // Add app name (can be from city theme or default)
+    // For now, use default app name - can be enhanced later with city theme
+    if (!params.appName) {
+      params.appName = 'Heidi';
+    }
+
+    return params;
+  }
+}

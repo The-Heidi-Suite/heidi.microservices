@@ -59,4 +59,20 @@ export class UpdateCategoryDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Header background color in hex format',
+    example: '#7C3AED',
+  })
+  @IsOptional()
+  @IsString()
+  headerBackgroundColor?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Content background color in hex format',
+    example: '#F3E8FF',
+  })
+  @IsOptional()
+  @IsString()
+  contentBackgroundColor?: string | null;
 }

@@ -30,5 +30,12 @@
   "VERIFICATION_CANCELLED": "Verifiering avbruten framgångsrikt",
   "PASSWORD_RESET_EMAIL_SENT": "E-post för återställning av lösenord skickad",
   "PASSWORD_RESET_IF_EXISTS": "Om ett konto med den e-postadressen finns har en länk för återställning av lösenord skickats.",
+  "TILES_RETRIEVED": "Plattor hämtade framgångsrikt",
+  "TILE_RETRIEVED": "Platta hämtad framgångsrikt",
+  "TILE_CREATED": "Platta skapad framgångsrikt",
+  "TILE_UPDATED": "Platta uppdaterad framgångsrikt",
+  "TILE_DELETED": "Platta raderad framgångsrikt",
+  "TILE_BACKGROUND_IMAGE_UPLOADED": "Plattans bakgrundsbild uppladdad framgångsrikt",
+  "TILE_ICON_IMAGE_UPLOADED": "Plattans ikonbild uppladdad framgångsrikt",
   "OPERATION_SUCCESS": "Åtgärd slutförd framgångsrikt"
 }

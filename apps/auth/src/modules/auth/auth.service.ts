@@ -8,7 +8,7 @@ import {
 } from '@nestjs/common';
 import { firstValueFrom, timeout } from 'rxjs';
 import { PrismaAuthService } from '@heidi/prisma';
-import { PermissionService, roleToNumber } from '@heidi/rbac';
+import { PermissionService, roleToNumber, numberToRole } from '@heidi/rbac';
 import { JwtTokenService, CityAssignment } from '@heidi/jwt';
 import { RedisService } from '@heidi/redis';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
@@ -557,16 +557,54 @@ export class AuthService {
   /**
    * Assign city admin (Super Admin or City Admin with canManageAdmins permission)
    */
-  async assignCityAdmin(dto: AssignCityAdminDto, requesterId: string) {
+  async assignCityAdmin(dto: AssignCityAdminDto, requesterId: string, requesterRole?: number | string) {
     this.logger.log(`Assigning city admin: ${dto.userId} to city: ${dto.cityId}`);
 
-    // Check if requester can manage city admins for this city
-    const canManage = await this.permissionService.canManageCityAdmins(requesterId, dto.cityId);
-    if (!canManage) {
-      throw new ForbiddenException('Insufficient permissions to assign city admins');
+    // Normalize role (handle both string and number formats from JWT)
+    let normalizedRole: UserRole;
+    if (requesterRole !== undefined) {
+      const roleNumber = typeof requesterRole === 'number' ? requesterRole : null;
+      normalizedRole =
+        roleNumber !== null ? numberToRole(roleNumber) : (requesterRole as UserRole);
+    } else {
+      // Fallback: fetch from database if role not provided (shouldn't happen with updated controller)
+      const requester = await firstValueFrom(
+        this.client
+          .send<any, { id: string }>(RabbitMQPatterns.USER_FIND_BY_ID, { id: requesterId })
+          .pipe(timeout(10000)),
+      );
+
+      if (!requester) {
+        throw new UnauthorizedException('Requester not found');
+      }
+
+      const roleNumber = typeof requester.role === 'number' ? requester.role : null;
+      normalizedRole =
+        roleNumber !== null ? numberToRole(roleNumber) : (requester.role as UserRole);
     }
 
-    // Verify user exists via users service
+    this.logger.debug(
+      `Assign city admin - Requester role check: userId=${requesterId}, role=${normalizedRole}, rawRole=${requesterRole}`,
+    );
+
+    // Super admins can always manage city admins, skip permission check
+    const isSuperAdmin = normalizedRole === UserRole.SUPER_ADMIN;
+    if (isSuperAdmin) {
+      this.logger.log(
+        `Super Admin detected - bypassing permission check for userId=${requesterId}`,
+      );
+    } else {
+      // Check if requester can manage city admins for this city
+      this.logger.debug(
+        `Not a Super Admin - checking canManageCityAdmins for userId=${requesterId}, cityId=${dto.cityId}`,
+      );
+      const canManage = await this.permissionService.canManageCityAdmins(requesterId, dto.cityId);
+      if (!canManage) {
+        throw new ForbiddenException('Insufficient permissions to assign city admins');
+      }
+    }
+
+    // Verify target user exists via users service
     const user = await firstValueFrom(
       this.client
         .send<any, { id: string }>(RabbitMQPatterns.USER_FIND_BY_ID, { id: dto.userId })
@@ -578,12 +616,20 @@ export class AuthService {
     }
 
     // Get requester's assignments for permission check
-    const requesterAssignments = await this.permissionService.getUserCityAssignments(requesterId);
-    const requesterAssignment = requesterAssignments.find((a) => {
-      return a.cityId === dto.cityId || a.canManageAdmins;
-    });
-    const canGrantManageAdmins =
-      requesterAssignment?.canManageAdmins === true && dto.role === UserRole.CITY_ADMIN;
+    // Super admins can grant canManageAdmins to city admins they assign
+    // Convert role number to enum for comparison (2 = CITY_ADMIN)
+    const targetRole = numberToRole(dto.role);
+    let canGrantManageAdmins = false;
+    if (isSuperAdmin) {
+      canGrantManageAdmins = targetRole === UserRole.CITY_ADMIN;
+    } else {
+      const requesterAssignments = await this.permissionService.getUserCityAssignments(requesterId);
+      const requesterAssignment = requesterAssignments.find((a) => {
+        return a.cityId === dto.cityId || a.canManageAdmins;
+      });
+      canGrantManageAdmins =
+        requesterAssignment?.canManageAdmins === true && targetRole === UserRole.CITY_ADMIN;
+    }
 
     // Assign city admin via core service
     const assignment = await firstValueFrom(

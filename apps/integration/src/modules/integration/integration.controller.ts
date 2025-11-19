@@ -13,6 +13,7 @@ import {
   ApiBody,
   ApiOperation,
   ApiParam,
+  ApiProperty,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -23,14 +24,28 @@ import {
   GetIntegrationByIdResponseDto,
   IntegrationNotFoundErrorResponseDto,
   SyncIntegrationResponseDto,
+  NewsletterSubscriptionResponseDto,
+  NewsletterSubscriptionConflictErrorResponseDto,
+  NewsletterSubscriptionValidationErrorResponseDto,
+  NewsletterSubscriptionInternalErrorResponseDto,
 } from '@heidi/contracts';
 import { JwtAuthGuard, Public } from '@heidi/jwt';
 import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
 
 class SubscribeNewsletterDto {
+  @ApiProperty({
+    description: 'User ID for the newsletter subscription',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+    format: 'uuid',
+  })
   @IsUUID()
   userId: string;
 
+  @ApiProperty({
+    description: 'Email address to subscribe to the newsletter',
+    example: 'user@example.com',
+    format: 'email',
+  })
   @IsEmail({}, { message: 'Please enter a valid email address.' })
   email: string;
 }
@@ -100,42 +115,26 @@ export class IntegrationController {
   @ApiBody({
     description: 'Newsletter subscription request',
     type: SubscribeNewsletterDto,
-    schema: {
-      example: {
-        userId: '123e4567-e89b-12d3-a456-426614174000',
-        email: 'user@example.com',
-      },
-    },
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
     description: 'Newsletter subscription successful',
-    schema: {
-      example: {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        userId: '123e4567-e89b-12d3-a456-426614174000',
-        email: 'user@example.com',
-        emsContactId: 'contact-123',
-        status: 'PENDING',
-        emsEventTriggered: true,
-        subscribedAt: '2025-01-17T19:42:44.000Z',
-        confirmedAt: null,
-        createdAt: '2025-01-17T19:42:44.000Z',
-        updatedAt: '2025-01-17T19:42:44.000Z',
-      },
-    },
+    type: NewsletterSubscriptionResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Invalid email address or userId',
+    type: NewsletterSubscriptionValidationErrorResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.CONFLICT,
     description: 'User is already subscribed to the newsletter',
+    type: NewsletterSubscriptionConflictErrorResponseDto,
   })
   @ApiResponse({
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Failed to subscribe to newsletter',
+    type: NewsletterSubscriptionInternalErrorResponseDto,
   })
   async subscribeToNewsletter(@Body() body: SubscribeNewsletterDto) {
     return this.integrationService.subscribeToNewsletter(body.userId, body.email);

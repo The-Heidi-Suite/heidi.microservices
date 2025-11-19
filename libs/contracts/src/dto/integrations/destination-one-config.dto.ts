@@ -7,7 +7,6 @@ export interface DestinationOneConfig {
   template?: string;
   baseUrl?: string;
   cityId: string;
-  categoryMappings?: Record<string, string>; // destination_one category → category slug
   typeFilter?: string[]; // e.g., ["Gastro"]
   enabled?: boolean;
 }

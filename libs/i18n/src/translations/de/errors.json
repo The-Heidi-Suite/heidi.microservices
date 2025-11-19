@@ -4,6 +4,8 @@
   "NOT_FOUND": "Ressource nicht gefunden",
   "UNAUTHORIZED": "Nicht autorisiert",
   "FORBIDDEN": "Verboten - unzureichende Berechtigungen",
+  "SUPER_ADMIN_REQUIRED": "Diese Route erfordert die Super Admin-Rolle",
+  "CITY_ADMIN_OR_SUPER_ADMIN_REQUIRED": "Diese Route erfordert die City Admin- oder Super Admin-Rolle",
   "CONFLICT": "Ressourcenkonflikt",
   "BAD_REQUEST": "Ungültige Anfrage",
   "DATABASE_CONNECTION_ERROR": "Datenbankverbindungsfehler",

@@ -1,0 +1,30 @@
+{
+  "welcome": {
+    "title": "Willkommen bei {appName}!",
+    "body": "Hallo {firstName}, willkommen bei {appName}. Wir freuen uns, dass Sie hier sind."
+  },
+  "info": {
+    "title": "Information",
+    "body": "{content}"
+  },
+  "warning": {
+    "title": "Warnung",
+    "body": "{content}"
+  },
+  "error": {
+    "title": "Fehler",
+    "body": "{content}"
+  },
+  "success": {
+    "title": "Erfolg",
+    "body": "{content}"
+  },
+  "alert": {
+    "title": "Alarm",
+    "body": "{content}"
+  },
+  "generic": {
+    "title": "{subject}",
+    "body": "{content}"
+  }
+}

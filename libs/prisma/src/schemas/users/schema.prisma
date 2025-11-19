@@ -26,6 +26,7 @@ model User {
   firstName           String?
   lastName            String?
   profilePhotoUrl     String?
+  preferredLanguage   String?          // ISO 639-1 language code (e.g., 'en', 'de')
   emailVerified       Boolean          @default(false)
   isActive            Boolean           @default(true)
   createdAt           DateTime          @default(now())
@@ -41,6 +42,7 @@ model User {
   @@index([isActive])
   @@index([role])
   @@index([cityId])
+  @@index([preferredLanguage])
   @@unique([deviceId, devicePlatform])
   @@map("users")
 }
