@@ -161,18 +161,20 @@ model Listing {
 }
 
 model Category {
-  id          String    @id @default(uuid())
-  name        String
-  slug        String    @unique
-  description String?
-  subtitle    String?
-  imageUrl    String?
-  iconUrl     String?
-  type        CategoryType?
-  parentId    String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                    String    @id @default(uuid())
+  name                  String
+  slug                  String    @unique
+  description           String?
+  subtitle              String?
+  imageUrl              String?
+  iconUrl               String?
+  headerBackgroundColor String?   // Hex color code
+  contentBackgroundColor String?  // Hex color code
+  type                  CategoryType?
+  parentId              String?
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children Category[] @relation("CategoryHierarchy")
@@ -329,19 +331,23 @@ model ListingTimeIntervalException {
 }
 
 model CityCategory {
-  id          String   @id @default(uuid())
-  cityId      String
-  categoryId  String
-  displayName String?  // Custom display name for this city (defaults to category.name if null)
-  isActive    Boolean  @default(true)
-  addedBy     String?
-  addedAt     DateTime @default(now())
+  id                    String   @id @default(uuid())
+  cityId                String
+  categoryId            String
+  displayName           String?  // Custom display name for this city (defaults to category.name if null)
+  displayOrder          Int      @default(0)
+  headerBackgroundColor String? // Hex color code
+  contentBackgroundColor String? // Hex color code
+  isActive              Boolean  @default(true)
+  addedBy               String?
+  addedAt               DateTime @default(now())
 
   category Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@unique([cityId, categoryId])
   @@index([cityId])
   @@index([categoryId])
+  @@index([displayOrder])
   @@map("city_categories")
 }
 

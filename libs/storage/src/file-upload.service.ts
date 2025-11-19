@@ -308,6 +308,22 @@ export class FileUploadService {
   }
 
   /**
+   * Generate storage key for category asset image (used for seeding)
+   * Returns: categories/{categoryId}/image.{extension}
+   */
+  generateCategoryAssetKey(categoryId: string, extension: string): string {
+    return `categories/${categoryId}/image.${extension}`;
+  }
+
+  /**
+   * Generate storage key for city header asset image (used for seeding)
+   * Returns: cities/{cityId}/header.{extension}
+   */
+  generateCityHeaderAssetKey(cityId: string, extension: string): string {
+    return `cities/${cityId}/header.${extension}`;
+  }
+
+  /**
    * Get file extension from filename
    */
   private getFileExtension(filename: string): string {
