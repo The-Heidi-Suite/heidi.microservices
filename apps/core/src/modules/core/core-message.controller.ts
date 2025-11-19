@@ -179,7 +179,6 @@ export class CoreMessageController {
       integrationId: string;
       cityId: string;
       provider: string;
-      categoryMappings: Record<string, string>;
       categoryFacets: Array<{ type: string; field: string; value: string; label: string }>;
       timestamp: string;
     },
@@ -191,7 +190,6 @@ export class CoreMessageController {
     try {
       const result = await this.coreService.syncCategoriesFromIntegration({
         cityId: data.cityId,
-        categoryMappings: data.categoryMappings,
         categoryFacets: data.categoryFacets,
       });
       this.logger.debug(

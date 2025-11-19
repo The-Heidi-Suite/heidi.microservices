@@ -450,7 +450,6 @@ export class CoreService implements OnModuleInit {
 
   async syncCategoriesFromIntegration(data: {
     cityId: string;
-    categoryMappings: Record<string, string>;
     categoryFacets: Array<{ type: string; field: string; value: string; label: string }>;
   }): Promise<{
     created: number;
@@ -502,15 +501,8 @@ export class CoreService implements OnModuleInit {
           continue;
         }
 
-        // Determine slug to use
-        let categorySlug: string;
-        if (data.categoryMappings && data.categoryMappings[facet.value]) {
-          // Use manual mapping if available
-          categorySlug = data.categoryMappings[facet.value];
-        } else {
-          // Automatic strategy: rootSlug + slugified facet label
-          categorySlug = `${rootCategoryInfo.slug}-${this.slugify(facet.label)}`;
-        }
+        // Determine slug to use (automatic strategy: rootSlug + slugified facet label)
+        const categorySlug = `${rootCategoryInfo.slug}-${this.slugify(facet.label)}`;
 
         // Upsert Category
         const category = await this.prisma.category.upsert({
@@ -547,7 +539,7 @@ export class CoreService implements OnModuleInit {
         });
 
         // Upsert CityCategory
-        const cityCategory = await this.prisma.cityCategory.upsert({
+        await this.prisma.cityCategory.upsert({
           where: {
             cityId_categoryId: {
               cityId: data.cityId,
