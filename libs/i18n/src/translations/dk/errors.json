@@ -58,6 +58,7 @@
   "REGISTRATION_FIELDS_REQUIRED": "E-mail og adgangskode er påkrævet til registrering",
   "ACCOUNT_NOT_FOUND": "Ingen konto fundet med denne e-mailadresse. Tjek venligst din e-mail eller registrer en ny konto.",
   "ACCOUNT_INACTIVE": "Din konto er inaktiv. Kontakt venligst support for hjælp.",
+  "USER_ALREADY_ACTIVE": "Brugeren er allerede aktiv",
   "INVALID_CREDENTIALS": "Ugyldig e-mail eller adgangskode. Tjek venligst dine oplysninger og prøv igen.",
   "LOGIN_ERROR": "Der opstod en fejl under login. Prøv venligst igen senere.",
   "TILE_NOT_FOUND": "Flise ikke fundet",

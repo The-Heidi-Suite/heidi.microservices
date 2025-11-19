@@ -5,6 +5,7 @@
   "USER_CREATED": "Bruker opprettet vellykket",
   "USER_UPDATED": "Bruker oppdatert vellykket",
   "USER_DELETED": "Bruker slettet vellykket",
+  "USER_RESTORED": "Bruger gjenopprettet vellykket",
   "PROFILE_RETRIEVED": "Profil hentet vellykket",
   "PROFILE_UPDATED": "Profil oppdatert vellykket",
   "PASSWORD_CHANGED": "Passord endret vellykket",

@@ -58,6 +58,7 @@
   "REGISTRATION_FIELDS_REQUIRED": "Kayıt için e-posta ve şifre gereklidir",
   "ACCOUNT_NOT_FOUND": "Bu e-posta adresiyle bir hesap bulunamadı. Lütfen e-postanızı kontrol edin veya yeni bir hesap oluşturun.",
   "ACCOUNT_INACTIVE": "Hesabınız aktif değil. Lütfen destek ile iletişime geçin.",
+  "USER_ALREADY_ACTIVE": "Kullanıcı zaten aktif",
   "INVALID_CREDENTIALS": "Geçersiz e-posta veya şifre. Lütfen bilgilerinizi kontrol edip tekrar deneyin.",
   "LOGIN_ERROR": "Giriş sırasında bir hata oluştu. Lütfen daha sonra tekrar deneyin.",
   "TILE_NOT_FOUND": "Karo bulunamadı",

@@ -5,6 +5,7 @@
   "USER_CREATED": "Kullanıcı başarıyla oluşturuldu",
   "USER_UPDATED": "Kullanıcı başarıyla güncellendi",
   "USER_DELETED": "Kullanıcı başarıyla silindi",
+  "USER_RESTORED": "Kullanıcı başarıyla geri yüklendi",
   "PROFILE_RETRIEVED": "Profil başarıyla alındı",
   "PROFILE_UPDATED": "Profil başarıyla güncellendi",
   "PASSWORD_CHANGED": "Şifre başarıyla değiştirildi",

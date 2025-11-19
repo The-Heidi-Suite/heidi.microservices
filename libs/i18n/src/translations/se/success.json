@@ -5,6 +5,7 @@
   "USER_CREATED": "Användare skapad framgångsrikt",
   "USER_UPDATED": "Användare uppdaterad framgångsrikt",
   "USER_DELETED": "Användare raderad framgångsrikt",
+  "USER_RESTORED": "Användare återställd framgångsrikt",
   "PROFILE_RETRIEVED": "Profil hämtad framgångsrikt",
   "PROFILE_UPDATED": "Profil uppdaterad framgångsrikt",
   "PASSWORD_CHANGED": "Lösenord ändrat framgångsrikt",

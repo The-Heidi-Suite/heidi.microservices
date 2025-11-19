@@ -392,6 +392,32 @@ export class DeleteUserResponseDto {
   statusCode: number;
 }
 
+// Restore User Response
+export class RestoreUserResponseDataDto {
+  @ApiProperty({ example: 'User restored successfully' })
+  message: string;
+}
+
+export class RestoreUserResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: RestoreUserResponseDataDto })
+  data: RestoreUserResponseDataDto;
+
+  @ApiProperty({ example: 'User restored successfully', description: 'Success message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/123e4567-e89b-12d3-a456-426614174000/restore' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
+}
+
 // Get Profile Response
 export class CityAssignmentDto {
   @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174001' })

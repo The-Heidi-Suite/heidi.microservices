@@ -58,6 +58,7 @@
   "REGISTRATION_FIELDS_REQUIRED": "E-Mail und Passwort sind für die Registrierung erforderlich",
   "ACCOUNT_NOT_FOUND": "Kein Konto mit dieser E-Mail-Adresse gefunden. Bitte überprüfe deine E-Mail oder registriere ein neues Konto.",
   "ACCOUNT_INACTIVE": "Dein Konto ist inaktiv. Bitte kontaktiere den Support für Hilfe.",
+  "USER_ALREADY_ACTIVE": "Benutzer ist bereits aktiv",
   "INVALID_CREDENTIALS": "Ungültige E-Mail oder Passwort. Bitte überprüfe deine Anmeldedaten und versuche es erneut.",
   "LOGIN_ERROR": "Während der Anmeldung ist ein Fehler aufgetreten. Bitte versuche es später erneut.",
   "TILE_NOT_FOUND": "Kachel nicht gefunden",

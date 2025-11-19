@@ -58,6 +58,7 @@
   "REGISTRATION_FIELDS_REQUIRED": "E-post och lösenord krävs för registrering",
   "ACCOUNT_NOT_FOUND": "Inget konto hittades med denna e-postadress. Kontrollera din e-post eller registrera ett nytt konto.",
   "ACCOUNT_INACTIVE": "Ditt konto är inaktivt. Kontakta support för hjälp.",
+  "USER_ALREADY_ACTIVE": "Användaren är redan aktiv",
   "INVALID_CREDENTIALS": "Ogiltig e-post eller lösenord. Kontrollera dina uppgifter och försök igen.",
   "LOGIN_ERROR": "Ett fel uppstod under inloggningen. Försök igen senare.",
   "TILE_NOT_FOUND": "Panel hittades inte",

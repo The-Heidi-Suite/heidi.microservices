@@ -5,6 +5,7 @@
   "USER_CREATED": "User created successfully",
   "USER_UPDATED": "User updated successfully",
   "USER_DELETED": "User deleted successfully",
+  "USER_RESTORED": "User restored successfully",
   "PROFILE_RETRIEVED": "Profile retrieved successfully",
   "PROFILE_UPDATED": "Profile updated successfully",
   "PASSWORD_CHANGED": "Password changed successfully",

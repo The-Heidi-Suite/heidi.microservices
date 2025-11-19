@@ -58,6 +58,7 @@
   "REGISTRATION_FIELDS_REQUIRED": "Email and password are required for registration",
   "ACCOUNT_NOT_FOUND": "No account found with this email address. Please check your email or register for a new account.",
   "ACCOUNT_INACTIVE": "Your account is inactive. Please contact support for assistance.",
+  "USER_ALREADY_ACTIVE": "User is already active",
   "INVALID_CREDENTIALS": "Invalid email or password. Please check your credentials and try again.",
   "LOGIN_ERROR": "An error occurred during login. Please try again later.",
   "TILE_NOT_FOUND": "Tile not found",

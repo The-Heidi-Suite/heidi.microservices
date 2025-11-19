@@ -58,6 +58,7 @@
   "REGISTRATION_FIELDS_REQUIRED": "E-post og passord er påkrevd for registrering",
   "ACCOUNT_NOT_FOUND": "Ingen konto funnet med denne e-postadressen. Vennligst sjekk e-posten din eller registrer en ny konto.",
   "ACCOUNT_INACTIVE": "Kontoen din er inaktiv. Vennligst kontakt support for hjelp.",
+  "USER_ALREADY_ACTIVE": "Brukeren er allerede aktiv",
   "INVALID_CREDENTIALS": "Ugyldig e-post eller passord. Vennligst sjekk opplysningene dine og prøv igjen.",
   "LOGIN_ERROR": "En feil oppstod under innlogging. Vennligst prøv igjen senere.",
   "TILE_NOT_FOUND": "Flis ikke funnet",

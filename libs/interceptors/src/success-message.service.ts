@@ -112,6 +112,11 @@ export class SuccessMessageService {
       return 'SESSION_REVOKED';
     }
 
+    // Pattern for user restore: /:id/restore
+    if (method === 'PATCH' && /\/[a-f0-9-]{36}\/restore$/i.test(cleanPath)) {
+      return 'USER_RESTORED';
+    }
+
     // Fallback based on status code
     if (statusCode === 201) {
       return 'OPERATION_SUCCESS';
