@@ -20,6 +20,9 @@ import {
   RegisterDto,
   UpdateProfileDto,
   ChangePasswordDto,
+  UserFilterDto,
+  UserSortBy,
+  UserSortDirection,
 } from '@heidi/contracts';
 import { SagaOrchestratorService } from '@heidi/saga';
 import { ErrorCode } from '@heidi/errors';
@@ -251,16 +254,96 @@ export class UsersService {
     }
   }
 
-  async findAll(page = 1, limit = 10) {
+  async findAll(filterDto?: UserFilterDto) {
+    const page = filterDto?.page || 1;
+    const limit = filterDto?.limit || 10;
     const skip = (page - 1) * limit;
+
+    // Build where clause
+    const where: any = {
+      userType: UserType.REGISTERED,
+    };
+
+    // Build AND conditions array for combining filters
+    const andConditions: any[] = [];
+
+    // Handle isActive filter - convert string to boolean if needed
+    // Query parameters come as strings, so we need to parse them
+    let isActiveValue: boolean | undefined = undefined;
+    
+    // Get the raw value from filterDto
+    const rawIsActive = filterDto?.isActive;
+    
+    if (rawIsActive !== undefined && rawIsActive !== null && rawIsActive !== '') {
+      if (typeof rawIsActive === 'string') {
+        const lowerValue = rawIsActive.toLowerCase().trim();
+        if (lowerValue === 'true') {
+          isActiveValue = true;
+        } else if (lowerValue === 'false') {
+          isActiveValue = false;
+        }
+        // If it's a string but not 'true' or 'false', keep as undefined
+      } else if (typeof rawIsActive === 'boolean') {
+        isActiveValue = rawIsActive;
+      } else if (typeof rawIsActive === 'number') {
+        isActiveValue = rawIsActive !== 0;
+      }
+    }
+
+    // Apply isActive filter
+    // By default, show both active and deleted users
+    // If isActive is explicitly true, show only active and not deleted
+    // If isActive is explicitly false, show only inactive/deleted
+    if (isActiveValue === true) {
+      // Only active and not deleted users
+      andConditions.push({
+        isActive: true,
+        deletedAt: null,
+      });
+    } else if (isActiveValue === false) {
+      // Only inactive/deleted users
+      andConditions.push({
+        OR: [
+          { isActive: false },
+          { deletedAt: { not: null } },
+        ],
+      });
+    }
+    // If isActive is undefined/null, don't filter by isActive or deletedAt (show all)
+
+    // Add search functionality
+    if (filterDto?.search) {
+      const searchTerm = filterDto.search.trim();
+      andConditions.push({
+        OR: [
+          { email: { contains: searchTerm, mode: 'insensitive' } },
+          { username: { contains: searchTerm, mode: 'insensitive' } },
+          { firstName: { contains: searchTerm, mode: 'insensitive' } },
+          { lastName: { contains: searchTerm, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    // Combine all conditions with AND if we have any
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
+
+    // Build orderBy clause
+    const orderBy: any = {};
+    if (filterDto?.sortBy) {
+      orderBy[filterDto.sortBy] = filterDto.sortDirection || UserSortDirection.DESC;
+    } else {
+      // Default sorting by createdAt descending
+      orderBy.createdAt = UserSortDirection.DESC;
+    }
+
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
-        where: {
-          deletedAt: null,
-          userType: UserType.REGISTERED,
-        },
+        where,
         skip,
         take: limit,
+        orderBy,
         select: {
           id: true,
           email: true,
@@ -269,16 +352,12 @@ export class UsersService {
           firstName: true,
           lastName: true,
           isActive: true,
+          deletedAt: true,
           createdAt: true,
           updatedAt: true,
         },
       }),
-      this.prisma.user.count({
-        where: {
-          deletedAt: null,
-          userType: UserType.REGISTERED,
-        },
-      }),
+      this.prisma.user.count({ where }),
     ]);
 
     // Convert role to number for each user (like login API does)
