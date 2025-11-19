@@ -241,4 +241,14 @@ export default () => ({
     eventId: parseInt(process.env.KIEL_NEWSLETTER_EVENT_ID || '3022526329', 10),
     consentPurposeId: parseInt(process.env.KIEL_NEWSLETTER_CONSENT_PURPOSE_ID || '1005', 10),
   },
+
+  // Translation configuration
+  translations: {
+    defaultSourceLocale: process.env.TRANSLATIONS_DEFAULT_SOURCE_LOCALE || 'en',
+    autoTranslateOnRead: process.env.TRANSLATIONS_AUTO_TRANSLATE_ON_READ !== 'false',
+    deepl: {
+      apiKey: process.env.DEEPL_API_KEY || '',
+      apiUrl: process.env.DEEPL_API_URL || 'https://api-free.deepl.com/v2/translate',
+    },
+  },
 });

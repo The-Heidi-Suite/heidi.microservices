@@ -285,4 +285,25 @@ export class ConfigService {
       consentPurposeId: this.get<number>('kielNewsletter.consentPurposeId', 1005),
     };
   }
+
+  // Translations / DeepL configuration
+  get translationsConfig() {
+    return this.get('translations');
+  }
+
+  get translationsDefaultSourceLocale(): string {
+    return this.get<string>('translations.defaultSourceLocale', 'en');
+  }
+
+  get translationsAutoTranslateOnRead(): boolean {
+    return this.get<boolean>('translations.autoTranslateOnRead', true);
+  }
+
+  get deeplApiKey(): string {
+    return this.get<string>('translations.deepl.apiKey', '');
+  }
+
+  get deeplApiUrl(): string {
+    return this.get<string>('translations.deepl.apiUrl', 'https://api-free.deepl.com/v2/translate');
+  }
 }
