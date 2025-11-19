@@ -5,6 +5,7 @@ import { LoggerService } from '@heidi/logger';
 import { PrismaCoreService } from '@heidi/prisma';
 import { TranslationService } from '@heidi/translations';
 import { ConfigService } from '@heidi/config';
+import { I18nService } from '@heidi/i18n';
 import {
   UserRole,
   ListingStatus,
@@ -33,6 +34,7 @@ export class CoreService implements OnModuleInit {
     private readonly translationService: TranslationService,
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
+    private readonly i18nService: I18nService,
   ) {
     this.logger.setContext(CoreService.name);
     this.defaultSourceLocale = this.configService.get<string>(
@@ -538,11 +540,11 @@ export class CoreService implements OnModuleInit {
       return; // No target locales to translate to
     }
 
-    // Map field names to values (content is stored as 'description' in translations)
+    // Map field names to values
     const fieldMapping: Record<string, { value: string; fieldName: string }> = {
       title: { value: listingData.title, fieldName: 'title' },
       summary: { value: listingData.summary || '', fieldName: 'summary' },
-      description: { value: listingData.content, fieldName: 'description' },
+      content: { value: listingData.content, fieldName: 'content' },
     };
 
     for (const [fieldKey, fieldData] of Object.entries(fieldMapping)) {
@@ -886,12 +888,12 @@ export class CoreService implements OnModuleInit {
   }
 
   async getParkingSpaces(cityId: string): Promise<any[]> {
-    // Check Redis cache first
+    // Check Redis cache first (store base data, apply translations per request)
     const cacheKey = `parking:spaces:${cityId}`;
     const cached = await this.redis.get<any[]>(cacheKey);
     if (cached) {
       this.logger.debug(`Cache hit for parking spaces: ${cityId}`);
-      return cached;
+      return this.applyParkingSpaceTranslations(cached);
     }
 
     // Check if city has parking feature enabled
@@ -958,10 +960,49 @@ export class CoreService implements OnModuleInit {
       metadata: space.metadata,
     }));
 
-    // Cache result for 60 seconds (matches API update interval)
+    // Cache base result for 60 seconds (matches API update interval)
     await this.redis.set(cacheKey, result, 60);
 
-    return result;
+    return this.applyParkingSpaceTranslations(result);
+  }
+
+  /**
+   * Apply translations to parking space fields based on current request language
+   */
+  private async applyParkingSpaceTranslations(spaces: any[]): Promise<any[]> {
+    const locale = this.i18nService.getLanguage();
+    const defaultLocale = this.configService.get<string>('i18n.defaultLanguage', 'en');
+
+    if (!locale || locale === defaultLocale) {
+      return spaces;
+    }
+
+    return Promise.all(
+      spaces.map(async (space) => {
+        const [name, description] = await Promise.all([
+          this.translationService.getTranslation(
+            'parkingSpace',
+            space.id,
+            'name',
+            locale,
+            space.name ?? '',
+          ),
+          this.translationService.getTranslation(
+            'parkingSpace',
+            space.id,
+            'description',
+            locale,
+            space.description ?? '',
+          ),
+        ]);
+
+        return {
+          ...space,
+          name,
+          description,
+        };
+      }),
+    );
   }
 
   private async checkCityFeature(cityId: string, featureName: string): Promise<boolean> {
