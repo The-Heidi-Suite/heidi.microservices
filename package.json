@@ -185,6 +185,7 @@
       "^@heidi/metrics(|/.*)$": "<rootDir>/libs/metrics/src/$1",
       "^@heidi/monitoring(|/.*)$": "<rootDir>/libs/monitoring/src/$1",
       "^@heidi/health(|/.*)$": "<rootDir>/libs/health/src/$1",
+      "^@heidi/translations(|/.*)$": "<rootDir>/libs/translations/src/$1",
       "^@heidi/errors(|/.*)$": "<rootDir>/libs/errors/src/$1",
       "^@heidi/tenancy(|/.*)$": "<rootDir>/libs/tenancy/src/$1",
       "^@heidi/rbac(|/.*)$": "<rootDir>/libs/rbac/src/$1",

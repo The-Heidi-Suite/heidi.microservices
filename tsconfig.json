@@ -58,6 +58,8 @@
       "@heidi/tenancy/*": ["libs/tenancy/src/*"],
       "@heidi/contracts": ["libs/contracts/src"],
       "@heidi/contracts/*": ["libs/contracts/src/*"],
+      "@heidi/translations": ["libs/translations/src"],
+      "@heidi/translations/*": ["libs/translations/src/*"],
       "@heidi/saga": ["libs/saga/src"],
       "@heidi/saga/*": ["libs/saga/src/*"],
       "@heidi/i18n": ["libs/i18n/src"],
