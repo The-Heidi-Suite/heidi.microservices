@@ -5,6 +5,8 @@ import { CategoryRequestStatus, Prisma } from '@prisma/client-core';
 import { StorageService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
 import { LoggerService } from '@heidi/logger';
+import { TranslationService } from '@heidi/translations';
+import { I18nService } from '@heidi/i18n';
 
 @Injectable()
 export class CategoriesService {
@@ -13,6 +15,8 @@ export class CategoriesService {
     private readonly storageService: StorageService,
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
+    private readonly translationService: TranslationService,
+    private readonly i18nService: I18nService,
   ) {
     this.logger.setContext(CategoriesService.name);
   }
@@ -107,12 +111,66 @@ export class CategoriesService {
     return rootCategories;
   }
 
+  /**
+   * Apply translations to a category node and its children
+   */
+  private async translateCategoryTree(categories: any[]): Promise<any[]> {
+    const locale = this.i18nService.getLanguage();
+    const defaultLocale = this.configService.get<string>('i18n.defaultLanguage', 'en');
+
+    if (!locale || locale === defaultLocale) {
+      return categories;
+    }
+
+    const translateNode = async (category: any): Promise<any> => {
+      const [name, description, subtitle] = await Promise.all([
+        this.translationService.getTranslation(
+          'category',
+          category.id,
+          'name',
+          locale,
+          category.name,
+        ),
+        this.translationService.getTranslation(
+          'category',
+          category.id,
+          'description',
+          locale,
+          category.description ?? '',
+        ),
+        this.translationService.getTranslation(
+          'category',
+          category.id,
+          'subtitle',
+          locale,
+          category.subtitle ?? '',
+        ),
+      ]);
+
+      let children: any[] | undefined;
+      if (category.children && Array.isArray(category.children)) {
+        children = await Promise.all(category.children.map((child: any) => translateNode(child)));
+      }
+
+      return {
+        ...category,
+        name,
+        description,
+        subtitle,
+        ...(children ? { children } : {}),
+      };
+    };
+
+    return Promise.all(categories.map((category) => translateNode(category)));
+  }
+
   async listCategories() {
     const categories = await this.prisma.category.findMany({
       orderBy: [{ type: 'asc' }, { name: 'asc' }],
     });
 
-    return this.buildCategoryHierarchy(categories);
+    const tree = this.buildCategoryHierarchy(categories);
+    return this.translateCategoryTree(tree);
   }
 
   async createCategory(dto: CreateCategoryDto) {
@@ -251,7 +309,8 @@ export class CategoriesService {
     // Extract just the category objects
     const categories = cityCategories.map((cc) => cc.category);
 
-    return this.buildCategoryHierarchy(categories);
+    const tree = this.buildCategoryHierarchy(categories);
+    return this.translateCategoryTree(tree);
   }
 
   async getCategoryById(categoryId: string) {
@@ -269,10 +328,14 @@ export class CategoriesService {
       orderBy: { name: 'asc' },
     });
 
-    return {
-      ...category,
-      ...(children.length > 0 ? { children } : {}),
-    };
+    const tree = await this.translateCategoryTree([
+      {
+        ...category,
+        ...(children.length > 0 ? { children } : {}),
+      },
+    ]);
+
+    return tree[0];
   }
 
   async assignCategoryToCity(
