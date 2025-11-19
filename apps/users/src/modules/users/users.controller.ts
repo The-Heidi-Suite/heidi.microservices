@@ -157,8 +157,6 @@ export class UsersController {
   })
   async findAll(@Query() filterDto: UserFilterDto) {
     // Debug: Log the received filterDto to see what's coming through
-    console.log('Controller - filterDto:', JSON.stringify(filterDto));
-    console.log('Controller - filterDto.isActive:', filterDto?.isActive, typeof filterDto?.isActive);
     return this.usersService.findAll(filterDto);
   }
 
