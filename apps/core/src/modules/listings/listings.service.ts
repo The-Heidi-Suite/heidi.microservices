@@ -116,6 +116,23 @@ export class ListingsService {
     return value as Prisma.InputJsonValue;
   }
 
+  private deriveEventDatesFromIntervals(intervals?: ListingTimeIntervalInputDto[]): {
+    start?: Date | null;
+    end?: Date | null;
+  } {
+    if (!intervals || intervals.length === 0) {
+      return { start: null, end: null };
+    }
+
+    const starts = intervals.map((interval) => new Date(interval.start).getTime());
+    const ends = intervals.map((interval) => new Date(interval.end).getTime());
+
+    return {
+      start: new Date(Math.min(...starts)),
+      end: new Date(Math.max(...ends)),
+    };
+  }
+
   private mapListing(
     listing: ListingWithRelations,
     options: { isFavorite?: boolean } = {},
@@ -739,6 +756,18 @@ export class ListingsService {
         : undefined,
     };
 
+    // Auto-generate eventStart/eventEnd from timeIntervals if not explicitly provided
+    if (
+      dto.eventStart === undefined &&
+      dto.eventEnd === undefined &&
+      dto.timeIntervals &&
+      dto.timeIntervals.length > 0
+    ) {
+      const derivedDates = this.deriveEventDatesFromIntervals(dto.timeIntervals);
+      data.eventStart = derivedDates.start ?? undefined;
+      data.eventEnd = derivedDates.end ?? undefined;
+    }
+
     const listing = await this.prisma.listing.create({
       data,
       include: listingWithRelations.include,
@@ -839,6 +868,17 @@ export class ListingsService {
 
       if (dto.eventEnd !== undefined) {
         updateData.eventEnd = dto.eventEnd ? new Date(dto.eventEnd) : null;
+      }
+
+      // Auto-generate eventStart/eventEnd from timeIntervals if neither is explicitly set
+      if (
+        dto.eventStart === undefined &&
+        dto.eventEnd === undefined &&
+        dto.timeIntervals !== undefined
+      ) {
+        const derivedDates = this.deriveEventDatesFromIntervals(dto.timeIntervals);
+        updateData.eventStart = derivedDates.start ?? null;
+        updateData.eventEnd = derivedDates.end ?? null;
       }
 
       if (dto.isAllDay !== undefined) {

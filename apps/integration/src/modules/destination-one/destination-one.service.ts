@@ -55,6 +55,7 @@ interface DestinationOneItem {
   district?: string;
   cuisine_types?: string[];
   features?: string[];
+  attributes?: Array<{ key: string; value: string }>;
 }
 
 interface DestinationOneResult {
@@ -100,6 +101,8 @@ interface TransformedListingData {
     freq: ListingRecurrenceFreq;
     interval: number;
   }>;
+  eventStart?: string;
+  eventEnd?: string;
 }
 
 /**
@@ -330,6 +333,29 @@ export class DestinationOneService {
       interval: ti.interval || 1,
     }));
 
+    // Build attribute map (for interval_start / interval_end etc.)
+    const attributeMap = new Map<string, string>(
+      (item.attributes || []).map((a) => [a.key, a.value]),
+    );
+
+    let eventStart: string | undefined;
+    let eventEnd: string | undefined;
+
+    const intervalStartAttr = attributeMap.get('interval_start');
+    const intervalEndAttr = attributeMap.get('interval_end');
+
+    if (intervalStartAttr && intervalEndAttr) {
+      // Use explicit interval_start / interval_end when the API was called with mode=date&unrollintervals=true
+      eventStart = new Date(intervalStartAttr).toISOString();
+      eventEnd = new Date(intervalEndAttr).toISOString();
+    } else if (item.timeIntervals && item.timeIntervals.length > 0) {
+      // Fallback: derive a coarse listing-level window from timeIntervals
+      const starts = item.timeIntervals.map((ti) => new Date(ti.start).getTime());
+      const ends = item.timeIntervals.map((ti) => new Date(ti.end).getTime());
+      eventStart = new Date(Math.min(...starts)).toISOString();
+      eventEnd = new Date(Math.max(...ends)).toISOString();
+    }
+
     return {
       title: item.title,
       summary: teaserText || undefined,
@@ -351,6 +377,8 @@ export class DestinationOneService {
       heroImageUrl: heroImage,
       categorySlugs,
       timeIntervals,
+      eventStart,
+      eventEnd,
     };
   }
 
