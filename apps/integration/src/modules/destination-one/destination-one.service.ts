@@ -274,15 +274,21 @@ export class DestinationOneService {
     item: DestinationOneItem,
     config: DestinationOneConfig,
   ): TransformedListingData {
-    // Get content from texts (prefer HTML details, fallback to plain text, then teaser)
-    const detailsHtml = item.texts?.find(
-      (t) => t.rel === 'details' && t.type === 'text/html',
-    )?.value;
-    const detailsPlain = item.texts?.find(
-      (t) => t.rel === 'details' && t.type === 'text/plain',
-    )?.value;
-    const teaserText = item.texts?.find((t) => t.rel === 'teaser')?.value || '';
-    const content = detailsHtml || detailsPlain || teaserText || item.title || '';
+    // Get content from texts
+    // Prefer HTML "details" (rich content), then HTML "teaser", then plain-text fallbacks
+    const detailsHtml =
+      item.texts?.find((t) => t.rel === 'details' && t.type === 'text/html')?.value || undefined;
+    const teaserHtml =
+      item.texts?.find((t) => t.rel === 'teaser' && t.type === 'text/html')?.value || undefined;
+    const detailsPlain =
+      item.texts?.find((t) => t.rel === 'details' && t.type === 'text/plain')?.value || undefined;
+    const teaserPlain =
+      item.texts?.find((t) => t.rel === 'teaser' && t.type === 'text/plain')?.value || undefined;
+
+    const content = detailsHtml || teaserHtml || detailsPlain || teaserPlain || item.title || '';
+
+    // For summary we keep it short and prefer plain teaser text (no heavy HTML), fallback to HTML
+    const teaserText = teaserPlain || teaserHtml || '';
 
     const slug = this.slugify(item.title || `item-${item.id}`);
 
