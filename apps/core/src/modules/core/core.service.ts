@@ -261,6 +261,8 @@ export class CoreService implements OnModuleInit {
       freq: ListingRecurrenceFreq;
       interval: number;
     }>;
+    eventStart?: string;
+    eventEnd?: string;
   }): Promise<{ action: string; listingId: string }> {
     this.logger.log(`Syncing listing from integration: ${listingData.externalId}`);
 
@@ -349,6 +351,8 @@ export class CoreService implements OnModuleInit {
             contactEmail: listingData.contactEmail,
             website: listingData.website,
             heroImageUrl: listingData.heroImageUrl,
+            eventStart: listingData.eventStart ? new Date(listingData.eventStart) : null, // clear if no value
+            eventEnd: listingData.eventEnd ? new Date(listingData.eventEnd) : null,
           },
         });
 
@@ -387,6 +391,8 @@ export class CoreService implements OnModuleInit {
         contactEmail: listingData.contactEmail,
         website: listingData.website,
         heroImageUrl: listingData.heroImageUrl,
+        eventStart: listingData.eventStart ? new Date(listingData.eventStart) : undefined,
+        eventEnd: listingData.eventEnd ? new Date(listingData.eventEnd) : undefined,
         categories:
           categoryIds.length > 0
             ? {
