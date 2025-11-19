@@ -512,6 +512,9 @@ export class CategoriesController {
       cityId,
       categoryId,
       dto.displayName ?? null,
+      dto.displayOrder,
+      dto.headerBackgroundColor,
+      dto.contentBackgroundColor,
     );
   }
 
