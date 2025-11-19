@@ -10,6 +10,7 @@ import {
   ListingSourceType,
   ListingRecurrenceFreq,
   CategoryType,
+  ListingMediaType,
   Prisma,
 } from '@prisma/client-core';
 import { CoreOperationRequestDto, CoreOperationResponseDto } from '@heidi/contracts';
@@ -263,6 +264,14 @@ export class CoreService implements OnModuleInit {
     }>;
     eventStart?: string;
     eventEnd?: string;
+    mediaItems?: Array<{
+      type: ListingMediaType;
+      url: string;
+      altText?: string;
+      caption?: string;
+      order: number;
+      metadata?: Record<string, unknown> | null;
+    }>;
   }): Promise<{ action: string; listingId: string }> {
     this.logger.log(`Syncing listing from integration: ${listingData.externalId}`);
 
@@ -333,6 +342,29 @@ export class CoreService implements OnModuleInit {
           }
         }
 
+        if (listingData.mediaItems) {
+          await this.prisma.listingMedia.deleteMany({
+            where: { listingId: existing.id },
+          });
+
+          if (listingData.mediaItems.length > 0) {
+            await this.prisma.listingMedia.createMany({
+              data: listingData.mediaItems.map((media) => ({
+                listingId: existing.id,
+                type: media.type,
+                url: media.url,
+                altText: media.altText,
+                caption: media.caption,
+                order: media.order ?? 0,
+                metadata:
+                  media.metadata === undefined
+                    ? undefined
+                    : (media.metadata as Prisma.InputJsonValue),
+              })),
+            });
+          }
+        }
+
         // Update listing fields
         await this.prisma.listing.update({
           where: { id: existing.id },
@@ -398,6 +430,22 @@ export class CoreService implements OnModuleInit {
             ? {
                 create: categoryIds.map((categoryId) => ({
                   categoryId,
+                })),
+              }
+            : undefined,
+        media:
+          listingData.mediaItems && listingData.mediaItems.length > 0
+            ? {
+                create: listingData.mediaItems.map((media) => ({
+                  type: media.type,
+                  url: media.url,
+                  altText: media.altText,
+                  caption: media.caption,
+                  order: media.order ?? 0,
+                  metadata:
+                    media.metadata === undefined
+                      ? undefined
+                      : (media.metadata as Prisma.InputJsonValue),
                 })),
               }
             : undefined,

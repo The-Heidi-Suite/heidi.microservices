@@ -5,7 +5,7 @@ import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabb
 import { LoggerService } from '@heidi/logger';
 import { firstValueFrom } from 'rxjs';
 import { createHash } from 'crypto';
-import { ListingRecurrenceFreq, CategoryType } from '@prisma/client-core';
+import { ListingRecurrenceFreq, CategoryType, ListingMediaType } from '@prisma/client-core';
 import { DestinationOneConfig } from '@heidi/contracts';
 
 interface DestinationOneFacet {
@@ -103,6 +103,14 @@ interface TransformedListingData {
   }>;
   eventStart?: string;
   eventEnd?: string;
+  mediaItems?: Array<{
+    type: ListingMediaType;
+    url: string;
+    altText?: string;
+    caption?: string;
+    order: number;
+    metadata?: Record<string, unknown>;
+  }>;
 }
 
 /**
@@ -299,6 +307,7 @@ export class DestinationOneService {
     const address = addressParts.length > 0 ? addressParts.join(', ') : undefined;
 
     const heroImage = item.media_objects?.find((m) => m.rel === 'default')?.url;
+    const galleryMedia = item.media_objects?.filter((m) => m.rel === 'imagegallery') || [];
 
     // Get root category for this item type
     const rootCategory = TYPE_TO_ROOT_CATEGORY[item.type];
@@ -356,6 +365,23 @@ export class DestinationOneService {
       eventEnd = new Date(Math.max(...ends)).toISOString();
     }
 
+    const mediaItems =
+      galleryMedia.length > 0
+        ? galleryMedia.map((media, index) => ({
+            type: ListingMediaType.IMAGE,
+            url: media.url,
+            altText: media.value,
+            caption: media.value,
+            order: index,
+            metadata: {
+              rel: media.rel,
+              type: media.type,
+              source: media.source,
+              license: media.license,
+            },
+          }))
+        : undefined;
+
     return {
       title: item.title,
       summary: teaserText || undefined,
@@ -379,6 +405,7 @@ export class DestinationOneService {
       timeIntervals,
       eventStart,
       eventEnd,
+      mediaItems,
     };
   }
 
