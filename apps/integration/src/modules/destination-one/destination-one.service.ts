@@ -309,20 +309,11 @@ export class DestinationOneService {
       categorySlugsSet.add(rootSlug);
     }
 
-    // Process item.categories with manual mappings and automatic fallback
+    // Process item.categories using automatic mapping strategy
     if (item.categories && item.categories.length > 0) {
       for (const doCategory of item.categories) {
-        let categorySlug: string | undefined;
-
-        // Check manual mapping first
-        if (config.categoryMappings && config.categoryMappings[doCategory]) {
-          categorySlug = config.categoryMappings[doCategory];
-        } else if (rootSlug) {
-          // Automatic strategy: rootSlug + slugified category value
-          categorySlug = `${rootSlug}-${this.slugify(doCategory)}`;
-        }
-
-        if (categorySlug) {
+        if (rootSlug) {
+          const categorySlug = `${rootSlug}-${this.slugify(doCategory)}`;
           categorySlugsSet.add(categorySlug);
         }
       }
@@ -480,7 +471,6 @@ export class DestinationOneService {
               integrationId,
               cityId: config.cityId,
               provider: 'DESTINATION_ONE',
-              categoryMappings: config.categoryMappings || {},
               categoryFacets,
               timestamp: new Date().toISOString(),
             }),
