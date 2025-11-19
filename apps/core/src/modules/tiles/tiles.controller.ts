@@ -19,6 +19,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -94,7 +95,15 @@ export class TilesController {
   @ApiOperation({
     summary: 'List tiles with filters',
     description:
-      'Retrieve tiles using flexible filters including search term, city, active status, and date ranges. Supports pagination and sorting. Search filters by header, subheader, or description.',
+      'Retrieve tiles using flexible filters including search term, city, active status, and date ranges. Supports pagination and sorting. Search filters by header, subheader, or description. ' +
+      'When a non-default language is requested, tile text fields (header, subheader, description) are returned in that language when translations exist.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), tile text fields are translated where translations exist.',
+    example: 'de',
   })
   @ApiResponse({
     status: 200,
@@ -114,7 +123,15 @@ export class TilesController {
   @Get('slug/:slug')
   @ApiOperation({
     summary: 'Get tile by slug',
-    description: 'Fetch a single tile using its unique slug identifier.',
+    description:
+      'Fetch a single tile using its unique slug identifier. When a non-default language is requested, tile text fields (header, subheader, description) are returned in that language when translations exist.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), tile text fields are translated where translations exist.',
+    example: 'de',
   })
   @ApiParam({
     name: 'slug',
@@ -139,7 +156,15 @@ export class TilesController {
   @Get(':id')
   @ApiOperation({
     summary: 'Get tile by ID',
-    description: 'Fetch a single tile using its unique identifier.',
+    description:
+      'Fetch a single tile using its unique identifier. When a non-default language is requested, tile text fields (header, subheader, description) are returned in that language when translations exist.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), tile text fields are translated where translations exist.',
+    example: 'de',
   })
   @ApiParam({
     name: 'id',

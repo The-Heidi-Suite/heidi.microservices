@@ -21,6 +21,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -101,7 +102,15 @@ export class ListingController {
   @ApiOperation({
     summary: 'List listings with filters',
     description:
-      'Retrieve listings using flexible filters including city, category, status, language, and scheduling controls. Supports pagination and sorting.',
+      'Retrieve listings using flexible filters including city, category, status, language, and scheduling controls. Supports pagination and sorting. ' +
+      'If a non-default language is selected in Swagger or sent via Accept-Language, translatable fields (title, summary, content) are returned in that language when translations exist, otherwise they fall back to the default language.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). When set (or when the Swagger language selector is used), listing text fields are translated if translations exist. Falls back to default language when missing.',
+    example: 'de',
   })
   @ApiResponse({
     status: 200,
@@ -240,7 +249,15 @@ export class ListingController {
   @Get('slug/:slug')
   @ApiOperation({
     summary: 'Get listing by slug',
-    description: 'Fetch a single listing using its unique slug identifier.',
+    description:
+      'Fetch a single listing using its unique slug identifier. When a non-default language is requested, translatable fields (title, summary, content) are returned in that language when translations exist.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). Used together with the Swagger language selector to return translated listing fields where available.',
+    example: 'de',
   })
   @ApiParam({
     name: 'slug',
@@ -268,7 +285,15 @@ export class ListingController {
   @Get(':id')
   @ApiOperation({
     summary: 'Get listing by ID',
-    description: 'Fetch a single listing using its unique identifier.',
+    description:
+      'Fetch a single listing using its unique identifier. When a non-default language is requested, translatable fields (title, summary, content) are returned in that language when translations exist.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). Used together with the Swagger language selector to return translated listing fields where available.',
+    example: 'de',
   })
   @ApiParam({
     name: 'id',

@@ -18,6 +18,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiConsumes,
+  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiQuery,
@@ -107,7 +108,15 @@ export class CategoriesController {
   @Get()
   @ApiOperation({
     summary: 'List categories',
-    description: 'Retrieve all categories available in the taxonomy.',
+    description:
+      'Retrieve all categories available in the taxonomy. Category names, descriptions, and subtitles are returned in the requested language when translations exist, otherwise they fall back to the default language.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), category text fields are translated where translations exist.',
+    example: 'de',
   })
   @ApiResponse({
     status: 200,
@@ -305,7 +314,8 @@ export class CategoriesController {
   @Get('cities/:cityId')
   @ApiOperation({
     summary: 'List categories assigned to a city',
-    description: 'Retrieve active category assignments for a specific city.',
+    description:
+      'Retrieve active category assignments for a specific city. Category names, descriptions, and subtitles are returned in the requested language when translations exist, otherwise they fall back to the default language.',
   })
   @ApiParam({
     name: 'cityId',
@@ -317,6 +327,13 @@ export class CategoriesController {
     description: 'City categories retrieved successfully',
     type: CityCategoryResponseDto,
     isArray: true,
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), assigned category text fields are translated where translations exist.',
+    example: 'de',
   })
   async listCityCategories(@Param('cityId') cityId: string) {
     return this.categoriesService.listCityCategories(cityId);
@@ -1009,7 +1026,7 @@ export class CategoriesController {
   @ApiOperation({
     summary: 'Get category by ID',
     description:
-      'Retrieve a specific category by its unique identifier, including its subcategories.',
+      'Retrieve a specific category by its unique identifier, including its subcategories. Category text fields are returned in the requested language when translations exist, otherwise they fall back to the default language.',
   })
   @ApiParam({
     name: 'id',
@@ -1020,6 +1037,13 @@ export class CategoriesController {
     status: 200,
     description: 'Category retrieved successfully',
     type: CategoryResponseDto,
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), category and subcategory text fields are translated where translations exist.',
+    example: 'de',
   })
   @ApiResponse({
     status: 404,

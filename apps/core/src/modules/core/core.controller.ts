@@ -13,10 +13,11 @@ import {
 import {
   ApiBearerAuth,
   ApiBody,
+  ApiHeader,
   ApiOperation,
+  ApiQuery,
   ApiResponse,
   ApiTags,
-  ApiQuery,
 } from '@nestjs/swagger';
 import { CoreService } from './core.service';
 import { JwtAuthGuard } from '@heidi/jwt';
@@ -127,7 +128,8 @@ export class CoreController {
   @ApiOperation({
     summary: 'Get parking spaces for a city',
     description:
-      'Returns list of parking spaces with capacity utilization, status, and location. Requires parking feature to be enabled for the city.',
+      'Returns list of parking spaces with capacity utilization, status, and location. Requires parking feature to be enabled for the city. ' +
+      'Parking space names and descriptions are returned in the requested language when translations exist.',
   })
   @ApiQuery({
     name: 'cityId',
@@ -139,6 +141,13 @@ export class CoreController {
     status: 200,
     description: 'Parking spaces retrieved successfully',
     type: ParkingSpacesResponseDto,
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), parking space names and descriptions are translated where translations exist.',
+    example: 'de',
   })
   @ApiResponse({
     status: 400,

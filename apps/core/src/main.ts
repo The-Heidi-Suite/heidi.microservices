@@ -64,10 +64,22 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
-    .addTag('core', 'Core service operations')
-    .addTag('listings', 'Listings management endpoints')
-    .addTag('categories', 'Listing category endpoints')
-    .addTag('favorites', 'User favorites endpoints')
+    .addTag(
+      'core',
+      'Core service operations and shared infrastructure endpoints (including translated parking data and background jobs).',
+    )
+    .addTag(
+      'listings',
+      'Listings management endpoints. Responses are automatically translated based on the current request language (see Swagger language selector / Accept-Language header).',
+    )
+    .addTag(
+      'categories',
+      'Listing category endpoints. Category trees and city category assignments are translated according to the current request language.',
+    )
+    .addTag(
+      'favorites',
+      'User favorites endpoints, returning translated listing data when a non-default language is selected.',
+    )
     .build();
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerDocumentConfig);
