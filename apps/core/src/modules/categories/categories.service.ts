@@ -127,6 +127,8 @@ export class CategoriesService {
       subtitle: dto.subtitle ?? null,
       type: dto.type ?? null,
       isActive: dto.isActive ?? true,
+      headerBackgroundColor: dto.headerBackgroundColor ?? null,
+      contentBackgroundColor: dto.contentBackgroundColor ?? null,
     };
 
     if (dto.parentId) {
@@ -172,6 +174,14 @@ export class CategoriesService {
 
     if (dto.isActive !== undefined) {
       updateData.isActive = dto.isActive;
+    }
+
+    if (dto.headerBackgroundColor !== undefined) {
+      updateData.headerBackgroundColor = dto.headerBackgroundColor;
+    }
+
+    if (dto.contentBackgroundColor !== undefined) {
+      updateData.contentBackgroundColor = dto.contentBackgroundColor;
     }
 
     return this.prisma.category.update({
@@ -235,7 +245,7 @@ export class CategoriesService {
       include: {
         category: true,
       },
-      orderBy: { addedAt: 'desc' },
+      orderBy: [{ displayOrder: 'asc' }, { addedAt: 'desc' }],
     });
 
     // Extract just the category objects
@@ -421,6 +431,9 @@ export class CategoriesService {
     cityId: string,
     categoryId: string,
     displayName: string | null,
+    displayOrder?: number,
+    headerBackgroundColor?: string | null,
+    contentBackgroundColor?: string | null,
   ) {
     const existing = await this.prisma.cityCategory.findUnique({
       where: {
@@ -438,6 +451,22 @@ export class CategoriesService {
       throw new NotFoundException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
     }
 
+    const updateData: Prisma.CityCategoryUpdateInput = {
+      displayName,
+    };
+
+    if (displayOrder !== undefined) {
+      updateData.displayOrder = displayOrder;
+    }
+
+    if (headerBackgroundColor !== undefined) {
+      updateData.headerBackgroundColor = headerBackgroundColor;
+    }
+
+    if (contentBackgroundColor !== undefined) {
+      updateData.contentBackgroundColor = contentBackgroundColor;
+    }
+
     return this.prisma.cityCategory.update({
       where: {
         cityId_categoryId: {
@@ -445,9 +474,7 @@ export class CategoriesService {
           categoryId,
         },
       },
-      data: {
-        displayName,
-      },
+      data: updateData,
       include: {
         category: true,
       },

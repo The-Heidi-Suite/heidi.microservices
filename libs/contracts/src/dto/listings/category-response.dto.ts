@@ -1,7 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CategoryRequestStatus, CategoryType } from '@prisma/client-core';
 import { Transform, Type } from 'class-transformer';
-import { IsEnum, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
 
 export class CategoryResponseDto {
   @ApiProperty({ example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890' })
@@ -36,6 +36,18 @@ export class CategoryResponseDto {
     description: 'Category icon image URL',
   })
   iconUrl?: string | null;
+
+  @ApiPropertyOptional({
+    example: '#7C3AED',
+    description: 'Header background color in hex format',
+  })
+  headerBackgroundColor?: string | null;
+
+  @ApiPropertyOptional({
+    example: '#F3E8FF',
+    description: 'Content background color in hex format',
+  })
+  contentBackgroundColor?: string | null;
 
   @ApiPropertyOptional({
     enum: CategoryType,
@@ -78,6 +90,24 @@ export class CityCategoryResponseDto {
     description: 'Custom display name for this city. Falls back to category name if not set.',
   })
   displayName?: string | null;
+
+  @ApiProperty({
+    example: 1,
+    description: 'Display order for sorting categories in the city',
+  })
+  displayOrder: number;
+
+  @ApiPropertyOptional({
+    example: '#7C3AED',
+    description: 'Header background color in hex format for this city category',
+  })
+  headerBackgroundColor?: string | null;
+
+  @ApiPropertyOptional({
+    example: '#F3E8FF',
+    description: 'Content background color in hex format for this city category',
+  })
+  contentBackgroundColor?: string | null;
 
   @ApiProperty({ example: true })
   isActive: boolean;
@@ -194,6 +224,30 @@ export class UpdateCityCategoryDisplayNameDto {
   @IsString()
   @MaxLength(255)
   displayName?: string | null;
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Display order for sorting categories in the city',
+  })
+  @IsOptional()
+  @IsNumber()
+  displayOrder?: number;
+
+  @ApiPropertyOptional({
+    example: '#7C3AED',
+    description: 'Header background color in hex format for this city category',
+  })
+  @IsOptional()
+  @IsString()
+  headerBackgroundColor?: string | null;
+
+  @ApiPropertyOptional({
+    example: '#F3E8FF',
+    description: 'Content background color in hex format for this city category',
+  })
+  @IsOptional()
+  @IsString()
+  contentBackgroundColor?: string | null;
 }
 
 export class CategoryRequestFilterDto {
