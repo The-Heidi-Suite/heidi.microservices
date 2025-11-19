@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
-import { ConfigService, getSwaggerServerUrl /*, getSwaggerI18nOptions */ } from '@heidi/config';
+import { ConfigService, getSwaggerServerUrl, getSwaggerI18nOptions } from '@heidi/config';
 import { getRmqConsumerOptions } from '@heidi/rabbitmq';
 
 async function bootstrap() {
@@ -93,15 +93,13 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  // Use i18n-enabled Swagger options
-  // TODO: Re-enable i18n options once the null response issue is fixed
-  // const swaggerI18nOptions = getSwaggerI18nOptions(configService);
+  // Use i18n-enabled Swagger options (language selector + Accept-Language header)
+  const swaggerI18nOptions = getSwaggerI18nOptions(configService);
 
   SwaggerModule.setup('docs', app, document, {
-    // ...swaggerI18nOptions,
+    ...swaggerI18nOptions,
     swaggerOptions: {
-      // ...swaggerI18nOptions.swaggerOptions,
-      persistAuthorization: true,
+      ...swaggerI18nOptions.swaggerOptions,
     },
   });
 

@@ -279,6 +279,19 @@ export function getSwaggerI18nOptions(configService: ConfigService) {
 
         // Check URL query parameter first
         try {
+          // Only add Accept-Language for same-origin requests to avoid CORS issues
+          if (typeof window === 'undefined') {
+            return request;
+          }
+
+          const requestUrl = new URL(request.url, window.location.href);
+          const isSameOrigin = requestUrl.origin === window.location.origin;
+
+          // If the request is cross-origin, don't touch headers (let gateway/CORS handle it)
+          if (!isSameOrigin) {
+            return request;
+          }
+
           const urlParams = new URLSearchParams(window.location.search);
           const urlLang = urlParams.get('lang');
           const language =

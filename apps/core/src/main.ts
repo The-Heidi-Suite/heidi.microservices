@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
-import { ConfigService, getSwaggerServerUrl } from '@heidi/config';
+import { ConfigService, getSwaggerServerUrl, getSwaggerI18nOptions } from '@heidi/config';
 import { getRmqConsumerOptions } from '@heidi/rabbitmq';
 
 async function bootstrap() {
@@ -71,9 +71,11 @@ async function bootstrap() {
     .build();
 
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerDocumentConfig);
+  const swaggerI18nOptions = getSwaggerI18nOptions(configService);
   SwaggerModule.setup('docs', app, swaggerDocument, {
+    ...swaggerI18nOptions,
     swaggerOptions: {
-      persistAuthorization: true,
+      ...swaggerI18nOptions.swaggerOptions,
     },
   });
 
