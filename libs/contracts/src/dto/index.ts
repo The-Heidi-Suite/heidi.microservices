@@ -6,6 +6,7 @@ export * from './notification';
 export * from './saga';
 export * from './terms';
 export * from './tiles';
+export * from './translations';
 export * from './users';
 export * from './verification';
 export * from './integrations';
