@@ -446,6 +446,32 @@ model ParkingSpace {
   @@map("parking_spaces")
 }
 
+// Translation model - Polymorphic translations for entities and generic keys
+model Translation {
+  id           String   @id @default(uuid())
+  key          String?  // For generic keys not tied to an entity
+  entityType   String?  // e.g., "listing", "city", "category"
+  entityId     String?  // Reference to entity ID (string, no FK due to multi-database architecture)
+  field        String?  // e.g., "title", "summary", "description"
+  locale       String   // Language code matching i18n (e.g., "en", "de", "dk")
+  sourceLocale String?  // Language of the original text
+  value        String   // Translated text
+  sourceHash   String?  // Hash/checksum of source text to avoid re-translation when unchanged
+  source       String?  // Translation source: MANUAL, AUTO_DEEPL, IMPORT, etc.
+  metadata     Json?    // Provider-specific metadata (e.g., DeepL response info)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([entityType, entityId, field, locale])
+  @@unique([key, locale])
+  @@index([entityType, entityId, field, locale])
+  @@index([key, locale])
+  @@index([entityType, entityId])
+  @@index([locale])
+  @@index([sourceHash])
+  @@map("translations")
+}
+
 enum UserRole {
   SUPER_ADMIN
   CITY_ADMIN
