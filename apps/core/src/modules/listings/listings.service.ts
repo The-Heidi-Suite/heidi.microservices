@@ -8,6 +8,8 @@ import { PrismaCoreService } from '@heidi/prisma';
 import { LoggerService } from '@heidi/logger';
 import { StorageService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
+import { TranslationService } from '@heidi/translations';
+import { I18nService } from '@heidi/i18n';
 import {
   Prisma,
   ListingMediaType,
@@ -61,6 +63,8 @@ export class ListingsService {
     private readonly logger: LoggerService,
     private readonly storageService: StorageService,
     private readonly configService: ConfigService,
+    private readonly translationService: TranslationService,
+    private readonly i18nService: I18nService,
   ) {
     this.logger.setContext(ListingsService.name);
   }
@@ -240,6 +244,41 @@ export class ListingsService {
           isClosed: exception.isClosed,
           metadata: exception.metadata as Record<string, unknown> | null,
         })),
+    };
+  }
+
+  /**
+   * Apply translations to listing fields based on current request language
+   */
+  private async applyListingTranslations(
+    listing: ListingWithRelations,
+    dto: ListingResponseDto,
+  ): Promise<ListingResponseDto> {
+    const locale = this.i18nService.getLanguage();
+    const defaultLocale = this.configService.get<string>('i18n.defaultLanguage', 'en');
+
+    // If no locale or default locale, return original DTO
+    if (!locale || locale === defaultLocale) {
+      return dto;
+    }
+
+    const [title, summary, content] = await Promise.all([
+      this.translationService.getTranslation('listing', listing.id, 'title', locale, dto.title),
+      this.translationService.getTranslation(
+        'listing',
+        listing.id,
+        'summary',
+        locale,
+        dto.summary ?? '',
+      ),
+      this.translationService.getTranslation('listing', listing.id, 'content', locale, dto.content),
+    ]);
+
+    return {
+      ...dto,
+      title,
+      summary,
+      content,
     };
   }
 
@@ -773,7 +812,8 @@ export class ListingsService {
       include: listingWithRelations.include,
     });
 
-    return this.mapListing(listing);
+    const listingDto = this.mapListing(listing);
+    return this.applyListingTranslations(listing, listingDto);
   }
 
   async updateListing(listingId: string, userId: string, roles: UserRole[], dto: UpdateListingDto) {
@@ -1070,7 +1110,8 @@ export class ListingsService {
         throw new NotFoundException('Listing not found after update');
       }
 
-      return this.mapListing(refreshed);
+      const listingDto = this.mapListing(refreshed);
+      return this.applyListingTranslations(refreshed, listingDto);
     });
   }
 
@@ -1090,7 +1131,8 @@ export class ListingsService {
       isFavorite = favoriteIds.has(listing.id);
     }
 
-    return this.mapListing(listing, { isFavorite });
+    const dto = this.mapListing(listing, { isFavorite });
+    return this.applyListingTranslations(listing, dto);
   }
 
   async getListingBySlug(slug: string, userId?: string): Promise<ListingResponseDto> {
@@ -1109,7 +1151,8 @@ export class ListingsService {
       isFavorite = favoriteIds.has(listing.id);
     }
 
-    return this.mapListing(listing, { isFavorite });
+    const dto = this.mapListing(listing, { isFavorite });
+    return this.applyListingTranslations(listing, dto);
   }
 
   private buildListingWhere(
@@ -1260,8 +1303,13 @@ export class ListingsService {
       );
     }
 
-    const items = rows.map((row) =>
-      this.mapListing(row, { isFavorite: favoriteIds?.has(row.id) ?? false }),
+    const items = await Promise.all(
+      rows.map(async (row) => {
+        const dto = this.mapListing(row, {
+          isFavorite: favoriteIds?.has(row.id) ?? false,
+        });
+        return this.applyListingTranslations(row, dto);
+      }),
     );
     const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -1279,7 +1327,7 @@ export class ListingsService {
   async moderateListing(
     listingId: string,
     moderatorId: string,
-    dto: ListingModerationDto,
+    moderationDto: ListingModerationDto,
   ): Promise<ListingResponseDto> {
     const now = new Date();
     const existing = await this.prisma.listing.findUnique({
@@ -1294,20 +1342,20 @@ export class ListingsService {
     }
 
     const updateData: Prisma.ListingUpdateInput = {
-      moderationStatus: dto.moderationStatus,
-      reviewNotes: dto.reviewNotes ?? null,
+      moderationStatus: moderationDto.moderationStatus,
+      reviewNotes: moderationDto.reviewNotes ?? null,
       reviewedBy: moderatorId,
       reviewedAt: now,
       lastEditedByUserId: moderatorId,
     };
 
-    switch (dto.moderationStatus) {
+    switch (moderationDto.moderationStatus) {
       case ListingModerationStatus.APPROVED:
-        updateData.status = dto.publishStatus ?? ListingStatus.APPROVED;
+        updateData.status = moderationDto.publishStatus ?? ListingStatus.APPROVED;
         updateData.isArchived = false;
         if (
           !existing.publishAt &&
-          (dto.publishStatus === ListingStatus.APPROVED || !dto.publishStatus)
+          (moderationDto.publishStatus === ListingStatus.APPROVED || !moderationDto.publishStatus)
         ) {
           updateData.publishAt = now;
         }
@@ -1325,7 +1373,7 @@ export class ListingsService {
         updateData.archivedBy = moderatorId;
         break;
       default:
-        updateData.status = dto.publishStatus ?? ListingStatus.PENDING;
+        updateData.status = moderationDto.publishStatus ?? ListingStatus.PENDING;
     }
 
     const listing = await this.prisma.listing.update({
@@ -1334,7 +1382,8 @@ export class ListingsService {
       include: listingWithRelations.include,
     });
 
-    return this.mapListing(listing);
+    const listingDto = this.mapListing(listing);
+    return this.applyListingTranslations(listing, listingDto);
   }
 
   async submitListingForReview(listingId: string, userId: string): Promise<ListingResponseDto> {
@@ -1363,7 +1412,8 @@ export class ListingsService {
       include: listingWithRelations.include,
     });
 
-    return this.mapListing(updated);
+    const listingDto = this.mapListing(updated as ListingWithRelations);
+    return this.applyListingTranslations(updated as ListingWithRelations, listingDto);
   }
 
   async approveListing(listingId: string, moderatorId: string, body: ListingModerationActionDto) {
@@ -1439,11 +1489,15 @@ export class ListingsService {
         });
 
         this.logger.log(`Favorite added successfully: ${favorite.id}`);
+        const listingDto = await this.applyListingTranslations(
+          favorite.listing as ListingWithRelations,
+          this.mapListing(favorite.listing as ListingWithRelations, { isFavorite: true }),
+        );
         return {
           id: favorite.id,
           userId: favorite.userId,
           listingId: favorite.listingId,
-          listing: this.mapListing(favorite.listing, { isFavorite: true }),
+          listing: listingDto,
           createdAt: favorite.createdAt,
         };
       } else {
@@ -1515,11 +1569,15 @@ export class ListingsService {
       });
 
       this.logger.log(`Favorite added successfully: ${favorite.id}`);
+      const listingDto = await this.applyListingTranslations(
+        favorite.listing as ListingWithRelations,
+        this.mapListing(favorite.listing as ListingWithRelations, { isFavorite: true }),
+      );
       return {
         id: favorite.id,
         userId: favorite.userId,
         listingId: favorite.listingId,
-        listing: this.mapListing(favorite.listing, { isFavorite: true }),
+        listing: listingDto,
         createdAt: favorite.createdAt,
       };
     } catch (error: any) {
@@ -1582,11 +1640,21 @@ export class ListingsService {
       },
     });
 
-    return favorites.map((f) => ({
-      id: f.id,
-      listingId: f.listingId,
-      listing: this.mapListing(f.listing, { isFavorite: true }),
-      createdAt: f.createdAt,
-    }));
+    const items = await Promise.all(
+      favorites.map(async (f) => {
+        const listingDto = await this.applyListingTranslations(
+          f.listing as ListingWithRelations,
+          this.mapListing(f.listing as ListingWithRelations, { isFavorite: true }),
+        );
+        return {
+          id: f.id,
+          listingId: f.listingId,
+          listing: listingDto,
+          createdAt: f.createdAt,
+        };
+      }),
+    );
+
+    return items;
   }
 }
