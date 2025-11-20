@@ -172,6 +172,7 @@ model Category {
   contentBackgroundColor String?  // Hex color code
   type                  CategoryType?
   parentId              String?
+  languageCode          String?   // Source language of the category content (e.g., "en", "de")
   isActive              Boolean   @default(true)
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
@@ -236,6 +237,7 @@ model Tile {
   openInExternalBrowser Boolean  @default(false) // false = in-app, true = external
   displayOrder          Int      @default(0)
   isActive              Boolean  @default(true)
+  languageCode          String?  // Source language of the tile content (e.g., "en", "de")
   publishAt              DateTime?
   expireAt               DateTime?
   createdByUserId        String?
@@ -338,6 +340,7 @@ model CityCategory {
   displayOrder          Int      @default(0)
   headerBackgroundColor String? // Hex color code
   contentBackgroundColor String? // Hex color code
+  languageCode          String?  // Source language of the displayName (e.g., "en", "de")
   isActive              Boolean  @default(true)
   addedBy               String?
   addedAt               DateTime @default(now())
@@ -426,6 +429,9 @@ model ParkingSpace {
   // Pricing
   priceRatePerMinute    Decimal? @db.Decimal(10, 4)
   priceCurrency         String?
+
+  // Source language for translations
+  languageCode          String?  // Source language of name/description (e.g., "de" for Mobilithek data)
 
   // Timestamps
   occupancyModified     DateTime?
