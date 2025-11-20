@@ -6,7 +6,6 @@
  * and stores the E-Marketing Suite (EMS) configuration needed to subscribe users to the newsletter.
  *
  * Env vars (required unless default provided):
- * - INTEGRATION_USER_ID: User ID to own the integration (required)
  * - KIEL_NEWSLETTER_CLIENT_ID: Client ID (default: KIEL)
  * - KIEL_NEWSLETTER_HOST_URL: EMS API host URL (default: https://wlk-ems.com/crm/api/v1/KIEL/)
  * - KIEL_NEWSLETTER_API_KEY: EMS API key (required)
@@ -23,21 +22,30 @@ import {
   IntegrationProvider,
   Prisma,
 } from '@prisma/client-integration';
+import { PrismaClient as UsersPrismaClient, UserRole as UsersUserRole } from '@prisma/client-users';
 
 const prisma = new IntegrationPrismaClient();
+const usersPrisma = new UsersPrismaClient();
 
-function requiredEnv(name: string): string {
-  const v = process.env[name];
-  if (!v || v.trim() === '') {
-    throw new Error(`${name} must be set`);
+async function getSuperAdminUserId(): Promise<string> {
+  const user = await usersPrisma.user.findFirst({
+    where: {
+      role: UsersUserRole.SUPER_ADMIN,
+    },
+    select: { id: true },
+  });
+
+  if (!user) {
+    throw new Error('Super Admin user not found. Please run npm run seed:initial-admin first.');
   }
-  return v.trim();
+
+  return user.id;
 }
 
 async function seed() {
   console.log('🌱 Seeding Kiel Newsletter integration...');
 
-  const userId = requiredEnv('INTEGRATION_USER_ID');
+  const userId = await getSuperAdminUserId();
   const clientId = process.env.KIEL_NEWSLETTER_CLIENT_ID?.trim() || 'KIEL';
   const hostUrl =
     process.env.KIEL_NEWSLETTER_HOST_URL?.trim() || 'https://wlk-ems.com/crm/api/v1/KIEL/';
@@ -114,5 +122,5 @@ seed()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    await Promise.allSettled([prisma.$disconnect(), usersPrisma.$disconnect()]);
   });

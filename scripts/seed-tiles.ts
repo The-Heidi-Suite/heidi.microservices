@@ -11,14 +11,15 @@
  *
  * Run:
  *  - npm run seed:tiles
- *    (optionally set CITY_ID to link all tiles to a specific city)
  */
 
 import 'tsconfig-paths/register';
 
 import { PrismaClient as CorePrismaClient } from '@prisma/client-core';
+import { PrismaClient as CityPrismaClient } from '@prisma/client-city';
 
 const prisma = new CorePrismaClient();
+const cityPrisma = new CityPrismaClient();
 
 type TileSeedRow = {
   id: string;
@@ -95,15 +96,28 @@ const TILES: TileSeedRow[] = [
   },
 ];
 
+async function getKielCityId(): Promise<string> {
+  const city = await cityPrisma.city.findFirst({
+    where: {
+      name: 'Kiel',
+      country: 'Germany',
+      state: 'Schleswig-Holstein',
+    },
+    select: { id: true },
+  });
+
+  if (!city) {
+    throw new Error('Kiel city not found. Please run npm run seed:initial-admin first.');
+  }
+
+  return city.id;
+}
+
 async function seedTiles() {
   console.log('🌱 Seeding tiles (static data)...');
 
-  const cityId = process.env.CITY_ID?.trim() || undefined;
-  if (cityId) {
-    console.log(`ℹ Using CITY_ID=${cityId} for TileCity relations.`);
-  } else {
-    console.log('ℹ No CITY_ID provided; tiles will be seeded without TileCity relations.');
-  }
+  const cityId = await getKielCityId();
+  console.log(`ℹ Using Kiel city ID (${cityId}) for TileCity relations.`);
 
   let created = 0;
   let updated = 0;
@@ -223,7 +237,7 @@ async function seed() {
     console.error('❌ Error during tiles seeding:', error);
     process.exitCode = 1;
   } finally {
-    await prisma.$disconnect();
+    await Promise.allSettled([prisma.$disconnect(), cityPrisma.$disconnect()]);
   }
 }
 

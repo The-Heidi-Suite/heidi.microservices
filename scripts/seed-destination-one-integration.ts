@@ -6,8 +6,6 @@
  * and stores the configuration needed to sync data from destination_one API.
  *
  * Env vars (required unless default provided):
- * - INTEGRATION_USER_ID: User ID to own the integration (required)
- * - CITY_ID: Target city ID in core service (required)
  * - DO_EXPERIENCE: destination_one experience (default: heidi-app-kiel)
  * - DO_LICENSEKEY: destination_one license key (required)
  * - DO_TEMPLATE: API template (default: ET2014A_LIGHT_MULTI.json)
@@ -23,9 +21,13 @@ import {
   IntegrationProvider,
   Prisma,
 } from '@prisma/client-integration';
+import { PrismaClient as UsersPrismaClient, UserRole as UsersUserRole } from '@prisma/client-users';
+import { PrismaClient as CityPrismaClient } from '@prisma/client-city';
 import { DestinationOneConfig, DestinationOneCategoryMapping } from '@heidi/contracts';
 
 const prisma = new IntegrationPrismaClient();
+const usersPrisma = new UsersPrismaClient();
+const cityPrisma = new CityPrismaClient();
 
 function requiredEnv(name: string): string {
   const v = process.env[name];
@@ -35,11 +37,43 @@ function requiredEnv(name: string): string {
   return v.trim();
 }
 
+async function getSuperAdminUserId(): Promise<string> {
+  const user = await usersPrisma.user.findFirst({
+    where: {
+      role: UsersUserRole.SUPER_ADMIN,
+    },
+    select: { id: true },
+  });
+
+  if (!user) {
+    throw new Error('Super Admin user not found. Please run npm run seed:initial-admin first.');
+  }
+
+  return user.id;
+}
+
+async function getKielCityId(): Promise<string> {
+  const city = await cityPrisma.city.findFirst({
+    where: {
+      name: 'Kiel',
+      country: 'Germany',
+      state: 'Schleswig-Holstein',
+    },
+    select: { id: true },
+  });
+
+  if (!city) {
+    throw new Error('Kiel city not found. Please run npm run seed:initial-admin first.');
+  }
+
+  return city.id;
+}
+
 async function seed() {
   console.log('🌱 Seeding Destination One integration...');
 
-  const userId = requiredEnv('INTEGRATION_USER_ID');
-  const cityId = requiredEnv('CITY_ID');
+  const userId = await getSuperAdminUserId();
+  const cityId = await getKielCityId();
   const licensekey = requiredEnv('DO_LICENSEKEY');
 
   const experience = process.env.DO_EXPERIENCE?.trim() || 'heidi-app-kiel';
@@ -211,5 +245,9 @@ seed()
     process.exitCode = 1;
   })
   .finally(async () => {
-    await prisma.$disconnect();
+    await Promise.allSettled([
+      prisma.$disconnect(),
+      usersPrisma.$disconnect(),
+      cityPrisma.$disconnect(),
+    ]);
   });
