@@ -401,6 +401,7 @@ export class CoreService implements OnModuleInit {
             content: listingData.content,
             syncHash: listingData.syncHash,
             lastSyncedAt: new Date(),
+            languageCode: 'de', // Destination One data is in German
             venueName: listingData.venueName,
             address: listingData.address,
             geoLat: listingData.geoLat ? new Prisma.Decimal(listingData.geoLat) : undefined,
@@ -416,7 +417,10 @@ export class CoreService implements OnModuleInit {
         });
 
         // Trigger translations for changed translatable fields
-        await this.triggerTranslationsForListing(existing.id, listingData);
+        await this.triggerTranslationsForListing(existing.id, {
+          ...listingData,
+          languageCode: 'de', // Destination One data is in German
+        });
 
         return { action: 'updated', listingId: existing.id };
       }
@@ -443,6 +447,7 @@ export class CoreService implements OnModuleInit {
         lastSyncedAt: new Date(),
         ingestedAt: new Date(),
         ingestedByService: 'integration',
+        languageCode: 'de', // Destination One data is in German
         primaryCityId: listingData.primaryCityId,
         venueName: listingData.venueName,
         address: listingData.address,
@@ -506,7 +511,10 @@ export class CoreService implements OnModuleInit {
     });
 
     // Trigger translations for new listing
-    await this.triggerTranslationsForListing(listing.id, listingData);
+    await this.triggerTranslationsForListing(listing.id, {
+      ...listingData,
+      languageCode: 'de', // Destination One data is in German
+    });
 
     return { action: 'created', listingId: listing.id };
   }
@@ -530,11 +538,20 @@ export class CoreService implements OnModuleInit {
       title: string;
       summary?: string;
       content: string;
+      languageCode?: string;
     },
   ): Promise<void> {
-    const targetLocales = this.supportedLocales.filter(
-      (locale) => locale !== this.defaultSourceLocale,
-    );
+    // Get the listing to determine its source language
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { languageCode: true },
+    });
+
+    // Use listing's languageCode, or fall back to provided languageCode, or default
+    const sourceLocale =
+      listing?.languageCode || listingData.languageCode || this.defaultSourceLocale;
+
+    const targetLocales = this.supportedLocales.filter((locale) => locale !== sourceLocale);
 
     if (targetLocales.length === 0) {
       return; // No target locales to translate to
@@ -555,13 +572,13 @@ export class CoreService implements OnModuleInit {
       const sourceHash = this.computeSourceHash(fieldData.value);
 
       try {
-        // Publish translation job
+        // Publish translation job with correct source locale
         // The translation service will check sourceHash internally and skip if unchanged
         this.client.emit(RabbitMQPatterns.TRANSLATION_AUTO_TRANSLATE, {
           entityType: 'listing',
           entityId: listingId,
           field: fieldData.fieldName,
-          sourceLocale: this.defaultSourceLocale,
+          sourceLocale,
           targetLocales,
           text: fieldData.value,
           sourceHash,
@@ -663,12 +680,14 @@ export class CoreService implements OnModuleInit {
             type: rootCategoryInfo.categoryType,
             parentId: rootCategory.id,
             isActive: true,
+            languageCode: 'de', // Destination One data is in German
           },
           create: {
             name: facet.label,
             slug: categorySlug,
             type: rootCategoryInfo.categoryType,
             parentId: rootCategory.id,
+            languageCode: 'de', // Destination One data is in German
             isActive: true,
           },
         });
@@ -700,11 +719,13 @@ export class CoreService implements OnModuleInit {
           update: {
             displayName: facet.label,
             isActive: true,
+            languageCode: 'de', // Destination One data is in German
           },
           create: {
             cityId: data.cityId,
             categoryId: category.id,
             displayName: facet.label,
+            languageCode: 'de', // Destination One data is in German
             isActive: true,
           },
         });
@@ -837,6 +858,7 @@ export class CoreService implements OnModuleInit {
             ? new Prisma.Decimal(parking.priceRatePerMinute)
             : null,
           priceCurrency: parking.priceCurrency || null,
+          languageCode: 'de', // Mobilithek data is in German
           occupancyModified: parking.occupancyModified ? new Date(parking.occupancyModified) : null,
           observationDateTime: parking.observationDateTime
             ? new Date(parking.observationDateTime)
@@ -870,6 +892,7 @@ export class CoreService implements OnModuleInit {
             ? new Prisma.Decimal(parking.priceRatePerMinute)
             : null,
           priceCurrency: parking.priceCurrency || null,
+          languageCode: 'de', // Mobilithek data is in German
           occupancyModified: parking.occupancyModified ? new Date(parking.occupancyModified) : null,
           observationDateTime: parking.observationDateTime
             ? new Date(parking.observationDateTime)
@@ -979,6 +1002,9 @@ export class CoreService implements OnModuleInit {
 
     return Promise.all(
       spaces.map(async (space) => {
+        // Get source language from parking space (defaults to 'de' for Mobilithek data)
+        const sourceLocale = space.languageCode || 'de';
+
         const [name, description] = await Promise.all([
           this.translationService.getTranslation(
             'parkingSpace',
@@ -986,6 +1012,7 @@ export class CoreService implements OnModuleInit {
             'name',
             locale,
             space.name ?? '',
+            sourceLocale,
           ),
           this.translationService.getTranslation(
             'parkingSpace',
@@ -993,6 +1020,7 @@ export class CoreService implements OnModuleInit {
             'description',
             locale,
             space.description ?? '',
+            sourceLocale,
           ),
         ]);
 

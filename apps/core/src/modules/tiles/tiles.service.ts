@@ -133,14 +133,26 @@ export class TilesService {
       return dto;
     }
 
+    // Get source language from tile
+    const sourceLocale =
+      tile.languageCode || this.configService.get<string>('i18n.defaultLanguage', 'en');
+
     const [header, subheader, description] = await Promise.all([
-      this.translationService.getTranslation('tile', tile.id, 'header', locale, dto.header),
+      this.translationService.getTranslation(
+        'tile',
+        tile.id,
+        'header',
+        locale,
+        dto.header,
+        sourceLocale,
+      ),
       this.translationService.getTranslation(
         'tile',
         tile.id,
         'subheader',
         locale,
         dto.subheader ?? '',
+        sourceLocale,
       ),
       this.translationService.getTranslation(
         'tile',
@@ -148,6 +160,7 @@ export class TilesService {
         'description',
         locale,
         dto.description ?? '',
+        sourceLocale,
       ),
     ]);
 
@@ -242,6 +255,11 @@ export class TilesService {
     const baseSlug = this.slugify(dto.header) || this.slugify(`tile-${Date.now()}`);
     const slug = await this.ensureUniqueSlug(baseSlug);
 
+    // Determine source language: use current request language or default
+    const sourceLanguage =
+      this.i18nService.getLanguage() ||
+      this.configService.get<string>('i18n.defaultLanguage', 'en');
+
     const data: Prisma.TileCreateInput = {
       slug,
       headerBackgroundColor: dto.headerBackgroundColor,
@@ -253,6 +271,7 @@ export class TilesService {
       openInExternalBrowser: dto.openInExternalBrowser ?? false,
       displayOrder: dto.displayOrder ?? 0,
       isActive: dto.isActive ?? true,
+      languageCode: sourceLanguage,
       // publishAt and expireAt are not set during creation
       createdByUserId: userId,
       lastEditedByUserId: userId,

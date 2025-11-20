@@ -123,6 +123,10 @@ export class CategoriesService {
     }
 
     const translateNode = async (category: any): Promise<any> => {
+      // Get source language from category
+      const sourceLocale =
+        category.languageCode || this.configService.get<string>('i18n.defaultLanguage', 'en');
+
       const [name, description, subtitle] = await Promise.all([
         this.translationService.getTranslation(
           'category',
@@ -130,6 +134,7 @@ export class CategoriesService {
           'name',
           locale,
           category.name,
+          sourceLocale,
         ),
         this.translationService.getTranslation(
           'category',
@@ -137,6 +142,7 @@ export class CategoriesService {
           'description',
           locale,
           category.description ?? '',
+          sourceLocale,
         ),
         this.translationService.getTranslation(
           'category',
@@ -144,6 +150,7 @@ export class CategoriesService {
           'subtitle',
           locale,
           category.subtitle ?? '',
+          sourceLocale,
         ),
       ]);
 
@@ -178,12 +185,18 @@ export class CategoriesService {
     const baseSlug = baseSlugCandidate || this.slugify(`${dto.name}-${Date.now()}`);
     const slug = await this.ensureUniqueCategorySlug(baseSlug);
 
+    // Determine source language: use current request language or default
+    const sourceLanguage =
+      this.i18nService.getLanguage() ||
+      this.configService.get<string>('i18n.defaultLanguage', 'en');
+
     const data: Prisma.CategoryCreateInput = {
       name: dto.name,
       slug,
       description: dto.description ?? null,
       subtitle: dto.subtitle ?? null,
       type: dto.type ?? null,
+      languageCode: sourceLanguage,
       isActive: dto.isActive ?? true,
       headerBackgroundColor: dto.headerBackgroundColor ?? null,
       contentBackgroundColor: dto.contentBackgroundColor ?? null,

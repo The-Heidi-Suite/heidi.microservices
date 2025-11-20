@@ -262,16 +262,35 @@ export class ListingsService {
       return dto;
     }
 
+    // Get source language from listing
+    const sourceLocale =
+      listing.languageCode || this.configService.get<string>('i18n.defaultLanguage', 'en');
+
     const [title, summary, content] = await Promise.all([
-      this.translationService.getTranslation('listing', listing.id, 'title', locale, dto.title),
+      this.translationService.getTranslation(
+        'listing',
+        listing.id,
+        'title',
+        locale,
+        dto.title,
+        sourceLocale,
+      ),
       this.translationService.getTranslation(
         'listing',
         listing.id,
         'summary',
         locale,
         dto.summary ?? '',
+        sourceLocale,
       ),
-      this.translationService.getTranslation('listing', listing.id, 'content', locale, dto.content),
+      this.translationService.getTranslation(
+        'listing',
+        listing.id,
+        'content',
+        locale,
+        dto.content,
+        sourceLocale,
+      ),
     ]);
 
     return {
@@ -697,6 +716,12 @@ export class ListingsService {
       dto.cities?.find((city) => city.isPrimary) ??
       (dto.cities && dto.cities.length > 0 ? { cityId: dto.cities[0].cityId } : undefined);
 
+    // Determine source language: use provided languageCode, or fall back to current request language, or default
+    const sourceLanguage =
+      dto.languageCode ||
+      this.i18nService.getLanguage() ||
+      this.configService.get<string>('i18n.defaultLanguage', 'en');
+
     const data: Prisma.ListingCreateInput = {
       slug,
       title: dto.title,
@@ -709,7 +734,7 @@ export class ListingsService {
       featuredUntil,
       publishAt,
       expireAt,
-      languageCode: dto.languageCode,
+      languageCode: sourceLanguage,
       sourceUrl: dto.sourceUrl,
       metadata: this.toJson(dto.metadata),
       createdByUserId: userId,
@@ -860,6 +885,12 @@ export class ListingsService {
 
       if (dto.languageCode !== undefined) {
         updateData.languageCode = dto.languageCode;
+      } else if (!existing.languageCode) {
+        // If no languageCode exists and none provided, set from current request language
+        const sourceLanguage =
+          this.i18nService.getLanguage() ||
+          this.configService.get<string>('i18n.defaultLanguage', 'en');
+        updateData.languageCode = sourceLanguage;
       }
 
       if (dto.sourceUrl !== undefined) {
