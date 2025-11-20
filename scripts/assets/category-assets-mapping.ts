@@ -32,8 +32,9 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   news: {
     slug: 'news',
     imageFileName: 'news.webp',
-    subtitle: 'Aktuelle Informationen',
-    description: 'Aktuelle Nachrichten und Bekanntmachungen aus Kiel',
+    displayName: 'News',
+    subtitle: 'Latest updates',
+    description: 'Latest news and official announcements for your city.',
     headerBackgroundColor: '#1E3A8A', // Blue
     contentBackgroundColor: '#EFF6FF',
     displayOrder: 1,
@@ -43,9 +44,9 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   events: {
     slug: 'events',
     imageFileName: 'events.webp',
-    displayName: 'Veranstaltungen',
-    subtitle: 'Erlebe Kiel',
-    description: 'Veranstaltungen, Festivals und Events in Kiel',
+    displayName: 'Events',
+    subtitle: "What's on",
+    description: 'Events, festivals and activities happening in your city.',
     headerBackgroundColor: '#7C3AED', // Purple
     contentBackgroundColor: '#F3E8FF',
     displayOrder: 2,
@@ -55,9 +56,9 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   'food-and-drink': {
     slug: 'food-and-drink',
     imageFileName: 'food-and-drink.webp',
-    displayName: 'essen-trinken_kiel-kulinarisch',
-    subtitle: 'Kulinarische Vielfalt',
-    description: 'Restaurants, Cafés, Bars und kulinarische Erlebnisse in Kiel',
+    displayName: 'Food & Drink',
+    subtitle: 'Eat & drink',
+    description: 'Restaurants, cafés, bars and culinary experiences across the city.',
     headerBackgroundColor: '#DC2626', // Red
     contentBackgroundColor: '#FEE2E2',
     displayOrder: 3,
@@ -67,33 +68,33 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   tours: {
     slug: 'tours',
     imageFileName: 'tours.webp',
-    displayName: 'Touren',
-    subtitle: 'Kiel entdecken',
-    description: 'Geführte Touren und Stadtspaziergänge durch Kiel',
+    displayName: 'Tours',
+    subtitle: 'Discover the city',
+    description: 'Guided tours, walking routes and experiences to explore the city.',
     headerBackgroundColor: '#059669', // Green
     contentBackgroundColor: '#D1FAE5',
     displayOrder: 4,
   },
 
-  // Shopping (new category, fed from POI)
+  // Shopping (fed from POI)
   shopping: {
     slug: 'shopping',
     imageFileName: 'shopping.webp',
-    displayName: 'nach-herzenslust-shoppen',
-    subtitle: 'Shopping in Kiel',
-    description: 'Einkaufen und Shoppen in Kiels Innenstadt und Quartieren',
+    displayName: 'Shopping',
+    subtitle: 'Where to shop',
+    description: 'Shops, boutiques and malls in your city.',
     headerBackgroundColor: '#EA580C', // Orange
     contentBackgroundColor: '#FFEDD5',
     displayOrder: 5,
   },
 
-  // Culture (new category)
+  // Culture
   culture: {
     slug: 'culture',
     imageFileName: 'culture.webp',
-    displayName: 'kiel-kultur',
-    subtitle: 'Kultur erleben',
-    description: 'Kulturelle Veranstaltungen, Museen, Galerien und Kunst in Kiel',
+    displayName: 'Culture',
+    subtitle: 'Arts & culture',
+    description: 'Museums, galleries, theaters and cultural venues.',
     headerBackgroundColor: '#BE185D', // Pink
     contentBackgroundColor: '#FCE7F3',
     displayOrder: 6,
@@ -103,9 +104,9 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   'points-of-interest': {
     slug: 'points-of-interest',
     imageFileName: 'points-of-interest.webp',
-    displayName: 'Sehenswürdigkeiten',
-    subtitle: 'Kiel erkunden',
-    description: 'Sehenswürdigkeiten, Museen, Parks und historische Stätten in Kiel',
+    displayName: 'Points of Interest',
+    subtitle: 'Explore the city',
+    description: 'Landmarks, museums, parks and other sights worth visiting.',
     headerBackgroundColor: '#0891B2', // Cyan
     contentBackgroundColor: '#CFFAFE',
     displayOrder: 7,
@@ -115,9 +116,9 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   'hotels-and-stays': {
     slug: 'hotels-and-stays',
     imageFileName: 'hotels-and-stays.webp',
-    displayName: 'Hotels & Unterkünfte',
-    subtitle: 'Übernachten in Kiel',
-    description: 'Hotels, Pensionen und Unterkünfte in Kiel',
+    displayName: 'Hotels & Stays',
+    subtitle: 'Stay overnight',
+    description: 'Hotels, guesthouses and other accommodation options.',
     headerBackgroundColor: '#92400E', // Brown/Amber
     contentBackgroundColor: '#FEF3C7',
     displayOrder: 8,
@@ -127,9 +128,9 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   'articles-and-stories': {
     slug: 'articles-and-stories',
     imageFileName: 'articles-and-stories.webp',
-    displayName: 'Artikel & Geschichten',
-    subtitle: 'Geschichten aus Kiel',
-    description: 'Artikel, Stadtführer und Geschichten über Kiel',
+    displayName: 'Articles & Stories',
+    subtitle: 'Stories from the city',
+    description: 'Guides, stories and inspiration for exploring the city.',
     headerBackgroundColor: '#4B5563', // Gray
     contentBackgroundColor: '#F3F4F6',
     displayOrder: 9,
@@ -140,8 +141,8 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     slug: 'restaurants',
     imageFileName: 'restaurants.webp',
     displayName: 'Restaurants',
-    subtitle: 'Kulinarische Genüsse',
-    description: 'Restaurants und Gastronomie in Kiel',
+    subtitle: 'Great places to eat',
+    description: 'Restaurant listings and gastronomy highlights.',
     headerBackgroundColor: '#DC2626',
     contentBackgroundColor: '#FEE2E2',
     displayOrder: 10,
@@ -151,9 +152,9 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   other: {
     slug: 'other',
     imageFileName: 'other.webp',
-    displayName: 'Sonstiges',
-    subtitle: 'Weitere Inhalte',
-    description: 'Weitere Inhalte und Informationen',
+    displayName: 'Other',
+    subtitle: 'More content',
+    description: 'Additional content and information.',
     headerBackgroundColor: '#6B7280',
     contentBackgroundColor: '#F9FAFB',
     displayOrder: 11,

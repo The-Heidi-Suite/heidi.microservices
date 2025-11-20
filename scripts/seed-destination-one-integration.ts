@@ -23,7 +23,7 @@ import {
   IntegrationProvider,
   Prisma,
 } from '@prisma/client-integration';
-import { DestinationOneConfig } from '@heidi/contracts';
+import { DestinationOneConfig, DestinationOneCategoryMapping } from '@heidi/contracts';
 
 const prisma = new IntegrationPrismaClient();
 
@@ -54,6 +54,106 @@ async function seed() {
   const name = process.env.INTEGRATION_NAME?.trim() || 'Destination One - Kiel';
   const isActive = (process.env.INTEGRATION_ACTIVE ?? 'true').toLowerCase() !== 'false';
 
+  // Category mappings for Kiel based on screenshot requirements
+  // Maps Destination One categories to Heidi categories/subcategories
+  const categoryMappings: DestinationOneCategoryMapping[] = [
+    // Shopping category mappings (POI type)
+    {
+      heidiCategorySlug: 'shopping',
+      doTypes: ['POI'],
+      doCategoryValues: ['Einkaufen'],
+      query: 'category:Einkaufen',
+    },
+    {
+      heidiCategorySlug: 'shopping',
+      heidiSubcategorySlug: 'shopping-clothing',
+      doTypes: ['POI'],
+      doCategoryValues: ['Bekleidung', 'Schuhe & Lederwaren'],
+      query: 'category:Bekleidung OR category:Schuhe & Lederwaren',
+    },
+    {
+      heidiCategorySlug: 'shopping',
+      heidiSubcategorySlug: 'shopping-conscious-shopping',
+      doTypes: ['POI'],
+      doCategoryValues: ['Bewusst einkaufen'],
+      query: 'category:Bewusst einkaufen',
+    },
+    {
+      heidiCategorySlug: 'shopping',
+      heidiSubcategorySlug: 'shopping-for-children',
+      doTypes: ['POI'],
+      doCategoryValues: ['Spielzeug', 'Baby & Kind'],
+      query: 'category:Spielzeug OR category:Baby & Kind',
+    },
+
+    // Food & Drink category mappings (Gastro type)
+    {
+      heidiCategorySlug: 'food-and-drink',
+      heidiSubcategorySlug: 'food-cafes-bakeries',
+      doTypes: ['Gastro'],
+      doCategoryValues: ['Café', 'Eisdiele', 'Eiscafé'],
+      query: 'category:Café OR category:Eisdiele OR category:Eiscafé',
+    },
+    {
+      heidiCategorySlug: 'food-and-drink',
+      heidiSubcategorySlug: 'food-fish-restaurants',
+      doTypes: ['Gastro'],
+      doCategoryValues: ['Fischlokal', 'Schiffsgastronomie'],
+      query: 'category:Fischlokal OR category:Schiffsgastronomie',
+    },
+    {
+      heidiCategorySlug: 'food-and-drink',
+      heidiSubcategorySlug: 'food-bars-nightlife',
+      doTypes: ['Gastro'],
+      doCategoryValues: ['Pub', 'Bar', 'Kneipe', 'Sportsbar'],
+      query: 'category:Pub OR category:Bar OR category:Kneipe OR category:Sportsbar',
+    },
+    {
+      heidiCategorySlug: 'food-and-drink',
+      heidiSubcategorySlug: 'food-vegetarian-vegan',
+      doTypes: ['Gastro'],
+      doCategoryValues: ['vegan', 'vegetarisch'],
+      query: 'category:vegan OR category:vegetarisch',
+    },
+
+    // Tours & POI category mappings (Tour and POI types)
+    {
+      heidiCategorySlug: 'tours',
+      heidiSubcategorySlug: 'tours-excursions',
+      doTypes: ['Tour', 'POI'],
+      doCategoryValues: ['Ausflugsziele'],
+      query: 'category:Ausflugsziele',
+    },
+    {
+      heidiCategorySlug: 'tours',
+      heidiSubcategorySlug: 'tours-on-foot',
+      doTypes: ['Tour'],
+      doCategoryValues: ['Wandern', 'Themenstraße'],
+      query: 'category:Wandern OR category:Themenstraße',
+    },
+    {
+      heidiCategorySlug: 'tours',
+      heidiSubcategorySlug: 'tours-bike-tours',
+      doTypes: ['Tour'],
+      doCategoryValues: ['Radfahren', 'Themen-Radtouren'],
+      query: 'category:Radfahren OR category:Themen-Radtouren',
+    },
+    {
+      heidiCategorySlug: 'tours',
+      heidiSubcategorySlug: 'tours-museum-tours',
+      doTypes: ['Tour', 'POI'],
+      doCategoryValues: ['Museumstour', 'Museen', 'Sammlungen'],
+      query: 'category:Museumstour OR category:Museen OR category:Sammlungen',
+    },
+    {
+      heidiCategorySlug: 'culture',
+      heidiSubcategorySlug: 'culture-museums',
+      doTypes: ['POI'],
+      doCategoryValues: ['Museen', 'Sammlungen'],
+      query: 'category:Museen OR category:Sammlungen',
+    },
+  ];
+
   const config: DestinationOneConfig = {
     experience,
     licensekey,
@@ -62,6 +162,8 @@ async function seed() {
     cityId,
     typeFilter: types,
     enabled: isActive,
+    categoryMappings,
+    storeItemCategoriesAsTags: true, // Default to storing categories as tags
   };
 
   // Find by provider + name (no unique index, so do manual upsert logic)
