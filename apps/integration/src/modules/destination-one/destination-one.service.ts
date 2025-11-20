@@ -290,12 +290,11 @@ export class DestinationOneService {
     return { items: allItems };
   }
 
-  private generateSyncHash(item: DestinationOneItem): string {
+  private generateSyncHash(title: string, summary: string | undefined, content: string): string {
     const hashData = {
-      id: item.id,
-      global_id: item.global_id,
-      title: item.title,
-      updated: new Date().toISOString(),
+      title,
+      summary: summary || '',
+      content,
     };
     return createHash('sha256').update(JSON.stringify(hashData)).digest('hex');
   }
@@ -466,14 +465,14 @@ export class DestinationOneService {
           }))
         : undefined;
 
-    return {
+    const transformed: TransformedListingData = {
       title: item.title,
       summary: teaserText || undefined,
       content: content || item.title,
       slug,
       externalSource: 'destination_one',
       externalId: item.id,
-      syncHash: this.generateSyncHash(item),
+      syncHash: this.generateSyncHash(item.title, teaserText || undefined, content || item.title),
       sourceType: 'API_IMPORT',
       primaryCityId: config.cityId,
       venueName: item.company || item.title,
@@ -492,6 +491,8 @@ export class DestinationOneService {
       eventEnd,
       mediaItems,
     };
+
+    return transformed;
   }
 
   async syncIntegration(
