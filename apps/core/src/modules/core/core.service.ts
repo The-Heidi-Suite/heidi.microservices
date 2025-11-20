@@ -3,7 +3,7 @@ import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabb
 import { RedisService } from '@heidi/redis';
 import { LoggerService } from '@heidi/logger';
 import { PrismaCoreService } from '@heidi/prisma';
-import { TranslationService } from '@heidi/translations';
+import { TranslationService, TranslationSource } from '@heidi/translations';
 import { ConfigService } from '@heidi/config';
 import { I18nService } from '@heidi/i18n';
 import {
@@ -12,7 +12,6 @@ import {
   ListingModerationStatus,
   ListingSourceType,
   ListingRecurrenceFreq,
-  CategoryType,
   ListingMediaType,
   Prisma,
 } from '@prisma/client-core';
@@ -281,6 +280,7 @@ export class CoreService implements OnModuleInit {
     website?: string;
     heroImageUrl?: string;
     categorySlugs: string[];
+    tags?: string[]; // Destination One category values to store as tags
     timeIntervals?: Array<{
       weekdays: string[];
       start: string;
@@ -416,6 +416,11 @@ export class CoreService implements OnModuleInit {
           },
         });
 
+        // Sync tags if provided
+        if (listingData.tags && listingData.tags.length > 0) {
+          await this.syncTagsForListing(existing.id, listingData.externalSource, listingData.tags);
+        }
+
         // Trigger translations for changed translatable fields
         await this.triggerTranslationsForListing(existing.id, {
           ...listingData,
@@ -510,6 +515,11 @@ export class CoreService implements OnModuleInit {
       },
     });
 
+    // Sync tags if provided
+    if (listingData.tags && listingData.tags.length > 0) {
+      await this.syncTagsForListing(listing.id, listingData.externalSource, listingData.tags);
+    }
+
     // Trigger translations for new listing
     await this.triggerTranslationsForListing(listing.id, {
       ...listingData,
@@ -517,6 +527,94 @@ export class CoreService implements OnModuleInit {
     });
 
     return { action: 'created', listingId: listing.id };
+  }
+
+  /**
+   * Sync tags for a listing from an external integration
+   * Creates or updates Tag records and links them to the listing
+   */
+  private async syncTagsForListing(
+    listingId: string,
+    externalSource: string,
+    tagValues: string[],
+  ): Promise<void> {
+    if (!tagValues || tagValues.length === 0) {
+      return;
+    }
+
+    // Determine provider from externalSource
+    const provider =
+      externalSource === 'destination_one' ? 'DESTINATION_ONE' : externalSource.toUpperCase();
+
+    // Delete existing tag associations for this listing
+    await this.prisma.listingTag.deleteMany({
+      where: { listingId },
+    });
+
+    // Upsert tags and create associations
+    const tagIds: string[] = [];
+    for (const tagValue of tagValues) {
+      if (!tagValue || !tagValue.trim()) {
+        continue;
+      }
+
+      const normalizedValue = tagValue.trim();
+
+      // Find or create tag
+      let tag = await this.prisma.tag.findUnique({
+        where: {
+          provider_externalValue: {
+            provider,
+            externalValue: normalizedValue,
+          },
+        },
+      });
+
+      if (!tag) {
+        // Create new tag
+        tag = await this.prisma.tag.create({
+          data: {
+            provider,
+            externalValue: normalizedValue,
+            label: normalizedValue, // Use value as default label
+            languageCode: 'de', // Destination One data is in German
+          },
+        });
+
+        // Create translation entry for the tag label (source language)
+        await this.translationService.saveTranslation(
+          'tag',
+          tag.id,
+          'label',
+          'de',
+          normalizedValue,
+          'de',
+          undefined,
+          TranslationSource.IMPORT,
+        );
+      } else {
+        // Update label if it changed
+        if (tag.label !== normalizedValue) {
+          await this.prisma.tag.update({
+            where: { id: tag.id },
+            data: { label: normalizedValue },
+          });
+        }
+      }
+
+      tagIds.push(tag.id);
+    }
+
+    // Create listing-tag associations
+    if (tagIds.length > 0) {
+      await this.prisma.listingTag.createMany({
+        data: tagIds.map((tagId) => ({
+          listingId,
+          tagId,
+        })),
+        skipDuplicates: true,
+      });
+    }
   }
 
   /**
@@ -590,164 +688,6 @@ export class CoreService implements OnModuleInit {
         // Continue with other fields even if one fails
       }
     }
-  }
-
-  /**
-   * Maps Destination One item types to root category slugs and CategoryType
-   * Must match the mapping in destination-one.service.ts
-   */
-  private readonly TYPE_TO_ROOT_CATEGORY: Record<
-    string,
-    { slug: string; categoryType: CategoryType }
-  > = {
-    Gastro: { slug: 'food-and-drink', categoryType: CategoryType.GASTRO },
-    Event: { slug: 'events', categoryType: CategoryType.EVENT },
-    Tour: { slug: 'tours', categoryType: CategoryType.TOUR },
-    POI: { slug: 'points-of-interest', categoryType: CategoryType.POI },
-    Hotel: { slug: 'hotels-and-stays', categoryType: CategoryType.HOTEL },
-    Article: { slug: 'articles-and-stories', categoryType: CategoryType.ARTICLE },
-  };
-
-  private slugify(value: string): string {
-    return value
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
-  }
-
-  async syncCategoriesFromIntegration(data: {
-    cityId: string;
-    categoryFacets: Array<{ type: string; field: string; value: string; label: string }>;
-  }): Promise<{
-    created: number;
-    updated: number;
-    cityCategoriesCreated: number;
-    cityCategoriesUpdated: number;
-  }> {
-    this.logger.log(
-      `Syncing categories from integration for city ${data.cityId}, ${data.categoryFacets.length} facets`,
-    );
-
-    let categoriesCreated = 0;
-    let categoriesUpdated = 0;
-    let cityCategoriesCreated = 0;
-    let cityCategoriesUpdated = 0;
-
-    // Group facets by type to process them together
-    const facetsByType = new Map<string, Array<{ field: string; value: string; label: string }>>();
-    for (const facet of data.categoryFacets) {
-      if (!facetsByType.has(facet.type)) {
-        facetsByType.set(facet.type, []);
-      }
-      facetsByType.get(facet.type)!.push(facet);
-    }
-
-    for (const [type, facets] of facetsByType.entries()) {
-      const rootCategoryInfo = this.TYPE_TO_ROOT_CATEGORY[type];
-      if (!rootCategoryInfo) {
-        this.logger.warn(`Unknown type "${type}" in category facets, skipping`);
-        continue;
-      }
-
-      // Find or create root category
-      const rootCategory = await this.prisma.category.findUnique({
-        where: { slug: rootCategoryInfo.slug },
-      });
-
-      if (!rootCategory) {
-        this.logger.warn(
-          `Root category with slug "${rootCategoryInfo.slug}" not found. Please ensure categories are seeded.`,
-        );
-        continue;
-      }
-
-      // Process each facet
-      for (const facet of facets) {
-        if (facet.field !== 'category') {
-          // Only process 'category' field for now
-          continue;
-        }
-
-        // Determine slug to use (automatic strategy: rootSlug + slugified facet label)
-        const categorySlug = `${rootCategoryInfo.slug}-${this.slugify(facet.label)}`;
-
-        // Upsert Category
-        const category = await this.prisma.category.upsert({
-          where: { slug: categorySlug },
-          update: {
-            name: facet.label,
-            type: rootCategoryInfo.categoryType,
-            parentId: rootCategory.id,
-            isActive: true,
-            languageCode: 'de', // Destination One data is in German
-          },
-          create: {
-            name: facet.label,
-            slug: categorySlug,
-            type: rootCategoryInfo.categoryType,
-            parentId: rootCategory.id,
-            languageCode: 'de', // Destination One data is in German
-            isActive: true,
-          },
-        });
-
-        if (category.createdAt.getTime() === category.updatedAt.getTime()) {
-          categoriesCreated++;
-        } else {
-          categoriesUpdated++;
-        }
-
-        // Check if CityCategory exists before upsert
-        const existingCityCategory = await this.prisma.cityCategory.findUnique({
-          where: {
-            cityId_categoryId: {
-              cityId: data.cityId,
-              categoryId: category.id,
-            },
-          },
-        });
-
-        // Upsert CityCategory
-        await this.prisma.cityCategory.upsert({
-          where: {
-            cityId_categoryId: {
-              cityId: data.cityId,
-              categoryId: category.id,
-            },
-          },
-          update: {
-            displayName: facet.label,
-            isActive: true,
-            languageCode: 'de', // Destination One data is in German
-          },
-          create: {
-            cityId: data.cityId,
-            categoryId: category.id,
-            displayName: facet.label,
-            languageCode: 'de', // Destination One data is in German
-            isActive: true,
-          },
-        });
-
-        if (!existingCityCategory) {
-          cityCategoriesCreated++;
-        } else {
-          cityCategoriesUpdated++;
-        }
-      }
-    }
-
-    this.logger.log(
-      `Category sync completed: ${categoriesCreated} categories created, ${categoriesUpdated} updated, ${cityCategoriesCreated} city categories created, ${cityCategoriesUpdated} updated`,
-    );
-
-    return {
-      created: categoriesCreated,
-      updated: categoriesUpdated,
-      cityCategoriesCreated,
-      cityCategoriesUpdated,
-    };
   }
 
   async syncParkingSpace(data: {
