@@ -51,6 +51,11 @@ const listingWithRelations = Prisma.validator<Prisma.ListingDefaultArgs>()({
     media: true,
     timeIntervals: true,
     timeIntervalExceptions: true,
+    tags: {
+      include: {
+        tag: true,
+      },
+    },
   },
 });
 
@@ -244,6 +249,15 @@ export class ListingsService {
           isClosed: exception.isClosed,
           metadata: exception.metadata as Record<string, unknown> | null,
         })),
+      tags:
+        listing.tags?.map((listingTag) => ({
+          id: listingTag.id,
+          tagId: listingTag.tagId,
+          provider: listingTag.tag?.provider ?? '',
+          externalValue: listingTag.tag?.externalValue ?? '',
+          label: listingTag.tag?.label ?? null,
+          languageCode: listingTag.tag?.languageCode ?? null,
+        })) ?? [],
     };
   }
 
@@ -263,7 +277,7 @@ export class ListingsService {
     }
 
     // Get source language from listing
-    const sourceLocale =
+    const listingSourceLocale =
       listing.languageCode || this.configService.get<string>('i18n.defaultLanguage', 'en');
 
     const [title, summary, content] = await Promise.all([
@@ -273,7 +287,7 @@ export class ListingsService {
         'title',
         locale,
         dto.title,
-        sourceLocale,
+        listingSourceLocale,
       ),
       this.translationService.getTranslation(
         'listing',
@@ -281,7 +295,7 @@ export class ListingsService {
         'summary',
         locale,
         dto.summary ?? '',
-        sourceLocale,
+        listingSourceLocale,
       ),
       this.translationService.getTranslation(
         'listing',
@@ -289,15 +303,59 @@ export class ListingsService {
         'content',
         locale,
         dto.content,
-        sourceLocale,
+        listingSourceLocale,
       ),
     ]);
+
+    // Translate tag labels using shared Tag translations (one Translation per tag)
+    let translatedTags = dto.tags;
+    if (listing.tags && listing.tags.length > 0) {
+      translatedTags = await Promise.all(
+        listing.tags.map(async (listingTag, index) => {
+          const tag = listingTag.tag;
+          if (!tag) {
+            return (
+              dto.tags?.[index] ?? {
+                id: listingTag.id,
+                tagId: listingTag.tagId,
+                provider: '',
+                externalValue: '',
+                label: null,
+                languageCode: null,
+              }
+            );
+          }
+
+          const tagSourceLocale = tag.languageCode || defaultLocale;
+          const fallbackLabel = tag.label || tag.externalValue;
+
+          const label = await this.translationService.getTranslation(
+            'tag',
+            tag.id,
+            'label',
+            locale,
+            fallbackLabel,
+            tagSourceLocale,
+          );
+
+          return {
+            id: listingTag.id,
+            tagId: tag.id,
+            provider: tag.provider,
+            externalValue: tag.externalValue,
+            label,
+            languageCode: tagSourceLocale,
+          };
+        }),
+      );
+    }
 
     return {
       ...dto,
       title,
       summary,
       content,
+      tags: translatedTags,
     };
   }
 
