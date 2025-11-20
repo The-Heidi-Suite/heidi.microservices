@@ -146,6 +146,7 @@ model Listing {
   media                  ListingMedia[]
   timeIntervals          ListingTimeInterval[]
   timeIntervalExceptions ListingTimeIntervalException[]
+  tags                   ListingTag[]
 
   @@index([status])
   @@index([moderationStatus])
@@ -456,9 +457,9 @@ model ParkingSpace {
 model Translation {
   id           String   @id @default(uuid())
   key          String?  // For generic keys not tied to an entity
-  entityType   String?  // e.g., "listing", "city", "category"
+  entityType   String?  // e.g., "listing", "city", "category", "tag"
   entityId     String?  // Reference to entity ID (string, no FK due to multi-database architecture)
-  field        String?  // e.g., "title", "summary", "description"
+  field        String?  // e.g., "title", "summary", "description", "label"
   locale       String   // Language code matching i18n (e.g., "en", "de", "dk")
   sourceLocale String?  // Language of the original text
   value        String   // Translated text
@@ -476,6 +477,40 @@ model Translation {
   @@index([locale])
   @@index([sourceHash])
   @@map("translations")
+}
+
+// Tag model - Generic tags from external integrations (e.g., Destination One categories)
+model Tag {
+  id           String   @id @default(uuid())
+  provider     String   // e.g., "DESTINATION_ONE"
+  externalValue String  // Original value from external source (e.g., "Ausstellung")
+  label        String?  // Display label (can be translated via Translation model)
+  languageCode String?  // Source language of the tag (e.g., "de", "en")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  listings ListingTag[]
+
+  @@unique([provider, externalValue])
+  @@index([provider])
+  @@index([externalValue])
+  @@map("tags")
+}
+
+// ListingTag - Links listings to tags
+model ListingTag {
+  id        String   @id @default(uuid())
+  listingId String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([listingId, tagId])
+  @@index([listingId])
+  @@index([tagId])
+  @@map("listing_tags")
 }
 
 enum UserRole {

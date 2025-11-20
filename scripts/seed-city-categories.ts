@@ -29,17 +29,11 @@ const corePrisma = new CorePrismaClient();
 // English display names for categories in Kiel
 const KIEL_DISPLAY_NAMES: Record<string, string> = {
   // Main categories
-  news: 'News',
   events: 'Events',
   'food-and-drink': 'Food & Drink',
-  tours: 'Tours',
-  shopping: 'Shopping',
-  culture: 'Culture',
-
-  // News subcategories
-  'news-official-announcements': 'Official Announcements',
-  'news-press-releases': 'Press Releases',
-  'news-service-alerts': 'Service Alerts',
+  tours: 'Your way through Kiel',
+  shopping: "Shop to your heart's content",
+  culture: 'Keil Culture',
 
   // Events subcategories
   'events-community': 'Community Events',
@@ -47,9 +41,16 @@ const KIEL_DISPLAY_NAMES: Record<string, string> = {
   'events-cultural-festivals': 'Cultural Festivals',
 
   // Food & Drink subcategories
-  'food-restaurants-bistros': 'Restaurants & Bistros',
-  'food-cafes-bakeries': 'Cafes & Bakeries',
-  'food-bars-nightlife': 'Bars & Nightlife',
+  'food-cafes-bakeries': 'Cafés',
+  'food-bars-nightlife': 'Bars & Pubs',
+  'food-fish-restaurants': 'Fish Restaurants',
+  'food-vegetarian-vegan': 'Vegetarian & Vegan',
+
+  // Shopping subcategories
+  'shopping-city-center': 'City Center',
+  'shopping-clothing': 'Clothing',
+  'shopping-conscious-shopping': 'Conscious Shopping',
+  'shopping-for-children': 'For Children',
 
   // Tours subcategories
   'tours-guided': 'Guided Tours',
@@ -57,25 +58,20 @@ const KIEL_DISPLAY_NAMES: Record<string, string> = {
   'tours-family-experiences': 'Family Experiences',
 
   // Culture subcategories
-  'culture-museums': 'Museums & Exhibitions',
-  'culture-theater': 'Theater & Performances',
-  'culture-art': 'Art & Galleries',
+  'culture-excursions': 'Excursions',
+  'culture-on-foot': 'Explore on Foot',
+  'culture-bike-tours': 'Bike Tours',
+  'culture-museums': 'Museums & Collections',
 };
 
 // Slugs of categories (and their subcategories) that should be seeded for Kiel
 const KIEL_ALLOWED_CATEGORY_SLUGS: string[] = [
   // Main categories
-  'news',
   'events',
   'food-and-drink',
   'shopping',
   'culture',
   'tours',
-
-  // News subcategories
-  'news-official-announcements',
-  'news-press-releases',
-  'news-service-alerts',
 
   // Events subcategories
   'events-community',
@@ -83,9 +79,16 @@ const KIEL_ALLOWED_CATEGORY_SLUGS: string[] = [
   'events-cultural-festivals',
 
   // Food & Drink subcategories
-  'food-restaurants-bistros',
   'food-cafes-bakeries',
   'food-bars-nightlife',
+  'food-fish-restaurants',
+  'food-vegetarian-vegan',
+
+  // Shopping subcategories
+  'shopping-city-center',
+  'shopping-clothing',
+  'shopping-conscious-shopping',
+  'shopping-for-children',
 
   // Tours subcategories
   'tours-guided',
@@ -93,9 +96,10 @@ const KIEL_ALLOWED_CATEGORY_SLUGS: string[] = [
   'tours-family-experiences',
 
   // Culture subcategories
+  'culture-excursions',
+  'culture-on-foot',
+  'culture-bike-tours',
   'culture-museums',
-  'culture-theater',
-  'culture-art',
 ];
 
 async function getKielCityId(): Promise<string> {
@@ -143,8 +147,9 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
 
   for (const category of categories) {
     const assetMapping = CATEGORY_ASSETS[category.slug];
+    // For Kiel, prefer city-specific display names; fall back to generic asset mapping or category name
     const displayName =
-      assetMapping?.displayName || KIEL_DISPLAY_NAMES[category.slug] || category.name;
+      KIEL_DISPLAY_NAMES[category.slug] || assetMapping?.displayName || category.name;
     const displayOrder = assetMapping?.displayOrder || 99; // Default to end if not specified
     const headerBackgroundColor = assetMapping?.headerBackgroundColor || null;
     const contentBackgroundColor = assetMapping?.contentBackgroundColor || null;

@@ -72,6 +72,12 @@ const CATEGORY_SEEDS: CategorySeed[] = [
       },
       { name: 'Cafes & Bakeries', slug: 'food-cafes-bakeries', type: CategoryType.GASTRO },
       { name: 'Bars & Nightlife', slug: 'food-bars-nightlife', type: CategoryType.GASTRO },
+      { name: 'Fish Restaurants', slug: 'food-fish-restaurants', type: CategoryType.GASTRO },
+      {
+        name: 'Vegetarian & Vegan',
+        slug: 'food-vegetarian-vegan',
+        type: CategoryType.GASTRO,
+      },
     ],
   },
   {
@@ -108,7 +114,24 @@ const CATEGORY_SEEDS: CategorySeed[] = [
     name: 'Shopping',
     slug: 'shopping',
     type: CategoryType.POI, // Shopping is fed from POI data
-    children: [],
+    children: [
+      { name: 'City Center', slug: 'shopping-city-center', type: CategoryType.POI },
+      {
+        name: 'Clothing',
+        slug: 'shopping-clothing',
+        type: CategoryType.POI,
+      },
+      {
+        name: 'Conscious Shopping',
+        slug: 'shopping-conscious-shopping',
+        type: CategoryType.POI,
+      },
+      {
+        name: 'For Children',
+        slug: 'shopping-for-children',
+        type: CategoryType.POI,
+      },
+    ],
   },
   {
     name: 'Culture',
@@ -118,6 +141,9 @@ const CATEGORY_SEEDS: CategorySeed[] = [
       { name: 'Museums & Exhibitions', slug: 'culture-museums', type: CategoryType.OTHER },
       { name: 'Theater & Performances', slug: 'culture-theater', type: CategoryType.OTHER },
       { name: 'Art & Galleries', slug: 'culture-art', type: CategoryType.OTHER },
+      { name: 'Excursions', slug: 'culture-excursions', type: CategoryType.OTHER },
+      { name: 'On Foot', slug: 'culture-on-foot', type: CategoryType.OTHER },
+      { name: 'Bike Tours', slug: 'culture-bike-tours', type: CategoryType.OTHER },
     ],
   },
   {

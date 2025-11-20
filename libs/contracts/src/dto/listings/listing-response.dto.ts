@@ -117,6 +117,26 @@ export class ListingTimeIntervalExceptionDto {
   metadata?: Record<string, unknown> | null;
 }
 
+export class ListingTagDto {
+  @ApiProperty({ example: 'ltg1a2b3c4-d5e6-7890-abcd-ef1234567890' })
+  id: string;
+
+  @ApiProperty({ example: 'tag1a2b3c4-d5e6-7890-abcd-ef1234567890' })
+  tagId: string;
+
+  @ApiProperty({ example: 'DESTINATION_ONE' })
+  provider: string;
+
+  @ApiProperty({ example: 'Ausstellung' })
+  externalValue: string;
+
+  @ApiPropertyOptional({ example: 'Exhibition' })
+  label?: string | null;
+
+  @ApiPropertyOptional({ example: 'de' })
+  languageCode?: string | null;
+}
+
 export class ListingResponseDto {
   @ApiProperty({ example: 'lst_01J3MJG0YX6FT5PB9SJ9Y2KQW4' })
   id: string;
@@ -165,6 +185,14 @@ export class ListingResponseDto {
 
   @ApiPropertyOptional({ example: { tags: ['cleanup', 'volunteer'] } })
   metadata?: Record<string, unknown> | null;
+
+  @ApiProperty({
+    type: [ListingTagDto],
+    description:
+      'Tags associated with this listing. Tags are normalized entities shared across listings and translated once per tag.',
+  })
+  @Type(() => ListingTagDto)
+  tags: ListingTagDto[];
 
   @ApiProperty({ example: 150 })
   viewCount: number;
