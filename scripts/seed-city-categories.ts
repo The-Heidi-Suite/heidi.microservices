@@ -2,7 +2,7 @@
 /**
  * City Categories Seeding Script
  *
- * Seeds city categories for Kiel with German display names.
+ * Seeds city categories for Kiel with English display names.
  * This script creates CityCategory records linking the Kiel city to all available categories
  * with localized display names.
  *
@@ -26,73 +26,77 @@ import { CATEGORY_ASSETS, getCityHeaderImageUrl } from './assets/category-assets
 const cityPrisma = new CityPrismaClient();
 const corePrisma = new CorePrismaClient();
 
-// German display names for categories in Kiel
+// English display names for categories in Kiel
 const KIEL_DISPLAY_NAMES: Record<string, string> = {
   // Main categories
-  news: 'Nachrichten',
-  events: 'Veranstaltungen',
-  'food-and-drink': 'Essen & Trinken',
-  tours: 'Touren',
-  restaurants: 'Restaurants',
-  'points-of-interest': 'Sehenswürdigkeiten',
-  'hotels-and-stays': 'Hotels & Unterkünfte',
-  'articles-and-stories': 'Artikel & Geschichten',
-  other: 'Sonstiges',
+  news: 'News',
+  events: 'Events',
+  'food-and-drink': 'Food & Drink',
+  tours: 'Tours',
+  shopping: 'Shopping',
+  culture: 'Culture',
 
   // News subcategories
-  'news-official-announcements': 'Amtliche Bekanntmachungen',
-  'news-press-releases': 'Pressemitteilungen',
-  'news-service-alerts': 'Service-Hinweise',
+  'news-official-announcements': 'Official Announcements',
+  'news-press-releases': 'Press Releases',
+  'news-service-alerts': 'Service Alerts',
 
   // Events subcategories
-  'events-community': 'Gemeinschaftsveranstaltungen',
-  'events-workshops-training': 'Workshops & Schulungen',
-  'events-cultural-festivals': 'Kulturfestivals',
+  'events-community': 'Community Events',
+  'events-workshops-training': 'Workshops & Training',
+  'events-cultural-festivals': 'Cultural Festivals',
 
   // Food & Drink subcategories
   'food-restaurants-bistros': 'Restaurants & Bistros',
-  'food-cafes-bakeries': 'Cafés & Bäckereien',
-  'food-bars-nightlife': 'Bars & Nachtleben',
+  'food-cafes-bakeries': 'Cafes & Bakeries',
+  'food-bars-nightlife': 'Bars & Nightlife',
 
   // Tours subcategories
-  'tours-guided': 'Geführte Touren',
-  'tours-self-guided': 'Selbstgeführte Routen',
-  'tours-family-experiences': 'Familien-Erlebnisse',
+  'tours-guided': 'Guided Tours',
+  'tours-self-guided': 'Self-Guided Routes',
+  'tours-family-experiences': 'Family Experiences',
 
-  // Restaurants subcategories
-  'restaurants-fine-dining': 'Feine Küche',
-  'restaurants-casual-dining': 'Casual Dining',
-  'restaurants-street-food': 'Street Food',
-
-  // Points of Interest subcategories
-  'poi-museums-galleries': 'Museen & Galerien',
-  'poi-parks-nature': 'Parks & Natur',
-  'poi-historic-landmarks': 'Historische Wahrzeichen',
-
-  // Hotels subcategories
-  'hotels-boutique': 'Boutique-Hotels',
-  'hotels-business': 'Business-Hotels',
-  'hotels-budget-stays': 'Günstige Unterkünfte',
-
-  // Articles subcategories
-  'articles-city-guides': 'Stadtführer',
-  'articles-community-stories': 'Gemeinschaftsgeschichten',
-  'articles-insider-tips': 'Insider-Tipps',
-
-  // Other subcategories
-  'other-partner-content': 'Partner-Inhalte',
-  'other-legacy-content': 'Altbestand',
-  'other-miscellaneous': 'Verschiedenes',
-
-  // Shopping (new category)
-  shopping: 'nach-herzenslust-shoppen',
-
-  // Culture (new category)
-  culture: 'kiel-kultur',
-  'culture-museums': 'Museen & Ausstellungen',
-  'culture-theater': 'Theater & Aufführungen',
-  'culture-art': 'Kunst & Galerien',
+  // Culture subcategories
+  'culture-museums': 'Museums & Exhibitions',
+  'culture-theater': 'Theater & Performances',
+  'culture-art': 'Art & Galleries',
 };
+
+// Slugs of categories (and their subcategories) that should be seeded for Kiel
+const KIEL_ALLOWED_CATEGORY_SLUGS: string[] = [
+  // Main categories
+  'news',
+  'events',
+  'food-and-drink',
+  'shopping',
+  'culture',
+  'tours',
+
+  // News subcategories
+  'news-official-announcements',
+  'news-press-releases',
+  'news-service-alerts',
+
+  // Events subcategories
+  'events-community',
+  'events-workshops-training',
+  'events-cultural-festivals',
+
+  // Food & Drink subcategories
+  'food-restaurants-bistros',
+  'food-cafes-bakeries',
+  'food-bars-nightlife',
+
+  // Tours subcategories
+  'tours-guided',
+  'tours-self-guided',
+  'tours-family-experiences',
+
+  // Culture subcategories
+  'culture-museums',
+  'culture-theater',
+  'culture-art',
+];
 
 async function getKielCityId(): Promise<string> {
   const city = await cityPrisma.city.findFirst({
@@ -115,6 +119,9 @@ async function getAllCategories() {
   return await corePrisma.category.findMany({
     where: {
       isActive: true,
+      slug: {
+        in: KIEL_ALLOWED_CATEGORY_SLUGS,
+      },
     },
     select: {
       id: true,
