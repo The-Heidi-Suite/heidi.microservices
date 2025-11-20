@@ -1,11 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Controller } from '@nestjs/common';
 import { EventPattern, Payload } from '@nestjs/microservices';
 import { TranslationService } from '@heidi/translations';
 import { LoggerService } from '@heidi/logger';
 import { RabbitMQPatterns } from '@heidi/rabbitmq';
 import { AutoTranslateFieldDto } from '@heidi/contracts';
 
-@Injectable()
+@Controller()
 export class TranslationHandlerService {
   private readonly logger: LoggerService;
 

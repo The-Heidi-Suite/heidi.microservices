@@ -71,7 +71,8 @@ export const RabbitMQPatterns = {
   CORE_GET_USER_ASSIGNMENTS: 'core.getUserAssignments',
   CORE_ASSIGN_CITY_ADMIN: 'core.assignCityAdmin',
   CORE_CREATE_USER_CITY_ASSIGNMENT: 'core.createUserCityAssignment',
-
+  // Core events (fire and forget)
+  CORE_OPERATION: 'core.operation',
   // Notification events
   NOTIFICATION_SEND: 'notification.send',
   NOTIFICATION_SENT: 'notification.sent',
@@ -102,9 +103,9 @@ export const RabbitMQPatterns = {
   // Scheduler events
   SCHEDULE_EXECUTE: 'schedule.execute',
   SCHEDULE_COMPLETED: 'schedule.completed',
-
-  // Core events (fire and forget)
-  CORE_OPERATION: 'core.operation',
+  // Translation events (processed by the scheduler service)
+  // Note: we use the "schedule" prefix so messages route to the scheduler queue (schedule.*)
+  TRANSLATION_AUTO_TRANSLATE: 'schedule.autoTranslate',
 
   // Terms request-response patterns
   TERMS_GET_LATEST: 'terms.getLatest',
@@ -118,9 +119,6 @@ export const RabbitMQPatterns = {
   PASSWORD_RESET_FAILED: 'passwordReset.failed',
   PASSWORD_RESET_VERIFY: 'passwordReset.verify',
   PASSWORD_RESET_MARK_USED: 'passwordReset.markUsed',
-
-  // Translation events
-  TRANSLATION_AUTO_TRANSLATE: 'translation.autoTranslate',
 } as const;
 
 /**
