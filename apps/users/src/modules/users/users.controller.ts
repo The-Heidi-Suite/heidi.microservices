@@ -51,6 +51,9 @@ import {
   CreateGuestDto,
   ConvertGuestDto,
   UploadProfilePhotoResponseDto,
+  UserFilterDto,
+  UserSortBy,
+  UserSortDirection,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { GetLanguage } from '@heidi/i18n';
@@ -99,7 +102,31 @@ export class UsersController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get all users',
-    description: 'Retrieve a paginated list of all users (Admin only)',
+    description: 'Retrieve a paginated, filterable, and sortable list of users (Admin only). By default, returns both active and deleted users. Use isActive=true to get only active users, or isActive=false to get only inactive/deleted users.',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: String,
+    description: 'Search term to filter users by email, username, first name, or last name',
+  })
+  @ApiQuery({
+    name: 'isActive',
+    required: false,
+    type: Boolean,
+    description: 'Filter by active status. Defaults to showing all users. Set to true for only active users, or false for only inactive/deleted users.',
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    enum: UserSortBy,
+    description: 'Field to sort by',
+  })
+  @ApiQuery({
+    name: 'sortDirection',
+    required: false,
+    enum: UserSortDirection,
+    description: 'Sort direction (asc or desc)',
   })
   @ApiQuery({
     name: 'page',
@@ -128,8 +155,9 @@ export class UsersController {
     description: 'Forbidden - Admin access required',
     type: ForbiddenErrorResponseDto,
   })
-  async findAll(@Query('page') page = 1, @Query('limit') limit = 10) {
-    return this.usersService.findAll(+page, +limit);
+  async findAll(@Query() filterDto: UserFilterDto) {
+    // Debug: Log the received filterDto to see what's coming through
+    return this.usersService.findAll(filterDto);
   }
 
   @Get(':id')
