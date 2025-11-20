@@ -164,6 +164,8 @@ async function seed() {
     enabled: isActive,
     categoryMappings,
     storeItemCategoriesAsTags: true, // Default to storing categories as tags
+    // Enable fetching Event category facets during sync (for logging and dynamic category usage)
+    eventFacetsEnabled: true,
   };
 
   // Find by provider + name (no unique index, so do manual upsert logic)
