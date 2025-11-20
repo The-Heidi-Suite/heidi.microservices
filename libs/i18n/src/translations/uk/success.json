@@ -38,5 +38,16 @@
   "TILE_DELETED": "Плитку успішно видалено",
   "TILE_BACKGROUND_IMAGE_UPLOADED": "Фонове зображення плитки успішно завантажено",
   "TILE_ICON_IMAGE_UPLOADED": "Іконку плитки успішно завантажено",
+  "CITIES_RETRIEVED": "Міста успішно отримано",
+  "CITY_RETRIEVED": "Місто успішно отримано",
+  "CITY_CREATED": "Місто успішно створено",
+  "CITY_UPDATED": "Місто успішно оновлено",
+  "CITY_DELETED": "Місто успішно видалено",
+  "CITY_HEADER_IMAGE_UPLOADED": "Зображення заголовка міста успішно завантажено",
+  "CITY_HEADER_IMAGE_DELETED": "Зображення заголовка міста успішно видалено",
+  "CITY_DARK_LOGO_UPLOADED": "Темний логотип міста успішно завантажено",
+  "CITY_DARK_LOGO_DELETED": "Темний логотип міста успішно видалено",
+  "CITY_LIGHT_LOGO_UPLOADED": "Світлий логотип міста успішно завантажено",
+  "CITY_LIGHT_LOGO_DELETED": "Світлий логотип міста успішно видалено",
   "OPERATION_SUCCESS": "Операцію успішно завершено"
 }

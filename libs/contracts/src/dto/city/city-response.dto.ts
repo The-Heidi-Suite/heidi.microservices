@@ -68,6 +68,27 @@ export class CityDto {
   headerImageUrl?: string | null;
 
   @ApiPropertyOptional({
+    description: 'Dark logo URL for the city',
+    example: 'https://cdn.example.com/cities/city-id/dark-logo.webp',
+    nullable: true,
+  })
+  darkLogoUrl?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Light logo URL for the city',
+    example: 'https://cdn.example.com/cities/city-id/light-logo.webp',
+    nullable: true,
+  })
+  lightLogoUrl?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Unique key identifier for the city',
+    example: 'kiel',
+    nullable: true,
+  })
+  key?: string | null;
+
+  @ApiPropertyOptional({
     description: 'Parent city ID for hierarchical relationships',
     example: '123e4567-e89b-12d3-a456-426614174001',
     nullable: true,

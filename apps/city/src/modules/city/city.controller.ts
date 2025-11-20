@@ -39,6 +39,7 @@ import {
   DeleteCityResponseDto,
   CityNotFoundErrorResponseDto,
   ValidationErrorResponseDto,
+  CityFilterDto,
 } from '@heidi/contracts';
 
 @ApiTags('city')
@@ -58,13 +59,40 @@ export class CityController {
   @Get()
   @ApiOperation({
     summary: 'List all cities',
-    description: 'Retrieve a list of all active cities. Optionally filter by country.',
+    description: 'Retrieve a list of cities with optional filtering and sorting. Supports filtering by country, key, and isActive status.',
   })
   @ApiQuery({
     name: 'country',
     required: false,
     description: 'Filter cities by country name or code',
     example: 'Germany',
+  })
+  @ApiQuery({
+    name: 'key',
+    required: false,
+    description: 'Filter cities by unique key',
+    example: 'kiel',
+  })
+  @ApiQuery({
+    name: 'isActive',
+    required: false,
+    description: 'Filter by active status',
+    example: true,
+    type: Boolean,
+  })
+  @ApiQuery({
+    name: 'sortBy',
+    required: false,
+    description: 'Field to sort by',
+    enum: ['name', 'country', 'createdAt', 'updatedAt'],
+    example: 'name',
+  })
+  @ApiQuery({
+    name: 'sortDirection',
+    required: false,
+    description: 'Sort direction',
+    enum: ['asc', 'desc'],
+    example: 'asc',
   })
   @ApiResponse({
     status: 200,
@@ -77,8 +105,8 @@ export class CityController {
     type: ValidationErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
-  async findAll(@Query('country') country?: string) {
-    return this.cityService.findAll(country);
+  async findAll(@Query() filterDto: CityFilterDto) {
+    return this.cityService.findAll(filterDto);
   }
 
   @Get('search/nearby')
@@ -498,7 +526,306 @@ export class CityController {
 
     return {
       city,
-      message: 'Header image deleted successfully',
+    };
+  }
+
+  @Post(':id/dark-logo')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload dark logo for a city',
+    description: 'Upload and process a dark logo image for a city.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the city',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Dark logo image file to upload',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dark logo uploaded successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City not found',
+    type: CityNotFoundErrorResponseDto,
+  })
+  async uploadDarkLogo(@Param('id') id: string, @UploadedFile() file: any) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // Get existing city to check for old dark logo
+    const existing = await this.cityService.findOne(id);
+
+    // Validate image
+    await this.fileUploadService.validateImage(file);
+
+    // Process image
+    const processedFile = await this.fileUploadService.processImage(file);
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Delete old dark logo if exists
+    if (existing.darkLogoUrl) {
+      try {
+        const oldKey = this.extractKeyFromUrl(existing.darkLogoUrl);
+        await this.storageService.deleteFile({ bucket, key: oldKey });
+      } catch (error) {
+        this.logger.warn(`Failed to delete old dark logo for city ${id}`, error);
+        // Continue with upload even if old file deletion fails
+      }
+    }
+
+    // Generate storage key
+    const key = this.fileUploadService.generateCityDarkLogoKey(id, processedFile.extension);
+
+    // Upload to storage
+    const imageUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    // Update city darkLogoUrl directly in database
+    await this.prisma.city.update({
+      where: { id },
+      data: { darkLogoUrl: imageUrl },
+    });
+
+    // Refresh city
+    const city = await this.cityService.findOne(id);
+
+    return {
+      city,
+      imageUrl,
+    };
+  }
+
+  @Delete(':id/dark-logo')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Delete dark logo for a city',
+    description: 'Delete the dark logo for a city from storage and database.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the city',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Dark logo deleted successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City not found or dark logo not found',
+    type: CityNotFoundErrorResponseDto,
+  })
+  async deleteDarkLogo(@Param('id') id: string) {
+    // Get existing city to check for dark logo
+    const existing = await this.cityService.findOne(id);
+
+    if (!existing.darkLogoUrl) {
+      throw new BadRequestException('City does not have a dark logo');
+    }
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Delete image from storage
+    try {
+      const key = this.extractKeyFromUrl(existing.darkLogoUrl);
+      await this.storageService.deleteFile({ bucket, key });
+    } catch (error) {
+      this.logger.warn(`Failed to delete dark logo from storage for city ${id}`, error);
+      // Continue with database update even if file deletion fails
+    }
+
+    // Update city darkLogoUrl to null
+    await this.prisma.city.update({
+      where: { id },
+      data: { darkLogoUrl: null },
+    });
+
+    // Refresh city
+    const city = await this.cityService.findOne(id);
+
+    return {
+      city,
+    };
+  }
+
+  @Post(':id/light-logo')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiConsumes('multipart/form-data')
+  @ApiOperation({
+    summary: 'Upload light logo for a city',
+    description: 'Upload and process a light logo image for a city.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the city',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Light logo image file to upload',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Light logo uploaded successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City not found',
+    type: CityNotFoundErrorResponseDto,
+  })
+  async uploadLightLogo(@Param('id') id: string, @UploadedFile() file: any) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    // Get existing city to check for old light logo
+    const existing = await this.cityService.findOne(id);
+
+    // Validate image
+    await this.fileUploadService.validateImage(file);
+
+    // Process image
+    const processedFile = await this.fileUploadService.processImage(file);
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Delete old light logo if exists
+    if (existing.lightLogoUrl) {
+      try {
+        const oldKey = this.extractKeyFromUrl(existing.lightLogoUrl);
+        await this.storageService.deleteFile({ bucket, key: oldKey });
+      } catch (error) {
+        this.logger.warn(`Failed to delete old light logo for city ${id}`, error);
+        // Continue with upload even if old file deletion fails
+      }
+    }
+
+    // Generate storage key
+    const key = this.fileUploadService.generateCityLightLogoKey(id, processedFile.extension);
+
+    // Upload to storage
+    const imageUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    // Update city lightLogoUrl directly in database
+    await this.prisma.city.update({
+      where: { id },
+      data: { lightLogoUrl: imageUrl },
+    });
+
+    // Refresh city
+    const city = await this.cityService.findOne(id);
+
+    return {
+      city,
+      imageUrl,
+    };
+  }
+
+  @Delete(':id/light-logo')
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Delete light logo for a city',
+    description: 'Delete the light logo for a city from storage and database.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the city',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Light logo deleted successfully',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City not found or light logo not found',
+    type: CityNotFoundErrorResponseDto,
+  })
+  async deleteLightLogo(@Param('id') id: string) {
+    // Get existing city to check for light logo
+    const existing = await this.cityService.findOne(id);
+
+    if (!existing.lightLogoUrl) {
+      throw new BadRequestException('City does not have a light logo');
+    }
+
+    // Get default bucket
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Delete image from storage
+    try {
+      const key = this.extractKeyFromUrl(existing.lightLogoUrl);
+      await this.storageService.deleteFile({ bucket, key });
+    } catch (error) {
+      this.logger.warn(`Failed to delete light logo from storage for city ${id}`, error);
+      // Continue with database update even if file deletion fails
+    }
+
+    // Update city lightLogoUrl to null
+    await this.prisma.city.update({
+      where: { id },
+      data: { lightLogoUrl: null },
+    });
+
+    // Refresh city
+    const city = await this.cityService.findOne(id);
+
+    return {
+      city,
     };
   }
 

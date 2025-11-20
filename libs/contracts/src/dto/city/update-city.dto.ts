@@ -45,4 +45,12 @@ export class UpdateCityDto {
   @IsBoolean()
   @IsOptional()
   isActive?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Unique key identifier for the city',
+    example: 'kiel',
+  })
+  @IsString()
+  @IsOptional()
+  key?: string;
 }
