@@ -199,10 +199,11 @@ export function getSwaggerI18nOptions(configService: ConfigService) {
   `;
 
   // Build the onComplete function body as a string with the code embedded
+  // IMPORTANT: This code runs in the browser, so we avoid using eval in the browser
+  // to satisfy strict Content Security Policy (CSP) configurations.
   const onCompleteBody = `function () {
     try {
-      const code = ${JSON.stringify(languageSelectorJs.trim())};
-      eval(code);
+${languageSelectorJs.trim()}
 
       // Patch LiveResponse component to handle null responses
       // This prevents "Cannot read properties of null (reading 'get')" errors
@@ -317,8 +318,9 @@ export function getSwaggerI18nOptions(configService: ConfigService) {
       },
       // Wrap LiveResponse component to handle null responses
       // This is the proper way to fix the "Cannot read properties of null (reading 'get')" error
+      // NOTE: Component keys in Swagger UI are lowerCamelCase, so we use "liveResponse" here.
       wrapComponents: {
-        LiveResponse: (Original: any, system: any) => {
+        liveResponse: (Original: any, system: any) => {
           return (props: any) => {
             // Guard against null/undefined response prop
             if (!props || !props.response) {
