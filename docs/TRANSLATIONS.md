@@ -4,6 +4,14 @@
 
 The translation library (`@heidi/translations`) provides database-backed translations for entity content (listings, cities, categories, etc.) with automatic translation via DeepL integration. This is separate from `@heidi/i18n`, which handles static UI/notification messages stored in JSON files.
 
+### Source Language Tracking
+
+Each translatable entity (listing, category, tile, parking space) maintains a `languageCode` field that indicates the **source language** of the original content. This is critical for accurate DeepL translations:
+
+- **User-created content**: The `languageCode` is automatically set from the user's device/request language (via `Accept-Language` header or i18n service)
+- **Integration-created content**: The `languageCode` is set based on the integration's source language (e.g., `'de'` for Destination One/Mobilithek data)
+- **Translation jobs**: When publishing translation jobs, the entity's `languageCode` is used as the `sourceLocale` parameter for DeepL, ensuring accurate translation from the correct source language
+
 ## Architecture
 
 ### Components
@@ -68,8 +76,11 @@ const translatedTitle = await translationService.getTranslation(
   'title',
   'de', // target locale
   originalTitle, // optional: source text if not in default locale
+  listing.languageCode, // optional: source locale (uses entity's languageCode if available)
 );
 ```
+
+**Note**: The `sourceLocale` parameter (6th argument) is optional. If not provided, the service uses the default source locale. However, it's recommended to pass the entity's `languageCode` when available to ensure accurate translations, especially for content from integrations (e.g., German content from Destination One).
 
 #### Save Manual Translation
 
@@ -123,9 +134,14 @@ When `getTranslation` is called and no translation exists:
 
 The Destination-One sync integration automatically handles translations:
 
+- All listings and categories synced from Destination One are marked with `languageCode = 'de'` (German), as the source data is in German
 - Only fields that have changed (based on `sourceHash`) trigger translation jobs
 - Fields that haven't changed skip re-translation to avoid unnecessary API calls
-- Translation jobs are queued asynchronously via RabbitMQ
+- Translation jobs are queued asynchronously via RabbitMQ with the correct `sourceLocale = 'de'` so DeepL translates from German to target languages
+
+### Parking Spaces (Mobilithek Integration)
+
+Parking spaces synced from Mobilithek are also marked with `languageCode = 'de'` since the source data is in German. When translations are requested, the system uses German as the source language for DeepL translation.
 
 ### Supported Languages
 
@@ -200,6 +216,9 @@ npx prisma migrate dev --schema=libs/prisma/src/schemas/core/schema.prisma
 // In a listings controller/service
 const listing = await prisma.listing.findUnique({ where: { id } });
 
+// Get source language from listing (or use default)
+const sourceLocale = listing.languageCode || 'en';
+
 // Get translated title
 const title = await translationService.getTranslation(
   'listing',
@@ -207,6 +226,7 @@ const title = await translationService.getTranslation(
   'title',
   userLocale,
   listing.title, // fallback to original
+  sourceLocale, // pass entity's source language for accurate DeepL translation
 );
 
 // Get translated description
@@ -216,6 +236,7 @@ const description = await translationService.getTranslation(
   'description',
   userLocale,
   listing.content, // content field maps to description in translations
+  sourceLocale, // pass entity's source language
 );
 ```
 

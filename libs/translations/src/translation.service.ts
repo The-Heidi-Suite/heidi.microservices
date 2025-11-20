@@ -81,6 +81,7 @@ export class TranslationService {
   /**
    * Get translation for an entity field
    * Returns default language text if translation not found, and optionally triggers auto-translate
+   * @param sourceLocale - Optional source language of the entity. If not provided, uses defaultSourceLocale.
    */
   async getTranslation(
     entityType: string,
@@ -88,6 +89,7 @@ export class TranslationService {
     field: string,
     locale: string,
     sourceText?: string,
+    sourceLocale?: string,
   ): Promise<string> {
     // Try to find translation
     const translation = await this.databaseProvider.findByEntityAndLocale(
@@ -105,8 +107,11 @@ export class TranslationService {
     // If sourceText is provided, use it; otherwise caller should fetch from entity
     const defaultText = sourceText || '';
 
+    // Determine source locale: use provided, or fall back to default
+    const effectiveSourceLocale = sourceLocale || this.defaultSourceLocale;
+
     // Trigger auto-translate on-read if enabled and source text is available
-    if (this.autoTranslateOnRead && defaultText && locale !== this.defaultSourceLocale) {
+    if (this.autoTranslateOnRead && defaultText && locale !== effectiveSourceLocale) {
       // Publish job to scheduler for async translation
       if (this.rmqClient) {
         const sourceHash = this.computeSourceHash(defaultText);
@@ -115,7 +120,7 @@ export class TranslationService {
             entityType,
             entityId,
             field,
-            sourceLocale: this.defaultSourceLocale,
+            sourceLocale: effectiveSourceLocale,
             targetLocales: [locale],
             text: defaultText,
             sourceHash,
