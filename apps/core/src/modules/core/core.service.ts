@@ -767,14 +767,17 @@ export class CoreService implements OnModuleInit {
       if (parking.location.coordinates && Array.isArray(parking.location.coordinates)) {
         // GeoJSON format: [longitude, latitude]
         [longitude, latitude] = parking.location.coordinates;
-      } else if (parking.location.latitude && parking.location.longitude) {
+      } else if (
+        typeof parking.location.latitude === 'number' &&
+        typeof parking.location.longitude === 'number'
+      ) {
         // Direct lat/lng format
         latitude = parking.location.latitude;
         longitude = parking.location.longitude;
       }
     }
 
-    if (!latitude || !longitude) {
+    if (latitude == null || longitude == null) {
       this.logger.warn(
         `Invalid location coordinates for parking space ${parking.id || parking.parkingSiteId}`,
       );
@@ -788,19 +791,25 @@ export class CoreService implements OnModuleInit {
     }
 
     // Calculate available spots from various sources
+    const totalFromSlots =
+      (parking.fourWheelerSlots?.totalSlotNumber ?? 0) +
+      (parking.twoWheelerSlots?.totalSlotNumber ?? 0) +
+      (parking.unclassifiedSlots?.totalSpotNumber ?? 0);
+
+    const occupiedFromSlots =
+      (parking.fourWheelerSlots?.occupiedSlotNumber ?? 0) +
+      (parking.twoWheelerSlots?.occupiedSlotNumber ?? 0) +
+      (parking.unclassifiedSlots?.occupiedSpotNumber ?? 0);
+
     const totalSpotNumber =
-      parking.totalSpotNumber ||
-      parking.fourWheelerSlots?.totalSlotNumber ||
-      parking.twoWheelerSlots?.totalSlotNumber ||
-      parking.unclassifiedSlots?.totalSpotNumber ||
-      0;
+      typeof parking.totalSpotNumber === 'number' && parking.totalSpotNumber > 0
+        ? parking.totalSpotNumber
+        : totalFromSlots;
 
     const occupiedSpotNumber =
-      parking.occupiedSpotNumber ||
-      parking.fourWheelerSlots?.occupiedSlotNumber ||
-      parking.twoWheelerSlots?.occupiedSlotNumber ||
-      parking.unclassifiedSlots?.occupiedSpotNumber ||
-      0;
+      typeof parking.occupiedSpotNumber === 'number' && parking.occupiedSpotNumber >= 0
+        ? parking.occupiedSpotNumber
+        : occupiedFromSlots;
 
     const availableSpotNumber =
       totalSpotNumber > 0 ? Math.max(0, totalSpotNumber - occupiedSpotNumber) : null;
@@ -810,14 +819,28 @@ export class CoreService implements OnModuleInit {
 
     // Determine status
     let status = 'unknown';
-    if (parking.status) {
-      const statusLower = parking.status.toLowerCase();
-      if (statusLower.includes('open') || statusLower.includes('available')) {
+
+    // OffStreetParking schema defines `status` as array<string>, but some APIs might use a string
+    const rawStatus = parking.status;
+    const statusValues: string[] = Array.isArray(rawStatus)
+      ? rawStatus
+      : typeof rawStatus === 'string'
+        ? [rawStatus]
+        : [];
+
+    if (statusValues.length > 0) {
+      const statusLower = statusValues.map((s) => s.toLowerCase());
+      if (statusLower.some((s) => s.includes('open') || s.includes('spacesavailable'))) {
         status = 'open';
-      } else if (statusLower.includes('closed') || statusLower.includes('unavailable')) {
+      } else if (
+        statusLower.some(
+          (s) => s.includes('closed') || s.includes('full') || s.includes('unavailable'),
+        )
+      ) {
         status = 'closed';
       } else {
-        status = statusLower;
+        // Fallback to first raw value
+        status = statusLower[0];
       }
     } else if (totalSpotNumber > 0) {
       if (availableSpotNumber === 0) {
