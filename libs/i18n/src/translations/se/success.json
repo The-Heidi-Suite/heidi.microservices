@@ -38,5 +38,16 @@
   "TILE_DELETED": "Platta raderad framgångsrikt",
   "TILE_BACKGROUND_IMAGE_UPLOADED": "Plattans bakgrundsbild uppladdad framgångsrikt",
   "TILE_ICON_IMAGE_UPLOADED": "Plattans ikonbild uppladdad framgångsrikt",
+  "CITIES_RETRIEVED": "Städer hämtade framgångsrikt",
+  "CITY_RETRIEVED": "Stad hämtad framgångsrikt",
+  "CITY_CREATED": "Stad skapad framgångsrikt",
+  "CITY_UPDATED": "Stad uppdaterad framgångsrikt",
+  "CITY_DELETED": "Stad raderad framgångsrikt",
+  "CITY_HEADER_IMAGE_UPLOADED": "Stadens headerbild uppladdad framgångsrikt",
+  "CITY_HEADER_IMAGE_DELETED": "Stadens headerbild raderad framgångsrikt",
+  "CITY_DARK_LOGO_UPLOADED": "Stadens mörka logo uppladdad framgångsrikt",
+  "CITY_DARK_LOGO_DELETED": "Stadens mörka logo raderad framgångsrikt",
+  "CITY_LIGHT_LOGO_UPLOADED": "Stadens ljusa logo uppladdad framgångsrikt",
+  "CITY_LIGHT_LOGO_DELETED": "Stadens ljusa logo raderad framgångsrikt",
   "OPERATION_SUCCESS": "Åtgärd slutförd framgångsrikt"
 }

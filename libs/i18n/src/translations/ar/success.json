@@ -38,5 +38,16 @@
   "TILE_DELETED": "تم حذف البلاط بنجاح",
   "TILE_BACKGROUND_IMAGE_UPLOADED": "تم تحميل صورة خلفية البلاط بنجاح",
   "TILE_ICON_IMAGE_UPLOADED": "تم تحميل صورة أيقونة البلاط بنجاح",
+  "CITIES_RETRIEVED": "تم استرجاع المدن بنجاح",
+  "CITY_RETRIEVED": "تم استرجاع المدينة بنجاح",
+  "CITY_CREATED": "تم إنشاء المدينة بنجاح",
+  "CITY_UPDATED": "تم تحديث المدينة بنجاح",
+  "CITY_DELETED": "تم حذف المدينة بنجاح",
+  "CITY_HEADER_IMAGE_UPLOADED": "تم تحميل صورة رأس المدينة بنجاح",
+  "CITY_HEADER_IMAGE_DELETED": "تم حذف صورة رأس المدينة بنجاح",
+  "CITY_DARK_LOGO_UPLOADED": "تم تحميل الشعار الداكن للمدينة بنجاح",
+  "CITY_DARK_LOGO_DELETED": "تم حذف الشعار الداكن للمدينة بنجاح",
+  "CITY_LIGHT_LOGO_UPLOADED": "تم تحميل الشعار الفاتح للمدينة بنجاح",
+  "CITY_LIGHT_LOGO_DELETED": "تم حذف الشعار الفاتح للمدينة بنجاح",
   "OPERATION_SUCCESS": "تمت العملية بنجاح"
 }

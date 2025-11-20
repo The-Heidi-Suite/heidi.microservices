@@ -38,5 +38,16 @@
   "TILE_DELETED": "کاشی با موفقیت حذف شد",
   "TILE_BACKGROUND_IMAGE_UPLOADED": "تصویر پس‌زمینه کاشی با موفقیت آپلود شد",
   "TILE_ICON_IMAGE_UPLOADED": "تصویر آیکون کاشی با موفقیت آپلود شد",
+  "CITIES_RETRIEVED": "شهرها با موفقیت بازیابی شدند",
+  "CITY_RETRIEVED": "شهر با موفقیت بازیابی شد",
+  "CITY_CREATED": "شهر با موفقیت ایجاد شد",
+  "CITY_UPDATED": "شهر با موفقیت به‌روزرسانی شد",
+  "CITY_DELETED": "شهر با موفقیت حذف شد",
+  "CITY_HEADER_IMAGE_UPLOADED": "تصویر هدر شهر با موفقیت آپلود شد",
+  "CITY_HEADER_IMAGE_DELETED": "تصویر هدر شهر با موفقیت حذف شد",
+  "CITY_DARK_LOGO_UPLOADED": "لوگوی تیره شهر با موفقیت آپلود شد",
+  "CITY_DARK_LOGO_DELETED": "لوگوی تیره شهر با موفقیت حذف شد",
+  "CITY_LIGHT_LOGO_UPLOADED": "لوگوی روشن شهر با موفقیت آپلود شد",
+  "CITY_LIGHT_LOGO_DELETED": "لوگوی روشن شهر با موفقیت حذف شد",
   "OPERATION_SUCCESS": "عملیات با موفقیت انجام شد"
 }

@@ -57,6 +57,9 @@ export class SuccessMessageService {
     'DELETE:/tiles/:id': 'TILE_DELETED',
     'POST:/tiles/:id/background-image': 'TILE_BACKGROUND_IMAGE_UPLOADED',
     'POST:/tiles/:id/icon-image': 'TILE_ICON_IMAGE_UPLOADED',
+
+    // City routes - handled by pattern matching below
+    'GET:/search/nearby': 'CITIES_RETRIEVED',
   };
 
   /**
@@ -70,7 +73,18 @@ export class SuccessMessageService {
     // Remove query parameters from path
     const cleanPath = path.split('?')[0];
 
-    // Try exact match first
+    // Handle root GET route FIRST - before exact match
+    // City service uses GET /, Users service uses GET /users
+    if (method === 'GET' && cleanPath === '/') {
+      return 'CITIES_RETRIEVED';
+    }
+
+    // Handle POST to root - before exact match
+    if (method === 'POST' && cleanPath === '/') {
+      return 'CITY_CREATED';
+    }
+
+    // Try exact match
     const exactKey = `${method}:${cleanPath}`;
     if (this.routeMap[exactKey]) {
       return this.routeMap[exactKey];
@@ -97,12 +111,22 @@ export class SuccessMessageService {
     const uuidPattern = /^\/[a-f0-9-]{36}$/i;
     if (uuidPattern.test(cleanPath)) {
       if (method === 'GET') {
+        // Check if it's a city route (no /users prefix)
+        if (!cleanPath.startsWith('/users')) {
+          return 'CITY_RETRIEVED';
+        }
         return 'USER_RETRIEVED';
       }
       if (method === 'PATCH') {
+        if (!cleanPath.startsWith('/users')) {
+          return 'CITY_UPDATED';
+        }
         return 'USER_UPDATED';
       }
       if (method === 'DELETE') {
+        if (!cleanPath.startsWith('/users')) {
+          return 'CITY_DELETED';
+        }
         return 'USER_DELETED';
       }
     }
@@ -115,6 +139,30 @@ export class SuccessMessageService {
     // Pattern for user restore: /:id/restore
     if (method === 'PATCH' && /\/[a-f0-9-]{36}\/restore$/i.test(cleanPath)) {
       return 'USER_RESTORED';
+    }
+
+    // Pattern for city header image: /:id/header-image
+    if (method === 'POST' && /\/[a-f0-9-]{36}\/header-image$/i.test(cleanPath)) {
+      return 'CITY_HEADER_IMAGE_UPLOADED';
+    }
+    if (method === 'DELETE' && /\/[a-f0-9-]{36}\/header-image$/i.test(cleanPath)) {
+      return 'CITY_HEADER_IMAGE_DELETED';
+    }
+
+    // Pattern for city dark logo: /:id/dark-logo
+    if (method === 'POST' && /\/[a-f0-9-]{36}\/dark-logo$/i.test(cleanPath)) {
+      return 'CITY_DARK_LOGO_UPLOADED';
+    }
+    if (method === 'DELETE' && /\/[a-f0-9-]{36}\/dark-logo$/i.test(cleanPath)) {
+      return 'CITY_DARK_LOGO_DELETED';
+    }
+
+    // Pattern for city light logo: /:id/light-logo
+    if (method === 'POST' && /\/[a-f0-9-]{36}\/light-logo$/i.test(cleanPath)) {
+      return 'CITY_LIGHT_LOGO_UPLOADED';
+    }
+    if (method === 'DELETE' && /\/[a-f0-9-]{36}\/light-logo$/i.test(cleanPath)) {
+      return 'CITY_LIGHT_LOGO_DELETED';
     }
 
     // Fallback based on status code

@@ -73,4 +73,12 @@ export class CreateCityDto {
   @IsObject()
   @IsOptional()
   metadata?: any;
+
+  @ApiPropertyOptional({
+    description: 'Unique key identifier for the city',
+    example: 'kiel',
+  })
+  @IsString()
+  @IsOptional()
+  key?: string;
 }

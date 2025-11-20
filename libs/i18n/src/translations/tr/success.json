@@ -38,5 +38,16 @@
   "TILE_DELETED": "Karo başarıyla silindi",
   "TILE_BACKGROUND_IMAGE_UPLOADED": "Karo arka plan resmi başarıyla yüklendi",
   "TILE_ICON_IMAGE_UPLOADED": "Karo simge resmi başarıyla yüklendi",
+  "CITIES_RETRIEVED": "Şehirler başarıyla alındı",
+  "CITY_RETRIEVED": "Şehir başarıyla alındı",
+  "CITY_CREATED": "Şehir başarıyla oluşturuldu",
+  "CITY_UPDATED": "Şehir başarıyla güncellendi",
+  "CITY_DELETED": "Şehir başarıyla silindi",
+  "CITY_HEADER_IMAGE_UPLOADED": "Şehir başlık resmi başarıyla yüklendi",
+  "CITY_HEADER_IMAGE_DELETED": "Şehir başlık resmi başarıyla silindi",
+  "CITY_DARK_LOGO_UPLOADED": "Şehir koyu logo başarıyla yüklendi",
+  "CITY_DARK_LOGO_DELETED": "Şehir koyu logo başarıyla silindi",
+  "CITY_LIGHT_LOGO_UPLOADED": "Şehir açık logo başarıyla yüklendi",
+  "CITY_LIGHT_LOGO_DELETED": "Şehir açık logo başarıyla silindi",
   "OPERATION_SUCCESS": "İşlem başarıyla tamamlandı"
 }

@@ -66,5 +66,10 @@
   "TILE_CREATE_DENIED": "Endast administratörer kan skapa paneler",
   "TILE_UPDATE_DENIED": "Endast administratörer kan uppdatera paneler",
   "TILE_DELETE_DENIED": "Endast administratörer kan ta bort paneler",
-  "TILE_CITY_ACCESS_DENIED": "Du har inte åtkomst att skapa paneler för en eller flera angivna städer"
+  "TILE_CITY_ACCESS_DENIED": "Du har inte åtkomst att skapa paneler för en eller flera angivna städer",
+  "CITY_NOT_FOUND": "Stad hittades inte",
+  "CITY_ACCESS_DENIED": "Du har inte behörighet att utföra denna åtgärd på denna stad",
+  "CITY_HEADER_IMAGE_NOT_FOUND": "Staden har ingen headerbild",
+  "CITY_DARK_LOGO_NOT_FOUND": "Staden har inget mörkt logo",
+  "CITY_LIGHT_LOGO_NOT_FOUND": "Staden har inget ljust logo"
 }

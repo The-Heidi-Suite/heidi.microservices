@@ -38,5 +38,16 @@
   "TILE_DELETED": "Tile deleted successfully",
   "TILE_BACKGROUND_IMAGE_UPLOADED": "Tile background image uploaded successfully",
   "TILE_ICON_IMAGE_UPLOADED": "Tile icon image uploaded successfully",
+  "CITIES_RETRIEVED": "Cities retrieved successfully",
+  "CITY_RETRIEVED": "City retrieved successfully",
+  "CITY_CREATED": "City created successfully",
+  "CITY_UPDATED": "City updated successfully",
+  "CITY_DELETED": "City deleted successfully",
+  "CITY_HEADER_IMAGE_UPLOADED": "City header image uploaded successfully",
+  "CITY_HEADER_IMAGE_DELETED": "City header image deleted successfully",
+  "CITY_DARK_LOGO_UPLOADED": "City dark logo uploaded successfully",
+  "CITY_DARK_LOGO_DELETED": "City dark logo deleted successfully",
+  "CITY_LIGHT_LOGO_UPLOADED": "City light logo uploaded successfully",
+  "CITY_LIGHT_LOGO_DELETED": "City light logo deleted successfully",
   "OPERATION_SUCCESS": "Operation completed successfully"
 }

@@ -38,5 +38,16 @@
   "TILE_DELETED": "Kachel erfolgreich gelöscht",
   "TILE_BACKGROUND_IMAGE_UPLOADED": "Kachel-Hintergrundbild erfolgreich hochgeladen",
   "TILE_ICON_IMAGE_UPLOADED": "Kachel-Symbolbild erfolgreich hochgeladen",
+  "CITIES_RETRIEVED": "Städte erfolgreich abgerufen",
+  "CITY_RETRIEVED": "Stadt erfolgreich abgerufen",
+  "CITY_CREATED": "Stadt erfolgreich erstellt",
+  "CITY_UPDATED": "Stadt erfolgreich aktualisiert",
+  "CITY_DELETED": "Stadt erfolgreich gelöscht",
+  "CITY_HEADER_IMAGE_UPLOADED": "Stadt-Headerbild erfolgreich hochgeladen",
+  "CITY_HEADER_IMAGE_DELETED": "Stadt-Headerbild erfolgreich gelöscht",
+  "CITY_DARK_LOGO_UPLOADED": "Stadt-Dunkellogo erfolgreich hochgeladen",
+  "CITY_DARK_LOGO_DELETED": "Stadt-Dunkellogo erfolgreich gelöscht",
+  "CITY_LIGHT_LOGO_UPLOADED": "Stadt-Helllogo erfolgreich hochgeladen",
+  "CITY_LIGHT_LOGO_DELETED": "Stadt-Helllogo erfolgreich gelöscht",
   "OPERATION_SUCCESS": "Vorgang erfolgreich abgeschlossen"
 }

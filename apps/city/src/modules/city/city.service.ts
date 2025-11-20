@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaCityService } from '@heidi/prisma';
 import { LoggerService } from '@heidi/logger';
-import { CreateCityDto, UpdateCityDto } from '@heidi/contracts';
+import { CreateCityDto, UpdateCityDto, CityFilterDto, CitySortBy, CitySortDirection } from '@heidi/contracts';
 
 @Injectable()
 export class CityService {
@@ -15,10 +15,38 @@ export class CityService {
     this.logger.setContext(CityService.name);
   }
 
-  async findAll(country?: string) {
+  async findAll(filterDto?: CityFilterDto) {
+    const where: any = {};
+
+    // Filter by country
+    if (filterDto?.country) {
+      where.country = filterDto.country;
+    }
+
+    // Filter by key
+    if (filterDto?.key) {
+      where.key = filterDto.key;
+    }
+
+    // Filter by isActive (default to true if not specified)
+    if (filterDto?.isActive !== undefined) {
+      where.isActive = filterDto.isActive;
+    } else {
+      where.isActive = true;
+    }
+
+    // Build orderBy clause
+    const orderBy: any = {};
+    if (filterDto?.sortBy) {
+      orderBy[filterDto.sortBy] = filterDto.sortDirection || CitySortDirection.ASC;
+    } else {
+      // Default sorting by name ascending
+      orderBy.name = CitySortDirection.ASC;
+    }
+
     const cities = await this.prisma.city.findMany({
-      where: country ? { country, isActive: true } : { isActive: true },
-      orderBy: { name: 'asc' },
+      where,
+      orderBy,
     });
     return { items: cities };
   }

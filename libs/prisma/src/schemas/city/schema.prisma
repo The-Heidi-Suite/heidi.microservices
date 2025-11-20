@@ -22,6 +22,9 @@ model City {
   timezone       String?
   metadata       Json?
   headerImageUrl String?
+  darkLogoUrl    String?
+  lightLogoUrl   String?
+  key            String?
   parentCityId   String?
   isActive       Boolean  @default(true)
   createdAt      DateTime @default(now())
@@ -36,5 +39,6 @@ model City {
   @@index([latitude, longitude])
   @@index([isActive])
   @@index([parentCityId])
+  @@index([key])
   @@map("cities")
 }

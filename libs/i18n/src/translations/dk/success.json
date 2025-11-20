@@ -38,5 +38,16 @@
   "TILE_DELETED": "Flise slettet succesfuldt",
   "TILE_BACKGROUND_IMAGE_UPLOADED": "Flisens baggrundsbillede uploadet succesfuldt",
   "TILE_ICON_IMAGE_UPLOADED": "Flisens ikonbillede uploadet succesfuldt",
+  "CITIES_RETRIEVED": "Byer hentet succesfuldt",
+  "CITY_RETRIEVED": "By hentet succesfuldt",
+  "CITY_CREATED": "By oprettet succesfuldt",
+  "CITY_UPDATED": "By opdateret succesfuldt",
+  "CITY_DELETED": "By slettet succesfuldt",
+  "CITY_HEADER_IMAGE_UPLOADED": "Byens headerbillede uploadet succesfuldt",
+  "CITY_HEADER_IMAGE_DELETED": "Byens headerbillede slettet succesfuldt",
+  "CITY_DARK_LOGO_UPLOADED": "Byens mørke logo uploadet succesfuldt",
+  "CITY_DARK_LOGO_DELETED": "Byens mørke logo slettet succesfuldt",
+  "CITY_LIGHT_LOGO_UPLOADED": "Byens lyse logo uploadet succesfuldt",
+  "CITY_LIGHT_LOGO_DELETED": "Byens lyse logo slettet succesfuldt",
   "OPERATION_SUCCESS": "Handling gennemført succesfuldt"
 }

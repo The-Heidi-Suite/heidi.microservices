@@ -324,6 +324,20 @@ export class FileUploadService {
   }
 
   /**
+   * Generate storage key for city dark logo image
+   */
+  generateCityDarkLogoKey(cityId: string, extension: string): string {
+    return `cities/${cityId}/dark-logo.${extension}`;
+  }
+
+  /**
+   * Generate storage key for city light logo image
+   */
+  generateCityLightLogoKey(cityId: string, extension: string): string {
+    return `cities/${cityId}/light-logo.${extension}`;
+  }
+
+  /**
    * Get file extension from filename
    */
   private getFileExtension(filename: string): string {
