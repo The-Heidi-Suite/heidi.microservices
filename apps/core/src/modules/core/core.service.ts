@@ -14,6 +14,7 @@ import {
   ListingRecurrenceFreq,
   ListingMediaType,
   Prisma,
+  CategoryType,
 } from '@prisma/client-core';
 import { CoreOperationRequestDto, CoreOperationResponseDto } from '@heidi/contracts';
 import { roleToNumber } from '@heidi/rbac';
@@ -306,13 +307,21 @@ export class CoreService implements OnModuleInit {
     const categoryIds: string[] = [];
     if (listingData.categorySlugs && listingData.categorySlugs.length > 0) {
       for (const categorySlug of listingData.categorySlugs) {
-        const category = await this.prisma.category.findUnique({
+        let category = await this.prisma.category.findUnique({
           where: { slug: categorySlug },
         });
+
+        // Auto-create missing Event subcategories (slugs like "events-something")
+        if (!category) {
+          category = await this.ensureCategoryForSlug(categorySlug);
+        }
+
         if (category) {
           categoryIds.push(category.id);
         } else {
-          this.logger.warn(`Category with slug ${categorySlug} not found, skipping`);
+          this.logger.warn(
+            `Category with slug ${categorySlug} not found and could not be auto-created, skipping`,
+          );
         }
       }
     }
@@ -870,6 +879,80 @@ export class CoreService implements OnModuleInit {
     } catch (error: any) {
       this.logger.error(`Failed to sync parking space ${parkingSiteId}: ${error?.message}`, error);
       throw error;
+    }
+  }
+
+  /**
+   * Ensures a Category exists for the given slug.
+   * - For Event subcategories (slugs starting with "events-"), it will auto-create a child
+   *   of the root "events" category with type CategoryType.EVENT.
+   * - For all other slugs, it returns null (no auto-creation).
+   */
+  private async ensureCategoryForSlug(categorySlug: string) {
+    // Only auto-create Event subcategories for now
+    if (!categorySlug.startsWith('events-')) {
+      return null;
+    }
+
+    const existing = await this.prisma.category.findUnique({
+      where: { slug: categorySlug },
+    });
+    if (existing) {
+      return existing;
+    }
+
+    const rootEventsCategory = await this.prisma.category.findUnique({
+      where: { slug: 'events' },
+    });
+
+    if (!rootEventsCategory) {
+      this.logger.error(
+        `Cannot auto-create Event subcategory "${categorySlug}" because root 'events' category is missing`,
+      );
+      return null;
+    }
+
+    // Derive a human-readable name from the slug part after "events-"
+    const rawNamePart = categorySlug.replace(/^events-/, '');
+    const name =
+      rawNamePart.length > 0
+        ? rawNamePart
+            .split('-')
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ')
+        : 'Events';
+
+    try {
+      const created = await this.prisma.category.create({
+        data: {
+          name,
+          slug: categorySlug,
+          type: CategoryType.EVENT,
+          isActive: true,
+          parent: {
+            connect: { id: rootEventsCategory.id },
+          },
+        },
+      });
+
+      this.logger.log(
+        `Auto-created Event subcategory "${categorySlug}" with id=${created.id} under root 'events'`,
+      );
+
+      return created;
+    } catch (error: any) {
+      // Handle potential race condition on unique slug
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002' // Unique constraint violation
+      ) {
+        return this.prisma.category.findUnique({
+          where: { slug: categorySlug },
+        });
+      }
+
+      this.logger.error(`Failed to auto-create category with slug "${categorySlug}"`, error);
+      return null;
     }
   }
 

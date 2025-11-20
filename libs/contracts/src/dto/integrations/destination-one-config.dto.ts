@@ -22,4 +22,9 @@ export interface DestinationOneConfig {
   enabled?: boolean;
   categoryMappings?: DestinationOneCategoryMapping[]; // Category mappings for subcategory assignment
   storeItemCategoriesAsTags?: boolean; // Whether to store item.categories as tags (default: true)
+  /**
+   * When true (default), the integration will query Destination One facets for Event categories
+   * and log them during sync. This can be used to drive dynamic Event subcategory creation.
+   */
+  eventFacetsEnabled?: boolean;
 }

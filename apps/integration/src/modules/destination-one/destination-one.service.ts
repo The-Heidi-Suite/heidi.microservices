@@ -52,6 +52,14 @@ interface DestinationOneResult {
   overallcount: number;
   channels?: any[];
   items: DestinationOneItem[];
+  // Optional facet groups (present when facets=true is used on the API)
+  facetGroups?: Array<{
+    field: string;
+    facets: Array<{
+      value: string;
+      count: number;
+    }>;
+  }>;
 }
 
 interface DestinationOneResponse {
@@ -165,6 +173,58 @@ export class DestinationOneService {
         error?.message,
       );
       throw error;
+    }
+  }
+
+  /**
+   * Fetches Destination One facets for Event categories.
+   * Uses facets=true and extracts facetGroups where field === "category".
+   */
+  private async fetchEventCategoryFacets(config: DestinationOneConfig): Promise<string[]> {
+    const baseUrl = config.baseUrl || 'https://meta.et4.de/rest.ashx/search/';
+    const template = config.template || 'ET2014A_MULTI.json';
+
+    const params = new URLSearchParams({
+      experience: config.experience,
+      licensekey: config.licensekey,
+      template,
+      type: 'Event',
+      facets: 'true',
+    });
+
+    const url = `${baseUrl}?${params.toString()}`;
+    this.logger.debug(
+      `Fetching Event category facets from destination_one API: ${url.replace(config.licensekey, '***')}`,
+    );
+
+    try {
+      const response = await firstValueFrom(
+        this.http.get<DestinationOneResponse>(url, {
+          timeout: 30000,
+        }),
+      );
+
+      const result = response.data.results?.[0];
+      const facetGroups = result?.facetGroups || [];
+      const categoryGroup = facetGroups.find((g) => g.field === 'category');
+      const facetValues =
+        categoryGroup?.facets
+          ?.map((f) => f.value)
+          .filter((v): v is string => typeof v === 'string' && v.trim().length > 0) || [];
+
+      const uniqueSorted = Array.from(new Set(facetValues)).sort((a, b) => a.localeCompare(b));
+
+      this.logger.log(
+        `Fetched ${uniqueSorted.length} Event category facets from destination_one API: ${JSON.stringify(uniqueSorted)}`,
+      );
+
+      return uniqueSorted;
+    } catch (error: any) {
+      this.logger.warn(
+        `Failed to fetch Event category facets from destination_one API: ${url.replace(config.licensekey, '***')}`,
+        error?.message,
+      );
+      return [];
     }
   }
 
@@ -481,6 +541,7 @@ export class DestinationOneService {
       itemsByMapping: {} as Record<string, number>,
       tagOperations: { created: 0, updated: 0 },
       errorsByCategory: {} as Record<string, number>,
+      eventCategoryFacets: [] as string[],
     };
 
     // Fetch items per type (best coverage) with pagination; fall back to single fetch if no typeFilter
@@ -488,6 +549,11 @@ export class DestinationOneService {
 
     try {
       const processedIds = new Set<string>();
+
+      // Optionally prefetch Event category facets for logging / downstream usage
+      if (config.eventFacetsEnabled !== false && config.typeFilter?.includes('Event')) {
+        syncStats.eventCategoryFacets = await this.fetchEventCategoryFacets(config);
+      }
 
       if (config.typeFilter && config.typeFilter.length > 0) {
         // If we have category mappings, we can optionally fetch by mapping queries
@@ -600,6 +666,7 @@ export class DestinationOneService {
             itemsByType: syncStats.itemsByType,
             itemsByMapping: syncStats.itemsByMapping,
             tagOperations: syncStats.tagOperations,
+            eventCategoryFacets: syncStats.eventCategoryFacets,
           },
           response: {
             created,
