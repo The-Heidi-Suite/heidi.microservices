@@ -4,8 +4,8 @@ import { GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import {
   AddFavoriteDto,
   AddFavoriteResponseDto,
-  FavoriteListingDto,
   ListingNotFoundErrorResponseDto,
+  ListListingsResponseDto,
   RemoveFavoriteResponseDto,
   UnauthorizedErrorResponseDto,
   ValidationErrorResponseDto,
@@ -99,13 +99,12 @@ export class FavoritesController {
   @ApiOperation({
     summary: 'Get user favorites',
     description:
-      'Get all favorites for the current user (works for both guest and registered users)',
+      'Get all favorites for the current user (works for both guest and registered users). Returns the same structure as the listings list endpoint.',
   })
   @ApiResponse({
     status: 200,
     description: 'List of user favorites retrieved successfully',
-    type: FavoriteListingDto,
-    isArray: true,
+    type: ListListingsResponseDto,
   })
   @ApiResponse({
     status: 401,

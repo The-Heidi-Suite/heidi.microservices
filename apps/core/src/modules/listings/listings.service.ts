@@ -1735,15 +1735,23 @@ export class ListingsService {
           f.listing as ListingWithRelations,
           this.mapListing(f.listing as ListingWithRelations, { isFavorite: true }),
         );
-        return {
-          id: f.id,
-          listingId: f.listingId,
-          listing: listingDto,
-          createdAt: f.createdAt,
-        };
+        return listingDto;
       }),
     );
 
-    return items;
+    const total = items.length;
+    const pageSize = total;
+    const page = 1;
+    const totalPages = 1;
+
+    return {
+      items,
+      meta: {
+        page,
+        pageSize,
+        total,
+        totalPages,
+      },
+    };
   }
 }
