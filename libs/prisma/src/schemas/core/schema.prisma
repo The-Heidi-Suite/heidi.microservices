@@ -141,6 +141,7 @@ model Listing {
 
   // Relations
   favorites              UserFavorite[]
+  reminders              ListingReminder[]
   categories             ListingCategory[]
   cities                 ListingCity[]
   media                  ListingMedia[]
@@ -390,6 +391,29 @@ model UserFavorite {
   @@map("user_favorites")
 }
 
+// ListingReminder - Track sent push notification reminders for favorite events
+// Prevents duplicate reminders for the same event occurrence
+model ListingReminder {
+  id             String          @id @default(uuid())
+  userId         String          // Reference to User.id in users database
+  listingId      String          // Reference to Listing.id
+  occurrenceStart DateTime        // The specific occurrence start time (for recurring events)
+  reminderType   ListingReminderType
+  sentAt         DateTime        @default(now())
+  createdAt      DateTime        @default(now())
+
+  // Relations
+  listing        Listing         @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId, occurrenceStart, reminderType])
+  @@index([userId])
+  @@index([listingId])
+  @@index([occurrenceStart])
+  @@index([reminderType])
+  @@index([sentAt])
+  @@map("listing_reminders")
+}
+
 // ParkingSpace - Cached parking data from Mobilithek integration
 // Based on Smart Data Models OffStreetParking schema
 model ParkingSpace {
@@ -579,4 +603,9 @@ enum CategoryRequestStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum ListingReminderType {
+  H24  // 24 hours before
+  H2   // 2 hours before
 }
