@@ -22,7 +22,6 @@ import {
 } from '@prisma/client-core';
 import {
   CreateListingDto,
-  CreateListingTagReferenceDto,
   ListingCategoryDto,
   ListingCategoryReferenceDto,
   ListingCityDto,

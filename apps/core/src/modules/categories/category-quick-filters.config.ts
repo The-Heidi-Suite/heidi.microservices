@@ -1,5 +1,3 @@
-import { CategoryQuickFilterDto } from '@heidi/contracts';
-
 /**
  * Quick filter configuration per city and root category.
  * Keys are in the format: `${citySlug}/${rootCategorySlug}`
