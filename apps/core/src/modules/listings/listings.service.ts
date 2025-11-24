@@ -22,6 +22,7 @@ import {
 } from '@prisma/client-core';
 import {
   CreateListingDto,
+  CreateListingTagReferenceDto,
   ListingCategoryDto,
   ListingCategoryReferenceDto,
   ListingCityDto,
@@ -32,6 +33,7 @@ import {
   ListingModerationActionDto,
   ListingModerationDto,
   ListingResponseDto,
+  ListingTagReferenceDto,
   ListingTimeIntervalDto,
   ListingTimeIntervalExceptionDto,
   ListingTimeIntervalExceptionInputDto,
@@ -758,6 +760,55 @@ export class ListingsService {
     );
   }
 
+  /**
+   * Sync tags for a listing from manual creation/update
+   * Links existing tags to the listing by tag ID (similar to categories)
+   */
+  private async syncListingTags(
+    tx: Prisma.TransactionClient,
+    listingId: string,
+    tags?: ListingTagReferenceDto[],
+  ) {
+    if (tags === undefined) {
+      return;
+    }
+
+    if (!tags.length) {
+      await tx.listingTag.deleteMany({ where: { listingId } });
+      return;
+    }
+
+    const tagIds = tags.map((tag) => tag.tagId);
+
+    await tx.listingTag.deleteMany({
+      where: {
+        listingId,
+        tagId: {
+          notIn: tagIds,
+        },
+      },
+    });
+
+    await Promise.all(
+      tags.map((tag) =>
+        tx.listingTag.upsert({
+          where: {
+            listingId_tagId: {
+              listingId,
+              tagId: tag.tagId,
+            },
+          },
+          update: {},
+          create: {
+            ...(tag.id ? { id: tag.id } : {}),
+            listingId,
+            tagId: tag.tagId,
+          },
+        }),
+      ),
+    );
+  }
+
   async createListing(
     userId: string,
     roles: UserRole[],
@@ -780,11 +831,10 @@ export class ListingsService {
       dto.cities?.find((city) => city.isPrimary) ??
       (dto.cities && dto.cities.length > 0 ? { cityId: dto.cities[0].cityId } : undefined);
 
-    // Determine source language: use provided languageCode, or fall back to current request language, or default
+    // Determine source language: use provided languageCode, or fall back to Accept-Language header, or default
+    // If languageCode is null or not present, use Accept-Language header value
     const sourceLanguage =
-      dto.languageCode ||
-      this.i18nService.getLanguage() ||
-      this.configService.get<string>('i18n.defaultLanguage', 'en');
+      dto.languageCode ?? this.i18nService.getLanguage() ?? this.configService.get<string>('i18n.defaultLanguage', 'en');
 
     const data: Prisma.ListingCreateInput = {
       slug,
@@ -901,8 +951,29 @@ export class ListingsService {
       include: listingWithRelations.include,
     });
 
-    const listingDto = this.mapListing(listing);
-    return this.applyListingTranslations(listing, listingDto);
+    // Sync tags if provided
+    if (dto.tags !== undefined) {
+      await this.prisma.$transaction(async (tx) => {
+        await this.syncListingTags(
+          tx,
+          listing.id,
+          dto.tags as ListingTagReferenceDto[],
+        );
+      });
+    }
+
+    // Refresh listing with tags
+    const listingWithTags = await this.prisma.listing.findUnique({
+      where: { id: listing.id },
+      include: listingWithRelations.include,
+    });
+
+    if (!listingWithTags) {
+      throw new NotFoundException(`Listing ${listing.id} not found`);
+    }
+
+    const listingDto = this.mapListing(listingWithTags);
+    return this.applyListingTranslations(listingWithTags, listingDto);
   }
 
   async updateListing(listingId: string, userId: string, roles: UserRole[], dto: UpdateListingDto) {
@@ -1195,6 +1266,7 @@ export class ListingsService {
       // Media should not be updated via this endpoint - use upload/delete endpoints instead
       await this.syncListingTimeIntervals(tx, listingId, dto.timeIntervals);
       await this.syncListingTimeIntervalExceptions(tx, listingId, dto.timeIntervalExceptions);
+      await this.syncListingTags(tx, listingId, dto.tags);
 
       const refreshed = await tx.listing.findUnique({
         where: { id: listingId },
