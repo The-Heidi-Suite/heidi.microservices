@@ -65,6 +65,12 @@ export const RabbitMQPatterns = {
   USER_FIND_BY_CITY: 'user.findByCity',
   USER_FIND_ALL_ACTIVE: 'user.findAllActive',
   USER_UPDATE_ROLE: 'user.updateRole',
+  USER_GET_DEVICES: 'user.getDevices',
+  USER_REGISTER_DEVICE: 'user.registerDevice',
+  USER_DELETE_DEVICE: 'user.deleteDevice',
+  USER_GET_TOPIC_SUBSCRIPTIONS: 'user.getTopicSubscriptions',
+  USER_SUBSCRIBE_TOPIC: 'user.subscribeTopic',
+  USER_UNSUBSCRIBE_TOPIC: 'user.unsubscribeTopic',
 
   // Core request-response patterns
   CORE_GET_USER_CITIES: 'core.getUserCities',
