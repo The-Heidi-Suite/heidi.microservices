@@ -44,6 +44,7 @@ enum NotificationType {
   ERROR
   SUCCESS
   ALERT
+  EVENT_REMINDER
 }
 
 enum NotificationChannel {
