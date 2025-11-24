@@ -271,14 +271,15 @@ export class ListingsService {
     const locale = this.i18nService.getLanguage();
     const defaultLocale = this.configService.get<string>('i18n.defaultLanguage', 'en');
 
-    // If no locale or default locale, return original DTO
-    if (!locale || locale === defaultLocale) {
-      return dto;
-    }
-
     // Get source language from listing
     const listingSourceLocale =
       listing.languageCode || this.configService.get<string>('i18n.defaultLanguage', 'en');
+
+    // If no locale requested, or locale matches listing's source language, return original DTO
+    // (no translation needed if the requested language is the same as the listing's original language)
+    if (!locale || locale === listingSourceLocale) {
+      return dto;
+    }
 
     const [title, summary, content] = await Promise.all([
       this.translationService.getTranslation(
@@ -329,14 +330,19 @@ export class ListingsService {
           const tagSourceLocale = tag.languageCode || defaultLocale;
           const fallbackLabel = tag.label || tag.externalValue;
 
-          const label = await this.translationService.getTranslation(
-            'tag',
-            tag.id,
-            'label',
-            locale,
-            fallbackLabel,
-            tagSourceLocale,
-          );
+          // Only translate tag if requested locale differs from tag's source locale
+          // If locale matches tag's source language, use original label (no translation needed)
+          let label = fallbackLabel;
+          if (locale && locale !== tagSourceLocale) {
+            label = await this.translationService.getTranslation(
+              'tag',
+              tag.id,
+              'label',
+              locale,
+              fallbackLabel,
+              tagSourceLocale,
+            );
+          }
 
           return {
             id: listingTag.id,

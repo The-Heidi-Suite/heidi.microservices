@@ -6,7 +6,8 @@ export interface DestinationOneCategoryMapping {
   heidiSubcategorySlug?: string; // Optional subcategory slug (e.g., "poi-museums-galleries")
   doTypes?: string[]; // Destination One types this mapping applies to (e.g., ["POI", "Gastro"])
   doCategoryValues: string[]; // Destination One category values that map to this (e.g., ["Ausstellung", "Kinderprogramm"])
-  query: string; // Query parameter for API (e.g., "category:Ausstellung OR Kinderprogramm")
+  // Query is generated dynamically from doCategoryValues: category:"value1" OR category:"value2"
+  // Empty array means fetch all items of the specified types
 }
 
 /**
