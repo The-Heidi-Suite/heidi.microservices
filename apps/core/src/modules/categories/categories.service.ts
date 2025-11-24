@@ -65,6 +65,7 @@ export class CategoriesService {
 
   /**
    * Build hierarchical category structure with children nested inside parents
+   * Children inherit parent's imageUrl if their own imageUrl is null
    */
   private buildCategoryHierarchy(categories: any[]): any[] {
     const categoryMap = new Map<string, any>();
@@ -96,6 +97,27 @@ export class CategoriesService {
         rootCategories.push(categoryWithChildren);
       }
     });
+
+    // Third pass: Propagate parent's imageUrl to children that don't have one
+    const propagateImageUrl = (cat: any, parentImageUrl: string | null = null) => {
+      // If this category doesn't have an imageUrl and parent has one, inherit it
+      if (!cat.imageUrl && parentImageUrl) {
+        cat.imageUrl = parentImageUrl;
+      }
+
+      // Use this category's imageUrl (or inherited one) for its children
+      const imageUrlToPropagate = cat.imageUrl || parentImageUrl;
+
+      // Recursively propagate to children
+      if (cat.children && cat.children.length > 0) {
+        cat.children.forEach((child: any) => {
+          propagateImageUrl(child, imageUrlToPropagate);
+        });
+      }
+    };
+
+    // Start propagation from root categories
+    rootCategories.forEach((cat) => propagateImageUrl(cat));
 
     // Remove empty children arrays for cleaner output
     const removeEmptyChildren = (cat: any) => {
@@ -341,10 +363,16 @@ export class CategoriesService {
       orderBy: { name: 'asc' },
     });
 
+    // Propagate parent's imageUrl to children that don't have one
+    const childrenWithInheritedImageUrl = children.map((child) => ({
+      ...child,
+      imageUrl: child.imageUrl || category.imageUrl,
+    }));
+
     const tree = await this.translateCategoryTree([
       {
         ...category,
-        ...(children.length > 0 ? { children } : {}),
+        ...(childrenWithInheritedImageUrl.length > 0 ? { children: childrenWithInheritedImageUrl } : {}),
       },
     ]);
 

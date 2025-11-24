@@ -135,7 +135,11 @@ export class DestinationOneService {
     this.logger.setContext(DestinationOneService.name);
   }
 
-  async fetchData(config: DestinationOneConfig, query?: string): Promise<DestinationOneResponse> {
+  async fetchData(
+    config: DestinationOneConfig,
+    query?: string,
+    apiCalls?: string[],
+  ): Promise<DestinationOneResponse> {
     const baseUrl = config.baseUrl || 'https://meta.et4.de/rest.ashx/search/';
     const template = config.template || 'ET2014A_MULTI.json';
 
@@ -154,8 +158,15 @@ export class DestinationOneService {
     }
 
     const url = `${baseUrl}?${params.toString()}`;
+    const sanitizedUrl = url.replace(config.licensekey, '***');
+    
+    // Track the sanitized URL
+    if (apiCalls) {
+      apiCalls.push(sanitizedUrl);
+    }
+    
     this.logger.log(
-      `Fetching data from destination_one API: ${url.replace(config.licensekey, '***')}`,
+      `Fetching data from destination_one API: ${sanitizedUrl}`,
     );
 
     try {
@@ -169,7 +180,7 @@ export class DestinationOneService {
       return response.data;
     } catch (error: any) {
       this.logger.error(
-        `Failed to fetch from destination_one API: ${url.replace(config.licensekey, '***')}`,
+        `Failed to fetch from destination_one API: ${sanitizedUrl}`,
         error?.message,
       );
       throw error;
@@ -180,7 +191,10 @@ export class DestinationOneService {
    * Fetches Destination One facets for Event categories.
    * Uses facets=true and extracts facetGroups where field === "category".
    */
-  private async fetchEventCategoryFacets(config: DestinationOneConfig): Promise<string[]> {
+  private async fetchEventCategoryFacets(
+    config: DestinationOneConfig,
+    apiCalls?: string[],
+  ): Promise<string[]> {
     const baseUrl = config.baseUrl || 'https://meta.et4.de/rest.ashx/search/';
     const template = config.template || 'ET2014A_MULTI.json';
 
@@ -193,8 +207,15 @@ export class DestinationOneService {
     });
 
     const url = `${baseUrl}?${params.toString()}`;
+    const sanitizedUrl = url.replace(config.licensekey, '***');
+    
+    // Track the sanitized URL
+    if (apiCalls) {
+      apiCalls.push(sanitizedUrl);
+    }
+    
     this.logger.debug(
-      `Fetching Event category facets from destination_one API: ${url.replace(config.licensekey, '***')}`,
+      `Fetching Event category facets from destination_one API: ${sanitizedUrl}`,
     );
 
     try {
@@ -221,7 +242,7 @@ export class DestinationOneService {
       return uniqueSorted;
     } catch (error: any) {
       this.logger.warn(
-        `Failed to fetch Event category facets from destination_one API: ${url.replace(config.licensekey, '***')}`,
+        `Failed to fetch Event category facets from destination_one API: ${sanitizedUrl}`,
         error?.message,
       );
       return [];
@@ -236,6 +257,7 @@ export class DestinationOneService {
     config: DestinationOneConfig,
     type: string,
     query?: string,
+    apiCalls?: string[],
   ): Promise<{ items: DestinationOneItem[] }> {
     const baseUrl = config.baseUrl || 'https://meta.et4.de/rest.ashx/search/';
     const template = config.template || 'ET2014A_MULTI.json';
@@ -262,8 +284,15 @@ export class DestinationOneService {
       params.append('pagesize', `${pageSize}`);
 
       const url = `${baseUrl}?${params.toString()}`;
+      const sanitizedUrl = url.replace(config.licensekey, '***');
+      
+      // Track the sanitized URL
+      if (apiCalls) {
+        apiCalls.push(sanitizedUrl);
+      }
+      
       this.logger.debug(
-        `Fetching page ${page} for type="${type}" from destination_one: ${url.replace(config.licensekey, '***')}`,
+        `Fetching page ${page} for type="${type}" from destination_one: ${sanitizedUrl}`,
       );
 
       const response = await firstValueFrom(
@@ -288,6 +317,18 @@ export class DestinationOneService {
     }
 
     return { items: allItems };
+  }
+
+  /**
+   * Generates a query string from category values
+   * Format: category:"value1" OR category:"value2"
+   * If empty array, returns undefined (fetch all items of the type)
+   */
+  private generateQueryFromCategoryValues(categoryValues: string[]): string | undefined {
+    if (!categoryValues || categoryValues.length === 0) {
+      return undefined; // No query means fetch all
+    }
+    return categoryValues.map((val) => `category:"${val}"`).join(' OR ');
   }
 
   private generateSyncHash(title: string, summary: string | undefined, content: string): string {
@@ -543,9 +584,10 @@ export class DestinationOneService {
       tagOperations: { created: 0, updated: 0 },
       errorsByCategory: {} as Record<string, number>,
       eventCategoryFacets: [] as string[],
+      apiCalls: [] as string[], // Track all API call URLs (sanitized)
     };
 
-    // Fetch items per type (best coverage) with pagination; fall back to single fetch if no typeFilter
+    // Fetch items using category mapping queries only
     let items: DestinationOneItem[] = [];
 
     try {
@@ -553,58 +595,60 @@ export class DestinationOneService {
 
       // Optionally prefetch Event category facets for logging / downstream usage
       if (config.eventFacetsEnabled !== false && config.typeFilter?.includes('Event')) {
-        syncStats.eventCategoryFacets = await this.fetchEventCategoryFacets(config);
+        syncStats.eventCategoryFacets = await this.fetchEventCategoryFacets(config, syncStats.apiCalls);
       }
 
-      if (config.typeFilter && config.typeFilter.length > 0) {
-        // If we have category mappings, we can optionally fetch by mapping queries
-        // For now, we'll fetch by type and apply mappings during transformation
+      // Fetch items using category mapping queries only
+      if (config.categoryMappings && config.categoryMappings.length > 0) {
+        for (const mapping of config.categoryMappings) {
+          if (!mapping.doTypes || mapping.doTypes.length === 0) {
+            continue;
+          }
+
+          // Generate query from category values
+          const query = this.generateQueryFromCategoryValues(mapping.doCategoryValues);
+
+          // Fetch items for each type in the mapping using the generated query
+          for (const type of mapping.doTypes) {
+            // Only fetch if type is in typeFilter (if typeFilter is specified)
+            if (config.typeFilter && !config.typeFilter.includes(type)) {
+              continue;
+            }
+
+            try {
+              const result = await this.fetchDataPaginatedForType(config, type, query, syncStats.apiCalls);
+              const mappingItems = result.items.filter((it) => !processedIds.has(it.id));
+              items.push(...mappingItems);
+              mappingItems.forEach((it) => processedIds.add(it.id));
+              const mappingKey = `${mapping.heidiCategorySlug}${mapping.heidiSubcategorySlug ? `/${mapping.heidiSubcategorySlug}` : ''}`;
+              syncStats.itemsByMapping[mappingKey] =
+                (syncStats.itemsByMapping[mappingKey] || 0) + mappingItems.length;
+              this.logger.log(
+                `Fetched ${mappingItems.length} items for mapping "${mappingKey}" using query "${query || 'all'}"`,
+              );
+            } catch (error: any) {
+              const errorCategory = 'mapping_fetch';
+              syncStats.errorsByCategory[errorCategory] =
+                (syncStats.errorsByCategory[errorCategory] || 0) + 1;
+              this.logger.warn(
+                `Failed to fetch items for mapping "${mapping.heidiCategorySlug}" with query "${query || 'all'}": ${error?.message}`,
+              );
+            }
+          }
+        }
+      } else if (config.typeFilter && config.typeFilter.length > 0) {
+        // Fallback: if no category mappings, fetch by type
         for (const t of config.typeFilter) {
-          const result = await this.fetchDataPaginatedForType(config, t);
+          const result = await this.fetchDataPaginatedForType(config, t, undefined, syncStats.apiCalls);
           const typeItems = result.items.filter((it) => !processedIds.has(it.id));
           items.push(...typeItems);
           typeItems.forEach((it) => processedIds.add(it.id));
           syncStats.itemsByType[t] = (syncStats.itemsByType[t] || 0) + typeItems.length;
           this.logger.log(`Fetched ${typeItems.length} items for type "${t}"`);
         }
-
-        // Optionally fetch items using category mapping queries
-        if (config.categoryMappings && config.categoryMappings.length > 0) {
-          for (const mapping of config.categoryMappings) {
-            if (!mapping.doTypes || mapping.doTypes.length === 0) {
-              continue;
-            }
-
-            // Fetch items for each type in the mapping using the query
-            for (const type of mapping.doTypes) {
-              if (!config.typeFilter.includes(type)) {
-                continue;
-              }
-
-              try {
-                const result = await this.fetchDataPaginatedForType(config, type, mapping.query);
-                const mappingItems = result.items.filter((it) => !processedIds.has(it.id));
-                items.push(...mappingItems);
-                mappingItems.forEach((it) => processedIds.add(it.id));
-                const mappingKey = `${mapping.heidiCategorySlug}${mapping.heidiSubcategorySlug ? `/${mapping.heidiSubcategorySlug}` : ''}`;
-                syncStats.itemsByMapping[mappingKey] =
-                  (syncStats.itemsByMapping[mappingKey] || 0) + mappingItems.length;
-                this.logger.debug(
-                  `Fetched ${mappingItems.length} items for mapping "${mappingKey}" using query "${mapping.query}"`,
-                );
-              } catch (error: any) {
-                const errorCategory = 'mapping_fetch';
-                syncStats.errorsByCategory[errorCategory] =
-                  (syncStats.errorsByCategory[errorCategory] || 0) + 1;
-                this.logger.warn(
-                  `Failed to fetch items for mapping "${mapping.heidiCategorySlug}" with query "${mapping.query}": ${error?.message}`,
-                );
-              }
-            }
-          }
-        }
       } else {
-        const response = await this.fetchData(config);
+        // No mappings and no typeFilter - single fetch
+        const response = await this.fetchData(config, undefined, syncStats.apiCalls);
         items = response.results[0]?.items || [];
         this.logger.log(`Fetched ${items.length} items from single API call`);
       }
@@ -668,6 +712,8 @@ export class DestinationOneService {
             itemsByMapping: syncStats.itemsByMapping,
             tagOperations: syncStats.tagOperations,
             eventCategoryFacets: syncStats.eventCategoryFacets,
+            apiCalls: syncStats.apiCalls,
+            apiCallCount: syncStats.apiCalls.length,
           },
           response: {
             created,
@@ -708,6 +754,8 @@ export class DestinationOneService {
             itemsByType: syncStats.itemsByType,
             itemsByMapping: syncStats.itemsByMapping,
             errorsByCategory: syncStats.errorsByCategory,
+            apiCalls: syncStats.apiCalls,
+            apiCallCount: syncStats.apiCalls.length,
           },
           response: {
             created,

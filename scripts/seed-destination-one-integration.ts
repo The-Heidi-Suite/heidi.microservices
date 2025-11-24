@@ -91,33 +91,42 @@ async function seed() {
   // Category mappings for Kiel based on screenshot requirements
   // Maps Destination One categories to Heidi categories/subcategories
   const categoryMappings: DestinationOneCategoryMapping[] = [
+    // Event category mapping (Event type) - empty doCategoryValues means fetch all Events
+    {
+      heidiCategorySlug: 'events',
+      doTypes: ['Event'],
+      doCategoryValues: [], // Empty array = fetch all Events
+    },
+
     // Shopping category mappings (POI type)
     {
       heidiCategorySlug: 'shopping',
       doTypes: ['POI'],
       doCategoryValues: ['Einkaufen'],
-      query: 'category:Einkaufen',
     },
     {
       heidiCategorySlug: 'shopping',
       heidiSubcategorySlug: 'shopping-clothing',
       doTypes: ['POI'],
       doCategoryValues: ['Bekleidung', 'Schuhe & Lederwaren'],
-      query: 'category:Bekleidung OR category:Schuhe & Lederwaren',
     },
     {
       heidiCategorySlug: 'shopping',
       heidiSubcategorySlug: 'shopping-conscious-shopping',
       doTypes: ['POI'],
       doCategoryValues: ['Bewusst einkaufen'],
-      query: 'category:Bewusst einkaufen',
     },
     {
       heidiCategorySlug: 'shopping',
       heidiSubcategorySlug: 'shopping-for-children',
       doTypes: ['POI'],
-      doCategoryValues: ['Spielzeug', 'Baby & Kind'],
-      query: 'category:Spielzeug OR category:Baby & Kind',
+      doCategoryValues: ['Baby & Kind', 'Spielzeug'],
+    },
+    {
+      heidiCategorySlug: 'shopping',
+      heidiSubcategorySlug: 'shopping-city-center',
+      doTypes: ['POI'],
+      doCategoryValues: ['Kieler Innenstadt', 'Altstadt'],
     },
 
     // Food & Drink category mappings (Gastro type)
@@ -126,28 +135,24 @@ async function seed() {
       heidiSubcategorySlug: 'food-cafes-bakeries',
       doTypes: ['Gastro'],
       doCategoryValues: ['Café', 'Eisdiele', 'Eiscafé'],
-      query: 'category:Café OR category:Eisdiele OR category:Eiscafé',
     },
     {
       heidiCategorySlug: 'food-and-drink',
       heidiSubcategorySlug: 'food-fish-restaurants',
       doTypes: ['Gastro'],
       doCategoryValues: ['Fischlokal', 'Schiffsgastronomie'],
-      query: 'category:Fischlokal OR category:Schiffsgastronomie',
     },
     {
       heidiCategorySlug: 'food-and-drink',
       heidiSubcategorySlug: 'food-bars-nightlife',
       doTypes: ['Gastro'],
       doCategoryValues: ['Pub', 'Bar', 'Kneipe', 'Sportsbar'],
-      query: 'category:Pub OR category:Bar OR category:Kneipe OR category:Sportsbar',
     },
     {
       heidiCategorySlug: 'food-and-drink',
       heidiSubcategorySlug: 'food-vegetarian-vegan',
       doTypes: ['Gastro'],
       doCategoryValues: ['vegan', 'vegetarisch'],
-      query: 'category:vegan OR category:vegetarisch',
     },
 
     // Tours & POI category mappings (Tour and POI types)
@@ -156,35 +161,30 @@ async function seed() {
       heidiSubcategorySlug: 'tours-excursions',
       doTypes: ['Tour', 'POI'],
       doCategoryValues: ['Ausflugsziele'],
-      query: 'category:Ausflugsziele',
     },
     {
       heidiCategorySlug: 'tours',
       heidiSubcategorySlug: 'tours-on-foot',
       doTypes: ['Tour'],
       doCategoryValues: ['Wandern', 'Themenstraße'],
-      query: 'category:Wandern OR category:Themenstraße',
     },
     {
       heidiCategorySlug: 'tours',
       heidiSubcategorySlug: 'tours-bike-tours',
       doTypes: ['Tour'],
       doCategoryValues: ['Radfahren', 'Themen-Radtouren'],
-      query: 'category:Radfahren OR category:Themen-Radtouren',
     },
     {
       heidiCategorySlug: 'tours',
       heidiSubcategorySlug: 'tours-museum-tours',
       doTypes: ['Tour', 'POI'],
       doCategoryValues: ['Museumstour', 'Museen', 'Sammlungen'],
-      query: 'category:Museumstour OR category:Museen OR category:Sammlungen',
     },
     {
       heidiCategorySlug: 'culture',
       heidiSubcategorySlug: 'culture-museums',
       doTypes: ['POI'],
       doCategoryValues: ['Museen', 'Sammlungen'],
-      query: 'category:Museen OR category:Sammlungen',
     },
   ];
 
