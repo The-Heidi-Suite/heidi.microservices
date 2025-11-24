@@ -11,12 +11,18 @@ import {
   ListingStatus,
   ListingModerationStatus,
   ListingSourceType,
+  ListingVisibility,
   ListingRecurrenceFreq,
   ListingMediaType,
   Prisma,
   CategoryType,
+  ListingReminderType,
 } from '@prisma/client-core';
-import { CoreOperationRequestDto, CoreOperationResponseDto } from '@heidi/contracts';
+import {
+  CoreOperationRequestDto,
+  CoreOperationResponseDto,
+  SendNotificationDto,
+} from '@heidi/contracts';
 import { roleToNumber } from '@heidi/rbac';
 import { firstValueFrom } from 'rxjs';
 import { createHash } from 'crypto';
@@ -1094,6 +1100,367 @@ export class CoreService implements OnModuleInit {
     } catch (error) {
       this.logger.error(`Error checking city feature: ${featureName}`, error);
       return false;
+    }
+  }
+
+  /**
+   * Process favorite event reminders and emit push notifications
+   * Called by scheduler via RabbitMQ
+   */
+  async processFavoriteEventReminders(triggeredAt?: string): Promise<{
+    sent24h: number;
+    sent2h: number;
+  }> {
+    const now = triggeredAt ? new Date(triggeredAt) : new Date();
+    this.logger.log(`Processing favorite event reminders at ${now.toISOString()}`);
+
+    // Acquire lock to prevent concurrent runs
+    const lockKey = 'core:favorite-reminders:lock';
+    const acquired = await this.redis.acquireLock(lockKey, 300); // 5 minute lock
+
+    if (!acquired) {
+      this.logger.warn(
+        'Could not acquire lock for favorite event reminders - another run may be in progress',
+      );
+      return { sent24h: 0, sent2h: 0 };
+    }
+
+    try {
+      const graceWindow = 60 * 60 * 1000; // 1 hour grace window
+
+      // Compute time windows
+      // 24h reminders: [now + 24h, now + 24h + graceWindow]
+      const window24hStart = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+      const window24hEnd = new Date(now.getTime() + 24 * 60 * 60 * 1000 + graceWindow);
+      // 2h reminders: [now + 2h, now + 2h + graceWindow]
+      const window2hStart = new Date(now.getTime() + 2 * 60 * 60 * 1000);
+      const window2hEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000 + graceWindow);
+
+      // Fetch all active favorites with their listings
+      const favorites = await this.prisma.userFavorite.findMany({
+        include: {
+          listing: {
+            include: {
+              timeIntervals: true,
+              cities: {
+                where: { isPrimary: true },
+                take: 1,
+              },
+            },
+          },
+        },
+      });
+
+      let sent24h = 0;
+      let sent2h = 0;
+
+      for (const favorite of favorites) {
+        const listing = favorite.listing;
+
+        // Skip if listing is not approved/visible or archived
+        if (
+          listing.status !== ListingStatus.APPROVED ||
+          listing.moderationStatus !== ListingModerationStatus.APPROVED ||
+          listing.visibility !== ListingVisibility.PUBLIC ||
+          listing.isArchived
+        ) {
+          continue;
+        }
+
+        // Skip if listing has no event start time
+        if (!listing.eventStart && (!listing.timeIntervals || listing.timeIntervals.length === 0)) {
+          continue;
+        }
+
+        // Compute upcoming occurrences
+        const allOccurrences = this.computeUpcomingOccurrences(
+          {
+            eventStart: listing.eventStart,
+            eventEnd: listing.eventEnd,
+            timeIntervals: listing.timeIntervals.map((ti) => ({
+              weekdays: ti.weekdays as string[],
+              start: ti.start,
+              end: ti.end,
+              tz: ti.tz,
+              freq: ti.freq,
+              interval: ti.interval,
+              repeatUntil: ti.repeatUntil,
+            })),
+            timezone: listing.timezone,
+          },
+          window24hStart,
+          window2hEnd, // Use the larger window to capture both reminder types
+        );
+
+        // Process 24h reminders
+        const occurrences24h = allOccurrences.filter(
+          (occ) => occ >= window24hStart && occ <= window24hEnd,
+        );
+
+        for (const occurrence of occurrences24h) {
+          // Check if reminder already sent
+          const existing = await this.prisma.listingReminder.findUnique({
+            where: {
+              userId_listingId_occurrenceStart_reminderType: {
+                userId: favorite.userId,
+                listingId: listing.id,
+                occurrenceStart: occurrence,
+                reminderType: ListingReminderType.H24,
+              },
+            },
+          });
+
+          if (!existing) {
+            // Create reminder record
+            await this.prisma.listingReminder.create({
+              data: {
+                userId: favorite.userId,
+                listingId: listing.id,
+                occurrenceStart: occurrence,
+                reminderType: ListingReminderType.H24,
+              },
+            });
+
+            // Emit notification
+            await this.emitEventReminderNotification(
+              favorite.userId,
+              listing,
+              occurrence,
+              ListingReminderType.H24,
+            );
+
+            sent24h++;
+          }
+        }
+
+        // Process 2h reminders
+        const occurrences2h = allOccurrences.filter(
+          (occ) => occ >= window2hStart && occ <= window2hEnd,
+        );
+
+        for (const occurrence of occurrences2h) {
+          // Check if reminder already sent
+          const existing = await this.prisma.listingReminder.findUnique({
+            where: {
+              userId_listingId_occurrenceStart_reminderType: {
+                userId: favorite.userId,
+                listingId: listing.id,
+                occurrenceStart: occurrence,
+                reminderType: ListingReminderType.H2,
+              },
+            },
+          });
+
+          if (!existing) {
+            // Create reminder record
+            await this.prisma.listingReminder.create({
+              data: {
+                userId: favorite.userId,
+                listingId: listing.id,
+                occurrenceStart: occurrence,
+                reminderType: ListingReminderType.H2,
+              },
+            });
+
+            // Emit notification
+            await this.emitEventReminderNotification(
+              favorite.userId,
+              listing,
+              occurrence,
+              ListingReminderType.H2,
+            );
+
+            sent2h++;
+          }
+        }
+      }
+
+      this.logger.log(
+        `Processed favorite event reminders: ${sent24h} 24h reminders, ${sent2h} 2h reminders`,
+      );
+
+      return { sent24h, sent2h };
+    } finally {
+      await this.redis.releaseLock(lockKey);
+    }
+  }
+
+  /**
+   * Compute upcoming event occurrences for a listing within a time window
+   */
+  private computeUpcomingOccurrences(
+    listing: {
+      eventStart: Date | null;
+      eventEnd: Date | null;
+      timeIntervals: Array<{
+        weekdays: string[];
+        start: Date;
+        end: Date;
+        tz: string;
+        freq: ListingRecurrenceFreq;
+        interval: number;
+        repeatUntil: Date | null;
+      }>;
+      timezone: string | null;
+    },
+    windowStart: Date,
+    windowEnd: Date,
+  ): Date[] {
+    const occurrences: Date[] = [];
+
+    // For non-recurring events, use eventStart directly
+    if (listing.eventStart && !listing.timeIntervals?.length) {
+      if (listing.eventStart >= windowStart && listing.eventStart <= windowEnd) {
+        occurrences.push(listing.eventStart);
+      }
+      return occurrences;
+    }
+
+    // For recurring events, compute occurrences from timeIntervals
+    if (listing.timeIntervals && listing.timeIntervals.length > 0) {
+      for (const interval of listing.timeIntervals) {
+        if (interval.freq === ListingRecurrenceFreq.NONE) {
+          // Single occurrence
+          if (interval.start >= windowStart && interval.start <= windowEnd) {
+            occurrences.push(interval.start);
+          }
+          continue;
+        }
+
+        // Compute occurrences for recurring patterns
+        let current = new Date(interval.start);
+        const repeatUntil = interval.repeatUntil
+          ? new Date(interval.repeatUntil)
+          : new Date(windowEnd.getTime() + 7 * 24 * 60 * 60 * 1000); // Default to 7 days beyond window
+
+        // Limit iterations to prevent infinite loops
+        let iterations = 0;
+        const maxIterations = 1000;
+
+        while (current <= repeatUntil && current <= windowEnd && iterations < maxIterations) {
+          if (current >= windowStart) {
+            // Check if this occurrence matches the weekday filter (if any)
+            if (interval.weekdays && interval.weekdays.length > 0) {
+              const weekday = current
+                .toLocaleDateString('en-US', { weekday: 'short' })
+                .toUpperCase();
+              if (interval.weekdays.includes(weekday)) {
+                occurrences.push(new Date(current));
+              }
+            } else {
+              occurrences.push(new Date(current));
+            }
+          }
+
+          // Advance to next occurrence based on frequency
+          switch (interval.freq) {
+            case ListingRecurrenceFreq.DAILY:
+              current = new Date(current.getTime() + interval.interval * 24 * 60 * 60 * 1000);
+              break;
+            case ListingRecurrenceFreq.WEEKLY:
+              current = new Date(current.getTime() + interval.interval * 7 * 24 * 60 * 60 * 1000);
+              break;
+            case ListingRecurrenceFreq.MONTHLY:
+              current = new Date(current);
+              current.setMonth(current.getMonth() + interval.interval);
+              break;
+            case ListingRecurrenceFreq.YEARLY:
+              current = new Date(current);
+              current.setFullYear(current.getFullYear() + interval.interval);
+              break;
+            default:
+              break;
+          }
+
+          iterations++;
+        }
+      }
+    }
+
+    // Sort and deduplicate occurrences
+    return Array.from(new Set(occurrences.map((d) => d.getTime())))
+      .map((t) => new Date(t))
+      .sort((a, b) => a.getTime() - b.getTime());
+  }
+
+  /**
+   * Emit a push notification for an event reminder
+   */
+  private async emitEventReminderNotification(
+    userId: string,
+    listing: {
+      id: string;
+      title: string;
+      primaryCityId: string | null;
+      cities: Array<{ cityId: string }>;
+    },
+    occurrenceStart: Date,
+    reminderType: ListingReminderType,
+  ): Promise<void> {
+    try {
+      // Get city name if available
+      let cityName: string | undefined;
+      const cityId = listing.primaryCityId || listing.cities[0]?.cityId;
+      if (cityId) {
+        try {
+          const city = await firstValueFrom(
+            this.client.send(RabbitMQPatterns.CITY_FIND_BY_ID, { id: cityId }),
+          );
+          cityName = city?.name;
+        } catch (error) {
+          this.logger.warn(`Failed to fetch city name for cityId: ${cityId}`, error);
+        }
+      }
+
+      // Format occurrence date
+      const occurrenceDate = occurrenceStart.toLocaleString('en-US', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      // Determine translation key based on reminder type
+      const translationKey =
+        reminderType === ListingReminderType.H24
+          ? 'notifications.event.reminder24h'
+          : 'notifications.event.reminder2h';
+
+      // Build notification DTO
+      const notificationDto: SendNotificationDto = {
+        userId,
+        type: 'EVENT_REMINDER',
+        channel: 'PUSH',
+        translationKey,
+        translationParams: {
+          eventTitle: listing.title,
+          eventDate: occurrenceDate,
+          cityName: cityName || '',
+        },
+        cityId: cityId || undefined,
+        fcmData: {
+          kind: 'event',
+          listingId: listing.id,
+          occurrenceStartIso: occurrenceStart.toISOString(),
+        },
+        content: '', // Will be filled by translation service
+        subject: '', // Will be filled by translation service
+      };
+
+      // Emit notification
+      this.client.emit(RabbitMQPatterns.NOTIFICATION_SEND, notificationDto);
+
+      this.logger.log(
+        `Emitted ${reminderType} reminder notification for user ${userId}, listing ${listing.id}, occurrence ${occurrenceStart.toISOString()}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to emit reminder notification for user ${userId}, listing ${listing.id}`,
+        error,
+      );
+      // Don't throw - continue processing other reminders
     }
   }
 }
