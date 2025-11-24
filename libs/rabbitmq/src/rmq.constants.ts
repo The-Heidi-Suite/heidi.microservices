@@ -106,6 +106,8 @@ export const RabbitMQPatterns = {
   // Translation events (processed by the scheduler service)
   // Note: we use the "schedule" prefix so messages route to the scheduler queue (schedule.*)
   TRANSLATION_AUTO_TRANSLATE: 'schedule.autoTranslate',
+  // Listing favorite reminders (processed by the core service)
+  LISTING_FAVORITE_REMINDERS_RUN: 'core.favoriteRemindersRun',
 
   // Terms request-response patterns
   TERMS_GET_LATEST: 'terms.getLatest',
