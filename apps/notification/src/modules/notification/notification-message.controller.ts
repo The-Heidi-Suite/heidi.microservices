@@ -46,6 +46,14 @@ export class NotificationMessageController {
     let notificationId = data.notificationId;
     if (!notificationId) {
       try {
+        // Extract scheduleRunId from metadata if present
+        const scheduleRunId = data.metadata?.scheduleRunId || null;
+        // Remove scheduleRunId from metadata to avoid duplication
+        const metadataWithoutScheduleRunId = { ...(data.metadata || {}) };
+        if (metadataWithoutScheduleRunId.scheduleRunId) {
+          delete metadataWithoutScheduleRunId.scheduleRunId;
+        }
+
         const notification = await this.prisma.notification.create({
           data: {
             userId: data.userId,
@@ -53,13 +61,14 @@ export class NotificationMessageController {
             channel: data.channel as any, // Type casting for Prisma enum
             subject: data.subject,
             content: data.content,
-            metadata: data.metadata || {},
+            metadata: metadataWithoutScheduleRunId,
+            scheduleRunId: scheduleRunId,
             status: 'PENDING',
           },
         });
         notificationId = notification.id;
         this.logger.log(
-          `Created notification record: ${notificationId} for message: ${RabbitMQPatterns.NOTIFICATION_SEND}`,
+          `Created notification record: ${notificationId} for message: ${RabbitMQPatterns.NOTIFICATION_SEND}${scheduleRunId ? ` (scheduleRunId: ${scheduleRunId})` : ''}`,
         );
       } catch (error) {
         this.logger.error(`Failed to create notification record`, error);
