@@ -49,5 +49,9 @@
   "CITY_DARK_LOGO_DELETED": "Темний логотип міста успішно видалено",
   "CITY_LIGHT_LOGO_UPLOADED": "Світлий логотип міста успішно завантажено",
   "CITY_LIGHT_LOGO_DELETED": "Світлий логотип міста успішно видалено",
+  "TAGS_RETRIEVED": "Теги успішно отримано",
+  "TAG_RETRIEVED": "Тег успішно отримано",
+  "TAG_CREATED": "Тег успішно створено",
+  "TAG_DELETED": "Тег успішно видалено",
   "OPERATION_SUCCESS": "Операцію успішно завершено"
 }

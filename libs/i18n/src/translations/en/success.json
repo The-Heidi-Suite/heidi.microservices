@@ -64,5 +64,9 @@
   "LISTING_MEDIA_DELETED": "Listing media deleted successfully",
   "LISTING_FAVORITE_ADDED": "Listing added to favorites successfully",
   "LISTING_FAVORITE_REMOVED": "Listing removed from favorites successfully",
+  "TAGS_RETRIEVED": "Tags retrieved successfully",
+  "TAG_RETRIEVED": "Tag retrieved successfully",
+  "TAG_CREATED": "Tag created successfully",
+  "TAG_DELETED": "Tag deleted successfully",
   "OPERATION_SUCCESS": "Operation completed successfully"
 }

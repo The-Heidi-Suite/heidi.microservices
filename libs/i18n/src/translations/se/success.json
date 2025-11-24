@@ -49,5 +49,9 @@
   "CITY_DARK_LOGO_DELETED": "Stadens mörka logo raderad framgångsrikt",
   "CITY_LIGHT_LOGO_UPLOADED": "Stadens ljusa logo uppladdad framgångsrikt",
   "CITY_LIGHT_LOGO_DELETED": "Stadens ljusa logo raderad framgångsrikt",
+  "TAGS_RETRIEVED": "Taggar hämtade framgångsrikt",
+  "TAG_RETRIEVED": "Tagg hämtad framgångsrikt",
+  "TAG_CREATED": "Tagg skapad framgångsrikt",
+  "TAG_DELETED": "Tagg raderad framgångsrikt",
   "OPERATION_SUCCESS": "Åtgärd slutförd framgångsrikt"
 }

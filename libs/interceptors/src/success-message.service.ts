@@ -58,6 +58,12 @@ export class SuccessMessageService {
     'POST:/tiles/:id/background-image': 'TILE_BACKGROUND_IMAGE_UPLOADED',
     'POST:/tiles/:id/icon-image': 'TILE_ICON_IMAGE_UPLOADED',
 
+    // Tags routes
+    'GET:/tags': 'TAGS_RETRIEVED',
+    'GET:/tags/:id': 'TAG_RETRIEVED',
+    'POST:/tags': 'TAG_CREATED',
+    'DELETE:/tags/:id': 'TAG_DELETED',
+
     // Listings routes
     'GET:/listings': 'LISTINGS_RETRIEVED',
     'GET:/listings/slug/:slug': 'LISTING_RETRIEVED',

@@ -71,5 +71,17 @@
   "CITY_ACCESS_DENIED": "شما مجوز انجام این عمل روی این شهر را ندارید",
   "CITY_HEADER_IMAGE_NOT_FOUND": "شهر تصویر هدر ندارد",
   "CITY_DARK_LOGO_NOT_FOUND": "شهر لوگوی تیره ندارد",
-  "CITY_LIGHT_LOGO_NOT_FOUND": "شهر لوگوی روشن ندارد"
+  "CITY_LIGHT_LOGO_NOT_FOUND": "شهر لوگوی روشن ندارد",
+  "TAG_NOT_FOUND": "برچسب یافت نشد",
+  "TAG_ALREADY_EXISTS": "این برچسب برای این ارائه‌دهنده از قبل وجود دارد",
+  "TAG_IN_USE": "این برچسب در حال حاضر به آگهی‌ها متصل است",
+  "LISTING_NOT_FOUND": "فهرست یافت نشد",
+  "LISTING_ACCESS_DENIED": "شما مجوز انجام این عمل روی این فهرست را ندارید",
+  "LISTING_ALREADY_IN_FAVORITES": "این فهرست از قبل در علاقه‌مندی‌ها وجود دارد",
+  "LISTING_FAVORITE_NOT_FOUND": "گزینه علاقه‌مندی یافت نشد",
+  "LISTING_MEDIA_NOT_FOUND": "رسانه‌های فهرست یافت نشد",
+  "LISTING_CREATE_DENIED": "شما مجوز ایجاد فهرست‌ها را ندارید",
+  "LISTING_UPDATE_DENIED": "فقط می‌توانید فهرست‌هایی را که ایجاد کرده‌اید به‌روزرسانی کنید",
+  "LISTING_MODERATION_DENIED": "فقط مدیران می‌توانند فهرست‌ها را مدیریت کنند",
+  "LISTING_DELETE_DENIED": "شما مجوز حذف این فهرست را ندارید"
 }
