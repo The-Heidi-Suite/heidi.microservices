@@ -22,6 +22,7 @@ model Notification {
   content          String
   emailTemplate    String?            // Email template identifier
   firebaseProjectId String?           // Reference to FirebaseProject.id
+  scheduleRunId    String?            // Reference to ScheduleRunLog.id in scheduler service (for auditing)
   metadata         Json?
   status           NotificationStatus @default(PENDING)
   sentAt           DateTime?
@@ -35,6 +36,7 @@ model Notification {
   @@index([type])
   @@index([channel])
   @@index([firebaseProjectId])
+  @@index([scheduleRunId])
   @@map("notifications")
 }
 
