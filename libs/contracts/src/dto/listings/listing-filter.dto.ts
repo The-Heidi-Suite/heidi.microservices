@@ -202,11 +202,15 @@ export class ListingFilterDto {
 
   @ApiPropertyOptional({
     example: 'nearby',
+    enum: ['nearby', 'see-all'],
     description:
-      'Quick filter key to apply (e.g., "nearby", "see-all"). When "nearby" is used, userLat and userLng must be provided.',
+      'Quick filter key to apply. Valid values: "nearby" (requires userLat and userLng for distance-based filtering and sorting), "see-all" (shows all listings in the selected category without distance filtering).',
   })
   @IsOptional()
   @IsString()
+  @IsIn(['nearby', 'see-all'], {
+    message: 'quickFilter must be either "nearby" or "see-all"',
+  })
   quickFilter?: string;
 
   @ApiPropertyOptional({
