@@ -10,7 +10,7 @@ export class CategoryQuickFilterDto {
   key: string;
 
   @ApiProperty({
-    example: 'In deiner Nähe',
+    example: 'Nearby',
     description: 'Display label for the quick filter',
   })
   @IsString()
