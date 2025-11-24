@@ -58,6 +58,24 @@ export class SuccessMessageService {
     'POST:/tiles/:id/background-image': 'TILE_BACKGROUND_IMAGE_UPLOADED',
     'POST:/tiles/:id/icon-image': 'TILE_ICON_IMAGE_UPLOADED',
 
+    // Listings routes
+    'GET:/listings': 'LISTINGS_RETRIEVED',
+    'GET:/listings/slug/:slug': 'LISTING_RETRIEVED',
+    'GET:/listings/:id': 'LISTING_RETRIEVED',
+    'POST:/listings': 'LISTING_CREATED',
+    'PATCH:/listings/:id': 'LISTING_UPDATED',
+    'POST:/listings/:id/submit': 'LISTING_SUBMITTED',
+    'POST:/listings/:id/moderate': 'LISTING_MODERATED',
+    'POST:/listings/:id/approve': 'LISTING_APPROVED',
+    'POST:/listings/:id/request-changes': 'LISTING_CHANGES_REQUESTED',
+    'POST:/listings/:id/reject': 'LISTING_REJECTED',
+    'POST:/listings/:id/archive': 'LISTING_ARCHIVED',
+    'POST:/listings/:id/hero-image': 'LISTING_HERO_IMAGE_UPLOADED',
+    'POST:/listings/:id/media': 'LISTING_MEDIA_UPLOADED',
+    'DELETE:/listings/:id/media/:mediaId': 'LISTING_MEDIA_DELETED',
+    'POST:/listings/favorites': 'LISTING_FAVORITE_ADDED',
+    'DELETE:/listings/favorites/:listingId': 'LISTING_FAVORITE_REMOVED',
+
     // City routes - handled by pattern matching below
     'GET:/search/nearby': 'CITIES_RETRIEVED',
   };

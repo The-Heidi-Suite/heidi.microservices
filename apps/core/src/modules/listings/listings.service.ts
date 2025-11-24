@@ -590,7 +590,10 @@ export class ListingsService {
     });
 
     if (!media) {
-      throw new NotFoundException('Media not found');
+        throw new NotFoundException({
+          message: 'Media not found',
+          errorCode: 'LISTING_MEDIA_NOT_FOUND',
+        });
     }
 
     // Delete file from storage
@@ -1631,7 +1634,10 @@ export class ListingsService {
       });
 
       if (!listing) {
-        throw new NotFoundException('Listing not found');
+        throw new NotFoundException({
+          message: 'Listing not found',
+          errorCode: 'LISTING_NOT_FOUND',
+        });
       }
 
       if (isFavorite) {
@@ -1692,11 +1698,15 @@ export class ListingsService {
         });
 
         this.logger.log(`Favorite removed successfully`);
-        return { success: true, message: 'Favorite removed successfully' };
+        const message = this.i18nService.translate('success.LISTING_FAVORITE_REMOVED');
+        return { success: true, message };
       }
     } catch (error: any) {
       if (error.code === 'P2002') {
-        throw new BadRequestException('Listing already in favorites');
+        throw new BadRequestException({
+          message: 'Listing already in favorites',
+          errorCode: 'LISTING_ALREADY_IN_FAVORITES',
+        });
       }
       this.logger.error(`Failed to ${isFavorite ? 'add' : 'remove'} favorite`, error);
       throw error;
@@ -1713,7 +1723,10 @@ export class ListingsService {
       });
 
       if (!listing) {
-        throw new NotFoundException('Listing not found');
+        throw new NotFoundException({
+          message: 'Listing not found',
+          errorCode: 'LISTING_NOT_FOUND',
+        });
       }
 
       const favorite = await this.prisma.userFavorite.upsert({
@@ -1749,7 +1762,10 @@ export class ListingsService {
       };
     } catch (error: any) {
       if (error.code === 'P2002') {
-        throw new BadRequestException('Listing already in favorites');
+        throw new BadRequestException({
+          message: 'Listing already in favorites',
+          errorCode: 'LISTING_ALREADY_IN_FAVORITES',
+        });
       }
       this.logger.error('Failed to add favorite', error);
       throw error;
@@ -1770,7 +1786,10 @@ export class ListingsService {
       });
 
       if (!favorite) {
-        throw new NotFoundException('Favorite not found');
+        throw new NotFoundException({
+          message: 'Favorite not found',
+          errorCode: 'LISTING_FAVORITE_NOT_FOUND',
+        });
       }
 
       await this.prisma.userFavorite.delete({
@@ -1783,7 +1802,8 @@ export class ListingsService {
       });
 
       this.logger.log(`Favorite removed successfully`);
-      return { success: true, message: 'Favorite removed successfully' };
+      const message = this.i18nService.translate('success.LISTING_FAVORITE_REMOVED');
+      return { success: true, message };
     } catch (error: any) {
       this.logger.error('Failed to remove favorite', error);
       throw error;

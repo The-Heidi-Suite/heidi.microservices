@@ -1198,7 +1198,8 @@ export class ListingController {
     const userId = user.userId;
     const roles = this.getRoles(user.role);
     await this.listingsService.deleteListingMedia(id, mediaId, userId, roles);
-    return { message: 'Media deleted successfully' };
+    // Message will be handled by TransformInterceptor with success.LISTING_MEDIA_DELETED
+    return { success: true };
   }
 
   private getFileExtension(filename: string): string {

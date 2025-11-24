@@ -71,5 +71,14 @@
   "CITY_ACCESS_DENIED": "Du hast keine Berechtigung, diese Aktion auf dieser Stadt auszuführen",
   "CITY_HEADER_IMAGE_NOT_FOUND": "Die Stadt hat kein Headerbild",
   "CITY_DARK_LOGO_NOT_FOUND": "Die Stadt hat kein Dunkellogo",
-  "CITY_LIGHT_LOGO_NOT_FOUND": "Die Stadt hat kein Helllogo"
+  "CITY_LIGHT_LOGO_NOT_FOUND": "Die Stadt hat kein Helllogo",
+  "LISTING_NOT_FOUND": "Eintrag nicht gefunden",
+  "LISTING_ACCESS_DENIED": "Du hast keine Berechtigung, diese Aktion auf diesem Eintrag auszuführen",
+  "LISTING_ALREADY_IN_FAVORITES": "Eintrag ist bereits in Favoriten",
+  "LISTING_FAVORITE_NOT_FOUND": "Favorit nicht gefunden",
+  "LISTING_MEDIA_NOT_FOUND": "Eintrag-Medien nicht gefunden",
+  "LISTING_CREATE_DENIED": "Du hast keine Berechtigung, Einträge zu erstellen",
+  "LISTING_UPDATE_DENIED": "Du kannst nur Einträge aktualisieren, die du erstellt hast",
+  "LISTING_MODERATION_DENIED": "Nur Administratoren können Einträge moderieren",
+  "LISTING_DELETE_DENIED": "Du hast keine Berechtigung, diesen Eintrag zu löschen"
 }
