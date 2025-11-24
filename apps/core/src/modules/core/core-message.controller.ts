@@ -173,13 +173,18 @@ export class CoreMessageController {
   }
 
   @MessagePattern(RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN)
-  async handleFavoriteRemindersRun(@Payload() data: { taskId?: string; triggeredAt?: string }) {
+  async handleFavoriteRemindersRun(
+    @Payload() data: { taskId?: string; scheduleRunId?: string; triggeredAt?: string },
+  ) {
     this.logger.log(
-      `Received message: ${RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN} for taskId: ${data.taskId || 'N/A'}`,
+      `Received message: ${RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN} for taskId: ${data.taskId || 'N/A'}, scheduleRunId: ${data.scheduleRunId || 'N/A'}`,
     );
 
     try {
-      const result = await this.coreService.processFavoriteEventReminders(data.triggeredAt);
+      const result = await this.coreService.processFavoriteEventReminders(
+        data.triggeredAt,
+        data.scheduleRunId,
+      );
       this.logger.debug(
         `Successfully processed message: ${RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN} - sent ${result.sent24h} 24h reminders, ${result.sent2h} 2h reminders (will ACK)`,
       );

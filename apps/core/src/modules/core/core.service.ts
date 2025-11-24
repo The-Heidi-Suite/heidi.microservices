@@ -1107,7 +1107,10 @@ export class CoreService implements OnModuleInit {
    * Process favorite event reminders and emit push notifications
    * Called by scheduler via RabbitMQ
    */
-  async processFavoriteEventReminders(triggeredAt?: string): Promise<{
+  async processFavoriteEventReminders(
+    triggeredAt?: string,
+    scheduleRunId?: string,
+  ): Promise<{
     sent24h: number;
     sent2h: number;
   }> {
@@ -1227,6 +1230,7 @@ export class CoreService implements OnModuleInit {
               listing,
               occurrence,
               ListingReminderType.H24,
+              scheduleRunId,
             );
 
             sent24h++;
@@ -1268,6 +1272,7 @@ export class CoreService implements OnModuleInit {
               listing,
               occurrence,
               ListingReminderType.H2,
+              scheduleRunId,
             );
 
             sent2h++;
@@ -1396,6 +1401,7 @@ export class CoreService implements OnModuleInit {
     },
     occurrenceStart: Date,
     reminderType: ListingReminderType,
+    scheduleRunId?: string,
   ): Promise<void> {
     try {
       // Get city name if available
@@ -1447,6 +1453,7 @@ export class CoreService implements OnModuleInit {
         },
         content: '', // Will be filled by translation service
         subject: '', // Will be filled by translation service
+        metadata: scheduleRunId ? { scheduleRunId } : undefined,
       };
 
       // Emit notification
