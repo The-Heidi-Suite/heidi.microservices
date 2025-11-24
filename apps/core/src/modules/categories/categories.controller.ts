@@ -32,6 +32,7 @@ import {
   CategoryRequestResponseDto,
   CategoryResponseDto,
   CityCategoryResponseDto,
+  CityCategoriesWithFiltersResponseDto,
   CategoryNotFoundErrorResponseDto,
   CategoryAssignmentNotFoundErrorResponseDto,
   CategoryRequestNotFoundErrorResponseDto,
@@ -325,7 +326,7 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'City categories retrieved successfully',
-    type: CityCategoryResponseDto,
+    type: CategoryResponseDto,
     isArray: true,
   })
   @ApiHeader({
@@ -337,6 +338,34 @@ export class CategoriesController {
   })
   async listCityCategories(@Param('cityId') cityId: string) {
     return this.categoriesService.listCityCategories(cityId);
+  }
+
+  @Public()
+  @Get('cities/:cityId/with-filters')
+  @ApiOperation({
+    summary: 'List categories with quick filters for a city',
+    description:
+      'Retrieve active category assignments for a specific city along with quick filters (e.g., "Near by", "See all") grouped by root category. Category names, descriptions, and subtitles are returned in the requested language when translations exist, otherwise they fall back to the default language.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'City categories with quick filters retrieved successfully',
+    type: CityCategoriesWithFiltersResponseDto,
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), assigned category text fields and quick filter labels are translated where translations exist.',
+    example: 'de',
+  })
+  async listCityCategoriesWithFilters(@Param('cityId') cityId: string) {
+    return this.categoriesService.listCityCategoriesWithFilters(cityId);
   }
 
   @ApiBearerAuth('JWT-auth')

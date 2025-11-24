@@ -1,12 +1,17 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaCoreService } from '@heidi/prisma';
-import { CreateCategoryDto, UpdateCategoryDto } from '@heidi/contracts';
+import {
+  CreateCategoryDto,
+  UpdateCategoryDto,
+  CityCategoriesWithFiltersResponseDto,
+} from '@heidi/contracts';
 import { CategoryRequestStatus, Prisma } from '@prisma/client-core';
 import { StorageService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
 import { LoggerService } from '@heidi/logger';
 import { TranslationService } from '@heidi/translations';
 import { I18nService } from '@heidi/i18n';
+import { CategoryQuickFiltersService } from './category-quick-filters.service';
 
 @Injectable()
 export class CategoriesService {
@@ -17,6 +22,7 @@ export class CategoriesService {
     private readonly logger: LoggerService,
     private readonly translationService: TranslationService,
     private readonly i18nService: I18nService,
+    private readonly quickFiltersService: CategoryQuickFiltersService,
   ) {
     this.logger.setContext(CategoriesService.name);
   }
@@ -348,6 +354,48 @@ export class CategoriesService {
     return this.translateCategoryTree(tree);
   }
 
+  /**
+   * List city categories with quick filters attached.
+   * Returns both the category tree and quick filters grouped by root category slug.
+   */
+  async listCityCategoriesWithFilters(
+    cityId: string,
+  ): Promise<CityCategoriesWithFiltersResponseDto> {
+    const categories = await this.listCityCategories(cityId);
+    const quickFiltersByCategorySlug =
+      await this.quickFiltersService.getQuickFiltersForCity(cityId);
+
+    // Only include quick filters for root categories that actually exist in the tree
+    const filteredQuickFilters: Record<string, any[]> = {};
+    const rootCategorySlugs = new Set<string>();
+
+    // Extract root category slugs from the tree
+    const extractRootSlugs = (cats: any[]) => {
+      for (const cat of cats) {
+        if (!cat.parentId) {
+          rootCategorySlugs.add(cat.slug);
+        }
+        if (cat.children && Array.isArray(cat.children)) {
+          extractRootSlugs(cat.children);
+        }
+      }
+    };
+
+    extractRootSlugs(categories);
+
+    // Only include quick filters for categories that exist
+    for (const slug of rootCategorySlugs) {
+      if (quickFiltersByCategorySlug[slug] && quickFiltersByCategorySlug[slug].length > 0) {
+        filteredQuickFilters[slug] = quickFiltersByCategorySlug[slug];
+      }
+    }
+
+    return {
+      categories,
+      quickFiltersByCategorySlug: filteredQuickFilters,
+    };
+  }
+
   async getCategoryById(categoryId: string) {
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
@@ -372,7 +420,9 @@ export class CategoriesService {
     const tree = await this.translateCategoryTree([
       {
         ...category,
-        ...(childrenWithInheritedImageUrl.length > 0 ? { children: childrenWithInheritedImageUrl } : {}),
+        ...(childrenWithInheritedImageUrl.length > 0
+          ? { children: childrenWithInheritedImageUrl }
+          : {}),
       },
     ]);
 
