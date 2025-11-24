@@ -8,6 +8,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Min,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import {
@@ -198,4 +199,44 @@ export class ListingFilterDto {
   @IsNumber()
   @Type(() => Number)
   pageSize?: number;
+
+  @ApiPropertyOptional({
+    example: 'nearby',
+    description:
+      'Quick filter key to apply (e.g., "nearby", "see-all"). When "nearby" is used, userLat and userLng must be provided.',
+  })
+  @IsOptional()
+  @IsString()
+  quickFilter?: string;
+
+  @ApiPropertyOptional({
+    example: 54.3233,
+    description:
+      'User latitude for distance-based filtering (required when quickFilter is "nearby")',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  userLat?: number;
+
+  @ApiPropertyOptional({
+    example: 10.1394,
+    description:
+      'User longitude for distance-based filtering (required when quickFilter is "nearby")',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  userLng?: number;
+
+  @ApiPropertyOptional({
+    example: 1500,
+    description:
+      'Search radius in meters for distance-based filtering (defaults to filter-specific value if not provided)',
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(0)
+  radiusMeters?: number;
 }

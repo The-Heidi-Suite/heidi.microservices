@@ -7,6 +7,7 @@ export * from './listing-response.dto';
 export * from './listing-list-response.dto';
 export * from './listing-favorite.dto';
 export * from './category-response.dto';
+export * from './category-quick-filter.dto';
 export * from './create-category.dto';
 export * from './update-category.dto';
 export * from './upload-hero-image-response.dto';
