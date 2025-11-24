@@ -54,6 +54,14 @@ import {
   UserFilterDto,
   UserSortBy,
   UserSortDirection,
+  RegisterDeviceDto,
+  DeviceListResponseDto,
+  RegisterDeviceResponseDto,
+  DeleteDeviceResponseDto,
+  SubscribeTopicDto,
+  TopicSubscriptionListResponseDto,
+  SubscribeTopicResponseDto,
+  UnsubscribeTopicResponseDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { GetLanguage } from '@heidi/i18n';
@@ -102,7 +110,8 @@ export class UsersController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get all users',
-    description: 'Retrieve a paginated, filterable, and sortable list of users (Admin only). By default, returns both active and deleted users. Use isActive=true to get only active users, or isActive=false to get only inactive/deleted users.',
+    description:
+      'Retrieve a paginated, filterable, and sortable list of users (Admin only). By default, returns both active and deleted users. Use isActive=true to get only active users, or isActive=false to get only inactive/deleted users.',
   })
   @ApiQuery({
     name: 'search',
@@ -114,7 +123,8 @@ export class UsersController {
     name: 'isActive',
     required: false,
     type: Boolean,
-    description: 'Filter by active status. Defaults to showing all users. Set to true for only active users, or false for only inactive/deleted users.',
+    description:
+      'Filter by active status. Defaults to showing all users. Set to true for only active users, or false for only inactive/deleted users.',
   })
   @ApiQuery({
     name: 'sortBy',
@@ -555,5 +565,165 @@ export class UsersController {
     @GetLanguage() language: string,
   ) {
     return this.usersService.resetPassword(body.token, body.newPassword, language);
+  }
+
+  // Device Management Endpoints
+  @Get('me/devices')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get my devices',
+    description: 'Get all active devices for the current authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Devices retrieved successfully',
+    type: DeviceListResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async getMyDevices(@GetCurrentUser('userId') userId: string) {
+    const devices = await this.usersService.getDevices(userId);
+    return { devices };
+  }
+
+  @Post('me/devices')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Register device',
+    description: 'Register or update a device for the current authenticated user',
+  })
+  @ApiBody({ type: RegisterDeviceDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Device registered successfully',
+    type: RegisterDeviceResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async registerDevice(@GetCurrentUser('userId') userId: string, @Body() dto: RegisterDeviceDto) {
+    const device = await this.usersService.registerDevice(userId, dto);
+    return { device };
+  }
+
+  @Delete('me/devices/:deviceId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Delete device',
+    description: 'Deactivate a device for the current authenticated user',
+  })
+  @ApiParam({
+    name: 'deviceId',
+    description: 'Device ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Device deleted successfully',
+    type: DeleteDeviceResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Device not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async deleteDevice(
+    @GetCurrentUser('userId') userId: string,
+    @Param('deviceId') deviceId: string,
+  ) {
+    return this.usersService.deleteDevice(userId, deviceId);
+  }
+
+  // Topic Subscription Endpoints
+  @Get('me/topics')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Get my topic subscriptions',
+    description: 'Get all active topic subscriptions for the current authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Topic subscriptions retrieved successfully',
+    type: TopicSubscriptionListResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async getMyTopicSubscriptions(@GetCurrentUser('userId') userId: string) {
+    const subscriptions = await this.usersService.getTopicSubscriptions(userId);
+    return { subscriptions };
+  }
+
+  @Post('me/topics')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Subscribe to topic',
+    description: 'Subscribe the current authenticated user to a topic',
+  })
+  @ApiBody({ type: SubscribeTopicDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Topic subscription created successfully',
+    type: SubscribeTopicResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async subscribeTopic(@GetCurrentUser('userId') userId: string, @Body() dto: SubscribeTopicDto) {
+    const subscription = await this.usersService.subscribeTopic(userId, dto);
+    return { subscription };
+  }
+
+  @Delete('me/topics/:topicKey')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Unsubscribe from topic',
+    description: 'Unsubscribe the current authenticated user from a topic',
+  })
+  @ApiParam({
+    name: 'topicKey',
+    description: 'Topic key',
+    example: 'CITY_123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Topic subscription removed successfully',
+    type: UnsubscribeTopicResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Topic subscription not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async unsubscribeTopic(
+    @GetCurrentUser('userId') userId: string,
+    @Param('topicKey') topicKey: string,
+  ) {
+    return this.usersService.unsubscribeTopic(userId, topicKey);
   }
 }

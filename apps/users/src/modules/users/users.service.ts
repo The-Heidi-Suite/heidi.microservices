@@ -21,7 +21,6 @@ import {
   UpdateProfileDto,
   ChangePasswordDto,
   UserFilterDto,
-  UserSortBy,
   UserSortDirection,
 } from '@heidi/contracts';
 import { SagaOrchestratorService } from '@heidi/saga';
@@ -270,10 +269,10 @@ export class UsersService {
     // Handle isActive filter - convert string to boolean if needed
     // Query parameters come as strings, so we need to parse them
     let isActiveValue: boolean | undefined = undefined;
-    
+
     // Get the raw value from filterDto
     const rawIsActive = filterDto?.isActive;
-    
+
     if (rawIsActive !== undefined && rawIsActive !== null && rawIsActive !== '') {
       if (typeof rawIsActive === 'string') {
         const lowerValue = rawIsActive.toLowerCase().trim();
@@ -303,10 +302,7 @@ export class UsersService {
     } else if (isActiveValue === false) {
       // Only inactive/deleted users
       andConditions.push({
-        OR: [
-          { isActive: false },
-          { deletedAt: { not: null } },
-        ],
+        OR: [{ isActive: false }, { deletedAt: { not: null } }],
       });
     }
     // If isActive is undefined/null, don't filter by isActive or deletedAt (show all)
@@ -1197,5 +1193,266 @@ export class UsersService {
       success: true,
       user,
     };
+  }
+
+  /**
+   * Get all active devices for a user
+   */
+  async getDevices(userId: string) {
+    this.logger.log(`Getting devices for userId: ${userId}`);
+
+    const devices = await this.prisma.userDevice.findMany({
+      where: {
+        userId,
+        isActive: true,
+      },
+      orderBy: {
+        lastSeenAt: 'desc',
+      },
+    });
+
+    return devices.map((device) => ({
+      id: device.id,
+      deviceId: device.deviceId,
+      platform: device.platform,
+      appVersion: device.appVersion,
+      osVersion: device.osVersion,
+      language: device.language,
+      cityId: device.cityId,
+      lastSeenAt: device.lastSeenAt,
+      createdAt: device.createdAt,
+    }));
+  }
+
+  /**
+   * Register or update a device for a user
+   */
+  async registerDevice(
+    userId: string,
+    data: {
+      deviceId?: string;
+      fcmToken: string;
+      platform: DevicePlatform;
+      appVersion?: string;
+      osVersion?: string;
+      language?: string;
+      cityId?: string;
+    },
+  ) {
+    this.logger.log(`Registering device for userId: ${userId}, platform: ${data.platform}`);
+
+    // Check if device with this FCM token already exists
+    const existingByToken = await this.prisma.userDevice.findUnique({
+      where: { fcmToken: data.fcmToken },
+    });
+
+    if (existingByToken && existingByToken.userId !== userId) {
+      // Token belongs to another user - deactivate it
+      await this.prisma.userDevice.update({
+        where: { fcmToken: data.fcmToken },
+        data: { isActive: false },
+      });
+    }
+
+    // If deviceId provided, check for existing device with same userId and deviceId
+    let existingByDeviceId: { id: string } | null = null;
+    if (data.deviceId) {
+      const found = await this.prisma.userDevice.findFirst({
+        where: {
+          userId,
+          deviceId: data.deviceId,
+        },
+        select: {
+          id: true,
+        },
+      });
+      existingByDeviceId = found;
+    }
+
+    // Determine which device to update/create
+    let device;
+    if (existingByToken && existingByToken.userId === userId) {
+      // Update existing device with same token
+      device = await this.prisma.userDevice.update({
+        where: { fcmToken: data.fcmToken },
+        data: {
+          deviceId: data.deviceId || existingByToken.deviceId,
+          platform: data.platform,
+          appVersion: data.appVersion,
+          osVersion: data.osVersion,
+          language: data.language,
+          cityId: data.cityId,
+          isActive: true,
+          lastSeenAt: new Date(),
+        },
+      });
+    } else if (existingByDeviceId) {
+      // Update existing device with same deviceId
+      device = await this.prisma.userDevice.update({
+        where: { id: existingByDeviceId.id },
+        data: {
+          fcmToken: data.fcmToken,
+          platform: data.platform,
+          appVersion: data.appVersion,
+          osVersion: data.osVersion,
+          language: data.language,
+          cityId: data.cityId,
+          isActive: true,
+          lastSeenAt: new Date(),
+        },
+      });
+    } else {
+      // Create new device
+      device = await this.prisma.userDevice.create({
+        data: {
+          userId,
+          deviceId: data.deviceId,
+          fcmToken: data.fcmToken,
+          platform: data.platform,
+          appVersion: data.appVersion,
+          osVersion: data.osVersion,
+          language: data.language,
+          cityId: data.cityId,
+          isActive: true,
+          lastSeenAt: new Date(),
+        },
+      });
+    }
+
+    this.logger.log(`Device registered: ${device.id}`);
+    return {
+      id: device.id,
+      deviceId: device.deviceId,
+      platform: device.platform,
+      appVersion: device.appVersion,
+      osVersion: device.osVersion,
+      language: device.language,
+      cityId: device.cityId,
+      lastSeenAt: device.lastSeenAt,
+      createdAt: device.createdAt,
+    };
+  }
+
+  /**
+   * Delete (deactivate) a device
+   */
+  async deleteDevice(userId: string, deviceId: string) {
+    this.logger.log(`Deleting device for userId: ${userId}, deviceId: ${deviceId}`);
+
+    const device = await this.prisma.userDevice.findFirst({
+      where: {
+        id: deviceId,
+        userId,
+      },
+    });
+
+    if (!device) {
+      throw new NotFoundException('Device not found');
+    }
+
+    await this.prisma.userDevice.update({
+      where: { id: deviceId },
+      data: { isActive: false },
+    });
+
+    this.logger.log(`Device deactivated: ${deviceId}`);
+    return { success: true };
+  }
+
+  /**
+   * Get all topic subscriptions for a user
+   */
+  async getTopicSubscriptions(userId: string) {
+    this.logger.log(`Getting topic subscriptions for userId: ${userId}`);
+
+    const subscriptions = await this.prisma.userTopicSubscription.findMany({
+      where: {
+        userId,
+        isActive: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return subscriptions.map((sub) => ({
+      id: sub.id,
+      topicKey: sub.topicKey,
+      cityId: sub.cityId,
+      createdAt: sub.createdAt,
+    }));
+  }
+
+  /**
+   * Subscribe user to a topic
+   */
+  async subscribeTopic(
+    userId: string,
+    data: {
+      topicKey: string;
+      cityId?: string;
+    },
+  ) {
+    this.logger.log(`Subscribing user ${userId} to topic: ${data.topicKey}`);
+
+    const subscription = await this.prisma.userTopicSubscription.upsert({
+      where: {
+        userId_topicKey: {
+          userId,
+          topicKey: data.topicKey,
+        },
+      },
+      update: {
+        cityId: data.cityId,
+        isActive: true,
+      },
+      create: {
+        userId,
+        topicKey: data.topicKey,
+        cityId: data.cityId,
+        isActive: true,
+      },
+    });
+
+    this.logger.log(`Topic subscription created/updated: ${subscription.id}`);
+    return {
+      id: subscription.id,
+      topicKey: subscription.topicKey,
+      cityId: subscription.cityId,
+      createdAt: subscription.createdAt,
+    };
+  }
+
+  /**
+   * Unsubscribe user from a topic
+   */
+  async unsubscribeTopic(userId: string, topicKey: string) {
+    this.logger.log(`Unsubscribing user ${userId} from topic: ${topicKey}`);
+
+    const subscription = await this.prisma.userTopicSubscription.findUnique({
+      where: {
+        userId_topicKey: {
+          userId,
+          topicKey,
+        },
+      },
+    });
+
+    if (!subscription) {
+      throw new NotFoundException('Topic subscription not found');
+    }
+
+    await this.prisma.userTopicSubscription.update({
+      where: {
+        userId_topicKey: {
+          userId,
+          topicKey,
+        },
+      },
+      data: { isActive: false },
+    });
+
+    this.logger.log(`Topic subscription deactivated: ${topicKey}`);
+    return { success: true };
   }
 }
