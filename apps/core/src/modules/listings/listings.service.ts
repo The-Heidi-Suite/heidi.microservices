@@ -590,10 +590,10 @@ export class ListingsService {
     });
 
     if (!media) {
-        throw new NotFoundException({
-          message: 'Media not found',
-          errorCode: 'LISTING_MEDIA_NOT_FOUND',
-        });
+      throw new NotFoundException({
+        message: 'Media not found',
+        errorCode: 'LISTING_MEDIA_NOT_FOUND',
+      });
     }
 
     // Delete file from storage
@@ -837,7 +837,9 @@ export class ListingsService {
     // Determine source language: use provided languageCode, or fall back to Accept-Language header, or default
     // If languageCode is null or not present, use Accept-Language header value
     const sourceLanguage =
-      dto.languageCode ?? this.i18nService.getLanguage() ?? this.configService.get<string>('i18n.defaultLanguage', 'en');
+      dto.languageCode ??
+      this.i18nService.getLanguage() ??
+      this.configService.get<string>('i18n.defaultLanguage', 'en');
 
     const data: Prisma.ListingCreateInput = {
       slug,
@@ -957,11 +959,7 @@ export class ListingsService {
     // Sync tags if provided
     if (dto.tags !== undefined) {
       await this.prisma.$transaction(async (tx) => {
-        await this.syncListingTags(
-          tx,
-          listing.id,
-          dto.tags as ListingTagReferenceDto[],
-        );
+        await this.syncListingTags(tx, listing.id, dto.tags as ListingTagReferenceDto[]);
       });
     }
 
@@ -1325,6 +1323,49 @@ export class ListingsService {
     return this.applyListingTranslations(listing, dto);
   }
 
+  /**
+   * Calculate bounding box for distance filtering.
+   * Returns min/max lat/lng that approximate a circle of given radius.
+   */
+  private calculateBoundingBox(
+    centerLat: number,
+    centerLng: number,
+    radiusMeters: number,
+  ): { minLat: number; maxLat: number; minLng: number; maxLng: number } {
+    // Convert radius to degrees (approximate)
+    // 1 degree latitude ≈ 111,000 meters
+    const latDelta = radiusMeters / 111000;
+    // Longitude delta depends on latitude
+    const lngDelta = radiusMeters / (111000 * Math.cos((centerLat * Math.PI) / 180));
+
+    return {
+      minLat: centerLat - latDelta,
+      maxLat: centerLat + latDelta,
+      minLng: centerLng - lngDelta,
+      maxLng: centerLng + lngDelta,
+    };
+  }
+
+  /**
+   * Calculate distance between two points using Haversine formula.
+   * Returns distance in meters.
+   */
+  private calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const earthRadius = 6371000; // meters
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) *
+        Math.cos((lat2 * Math.PI) / 180) *
+        Math.sin(dLng / 2) *
+        Math.sin(dLng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return earthRadius * c;
+  }
+
   private buildListingWhere(
     filter: ListingFilterDto = {} as ListingFilterDto,
   ): Prisma.ListingWhereInput {
@@ -1374,6 +1415,8 @@ export class ListingsService {
       };
     }
 
+    // Category filtering is independent of quickFilter - "see-all" is a UI hint,
+    // not a special backend behavior. If categoryIds are provided, always apply them.
     if (filter.categoryIds?.length) {
       where.categories = {
         some: {
@@ -1382,6 +1425,28 @@ export class ListingsService {
           },
         },
       };
+    }
+
+    // Handle "nearby" quick filter with distance-based filtering
+    if (
+      filter.quickFilter === 'nearby' &&
+      filter.userLat !== undefined &&
+      filter.userLng !== undefined
+    ) {
+      const radiusMeters = filter.radiusMeters || 1500; // Default 1.5km
+      const bbox = this.calculateBoundingBox(filter.userLat, filter.userLng, radiusMeters);
+
+      // Add bounding box filter to ensure listings have coordinates and are within approximate radius
+      andConditions.push({
+        geoLat: {
+          gte: new Prisma.Decimal(bbox.minLat),
+          lte: new Prisma.Decimal(bbox.maxLat),
+        },
+        geoLng: {
+          gte: new Prisma.Decimal(bbox.minLng),
+          lte: new Prisma.Decimal(bbox.maxLng),
+        },
+      });
     }
 
     if (filter.publishAfter || filter.publishBefore) {
@@ -1451,30 +1516,82 @@ export class ListingsService {
       filter.sortBy && allowedSortFields.has(filter.sortBy) ? filter.sortBy : 'createdAt';
     const sortDirection = filter.sortDirection ?? 'desc';
 
-    const orderBy: Prisma.ListingOrderByWithRelationInput = {};
-    (orderBy as Record<string, unknown>)[sortByField] = sortDirection;
+    // For "nearby" filter, we'll sort by distance after fetching
+    // So we don't set orderBy here if sorting by distance
+    const shouldSortByDistance =
+      filter.quickFilter === 'nearby' &&
+      filter.userLat !== undefined &&
+      filter.userLng !== undefined;
 
-    const [rows, total] = await this.prisma.$transaction([
-      this.prisma.listing.findMany({
-        where,
-        include: listingWithRelations.include,
-        orderBy,
-        skip,
-        take: pageSize,
-      }),
-      this.prisma.listing.count({ where }),
-    ]);
+    const orderBy: Prisma.ListingOrderByWithRelationInput = {};
+    if (!shouldSortByDistance) {
+      (orderBy as Record<string, unknown>)[sortByField] = sortDirection;
+    }
+
+    // Fetch more results if sorting by distance (we'll filter and sort in memory),
+    // otherwise rely on database-level pagination.
+    const fetchLimit = shouldSortByDistance ? Math.min(pageSize * 3, 300) : pageSize;
+
+    let rows: ListingWithRelations[];
+    let total: number;
+
+    if (shouldSortByDistance) {
+      // No DB-level pagination, we need a slightly larger candidate set to sort by distance
+      [rows, total] = await this.prisma.$transaction([
+        this.prisma.listing.findMany({
+          where,
+          include: listingWithRelations.include,
+          take: fetchLimit,
+          ...(Object.keys(orderBy).length > 0 ? { orderBy } : {}),
+        }),
+        this.prisma.listing.count({ where }),
+      ]);
+    } else {
+      // Standard DB-level pagination
+      [rows, total] = await this.prisma.$transaction([
+        this.prisma.listing.findMany({
+          where,
+          include: listingWithRelations.include,
+          orderBy,
+          skip,
+          take: pageSize,
+        }),
+        this.prisma.listing.count({ where }),
+      ]);
+    }
+
+    // Sort by distance if needed
+    let sortedRows = rows;
+    if (shouldSortByDistance && filter.userLat !== undefined && filter.userLng !== undefined) {
+      const radiusMeters = filter.radiusMeters || 1500;
+      sortedRows = rows
+        .map((row) => {
+          const lat = this.toNumber(row.geoLat);
+          const lng = this.toNumber(row.geoLng);
+          let distance: number | null = null;
+
+          if (lat !== null && lng !== null) {
+            distance = this.calculateDistance(filter.userLat!, filter.userLng!, lat, lng);
+          }
+
+          return { row, distance };
+        })
+        .filter((item) => item.distance !== null && item.distance <= radiusMeters)
+        .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
+        .map((item) => item.row)
+        .slice(0, pageSize);
+    }
 
     let favoriteIds: Set<string> | undefined;
     if (userId) {
       favoriteIds = await this.getFavoriteListingIds(
         userId,
-        rows.map((row) => row.id),
+        sortedRows.map((row) => row.id),
       );
     }
 
     const items = await Promise.all(
-      rows.map(async (row) => {
+      sortedRows.map(async (row) => {
         const dto = this.mapListing(row, {
           isFavorite: favoriteIds?.has(row.id) ?? false,
         });

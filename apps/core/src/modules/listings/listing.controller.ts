@@ -242,6 +242,16 @@ export class ListingController {
     },
   })
   async list(@Query() filter: ListingFilterDto, @GetCurrentUser('userId') userId?: string) {
+    // Validate that userLat and userLng are provided when quickFilter is "nearby"
+    if (filter.quickFilter === 'nearby') {
+      if (filter.userLat === undefined || filter.userLng === undefined) {
+        throw new BadRequestException({
+          errorCode: 'VALIDATION_ERROR',
+          message: 'userLat and userLng are required when quickFilter is "nearby"',
+        });
+      }
+    }
+
     return this.listingsService.listListings(filter, userId);
   }
 
