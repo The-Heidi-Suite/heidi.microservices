@@ -112,3 +112,50 @@ model UserTermsAcceptance {
   @@index([acceptedAt])
   @@map("user_terms_acceptance")
 }
+
+// UserDevice model - Tracks FCM tokens and device metadata for push notifications
+// Supports multiple devices per user (e.g., phone + tablet)
+model UserDevice {
+  id          String         @id @default(uuid())
+  userId      String         // Reference to User.id
+  deviceId    String?        // Optional device identifier from client
+  fcmToken    String         // Firebase Cloud Messaging token
+  platform    DevicePlatform // iOS or Android
+  appVersion  String?        // App version (e.g., "1.2.3")
+  osVersion   String?        // OS version (e.g., "iOS 17.0", "Android 14")
+  language    String?        // Device language (e.g., "en", "de")
+  cityId      String?        // User's current city (optional, can be derived from User.cityId)
+  isActive    Boolean        @default(true) // Set to false when token is invalid or user logs out
+  lastSeenAt  DateTime       @default(now()) // Last time this device was seen/updated
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([fcmToken]) // Each FCM token should be unique across all users
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([fcmToken])
+  @@index([isActive])
+  @@index([platform])
+  @@index([lastSeenAt])
+  @@map("user_devices")
+}
+
+// UserTopicSubscription model - Tracks logical topic subscriptions for push notifications
+// Represents user preferences for high-level topics (city alerts, global events, etc.)
+// Clients subscribe/unsubscribe device tokens to matching FCM topics
+model UserTopicSubscription {
+  id        String   @id @default(uuid())
+  userId    String   // Reference to User.id
+  topicKey  String   // Topic identifier (e.g., "CITY_123", "GLOBAL_EVENTS", "ANNOUNCEMENTS")
+  cityId    String?  // Optional city ID for city-specific topics (e.g., "CITY_123")
+  isActive  Boolean  @default(true) // User can toggle subscriptions on/off
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, topicKey]) // One subscription per user per topic
+  @@index([userId])
+  @@index([userId, isActive])
+  @@index([topicKey])
+  @@index([cityId])
+  @@map("user_topic_subscriptions")
+}
