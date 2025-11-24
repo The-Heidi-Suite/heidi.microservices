@@ -49,5 +49,9 @@
   "CITY_DARK_LOGO_DELETED": "Stadt-Dunkellogo erfolgreich gelöscht",
   "CITY_LIGHT_LOGO_UPLOADED": "Stadt-Helllogo erfolgreich hochgeladen",
   "CITY_LIGHT_LOGO_DELETED": "Stadt-Helllogo erfolgreich gelöscht",
+  "TAGS_RETRIEVED": "Tags erfolgreich abgerufen",
+  "TAG_RETRIEVED": "Tag erfolgreich abgerufen",
+  "TAG_CREATED": "Tag erfolgreich erstellt",
+  "TAG_DELETED": "Tag erfolgreich gelöscht",
   "OPERATION_SUCCESS": "Vorgang erfolgreich abgeschlossen"
 }

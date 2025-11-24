@@ -18,6 +18,7 @@ import { CoreModule } from './modules/core/core.module';
 import { ListingsModule } from './modules/listings/listings.module';
 import { CategoriesModule } from './modules/categories/categories.module';
 import { TilesModule } from './modules/tiles/tiles.module';
+import { TagsModule } from './modules/tags/tags.module';
 import { HealthController } from './health.controller';
 import { JwtModule } from '@heidi/jwt';
 import { RBACModule } from '@heidi/rbac';
@@ -46,6 +47,7 @@ import { TenancyModule } from '@heidi/tenancy';
     TenancyModule,
     CoreModule,
     ListingsModule,
+    TagsModule,
     CategoriesModule,
     TilesModule,
   ],

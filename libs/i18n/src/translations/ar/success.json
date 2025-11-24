@@ -49,5 +49,9 @@
   "CITY_DARK_LOGO_DELETED": "تم حذف الشعار الداكن للمدينة بنجاح",
   "CITY_LIGHT_LOGO_UPLOADED": "تم تحميل الشعار الفاتح للمدينة بنجاح",
   "CITY_LIGHT_LOGO_DELETED": "تم حذف الشعار الفاتح للمدينة بنجاح",
+  "TAGS_RETRIEVED": "تم استرجاع الوسوم بنجاح",
+  "TAG_RETRIEVED": "تم استرجاع الوسم بنجاح",
+  "TAG_CREATED": "تم إنشاء الوسم بنجاح",
+  "TAG_DELETED": "تم حذف الوسم بنجاح",
   "OPERATION_SUCCESS": "تمت العملية بنجاح"
 }

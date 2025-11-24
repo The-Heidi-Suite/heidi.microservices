@@ -49,5 +49,9 @@
   "CITY_DARK_LOGO_DELETED": "City dark logo deleted successfully",
   "CITY_LIGHT_LOGO_UPLOADED": "City light logo uploaded successfully",
   "CITY_LIGHT_LOGO_DELETED": "City light logo deleted successfully",
+  "TAGS_RETRIEVED": "Tags retrieved successfully",
+  "TAG_RETRIEVED": "Tag retrieved successfully",
+  "TAG_CREATED": "Tag created successfully",
+  "TAG_DELETED": "Tag deleted successfully",
   "OPERATION_SUCCESS": "Operation completed successfully"
 }

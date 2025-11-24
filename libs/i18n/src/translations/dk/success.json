@@ -49,5 +49,9 @@
   "CITY_DARK_LOGO_DELETED": "Byens mørke logo slettet succesfuldt",
   "CITY_LIGHT_LOGO_UPLOADED": "Byens lyse logo uploadet succesfuldt",
   "CITY_LIGHT_LOGO_DELETED": "Byens lyse logo slettet succesfuldt",
+  "TAGS_RETRIEVED": "Tags hentet succesfuldt",
+  "TAG_RETRIEVED": "Tag hentet succesfuldt",
+  "TAG_CREATED": "Tag oprettet succesfuldt",
+  "TAG_DELETED": "Tag slettet succesfuldt",
   "OPERATION_SUCCESS": "Handling gennemført succesfuldt"
 }

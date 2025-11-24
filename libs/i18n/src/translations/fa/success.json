@@ -49,5 +49,9 @@
   "CITY_DARK_LOGO_DELETED": "لوگوی تیره شهر با موفقیت حذف شد",
   "CITY_LIGHT_LOGO_UPLOADED": "لوگوی روشن شهر با موفقیت آپلود شد",
   "CITY_LIGHT_LOGO_DELETED": "لوگوی روشن شهر با موفقیت حذف شد",
+  "TAGS_RETRIEVED": "برچسب‌ها با موفقیت بازیابی شدند",
+  "TAG_RETRIEVED": "برچسب با موفقیت بازیابی شد",
+  "TAG_CREATED": "برچسب با موفقیت ایجاد شد",
+  "TAG_DELETED": "برچسب با موفقیت حذف شد",
   "OPERATION_SUCCESS": "عملیات با موفقیت انجام شد"
 }
