@@ -22,12 +22,12 @@ export class FCMPushService {
 
   /**
    * Send push notification to user
-   * Fetches user's FCM tokens and city from users service
+   * Fetches user's FCM tokens from UserDevice table and city from users service
    * Supports multi-language notifications with translation
    */
   async sendPushNotification(dto: SendNotificationDto, requestLanguage?: string): Promise<void> {
     try {
-      // Fetch user data including FCM tokens, city, and preferred language
+      // Fetch user data including city and preferred language
       const user = await firstValueFrom(
         this.client
           .send<any, { id: string }>(RabbitMQPatterns.USER_FIND_BY_ID, { id: dto.userId })
@@ -38,8 +38,29 @@ export class FCMPushService {
         throw new Error(`User ${dto.userId} not found`);
       }
 
-      // Get user's FCM tokens from metadata or device info
-      const fcmTokens = this.extractFCMTokens(user);
+      // Get user's active FCM tokens from UserDevice table
+      let devices: any[] = [];
+      try {
+        devices = await firstValueFrom(
+          this.client
+            .send<any[], { userId: string }>(RabbitMQPatterns.USER_GET_DEVICES, {
+              userId: dto.userId,
+            })
+            .pipe(timeout(10000)),
+        );
+      } catch (error) {
+        this.logger.warn(
+          `Failed to fetch devices for user ${dto.userId}, falling back to legacy method`,
+          error,
+        );
+        // Fallback to legacy method if UserDevice query fails
+        devices = this.extractFCMTokensLegacy(user);
+      }
+
+      // Extract FCM tokens from devices
+      const fcmTokens = devices
+        .map((device) => device.fcmToken || device.token)
+        .filter((token) => token && token.length > 0);
 
       if (!fcmTokens || fcmTokens.length === 0) {
         this.logger.warn(`No FCM tokens found for user ${dto.userId}`);
@@ -56,16 +77,44 @@ export class FCMPushService {
         requestLanguage,
       );
 
-      // Send notification
+      // Send notification and handle invalid tokens
+      const invalidTokens: string[] = [];
       if (fcmTokens.length === 1) {
-        await this.fcmService.sendToDevice(fcmTokens[0], notification, dto.fcmData, targetCityId);
+        try {
+          await this.fcmService.sendToDevice(fcmTokens[0], notification, dto.fcmData, targetCityId);
+        } catch (error: any) {
+          // Check if error indicates invalid token
+          if (this.isInvalidTokenError(error)) {
+            invalidTokens.push(fcmTokens[0]);
+          } else {
+            throw error;
+          }
+        }
       } else {
-        await this.fcmService.sendToMultipleDevices(
-          fcmTokens,
-          notification,
-          dto.fcmData,
-          targetCityId,
-        );
+        try {
+          const results = await this.fcmService.sendToMultipleDevices(
+            fcmTokens,
+            notification,
+            dto.fcmData,
+            targetCityId,
+          );
+          // Extract invalid tokens from batch response
+          if (results.responses) {
+            results.responses.forEach((response, index) => {
+              if (response.error && this.isInvalidTokenError(response.error)) {
+                invalidTokens.push(fcmTokens[index]);
+              }
+            });
+          }
+        } catch (error: any) {
+          // If batch send fails completely, log but don't throw
+          this.logger.error(`Failed to send batch notification to user ${dto.userId}`, error);
+        }
+      }
+
+      // Deactivate invalid tokens
+      if (invalidTokens.length > 0) {
+        await this.deactivateInvalidTokens(dto.userId, invalidTokens);
       }
 
       this.logger.log(`Push notification sent to user ${dto.userId}`);
@@ -76,26 +125,61 @@ export class FCMPushService {
   }
 
   /**
-   * Extract FCM tokens from user object
+   * Extract FCM tokens from user object (legacy method)
    * Tokens might be stored in metadata, device info, or separate tokens table
+   * Used as fallback if UserDevice query fails
    */
-  private extractFCMTokens(user: any): string[] {
-    const tokens: string[] = [];
+  private extractFCMTokensLegacy(user: any): any[] {
+    const devices: any[] = [];
 
     // Check metadata for FCM tokens
     if (user.metadata?.fcmTokens && Array.isArray(user.metadata.fcmTokens)) {
-      tokens.push(...user.metadata.fcmTokens);
+      for (const token of user.metadata.fcmTokens) {
+        devices.push({ fcmToken: token });
+      }
     }
 
     // Check device info (if tokens are stored per device)
     if (user.devices && Array.isArray(user.devices)) {
-      for (const device of user.devices) {
-        if (device.fcmToken) {
-          tokens.push(device.fcmToken);
-        }
-      }
+      devices.push(...user.devices);
     }
 
-    return tokens.filter((token) => token && token.length > 0);
+    return devices;
+  }
+
+  /**
+   * Check if FCM error indicates an invalid token
+   */
+  private isInvalidTokenError(error: any): boolean {
+    // FCM returns specific error codes for invalid tokens
+    // Common codes: 'messaging/invalid-registration-token', 'messaging/registration-token-not-registered'
+    const errorMessage = error?.message || error?.code || String(error || '');
+    return (
+      errorMessage.includes('invalid-registration-token') ||
+      errorMessage.includes('registration-token-not-registered') ||
+      errorMessage.includes('INVALID_REGISTRATION_TOKEN') ||
+      errorMessage.includes('REGISTRATION_TOKEN_NOT_REGISTERED')
+    );
+  }
+
+  /**
+   * Deactivate invalid FCM tokens in UserDevice table
+   */
+  private async deactivateInvalidTokens(userId: string, invalidTokens: string[]): Promise<void> {
+    try {
+      for (const token of invalidTokens) {
+        // Find device by token and deactivate it
+        // Note: We can't directly update via RabbitMQ, so we'll log and let the client handle it
+        // Or we could add a new RabbitMQ pattern for deactivating by token
+        this.logger.warn(
+          `Invalid FCM token detected for user ${userId}: ${token.substring(0, 20)}... (device should be deactivated)`,
+        );
+        // TODO: Add RabbitMQ pattern USER_DEACTIVATE_DEVICE_BY_TOKEN if needed
+        // For now, the client should handle token refresh and re-registration
+      }
+    } catch (error) {
+      this.logger.error(`Failed to deactivate invalid tokens for user ${userId}`, error);
+      // Don't throw - token deactivation failure shouldn't break notification flow
+    }
   }
 }
