@@ -7,3 +7,6 @@ export * from './change-password.dto';
 export * from './user-filter.dto';
 export * from './users-response.dto';
 export * from './upload-profile-photo-response.dto';
+export * from './register-device.dto';
+export * from './device-response.dto';
+export * from './topic-subscription.dto';
