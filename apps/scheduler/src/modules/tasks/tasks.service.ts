@@ -78,8 +78,16 @@ export class TasksService implements OnModuleInit {
     this.logger.log(`Executing task: ${task.name}`);
 
     try {
-      // Check if task payload contains integrationId for integration sync
-      if (task.payload && task.payload.integrationId) {
+      // Check task kind to route to appropriate handler
+      if (task.payload && task.payload.kind === 'favorite-event-reminders') {
+        this.logger.log(
+          `Task ${task.name} is favorite-event-reminders, triggering reminder processing`,
+        );
+        this.client.emit(RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN, {
+          taskId: task.id,
+          triggeredAt: new Date().toISOString(),
+        });
+      } else if (task.payload && task.payload.integrationId) {
         this.logger.log(`Task ${task.name} contains integrationId, triggering integration sync`);
         this.client.emit(RabbitMQPatterns.INTEGRATION_SYNC, {
           integrationId: task.payload.integrationId,
