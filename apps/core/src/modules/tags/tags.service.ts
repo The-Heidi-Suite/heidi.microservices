@@ -73,7 +73,7 @@ export class TagsService {
     try {
       const tag = await this.prisma.tag.create({
         data: {
-          provider: dto.provider.trim(),
+          provider: 'MANUAL',
           externalValue: dto.externalValue.trim(),
           label: dto.label?.trim(),
           languageCode: dto.languageCode?.trim(),

@@ -3,14 +3,6 @@ import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateTagDto {
   @ApiProperty({
-    example: 'DESTINATION_ONE',
-    description: 'Identifier of the source system (e.g., DESTINATION_ONE)',
-  })
-  @IsString()
-  @IsNotEmpty()
-  provider: string;
-
-  @ApiProperty({
     example: 'Ausstellung',
     description: 'Original value from the provider used as unique key',
   })
