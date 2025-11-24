@@ -102,7 +102,8 @@ export class ListingController {
   @ApiOperation({
     summary: 'List listings with filters',
     description:
-      'Retrieve listings using flexible filters including city, category, status, language, and scheduling controls. Supports pagination and sorting. ' +
+      'Retrieve listings using flexible filters including city, category, status, language, scheduling controls, and quick filters (e.g., "nearby", "see-all"). ' +
+      'Supports pagination and sorting. When using the "nearby" quick filter, provide userLat and userLng for distance-based filtering and sorting. ' +
       'If a non-default language is selected in Swagger or sent via Accept-Language, translatable fields (title, summary, content) are returned in that language when translations exist, otherwise they fall back to the default language.',
   })
   @ApiHeader({
@@ -218,24 +219,42 @@ export class ListingController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Validation failed for one or more filter parameters',
+    description:
+      'Validation failed for one or more filter parameters. When quickFilter is "nearby", userLat and userLng are required.',
     type: ValidationErrorResponseDto,
     content: {
       'application/json': {
-        example: {
-          errorCode: 'VALIDATION_ERROR',
-          message: 'Validation failed',
-          timestamp: '2024-01-01T00:00:00.000Z',
-          path: '/listings',
-          method: 'GET',
-          requestId: 'req_1234567890_abc123',
-          statusCode: 400,
-          details: {
-            message: [
-              'page must be a number',
-              'pageSize must be a positive number',
-              'Invalid date format for publishAfter',
-            ],
+        examples: {
+          generalValidation: {
+            summary: 'General validation error',
+            value: {
+              errorCode: 'VALIDATION_ERROR',
+              message: 'Validation failed',
+              timestamp: '2024-01-01T00:00:00.000Z',
+              path: '/listings',
+              method: 'GET',
+              requestId: 'req_1234567890_abc123',
+              statusCode: 400,
+              details: {
+                message: [
+                  'page must be a number',
+                  'pageSize must be a positive number',
+                  'Invalid date format for publishAfter',
+                ],
+              },
+            },
+          },
+          nearbyFilterMissingCoords: {
+            summary: 'Missing coordinates for nearby filter',
+            value: {
+              errorCode: 'VALIDATION_ERROR',
+              message: 'userLat and userLng are required when quickFilter is "nearby"',
+              timestamp: '2024-01-01T00:00:00.000Z',
+              path: '/listings',
+              method: 'GET',
+              requestId: 'req_1234567890_abc123',
+              statusCode: 400,
+            },
           },
         },
       },
