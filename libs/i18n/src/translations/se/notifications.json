@@ -26,5 +26,15 @@
   "generic": {
     "title": "{subject}",
     "body": "{content}"
+  },
+  "event": {
+    "reminder24h": {
+      "title": "Händelsepåminnelse: {eventTitle}",
+      "body": "Glöm inte! {eventTitle} börjar imorgon kl. {eventDate}"
+    },
+    "reminder2h": {
+      "title": "Händelse börjar snart: {eventTitle}",
+      "body": "{eventTitle} börjar om 2 timmar kl. {eventDate}"
+    }
   }
 }

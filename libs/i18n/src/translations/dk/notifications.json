@@ -26,5 +26,15 @@
   "generic": {
     "title": "{subject}",
     "body": "{content}"
+  },
+  "event": {
+    "reminder24h": {
+      "title": "Begivenhedspåmindelse: {eventTitle}",
+      "body": "Glem ikke! {eventTitle} starter i morgen kl. {eventDate}"
+    },
+    "reminder2h": {
+      "title": "Begivenhed starter snart: {eventTitle}",
+      "body": "{eventTitle} starter om 2 timer kl. {eventDate}"
+    }
   }
 }

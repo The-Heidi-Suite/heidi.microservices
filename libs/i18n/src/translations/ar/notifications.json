@@ -26,5 +26,15 @@
   "generic": {
     "title": "{subject}",
     "body": "{content}"
+  },
+  "event": {
+    "reminder24h": {
+      "title": "تذكير بالحدث: {eventTitle}",
+      "body": "لا تنس! {eventTitle} يبدأ غداً في {eventDate}"
+    },
+    "reminder2h": {
+      "title": "الحدث يبدأ قريباً: {eventTitle}",
+      "body": "{eventTitle} يبدأ خلال ساعتين في {eventDate}"
+    }
   }
 }
