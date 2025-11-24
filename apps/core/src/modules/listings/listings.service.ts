@@ -22,7 +22,6 @@ import {
 } from '@prisma/client-core';
 import {
   CreateListingDto,
-  CreateListingTagReferenceDto,
   ListingCategoryDto,
   ListingCategoryReferenceDto,
   ListingCityDto,
@@ -1437,15 +1436,24 @@ export class ListingsService {
       const bbox = this.calculateBoundingBox(filter.userLat, filter.userLng, radiusMeters);
 
       // Add bounding box filter to ensure listings have coordinates and are within approximate radius
+      // Explicitly exclude null coordinates
       andConditions.push({
-        geoLat: {
-          gte: new Prisma.Decimal(bbox.minLat),
-          lte: new Prisma.Decimal(bbox.maxLat),
-        },
-        geoLng: {
-          gte: new Prisma.Decimal(bbox.minLng),
-          lte: new Prisma.Decimal(bbox.maxLng),
-        },
+        AND: [
+          {
+            geoLat: {
+              not: null,
+              gte: new Prisma.Decimal(bbox.minLat),
+              lte: new Prisma.Decimal(bbox.maxLat),
+            },
+          },
+          {
+            geoLng: {
+              not: null,
+              gte: new Prisma.Decimal(bbox.minLng),
+              lte: new Prisma.Decimal(bbox.maxLng),
+            },
+          },
+        ],
       });
     }
 
@@ -1562,9 +1570,10 @@ export class ListingsService {
 
     // Sort by distance if needed
     let sortedRows = rows;
+    let actualTotal = total;
     if (shouldSortByDistance && filter.userLat !== undefined && filter.userLng !== undefined) {
       const radiusMeters = filter.radiusMeters || 1500;
-      sortedRows = rows
+      const itemsWithDistance = rows
         .map((row) => {
           const lat = this.toNumber(row.geoLat);
           const lng = this.toNumber(row.geoLng);
@@ -1576,7 +1585,13 @@ export class ListingsService {
 
           return { row, distance };
         })
-        .filter((item) => item.distance !== null && item.distance <= radiusMeters)
+        .filter((item) => item.distance !== null && item.distance <= radiusMeters);
+
+      // Update total to reflect actual filtered count
+      // Note: This is approximate since we only fetched a sample (fetchLimit) for distance sorting
+      actualTotal = itemsWithDistance.length;
+
+      sortedRows = itemsWithDistance
         .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
         .map((item) => item.row)
         .slice(0, pageSize);
@@ -1598,14 +1613,14 @@ export class ListingsService {
         return this.applyListingTranslations(row, dto);
       }),
     );
-    const totalPages = Math.max(1, Math.ceil(total / pageSize));
+    const totalPages = Math.max(1, Math.ceil(actualTotal / pageSize));
 
     return {
       items,
       meta: {
         page,
         pageSize,
-        total,
+        total: actualTotal,
         totalPages,
       },
     };
