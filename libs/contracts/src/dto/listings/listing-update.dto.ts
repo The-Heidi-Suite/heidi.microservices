@@ -3,10 +3,11 @@ import {
   CreateListingDto,
   ListingCategoryReferenceDto,
   ListingCityReferenceDto,
+  ListingTagReferenceDto,
   ListingTimeIntervalInputDto,
   ListingTimeIntervalExceptionInputDto,
 } from './listing-create.dto';
-import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsEnum, IsOptional, IsString } from 'class-validator';
 import { ListingModerationStatus, ListingStatus, ListingSourceType } from '@prisma/client-core';
 
 export class UpdateListingDto extends PartialType(CreateListingDto) {
@@ -99,4 +100,10 @@ export class UpdateListingDto extends PartialType(CreateListingDto) {
     description: 'Exceptions to recurring time intervals (with id for updates)',
   })
   timeIntervalExceptions?: ListingTimeIntervalExceptionInputDto[];
+
+  @ApiPropertyOptional({
+    type: [ListingTagReferenceDto],
+    description: 'Tags to associate with this listing (with id for updates)',
+  })
+  tags?: ListingTagReferenceDto[];
 }

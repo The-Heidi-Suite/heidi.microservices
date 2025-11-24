@@ -53,7 +53,7 @@
   "LISTING_RETRIEVED": "Eintrag erfolgreich abgerufen",
   "LISTING_CREATED": "Eintrag erfolgreich erstellt",
   "LISTING_UPDATED": "Eintrag erfolgreich aktualisiert",
-  "LISTING_SUBMITTED": "Eintrag erfolgreich zur Prüfung eingereicht",
+  "LISTING_SUBMITTED": "Eintrag erfolgreich zur Überprüfung eingereicht",
   "LISTING_MODERATED": "Eintrag erfolgreich moderiert",
   "LISTING_APPROVED": "Eintrag erfolgreich genehmigt",
   "LISTING_CHANGES_REQUESTED": "Änderungen für Eintrag erfolgreich angefordert",

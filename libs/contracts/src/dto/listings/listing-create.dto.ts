@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
+  IsNotEmpty,
   IsNumber,
   IsObject,
   IsOptional,
@@ -12,6 +13,7 @@ import {
   IsUrl,
   IsUUID,
   MaxLength,
+  ArrayMinSize,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -72,6 +74,7 @@ export class CreateListingCityReferenceDto {
     description: 'Identifier of the city to associate with this listing',
   })
   @IsString()
+  @IsNotEmpty()
   cityId: string;
 
   @ApiPropertyOptional({
@@ -119,6 +122,29 @@ export class ListingCityReferenceDto {
   @IsOptional()
   @IsNumber()
   displayOrder?: number;
+}
+
+export class CreateListingTagReferenceDto {
+  @ApiProperty({
+    example: 'tag_01HZXTY0YK3H2V4C5B6N7P8Q',
+    description: 'UUID of the tag to associate with this listing',
+  })
+  @IsUUID()
+  tagId: string;
+}
+
+export class ListingTagReferenceDto {
+  @ApiPropertyOptional({ example: 'ltg1a2b3c4-d5e6-7890-abcd-ef1234567890' })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
+  @ApiProperty({
+    example: 'tag_01HZXTY0YK3H2V4C5B6N7P8Q',
+    description: 'UUID of the tag to associate with this listing',
+  })
+  @IsUUID()
+  tagId: string;
 }
 
 export class CreateListingMediaInputDto {
@@ -454,23 +480,25 @@ export class CreateListingDto {
     description: 'Title of the listing',
   })
   @IsString()
+  @IsNotEmpty()
   title: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'Join neighbors to clean up the central park.',
     description: 'Brief summary (max 280 characters)',
     maxLength: 280,
   })
-  @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @MaxLength(280)
-  summary?: string;
+  summary: string;
 
   @ApiProperty({
     example: '<p>Please bring gloves and reusable bags.</p>',
     description: 'Full content of the listing (HTML supported)',
   })
   @IsString()
+  @IsNotEmpty()
   content: string;
 
   @ApiPropertyOptional({
@@ -611,23 +639,35 @@ export class CreateListingDto {
   @IsString()
   ingestNotes?: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: [CreateListingCategoryReferenceDto],
     description: 'Categories to associate with this listing',
   })
-  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CreateListingCategoryReferenceDto)
-  categories?: CreateListingCategoryReferenceDto[];
+  categories: CreateListingCategoryReferenceDto[];
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     type: [CreateListingCityReferenceDto],
-    description: 'Cities to associate with this listing',
+    description: 'Cities to associate with this listing. At least one city with cityId is required.',
   })
-  @IsOptional()
+  @IsArray()
+  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => CreateListingCityReferenceDto)
-  cities?: CreateListingCityReferenceDto[];
+  cities: CreateListingCityReferenceDto[];
+
+  @ApiPropertyOptional({
+    type: [CreateListingTagReferenceDto],
+    description: 'Tags to associate with this listing',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateListingTagReferenceDto)
+  tags?: CreateListingTagReferenceDto[];
 
   @ApiPropertyOptional({
     type: [CreateListingTimeIntervalInputDto],
