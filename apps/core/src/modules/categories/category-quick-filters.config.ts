@@ -1,5 +1,3 @@
-import { CategoryQuickFilterDto } from '@heidi/contracts';
-
 /**
  * Quick filter configuration per city and root category.
  * Keys are in the format: `${citySlug}/${rootCategorySlug}`
@@ -21,12 +19,13 @@ export interface QuickFilterConfig {
  *
  * Structure: Record<citySlug, Record<rootCategorySlug, QuickFilterConfig[]>>
  *
- * For now, we'll use a simple structure keyed by city name/slug.
- * In production, this could be loaded from a database or external config.
+ * For now, we define a `default` configuration that is used for all cities
+ * unless a city-specific configuration is provided. This avoids relying on
+ * city slugs and guarantees quick filters are available.
  */
 const QUICK_FILTER_CONFIGS: Record<string, Record<string, QuickFilterConfig[]>> = {
-  // Kiel city quick filters
-  kiel: {
+  // Default quick filters for all cities
+  default: {
     shopping: [
       {
         key: 'nearby',
@@ -111,10 +110,9 @@ export function getQuickFiltersForCategory(
   citySlug: string,
   rootCategorySlug: string,
 ): QuickFilterConfig[] {
-  const cityConfigs = QUICK_FILTER_CONFIGS[citySlug.toLowerCase()];
-  if (!cityConfigs) {
-    return [];
-  }
+  const normalizedCitySlug = citySlug.toLowerCase();
+  const cityConfigs =
+    QUICK_FILTER_CONFIGS[normalizedCitySlug] ?? QUICK_FILTER_CONFIGS.default ?? {};
 
   return cityConfigs[rootCategorySlug] || [];
 }
@@ -126,5 +124,6 @@ export function getQuickFiltersForCategory(
  * @returns Record mapping root category slugs to their quick filter configurations
  */
 export function getQuickFiltersForCity(citySlug: string): Record<string, QuickFilterConfig[]> {
-  return QUICK_FILTER_CONFIGS[citySlug.toLowerCase()] || {};
+  const normalizedCitySlug = citySlug.toLowerCase();
+  return QUICK_FILTER_CONFIGS[normalizedCitySlug] ?? QUICK_FILTER_CONFIGS.default ?? {};
 }
