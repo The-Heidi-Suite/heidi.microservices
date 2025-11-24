@@ -74,5 +74,14 @@
   "CITY_LIGHT_LOGO_NOT_FOUND": "City does not have a light logo",
   "TAG_NOT_FOUND": "Tag not found",
   "TAG_ALREADY_EXISTS": "Tag already exists for this provider",
-  "TAG_IN_USE": "Tag is currently assigned to listings"
+  "TAG_IN_USE": "Tag is currently assigned to listings",
+  "LISTING_NOT_FOUND": "Listing not found",
+  "LISTING_ACCESS_DENIED": "You do not have permission to perform this action on this listing",
+  "LISTING_ALREADY_IN_FAVORITES": "Listing is already in favorites",
+  "LISTING_FAVORITE_NOT_FOUND": "Favorite not found",
+  "LISTING_MEDIA_NOT_FOUND": "Listing media not found",
+  "LISTING_CREATE_DENIED": "You do not have permission to create listings",
+  "LISTING_UPDATE_DENIED": "You can only update listings you created",
+  "LISTING_MODERATION_DENIED": "Only admins can moderate listings",
+  "LISTING_DELETE_DENIED": "You do not have permission to delete this listing"
 }
