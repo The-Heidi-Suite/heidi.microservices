@@ -1365,6 +1365,61 @@ export class ListingsService {
     return earthRadius * c;
   }
 
+  /**
+   * Sort events by temporal priority:
+   * 1. Ongoing events (started but not ended) - sorted by eventStart asc
+   * 2. Current/Today events (starting today but not yet started) - sorted by eventStart asc
+   * 3. Future events (starting after today) - sorted by eventStart asc
+   * Non-event listings (no eventStart) are placed at the end.
+   */
+  private sortEventsByTemporalPriority(rows: ListingWithRelations[]): ListingWithRelations[] {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+
+    const getEventPriority = (listing: ListingWithRelations): number => {
+      if (!listing.eventStart) {
+        return 4; // No event date - place at end
+      }
+
+      const eventStart = new Date(listing.eventStart);
+      const eventEnd = listing.eventEnd ? new Date(listing.eventEnd) : null;
+
+      // Ongoing: started and not yet ended
+      if (eventStart <= now && (eventEnd === null || eventEnd > now)) {
+        return 1;
+      }
+
+      // Current/Today: starts today but hasn't started yet
+      if (eventStart >= todayStart && eventStart < todayEnd && eventStart > now) {
+        return 2;
+      }
+
+      // Future: starts after today
+      if (eventStart >= todayEnd) {
+        return 3;
+      }
+
+      // Past events (ended)
+      return 5;
+    };
+
+    return [...rows].sort((a, b) => {
+      const priorityA = getEventPriority(a);
+      const priorityB = getEventPriority(b);
+
+      // Sort by priority first
+      if (priorityA !== priorityB) {
+        return priorityA - priorityB;
+      }
+
+      // Within the same priority, sort by eventStart ascending (soonest first)
+      const startA = a.eventStart ? new Date(a.eventStart).getTime() : Infinity;
+      const startB = b.eventStart ? new Date(b.eventStart).getTime() : Infinity;
+      return startA - startB;
+    });
+  }
+
   private buildListingWhere(
     filter: ListingFilterDto = {} as ListingFilterDto,
   ): Prisma.ListingWhereInput {
@@ -1531,20 +1586,27 @@ export class ListingsService {
       filter.userLat !== undefined &&
       filter.userLng !== undefined;
 
+    // For event sorting, we need to fetch all records and sort in memory
+    const shouldSortByEventPriority = filter.eventSort === true;
+
     const orderBy: Prisma.ListingOrderByWithRelationInput = {};
-    if (!shouldSortByDistance) {
+    if (!shouldSortByDistance && !shouldSortByEventPriority) {
       (orderBy as Record<string, unknown>)[sortByField] = sortDirection;
     }
 
-    // Fetch more results if sorting by distance (we'll filter and sort in memory),
+    // Determine if we need in-memory sorting (distance or event priority)
+    const needsInMemorySorting = shouldSortByDistance || shouldSortByEventPriority;
+
+    // Fetch more results if sorting in memory (we'll filter and sort in memory),
     // otherwise rely on database-level pagination.
-    const fetchLimit = shouldSortByDistance ? Math.min(pageSize * 3, 300) : pageSize;
+    // For event sorting, we need to fetch all records to ensure correct pagination
+    const fetchLimit = needsInMemorySorting ? 1000 : pageSize;
 
     let rows: ListingWithRelations[];
     let total: number;
 
-    if (shouldSortByDistance) {
-      // No DB-level pagination, we need a slightly larger candidate set to sort by distance
+    if (needsInMemorySorting) {
+      // No DB-level pagination, we need all records to sort correctly
       [rows, total] = await this.prisma.$transaction([
         this.prisma.listing.findMany({
           where,
@@ -1588,13 +1650,25 @@ export class ListingsService {
         .filter((item) => item.distance !== null && item.distance <= radiusMeters);
 
       // Update total to reflect actual filtered count
-      // Note: This is approximate since we only fetched a sample (fetchLimit) for distance sorting
       actualTotal = itemsWithDistance.length;
 
-      sortedRows = itemsWithDistance
+      // Sort by distance, then apply event priority if enabled
+      let distanceSortedRows = itemsWithDistance
         .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
-        .map((item) => item.row)
-        .slice(0, pageSize);
+        .map((item) => item.row);
+
+      // Apply event priority sorting on top of distance sorting if enabled
+      if (filter.eventSort) {
+        distanceSortedRows = this.sortEventsByTemporalPriority(distanceSortedRows);
+      }
+
+      // Apply pagination after sorting
+      sortedRows = distanceSortedRows.slice(skip, skip + pageSize);
+    } else if (shouldSortByEventPriority) {
+      // Sort by event temporal priority and apply pagination
+      const eventSortedRows = this.sortEventsByTemporalPriority(rows);
+      actualTotal = eventSortedRows.length;
+      sortedRows = eventSortedRows.slice(skip, skip + pageSize);
     }
 
     let favoriteIds: Set<string> | undefined;
