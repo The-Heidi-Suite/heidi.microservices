@@ -340,24 +340,62 @@ export class CategoriesService {
   }
 
   async listCityCategories(cityId: string) {
+    // First, get all CityCategory entries for this city to create a map of categoryId -> displayOrder
     const cityCategories = await this.prisma.cityCategory.findMany({
       where: { cityId, isActive: true },
-      include: {
-        category: true,
+      select: {
+        categoryId: true,
+        displayOrder: true,
       },
-      orderBy: [{ displayOrder: 'asc' }, { addedAt: 'desc' }],
     });
 
-    // Extract just the category objects
-    const categories = cityCategories.map((cc) => cc.category);
+    // Create a map for quick lookup
+    const displayOrderMap = new Map<string, number>();
+    cityCategories.forEach((cc) => {
+      displayOrderMap.set(cc.categoryId, cc.displayOrder);
+    });
 
-    const tree = this.buildCategoryHierarchy(categories);
+    // Get all root categories that have CityCategory entries
+    const rootCategoryIds = cityCategories.map((cc) => cc.categoryId);
+    
+    // Get all categories (root and their children) that should be included
+    const categories = await this.prisma.category.findMany({
+      where: {
+        OR: [
+          { id: { in: rootCategoryIds } }, // Root categories with CityCategory entries
+          { parentId: { in: rootCategoryIds } }, // Subcategories of those root categories
+        ],
+        isActive: true,
+      },
+    });
+
+    // Attach displayOrder from CityCategory to each category
+    const categoriesWithOrder = categories.map((category) => ({
+      ...category,
+      cityCategoryDisplayOrder: displayOrderMap.get(category.id),
+    }));
+
+    // Sort root categories by their CityCategory displayOrder
+    const rootCategories = categoriesWithOrder
+      .filter((c) => !c.parentId)
+      .sort((a, b) => {
+        const orderA = a.cityCategoryDisplayOrder ?? 0;
+        const orderB = b.cityCategoryDisplayOrder ?? 0;
+        return orderA - orderB;
+      });
+
+    // Build hierarchy
+    const tree = this.buildCategoryHierarchy(categoriesWithOrder);
     return this.translateCategoryTree(tree);
   }
 
   /**
    * Attach virtual quick-filter children to root categories in the tree.
    * Virtual children are marked with isQuickFilter=true and contain quickFilterKey.
+   * Quick filters and subcategories are merged and sorted together by order:
+   * - Quick filters with order 0 (e.g., "nearby") appear first
+   * - Subcategories appear in the middle (using displayOrder from CityCategory, default 100)
+   * - Quick filters with order 999 (e.g., "see all") appear last
    */
   private attachQuickFilterChildren(
     categories: any[],
@@ -367,6 +405,13 @@ export class CategoriesService {
       // Only attach to root categories (no parentId)
       if (!category.parentId) {
         const quickFilters = quickFiltersByCategorySlug[category.slug];
+        
+        // Get existing subcategories (real children) and assign order from CityCategory displayOrder
+        const existingChildren = (category.children || []).map((child: any) => ({
+          ...child,
+          order: child.cityCategoryDisplayOrder ?? 100, // Use CityCategory displayOrder, default to 100
+        }));
+
         if (quickFilters && quickFilters.length > 0) {
           // Sort quick filters by order
           const sortedFilters = [...quickFilters].sort((a, b) => a.order - b.order);
@@ -394,11 +439,33 @@ export class CategoriesService {
             order: filter.order,
           }));
 
-          // Append virtual children to existing children array
-          if (!category.children) {
-            category.children = [];
-          }
-          category.children.push(...virtualChildren);
+          // Merge quick filters and subcategories
+          const allChildren = [...virtualChildren, ...existingChildren];
+
+          // Sort all children by order
+          allChildren.sort((a, b) => {
+            const orderA = a.order ?? 100;
+            const orderB = b.order ?? 100;
+            // If order is the same, sort by name for consistency
+            if (orderA === orderB) {
+              return (a.name || '').localeCompare(b.name || '');
+            }
+            return orderA - orderB;
+          });
+
+          // Replace children array with sorted merged array
+          category.children = allChildren;
+        } else {
+          // No quick filters, but sort subcategories by displayOrder
+          existingChildren.sort((a: any, b: any) => {
+            const orderA = a.order ?? 100;
+            const orderB = b.order ?? 100;
+            if (orderA === orderB) {
+              return (a.name || '').localeCompare(b.name || '');
+            }
+            return orderA - orderB;
+          });
+          category.children = existingChildren;
         }
       }
 
