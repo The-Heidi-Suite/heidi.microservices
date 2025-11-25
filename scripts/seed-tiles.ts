@@ -11,6 +11,9 @@
  *
  * Run:
  *  - npm run seed:tiles
+ *
+ * After seeding, upload tile images:
+ *  - npm run upload:tile-assets
  */
 
 import 'tsconfig-paths/register';
@@ -22,9 +25,7 @@ const prisma = new CorePrismaClient();
 const cityPrisma = new CityPrismaClient();
 
 type TileSeedRow = {
-  id: string;
   slug: string;
-  backgroundImageUrl?: string | null;
   headerBackgroundColor?: string | null;
   header: string;
   subheader?: string | null;
@@ -36,44 +37,28 @@ type TileSeedRow = {
   isActive?: boolean;
   publishAt?: Date | null;
   expireAt?: Date | null;
-  createdByUserId?: string | null;
-  lastEditedByUserId?: string | null;
-  createdAt?: Date | null;
-  updatedAt?: Date | null;
-  iconImageUrl?: string | null;
   languageCode?: string | null;
 };
+
 const TILES: TileSeedRow[] = [
   {
-    id: '6afbe807-cd16-4d0e-8540-dc03bad7df35',
     slug: 'zum-verschenken',
-    backgroundImageUrl:
-      'https://kiel.nbg1.your-objectstorage.com/tiles/6afbe807-cd16-4d0e-8540-dc03bad7df35/background.webp',
     headerBackgroundColor: '#00a1a3',
     header: 'ZUM VERSCHENKEN',
     subheader: 'Kielgutschein',
     description:
       '<div><span style="color: rgb(231, 235, 239);">Ein Gutschein, so viele Möglichkeiten: Der Kielgutschein steht für bunte Vielfalt und kann bei über 120 lokalen Geschäften, Gastronomiebetrieben und Dienstleistern in der Region Kieler Förde eingelöst werden - auch in Teilbeträgen.</span></div>',
     contentBackgroundColor: '#009ee0',
-    websiteUrl: 'www.testing.com',
+    websiteUrl: 'https://kiel.zmyle.de/checkout',
     openInExternalBrowser: false,
     displayOrder: 0,
     isActive: true,
     publishAt: null,
     expireAt: null,
-    createdByUserId: 'd566edac-87c5-474f-9f07-2e703eee8347',
-    lastEditedByUserId: 'd566edac-87c5-474f-9f07-2e703eee8347',
-    createdAt: new Date('2025-11-19 11:25:30.175'),
-    updatedAt: new Date('2025-11-20 12:26:37.469'),
-    iconImageUrl:
-      'https://kiel.nbg1.your-objectstorage.com/tiles/6afbe807-cd16-4d0e-8540-dc03bad7df35/icon.webp',
     languageCode: 'de',
   },
   {
-    id: 'c4da74df-28bc-4074-8e3d-06eda714fb4f',
     slug: 'bereit-f-r-den-sommer',
-    backgroundImageUrl:
-      'https://kiel.nbg1.your-objectstorage.com/tiles/c4da74df-28bc-4074-8e3d-06eda714fb4f/background.webp',
     headerBackgroundColor: '#009ee0',
     header: 'BEREIT FÜR DEN SOMMER',
     subheader: 'Meine Bäderkarte',
@@ -86,12 +71,6 @@ const TILES: TileSeedRow[] = [
     isActive: true,
     publishAt: null,
     expireAt: null,
-    createdByUserId: 'd566edac-87c5-474f-9f07-2e703eee8347',
-    lastEditedByUserId: 'd566edac-87c5-474f-9f07-2e703eee8347',
-    createdAt: new Date('2025-11-19 11:19:53.287'),
-    updatedAt: new Date('2025-11-20 12:27:37.205'),
-    iconImageUrl:
-      'https://kiel.nbg1.your-objectstorage.com/tiles/c4da74df-28bc-4074-8e3d-06eda714fb4f/icon.webp',
     languageCode: 'de',
   },
 ];
@@ -124,13 +103,16 @@ async function seedTiles() {
 
   for (const tile of TILES) {
     try {
+      // Check if tile already exists (by slug) before upserting
+      const existing = await prisma.tile.findUnique({
+        where: { slug: tile.slug },
+        select: { id: true },
+      });
+
       const result = await prisma.tile.upsert({
-        where: { id: tile.id },
+        where: { slug: tile.slug },
         create: {
-          id: tile.id,
           slug: tile.slug,
-          backgroundImageUrl: tile.backgroundImageUrl ?? undefined,
-          iconImageUrl: tile.iconImageUrl ?? undefined,
           headerBackgroundColor: tile.headerBackgroundColor ?? undefined,
           header: tile.header,
           subheader: tile.subheader ?? undefined,
@@ -143,15 +125,9 @@ async function seedTiles() {
           languageCode: tile.languageCode ?? undefined,
           publishAt: tile.publishAt ?? undefined,
           expireAt: tile.expireAt ?? undefined,
-          createdByUserId: tile.createdByUserId ?? undefined,
-          lastEditedByUserId: tile.lastEditedByUserId ?? undefined,
-          createdAt: tile.createdAt ?? undefined,
-          updatedAt: tile.updatedAt ?? undefined,
         },
         update: {
           slug: tile.slug,
-          backgroundImageUrl: tile.backgroundImageUrl ?? undefined,
-          iconImageUrl: tile.iconImageUrl ?? undefined,
           headerBackgroundColor: tile.headerBackgroundColor ?? undefined,
           header: tile.header,
           subheader: tile.subheader ?? undefined,
@@ -164,9 +140,6 @@ async function seedTiles() {
           languageCode: tile.languageCode ?? undefined,
           publishAt: tile.publishAt ?? null,
           expireAt: tile.expireAt ?? null,
-          createdByUserId: tile.createdByUserId ?? undefined,
-          lastEditedByUserId: tile.lastEditedByUserId ?? undefined,
-          updatedAt: tile.updatedAt ?? undefined,
         },
       });
 
@@ -191,25 +164,7 @@ async function seedTiles() {
         });
       }
 
-      // Simple existence-based counters: check if it existed before via findUnique
-      // (We do it lazily here to avoid a second query per row in the hot path.)
-      // For now, just increment "updated" when an existing record is found, otherwise "created".
-      const existing = await prisma.tile.findUnique({
-        where: { id: tile.id },
-        select: { createdAt: true },
-      });
-
-      if (existing && existing.createdAt && tile.createdAt) {
-        // If createdAt matches within 1 second, assume it's the same record we just created
-        const diff = Math.abs(existing.createdAt.getTime() - tile.createdAt.getTime());
-        if (diff < 1000) {
-          created++;
-          console.log(`✓ Created tile: ${tile.header} (slug: ${tile.slug})`);
-        } else {
-          updated++;
-          console.log(`↻ Updated tile: ${tile.header} (slug: ${tile.slug})`);
-        }
-      } else if (existing) {
+      if (existing) {
         updated++;
         console.log(`↻ Updated tile: ${tile.header} (slug: ${tile.slug})`);
       } else {
@@ -217,10 +172,7 @@ async function seedTiles() {
         console.log(`✓ Created tile: ${tile.header} (slug: ${tile.slug})`);
       }
     } catch (error) {
-      console.error(
-        `❌ Error processing tile "${tile.header}" (id: ${tile.id}, slug: ${tile.slug}):`,
-        error,
-      );
+      console.error(`❌ Error processing tile "${tile.header}" (slug: ${tile.slug}):`, error);
     }
   }
 
