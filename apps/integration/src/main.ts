@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { LoggerService } from '@heidi/logger';
-import { ConfigService, getSwaggerServerUrl } from '@heidi/config';
+import { ConfigService, getSwaggerServerUrl, getSwaggerI18nOptions } from '@heidi/config';
 import { getRmqConsumerOptions } from '@heidi/rabbitmq';
 
 async function bootstrap() {
@@ -69,12 +69,24 @@ async function bootstrap() {
     .build();
 
   const document = SwaggerModule.createDocument(app, swaggerDocConfig);
-  SwaggerModule.setup('/docs', app, document);
+
+  // Use i18n-enabled Swagger options (language selector + Accept-Language header)
+  const swaggerI18nOptions = getSwaggerI18nOptions(configService);
+
+  SwaggerModule.setup('docs', app, document, {
+    ...swaggerI18nOptions,
+    swaggerOptions: {
+      ...swaggerI18nOptions.swaggerOptions,
+    },
+  });
 
   const port = configService.get<number>('integration.port', 3007);
   await app.listen(port);
 
   logger.log(`🚀 Integration service is running on: http://localhost:${port}`);
+  logger.log(`📊 Metrics available at: http://localhost:${port}/metrics`);
+  logger.log(`💚 Health check at: http://localhost:${port}/healthz`);
+  logger.log(`📚 Swagger docs available at: http://localhost:${port}/docs`);
 }
 
 bootstrap();
