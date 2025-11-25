@@ -22,7 +22,7 @@
 #
 # Step names align with the npm script names (e.g. seed:terms).
 
-set -euo pipefail
+set -uo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SEED_WRAPPER="$ROOT_DIR/scripts/seed-wrapper.sh"
@@ -47,11 +47,13 @@ upload:tile-assets|scripts/upload-tile-assets.ts|Upload tile creative assets
 seed:destination-one|scripts/seed-destination-one-integration.ts|Configure Destination One integration
 seed:mobilithek-parking|scripts/seed-mobilithek-parking-integration.ts|Configure Mobilithek parking integration
 seed:kiel-newsletter|scripts/seed-kiel-newsletter-integration.ts|Configure Kiel newsletter integration
+seed:schedules|scripts/seed-schedules.ts|Seed default scheduled tasks (e.g., favorite event reminders)
 seed:firebase-project|scripts/seed-firebase-project.ts|Seed Firebase project configuration
 EOF
 
 declare -A SKIP_STEPS=()
 declare -A ONLY_STEPS=()
+declare -a FAILED_STEPS=()
 
 trim() {
   local value="$1"
@@ -168,8 +170,27 @@ for entry in "${PIPELINE[@]}"; do
   echo "   $desc"
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-  bash "$SEED_WRAPPER" "$script"
+  # Execute script and capture exit code
+  if bash "$SEED_WRAPPER" "$script"; then
+    echo "✓ $name completed successfully"
+  else
+    exit_code=$?
+    echo "❌ $name failed with exit code $exit_code"
+    FAILED_STEPS+=("$name")
+  fi
 done
 
 echo ""
-echo "✅ Completed seed pipeline"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if [[ ${#FAILED_STEPS[@]} -eq 0 ]]; then
+  echo "✅ Completed seed pipeline - All steps succeeded"
+  exit 0
+else
+  echo "⚠️  Completed seed pipeline with ${#FAILED_STEPS[@]} failure(s):"
+  for failed in "${FAILED_STEPS[@]}"; do
+    echo "   • $failed"
+  done
+  echo ""
+  echo "Some steps failed, but pipeline continued. Review errors above."
+  exit 1
+fi
