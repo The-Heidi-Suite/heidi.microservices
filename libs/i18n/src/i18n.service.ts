@@ -38,18 +38,21 @@ export class I18nService implements OnModuleInit {
         const successPath = join(this.translationsPath, lang, 'success.json');
         const emailsPath = join(this.translationsPath, lang, 'emails.json');
         const notificationsPath = join(this.translationsPath, lang, 'notifications.json');
+        const quickFilterPath = join(this.translationsPath, lang, 'quickFilter.json');
 
         const errorsData = this.loadJsonFile(errorsPath);
         const validationData = this.loadJsonFile(validationPath);
         const successData = this.loadJsonFile(successPath);
         const emailsData = this.loadJsonFile(emailsPath);
         const notificationsData = this.loadJsonFile(notificationsPath);
+        const quickFilterData = this.loadJsonFile(quickFilterPath);
 
         this.translations.set(`${lang}:errors`, errorsData);
         this.translations.set(`${lang}:validation`, validationData);
         this.translations.set(`${lang}:success`, successData);
         this.translations.set(`${lang}:emails`, emailsData);
         this.translations.set(`${lang}:notifications`, notificationsData);
+        this.translations.set(`${lang}:quickFilter`, quickFilterData);
       } catch (error) {
         console.warn(
           `Failed to load translations for language '${lang}':`,
