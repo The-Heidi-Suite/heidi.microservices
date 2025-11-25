@@ -30,7 +30,6 @@
     "prisma:generate": "./scripts/prisma-generate-all.sh",
     "prisma:migrate": "./scripts/prisma-migrate-all.sh",
     "prisma:migrate:prod": "./scripts/prisma-migrate-prod.sh",
-    "prisma:studio": "prisma studio",
     "seed:terms": "bash ./scripts/seed-wrapper.sh scripts/seed-terms.ts",
     "seed:categories": "bash ./scripts/seed-wrapper.sh scripts/seed-categories.ts",
     "seed:initial-admin": "bash ./scripts/seed-wrapper.sh scripts/seed-initial-admin.ts",
