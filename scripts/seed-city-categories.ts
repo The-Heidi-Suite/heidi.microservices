@@ -36,11 +36,6 @@ const KIEL_DISPLAY_NAMES: Record<string, string> = {
   shopping: "Shop to your heart's content",
   culture: 'Keil Culture',
 
-  // Events subcategories
-  'events-community': 'Community Events',
-  'events-workshops-training': 'Workshops & Training',
-  'events-cultural-festivals': 'Cultural Festivals',
-
   // Food & Drink subcategories
   'food-cafes-bakeries': 'Cafés',
   'food-bars-nightlife': 'Bars & Pubs',
@@ -73,11 +68,6 @@ const KIEL_ALLOWED_CATEGORY_SLUGS: string[] = [
   'shopping',
   'culture',
   'tours',
-
-  // Events subcategories
-  'events-community',
-  'events-workshops-training',
-  'events-cultural-festivals',
 
   // Food & Drink subcategories
   'food-cafes-bakeries',

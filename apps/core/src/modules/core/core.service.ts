@@ -319,7 +319,7 @@ export class CoreService implements OnModuleInit {
 
         // Auto-create missing Event subcategories (slugs like "events-something")
         if (!category) {
-          category = await this.ensureCategoryForSlug(categorySlug);
+          category = await this.ensureCategoryForSlug(categorySlug, listingData.primaryCityId);
         }
 
         if (category) {
@@ -893,8 +893,10 @@ export class CoreService implements OnModuleInit {
    * - For Event subcategories (slugs starting with "events-"), it will auto-create a child
    *   of the root "events" category with type CategoryType.EVENT.
    * - For all other slugs, it returns null (no auto-creation).
+   * - If cityId is provided and a new category is created, it will also create a CityCategory
+   *   mapping for that city.
    */
-  private async ensureCategoryForSlug(categorySlug: string) {
+  private async ensureCategoryForSlug(categorySlug: string, cityId?: string) {
     // Only auto-create Event subcategories for now
     if (!categorySlug.startsWith('events-')) {
       return null;
@@ -944,6 +946,53 @@ export class CoreService implements OnModuleInit {
       this.logger.log(
         `Auto-created Event subcategory "${categorySlug}" with id=${created.id} under root 'events'`,
       );
+
+      // If cityId is provided, create a CityCategory mapping for this newly created category
+      if (cityId) {
+        try {
+          // Check if CityCategory already exists (race condition handling)
+          const existingCityCategory = await this.prisma.cityCategory.findUnique({
+            where: {
+              cityId_categoryId: {
+                cityId,
+                categoryId: created.id,
+              },
+            },
+          });
+
+          if (!existingCityCategory) {
+            await this.prisma.cityCategory.create({
+              data: {
+                cityId,
+                categoryId: created.id,
+                displayName: name, // Use the auto-generated name as display name
+                languageCode: 'en', // Default to English
+                displayOrder: 99, // Default to end
+                isActive: true,
+              },
+            });
+
+            this.logger.log(
+              `Auto-created CityCategory mapping for cityId=${cityId} and categoryId=${created.id} (slug: ${categorySlug})`,
+            );
+          }
+        } catch (error: any) {
+          // Handle potential race condition on unique constraint
+          if (
+            error instanceof Prisma.PrismaClientKnownRequestError &&
+            error.code === 'P2002' // Unique constraint violation
+          ) {
+            this.logger.debug(
+              `CityCategory already exists for cityId=${cityId} and categoryId=${created.id}`,
+            );
+          } else {
+            this.logger.warn(
+              `Failed to auto-create CityCategory for cityId=${cityId} and categoryId=${created.id}: ${error?.message}`,
+            );
+            // Don't fail the category creation if city category mapping fails
+          }
+        }
+      }
 
       return created;
     } catch (error: any) {
