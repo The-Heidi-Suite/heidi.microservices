@@ -38,6 +38,7 @@ interface DestinationOneItem {
     tz: string;
     freq: string;
     interval: number;
+    repeatUntil?: string;
   }>;
   company?: string;
   district?: string;
@@ -96,6 +97,7 @@ interface TransformedListingData {
     tz: string;
     freq: ListingRecurrenceFreq;
     interval: number;
+    repeatUntil?: string;
   }>;
   eventStart?: string;
   eventEnd?: string;
@@ -460,6 +462,7 @@ export class DestinationOneService {
       tz: ti.tz,
       freq: this.mapRecurrenceFreq(ti.freq),
       interval: ti.interval || 1,
+      repeatUntil: ti.repeatUntil ? new Date(ti.repeatUntil).toISOString() : undefined,
     }));
 
     // Build attribute map (for interval_start / interval_end etc.)

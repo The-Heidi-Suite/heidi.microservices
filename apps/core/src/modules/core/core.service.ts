@@ -295,6 +295,7 @@ export class CoreService implements OnModuleInit {
       tz: string;
       freq: ListingRecurrenceFreq;
       interval: number;
+      repeatUntil?: string;
     }>;
     eventStart?: string;
     eventEnd?: string;
@@ -389,6 +390,7 @@ export class CoreService implements OnModuleInit {
                 tz: ti.tz,
                 freq: ti.freq,
                 interval: ti.interval,
+                repeatUntil: ti.repeatUntil ? new Date(ti.repeatUntil) : null,
               })),
             });
           }
@@ -534,6 +536,7 @@ export class CoreService implements OnModuleInit {
                   tz: ti.tz,
                   freq: ti.freq,
                   interval: ti.interval,
+                  repeatUntil: ti.repeatUntil ? new Date(ti.repeatUntil) : null,
                 })),
               }
             : undefined,
