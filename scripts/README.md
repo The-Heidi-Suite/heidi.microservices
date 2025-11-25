@@ -177,6 +177,39 @@ Seed or update a Firebase project configuration (per city or default Heidi app).
 
 The script encrypts credentials with `FCM_ENCRYPTION_KEY` (or fallback) before writing to the `firebase_projects` table.
 
+### 🌱 `seed-all.sh`
+
+Run every seed/upload script in the correct order to fully bootstrap a fresh environment.
+
+**Usage:**
+
+```bash
+# Run the entire pipeline
+npm run seed:all
+
+# List pipeline steps without executing
+npm run seed:all -- --list
+
+# Skip optional integrations/assets
+npm run seed:all -- --skip seed:destination-one,seed:firebase-project
+
+# Run only a subset
+npm run seed:all -- --only seed:terms,seed:initial-admin
+```
+
+**What it does:**
+
+- Executes all `seed:*` and `upload:*` scripts via `seed-wrapper.sh`
+- Ensures prerequisites (categories, assets, admins, integrations, etc.) run in dependency-safe order
+- Stops immediately on the first failing step (so issues are obvious)
+- Supports `SEED_BOOTSTRAP_SKIP` env var and `--skip/--only` flags for flexible pipelines
+
+**When to use:**
+
+- First boot of a new environment (local, staging, production)
+- Automated bootstrap inside Docker/Helm entrypoints
+- Bulk reseeding during QA/preview deployments
+
 ### 🚀 `init-production.sh`
 
 Production initialization script for first-time setup.
