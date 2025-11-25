@@ -59,7 +59,8 @@ export class CityController {
   @Get()
   @ApiOperation({
     summary: 'List all cities',
-    description: 'Retrieve a list of cities with optional filtering and sorting. Supports filtering by country, key, and isActive status.',
+    description:
+      'Retrieve a list of cities with optional filtering and sorting. Supports filtering by country, key, and isActive status.',
   })
   @ApiQuery({
     name: 'country',

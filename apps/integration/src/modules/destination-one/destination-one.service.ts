@@ -159,15 +159,13 @@ export class DestinationOneService {
 
     const url = `${baseUrl}?${params.toString()}`;
     const sanitizedUrl = url.replace(config.licensekey, '***');
-    
+
     // Track the sanitized URL
     if (apiCalls) {
       apiCalls.push(sanitizedUrl);
     }
-    
-    this.logger.log(
-      `Fetching data from destination_one API: ${sanitizedUrl}`,
-    );
+
+    this.logger.log(`Fetching data from destination_one API: ${sanitizedUrl}`);
 
     try {
       const response = await firstValueFrom(
@@ -208,15 +206,13 @@ export class DestinationOneService {
 
     const url = `${baseUrl}?${params.toString()}`;
     const sanitizedUrl = url.replace(config.licensekey, '***');
-    
+
     // Track the sanitized URL
     if (apiCalls) {
       apiCalls.push(sanitizedUrl);
     }
-    
-    this.logger.debug(
-      `Fetching Event category facets from destination_one API: ${sanitizedUrl}`,
-    );
+
+    this.logger.debug(`Fetching Event category facets from destination_one API: ${sanitizedUrl}`);
 
     try {
       const response = await firstValueFrom(
@@ -285,12 +281,12 @@ export class DestinationOneService {
 
       const url = `${baseUrl}?${params.toString()}`;
       const sanitizedUrl = url.replace(config.licensekey, '***');
-      
+
       // Track the sanitized URL
       if (apiCalls) {
         apiCalls.push(sanitizedUrl);
       }
-      
+
       this.logger.debug(
         `Fetching page ${page} for type="${type}" from destination_one: ${sanitizedUrl}`,
       );
@@ -595,7 +591,10 @@ export class DestinationOneService {
 
       // Optionally prefetch Event category facets for logging / downstream usage
       if (config.eventFacetsEnabled !== false && config.typeFilter?.includes('Event')) {
-        syncStats.eventCategoryFacets = await this.fetchEventCategoryFacets(config, syncStats.apiCalls);
+        syncStats.eventCategoryFacets = await this.fetchEventCategoryFacets(
+          config,
+          syncStats.apiCalls,
+        );
       }
 
       // Fetch items using category mapping queries only
@@ -616,7 +615,12 @@ export class DestinationOneService {
             }
 
             try {
-              const result = await this.fetchDataPaginatedForType(config, type, query, syncStats.apiCalls);
+              const result = await this.fetchDataPaginatedForType(
+                config,
+                type,
+                query,
+                syncStats.apiCalls,
+              );
               const mappingItems = result.items.filter((it) => !processedIds.has(it.id));
               items.push(...mappingItems);
               mappingItems.forEach((it) => processedIds.add(it.id));
@@ -639,7 +643,12 @@ export class DestinationOneService {
       } else if (config.typeFilter && config.typeFilter.length > 0) {
         // Fallback: if no category mappings, fetch by type
         for (const t of config.typeFilter) {
-          const result = await this.fetchDataPaginatedForType(config, t, undefined, syncStats.apiCalls);
+          const result = await this.fetchDataPaginatedForType(
+            config,
+            t,
+            undefined,
+            syncStats.apiCalls,
+          );
           const typeItems = result.items.filter((it) => !processedIds.has(it.id));
           items.push(...typeItems);
           typeItems.forEach((it) => processedIds.add(it.id));

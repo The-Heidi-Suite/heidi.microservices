@@ -87,4 +87,3 @@ export class TagNotFoundErrorResponseDto extends BaseTagErrorResponseDto {
   @ApiProperty({ example: 404 })
   statusCode: number;
 }
-

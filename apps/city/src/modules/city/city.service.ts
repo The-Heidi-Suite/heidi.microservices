@@ -1,7 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaCityService } from '@heidi/prisma';
 import { LoggerService } from '@heidi/logger';
-import { CreateCityDto, UpdateCityDto, CityFilterDto, CitySortBy, CitySortDirection } from '@heidi/contracts';
+import {
+  CreateCityDto,
+  UpdateCityDto,
+  CityFilterDto,
+  CitySortBy,
+  CitySortDirection,
+} from '@heidi/contracts';
 
 @Injectable()
 export class CityService {

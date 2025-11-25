@@ -557,15 +557,18 @@ export class AuthService {
   /**
    * Assign city admin (Super Admin or City Admin with canManageAdmins permission)
    */
-  async assignCityAdmin(dto: AssignCityAdminDto, requesterId: string, requesterRole?: number | string) {
+  async assignCityAdmin(
+    dto: AssignCityAdminDto,
+    requesterId: string,
+    requesterRole?: number | string,
+  ) {
     this.logger.log(`Assigning city admin: ${dto.userId} to city: ${dto.cityId}`);
 
     // Normalize role (handle both string and number formats from JWT)
     let normalizedRole: UserRole;
     if (requesterRole !== undefined) {
       const roleNumber = typeof requesterRole === 'number' ? requesterRole : null;
-      normalizedRole =
-        roleNumber !== null ? numberToRole(roleNumber) : (requesterRole as UserRole);
+      normalizedRole = roleNumber !== null ? numberToRole(roleNumber) : (requesterRole as UserRole);
     } else {
       // Fallback: fetch from database if role not provided (shouldn't happen with updated controller)
       const requester = await firstValueFrom(

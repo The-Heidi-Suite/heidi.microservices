@@ -651,7 +651,8 @@ export class CreateListingDto {
 
   @ApiProperty({
     type: [CreateListingCityReferenceDto],
-    description: 'Cities to associate with this listing. At least one city with cityId is required.',
+    description:
+      'Cities to associate with this listing. At least one city with cityId is required.',
   })
   @IsArray()
   @ArrayMinSize(1)

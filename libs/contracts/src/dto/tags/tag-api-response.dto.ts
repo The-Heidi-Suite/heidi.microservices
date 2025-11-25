@@ -38,4 +38,3 @@ export class TagDeleteApiResponseDto extends TagResponseEnvelope {
   @ApiProperty({ type: TagDeleteDataDto })
   data: TagDeleteDataDto;
 }
-

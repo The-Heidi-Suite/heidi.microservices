@@ -1,12 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaCoreService } from '@heidi/prisma';
 import { LoggerService } from '@heidi/logger';
-import {
-  CreateTagDto,
-  TagFilterDto,
-  TagListResponseDto,
-  TagResponseDto,
-} from '@heidi/contracts';
+import { CreateTagDto, TagFilterDto, TagListResponseDto, TagResponseDto } from '@heidi/contracts';
 import { Prisma, Tag } from '@prisma/client-core';
 
 @Injectable()
@@ -130,4 +125,3 @@ export class TagsService {
     };
   }
 }
-

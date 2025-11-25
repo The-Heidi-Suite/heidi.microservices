@@ -4,7 +4,10 @@ export class TagResponseDto {
   @ApiProperty({ example: 'tag_01HZXTY0YK3H2V4C5B6N7P8Q' })
   id: string;
 
-  @ApiProperty({ example: 'MANUAL', description: 'Source system identifier (e.g., MANUAL, DESTINATION_ONE)' })
+  @ApiProperty({
+    example: 'MANUAL',
+    description: 'Source system identifier (e.g., MANUAL, DESTINATION_ONE)',
+  })
   provider: string;
 
   @ApiProperty({ example: 'Ausstellung', description: 'Original value from provider' })
@@ -44,4 +47,3 @@ export class TagListResponseDto {
   @ApiProperty({ type: TagListMetaDto })
   meta: TagListMetaDto;
 }
-

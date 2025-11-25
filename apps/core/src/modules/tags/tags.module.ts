@@ -11,4 +11,3 @@ import { PrismaCoreModule } from '@heidi/prisma';
   exports: [TagsService],
 })
 export class TagsModule {}
-

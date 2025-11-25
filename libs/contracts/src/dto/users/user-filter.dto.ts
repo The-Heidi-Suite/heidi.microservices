@@ -1,10 +1,4 @@
-import {
-  IsOptional,
-  IsString,
-  IsBoolean,
-  IsNumber,
-  IsEnum,
-} from 'class-validator';
+import { IsOptional, IsString, IsBoolean, IsNumber, IsEnum } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -57,7 +51,8 @@ export class UserFilterDto {
   search?: string;
 
   @ApiPropertyOptional({
-    description: 'Filter by active status. Defaults to showing all users. Set to true for only active users, or false for only inactive/deleted users.',
+    description:
+      'Filter by active status. Defaults to showing all users. Set to true for only active users, or false for only inactive/deleted users.',
     example: 'true',
     oneOf: [{ type: 'string' }, { type: 'boolean' }],
   })
@@ -103,4 +98,3 @@ export class UserFilterDto {
   @Type(() => Number)
   limit?: number;
 }
-

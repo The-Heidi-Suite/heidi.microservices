@@ -26,4 +26,3 @@ export class CreateTagDto {
   @IsString()
   languageCode?: string;
 }
-

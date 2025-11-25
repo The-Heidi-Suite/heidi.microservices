@@ -66,4 +66,3 @@ export class CityFilterDto {
   @IsEnum(CitySortDirection)
   sortDirection?: CitySortDirection;
 }
-
