@@ -385,7 +385,9 @@ export class UsersController {
       username: profileData.username ?? '',
       firstName: profileData.firstName ?? '',
       lastName: profileData.lastName ?? '',
+      salutation: profileData.salutation ?? undefined,
       role: profileData.role,
+      hasVehicle: profileData.hasVehicle ?? false,
       isActive: profileData.isActive,
       createdAt:
         profileData.createdAt instanceof Date

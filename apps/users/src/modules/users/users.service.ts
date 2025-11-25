@@ -91,6 +91,8 @@ export class UsersService {
         password: hashedPassword,
         firstName: dto.firstName || null,
         lastName: dto.lastName || null,
+        salutation: dto.salutation || null,
+        hasVehicle: dto.hasVehicle ?? false,
         role: UserRole.CITIZEN,
         emailVerified: false,
       },
@@ -101,6 +103,8 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
+        salutation: true,
+        hasVehicle: true,
         createdAt: true,
       },
     });
@@ -170,6 +174,8 @@ export class UsersService {
           password: hashedPassword,
           firstName: dto.firstName || null,
           lastName: dto.lastName || null,
+          salutation: dto.salutation || null,
+          hasVehicle: dto.hasVehicle ?? false,
           role: UserRole.CITIZEN,
           emailVerified: false,
         },
@@ -180,6 +186,8 @@ export class UsersService {
           role: true,
           firstName: true,
           lastName: true,
+          salutation: true,
+          hasVehicle: true,
           createdAt: true,
         },
       });
@@ -347,6 +355,8 @@ export class UsersService {
           role: true,
           firstName: true,
           lastName: true,
+          salutation: true,
+          hasVehicle: true,
           isActive: true,
           deletedAt: true,
           createdAt: true,
@@ -393,6 +403,8 @@ export class UsersService {
           role: true,
           firstName: true,
           lastName: true,
+          salutation: true,
+          hasVehicle: true,
           cityId: true,
           preferredLanguage: true,
           isActive: true,
@@ -440,6 +452,8 @@ export class UsersService {
           role: true,
           firstName: true,
           lastName: true,
+          salutation: true,
+          hasVehicle: true,
           cityId: true,
           preferredLanguage: true,
           isActive: true,
@@ -481,6 +495,8 @@ export class UsersService {
         devicePlatform: true,
         firstName: true,
         lastName: true,
+        salutation: true,
+        hasVehicle: true,
         cityId: true,
         preferredLanguage: true,
         isActive: true,
@@ -554,6 +570,8 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
+        salutation: true,
+        hasVehicle: true,
         createdAt: true,
       },
     });
@@ -582,6 +600,8 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
+        salutation: true,
+        hasVehicle: true,
         updatedAt: true,
       },
     });
@@ -670,6 +690,8 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
+        salutation: true,
+        hasVehicle: true,
         profilePhotoUrl: true,
         preferredLanguage: true,
         isActive: true,
@@ -721,6 +743,8 @@ export class UsersService {
     const updateData: any = {};
     if (dto.firstName !== undefined) updateData.firstName = dto.firstName;
     if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
+    if (dto.salutation !== undefined) updateData.salutation = dto.salutation;
+    if (dto.hasVehicle !== undefined) updateData.hasVehicle = dto.hasVehicle;
     if (dto.profilePhotoUrl !== undefined) updateData.profilePhotoUrl = dto.profilePhotoUrl;
     if (dto.preferredLanguage !== undefined) updateData.preferredLanguage = dto.preferredLanguage;
 
@@ -734,6 +758,8 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
+        salutation: true,
+        hasVehicle: true,
         profilePhotoUrl: true,
         preferredLanguage: true,
         updatedAt: true,
@@ -994,6 +1020,8 @@ export class UsersService {
         password: hashedPassword,
         firstName: dto.firstName || null,
         lastName: dto.lastName || null,
+        salutation: dto.salutation || null,
+        hasVehicle: dto.hasVehicle ?? false,
         userType: UserType.REGISTERED,
         emailVerified: false,
         migratedFromGuestId: guestUser.guestId, // Store original guest ID for historical tracking
@@ -1008,6 +1036,8 @@ export class UsersService {
         userType: true,
         firstName: true,
         lastName: true,
+        salutation: true,
+        hasVehicle: true,
         migratedFromGuestId: true,
         createdAt: true,
         updatedAt: true,
@@ -1175,6 +1205,8 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
+        salutation: true,
+        hasVehicle: true,
         updatedAt: true,
       },
     });
