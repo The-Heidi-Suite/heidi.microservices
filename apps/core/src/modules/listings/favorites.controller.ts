@@ -1,9 +1,10 @@
-import { Body, Controller, Get, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import {
   AddFavoriteDto,
   AddFavoriteResponseDto,
+  FavoriteFilterDto,
   ListingNotFoundErrorResponseDto,
   ListListingsResponseDto,
   RemoveFavoriteResponseDto,
@@ -99,7 +100,31 @@ export class FavoritesController {
   @ApiOperation({
     summary: 'Get user favorites',
     description:
-      'Get all favorites for the current user (works for both guest and registered users). Returns the same structure as the listings list endpoint.',
+      'Get favorites for the current user with optional search, category filtering, and pagination. Returns the same structure as the listings list endpoint.',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    description: 'Search term to filter favorites by listing title, summary, or content',
+    example: 'cleanup',
+  })
+  @ApiQuery({
+    name: 'categoryIds',
+    required: false,
+    description: 'Filter by category IDs (comma-separated)',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number (1-indexed)',
+    example: 1,
+  })
+  @ApiQuery({
+    name: 'pageSize',
+    required: false,
+    description: 'Number of items per page',
+    example: 20,
   })
   @ApiResponse({
     status: 200,
@@ -107,12 +132,20 @@ export class FavoritesController {
     type: ListListingsResponseDto,
   })
   @ApiResponse({
+    status: 400,
+    description: 'Validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
     status: 401,
     description: 'Authentication required',
     type: UnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
-  async getUserFavorites(@GetCurrentUser('userId') userId: string) {
-    return this.listingsService.getUserFavorites(userId);
+  async getUserFavorites(
+    @GetCurrentUser('userId') userId: string,
+    @Query() filter: FavoriteFilterDto,
+  ) {
+    return this.listingsService.getUserFavorites(userId, filter);
   }
 }
