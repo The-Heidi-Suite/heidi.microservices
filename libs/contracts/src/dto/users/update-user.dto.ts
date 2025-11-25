@@ -20,6 +20,23 @@ export class UpdateUserDto {
   lastName?: string;
 
   @ApiPropertyOptional({
+    description: 'User salutation/title (e.g., Mr, Mrs, Dr) - respects user preferred language',
+    example: 'Mr',
+  })
+  @IsString()
+  @IsOptional()
+  salutation?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether the user has a vehicle',
+    example: false,
+    type: Boolean,
+  })
+  @IsBoolean()
+  @IsOptional()
+  hasVehicle?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Whether the user account is active',
     example: true,
     type: Boolean,

@@ -227,12 +227,21 @@ export class UserDto {
   @ApiProperty({ example: 'Doe' })
   lastName: string;
 
+  @ApiPropertyOptional({
+    example: 'Mr',
+    description: 'User salutation/title - respects preferred language',
+  })
+  salutation?: string;
+
   @ApiProperty({
     example: 3,
     enum: [1, 2, 3],
     description: 'User role: 1=SUPER_ADMIN, 2=CITY_ADMIN, 3=CITIZEN',
   })
   role: number;
+
+  @ApiProperty({ example: false, description: 'Whether the user has a vehicle' })
+  hasVehicle: boolean;
 
   @ApiProperty({ example: true })
   isActive: boolean;

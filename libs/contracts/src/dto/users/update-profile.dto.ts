@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateProfileDto {
@@ -19,6 +19,14 @@ export class UpdateProfileDto {
   lastName?: string;
 
   @ApiPropertyOptional({
+    description: 'User salutation/title (e.g., Mr, Mrs, Dr) - respects user preferred language',
+    example: 'Mr',
+  })
+  @IsString()
+  @IsOptional()
+  salutation?: string;
+
+  @ApiPropertyOptional({
     description: 'Profile photo URL',
     example: 'https://storage.example.com/users/user123/profile-photo.webp',
   })
@@ -33,4 +41,13 @@ export class UpdateProfileDto {
   @IsString()
   @IsOptional()
   preferredLanguage?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether the user has a vehicle',
+    example: false,
+    type: Boolean,
+  })
+  @IsBoolean()
+  @IsOptional()
+  hasVehicle?: boolean;
 }

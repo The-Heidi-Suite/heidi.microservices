@@ -1,4 +1,12 @@
-import { IsEmail, IsString, MinLength, IsOptional, IsUUID, Matches } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsOptional,
+  IsUUID,
+  Matches,
+  IsBoolean,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
@@ -50,6 +58,23 @@ export class RegisterDto {
   @IsString()
   @IsOptional()
   lastName?: string;
+
+  @ApiPropertyOptional({
+    description: 'User salutation/title (e.g., Mr, Mrs, Dr) - respects user preferred language',
+    example: 'Mr',
+  })
+  @IsString()
+  @IsOptional()
+  salutation?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether the user has a vehicle',
+    example: false,
+    type: Boolean,
+  })
+  @IsBoolean()
+  @IsOptional()
+  hasVehicle?: boolean;
 
   @ApiPropertyOptional({
     description: 'City ID to associate with user',
