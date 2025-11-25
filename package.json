@@ -43,6 +43,7 @@
     "seed:mobilithek-parking": "bash ./scripts/seed-wrapper.sh scripts/seed-mobilithek-parking-integration.ts",
     "seed:kiel-newsletter": "bash ./scripts/seed-wrapper.sh scripts/seed-kiel-newsletter-integration.ts",
     "seed:firebase-project": "bash ./scripts/seed-wrapper.sh scripts/seed-firebase-project.ts",
+    "seed:all": "bash ./scripts/seed-all.sh",
     "lint": "eslint \"{src,apps,libs}/**/*.ts\" --fix",
     "format": "prettier --write \"**/*.{ts,json,md}\"",
     "test": "jest",
