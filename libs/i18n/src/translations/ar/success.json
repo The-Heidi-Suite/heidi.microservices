@@ -68,5 +68,7 @@
   "TAG_RETRIEVED": "تم استرجاع الوسم بنجاح",
   "TAG_CREATED": "تم إنشاء الوسم بنجاح",
   "TAG_DELETED": "تم حذف الوسم بنجاح",
-  "OPERATION_SUCCESS": "تمت العملية بنجاح"
+  "OPERATION_SUCCESS": "تمت العملية بنجاح",
+  "NOTIFICATION_PREFERENCES_UPDATED": "تم تحديث إعدادات الإشعارات بنجاح",
+  "NOTIFICATION_PREFERENCES_RETRIEVED": "تم استرجاع إعدادات الإشعارات بنجاح"
 }

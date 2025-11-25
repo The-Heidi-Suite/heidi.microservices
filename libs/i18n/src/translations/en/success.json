@@ -68,5 +68,7 @@
   "TAG_RETRIEVED": "Tag retrieved successfully",
   "TAG_CREATED": "Tag created successfully",
   "TAG_DELETED": "Tag deleted successfully",
-  "OPERATION_SUCCESS": "Operation completed successfully"
+  "OPERATION_SUCCESS": "Operation completed successfully",
+  "NOTIFICATION_PREFERENCES_UPDATED": "Notification preferences updated successfully",
+  "NOTIFICATION_PREFERENCES_RETRIEVED": "Notification preferences retrieved successfully"
 }

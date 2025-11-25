@@ -329,11 +329,25 @@ export class DestinationOneService {
     return categoryValues.map((val) => `category:"${val}"`).join(' OR ');
   }
 
-  private generateSyncHash(title: string, summary: string | undefined, content: string): string {
+  private generateSyncHash(
+    title: string,
+    summary: string | undefined,
+    content: string,
+    timeIntervals?: Array<{
+      weekdays: string[];
+      start: string;
+      end: string;
+      tz: string;
+      freq: ListingRecurrenceFreq;
+      interval: number;
+      repeatUntil?: string;
+    }>,
+  ): string {
     const hashData = {
       title,
       summary: summary || '',
       content,
+      timeIntervals: timeIntervals || [],
     };
     return createHash('sha256').update(JSON.stringify(hashData)).digest('hex');
   }
@@ -512,7 +526,12 @@ export class DestinationOneService {
       slug,
       externalSource: 'destination_one',
       externalId: item.id,
-      syncHash: this.generateSyncHash(item.title, teaserText || undefined, content || item.title),
+      syncHash: this.generateSyncHash(
+        item.title,
+        teaserText || undefined,
+        content || item.title,
+        timeIntervals,
+      ),
       sourceType: 'API_IMPORT',
       primaryCityId: config.cityId,
       venueName: item.company || item.title,

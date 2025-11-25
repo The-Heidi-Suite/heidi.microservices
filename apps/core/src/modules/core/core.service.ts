@@ -1238,6 +1238,9 @@ export class CoreService implements OnModuleInit {
       let sent24h = 0;
       let sent2h = 0;
 
+      // Cache user notification preferences to avoid repeated RabbitMQ calls
+      const userNotificationCache = new Map<string, boolean>();
+
       for (const favorite of favorites) {
         const listing = favorite.listing;
 
@@ -1248,6 +1251,35 @@ export class CoreService implements OnModuleInit {
           listing.visibility !== ListingVisibility.PUBLIC ||
           listing.isArchived
         ) {
+          continue;
+        }
+
+        // Check if user has notifications enabled
+        let notificationsEnabled = userNotificationCache.get(favorite.userId);
+        if (notificationsEnabled === undefined) {
+          try {
+            const userData = await firstValueFrom(
+              this.client.send<
+                { id: string; notificationsEnabled?: boolean } | null,
+                { id: string }
+              >(RabbitMQPatterns.USER_FIND_BY_ID, { id: favorite.userId }),
+            );
+            notificationsEnabled = userData?.notificationsEnabled !== false; // Default to true if not set
+            userNotificationCache.set(favorite.userId, notificationsEnabled);
+          } catch (error) {
+            this.logger.warn(
+              `Failed to fetch user notification preferences for user ${favorite.userId}, defaulting to enabled`,
+            );
+            notificationsEnabled = true;
+            userNotificationCache.set(favorite.userId, notificationsEnabled);
+          }
+        }
+
+        // Skip if user has disabled notifications
+        if (!notificationsEnabled) {
+          this.logger.debug(
+            `Skipping reminder for user ${favorite.userId} - notifications disabled`,
+          );
           continue;
         }
 
@@ -1404,6 +1436,17 @@ export class CoreService implements OnModuleInit {
 
     // For recurring events, compute occurrences from timeIntervals
     if (listing.timeIntervals && listing.timeIntervals.length > 0) {
+      // Map weekday names to day numbers (0 = Sunday, 1 = Monday, etc.)
+      const weekdayToNumber: Record<string, number> = {
+        Sunday: 0,
+        Monday: 1,
+        Tuesday: 2,
+        Wednesday: 3,
+        Thursday: 4,
+        Friday: 5,
+        Saturday: 6,
+      };
+
       for (const interval of listing.timeIntervals) {
         if (interval.freq === ListingRecurrenceFreq.NONE) {
           // Single occurrence
@@ -1413,52 +1456,122 @@ export class CoreService implements OnModuleInit {
           continue;
         }
 
-        // Compute occurrences for recurring patterns
-        let current = new Date(interval.start);
         const repeatUntil = interval.repeatUntil
           ? new Date(interval.repeatUntil)
           : new Date(windowEnd.getTime() + 7 * 24 * 60 * 60 * 1000); // Default to 7 days beyond window
 
-        // Limit iterations to prevent infinite loops
-        let iterations = 0;
-        const maxIterations = 1000;
+        // Special handling for WEEKLY frequency with multiple weekdays
+        if (
+          interval.freq === ListingRecurrenceFreq.WEEKLY &&
+          interval.weekdays &&
+          interval.weekdays.length > 0
+        ) {
+          // Get the time portion from interval.start (hours, minutes, seconds)
+          const startTime = {
+            hours: interval.start.getHours(),
+            minutes: interval.start.getMinutes(),
+            seconds: interval.start.getSeconds(),
+            milliseconds: interval.start.getMilliseconds(),
+          };
 
-        while (current <= repeatUntil && current <= windowEnd && iterations < maxIterations) {
-          if (current >= windowStart) {
-            // Check if this occurrence matches the weekday filter (if any)
-            if (interval.weekdays && interval.weekdays.length > 0) {
-              const weekday = current
-                .toLocaleDateString('en-US', { weekday: 'short' })
-                .toUpperCase();
-              if (interval.weekdays.includes(weekday)) {
+          // Find the Monday of the week containing interval.start
+          const startDate = new Date(interval.start);
+          const dayOfWeek = startDate.getDay(); // 0 = Sunday, 1 = Monday, etc.
+          const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Adjust to get Monday
+          const weekStart = new Date(startDate);
+          weekStart.setDate(startDate.getDate() + mondayOffset);
+          weekStart.setHours(0, 0, 0, 0);
+
+          let currentWeekStart = new Date(weekStart);
+          let iterations = 0;
+          const maxIterations = 1000;
+
+          while (iterations < maxIterations) {
+            // For each specified weekday, generate an occurrence in this week
+            for (const weekdayName of interval.weekdays) {
+              const weekdayNum = weekdayToNumber[weekdayName];
+              if (weekdayNum === undefined) continue;
+
+              // Calculate the date for this weekday in the current week
+              // Monday = 1, so we need to offset from Monday (which is our week start)
+              const daysFromMonday = weekdayNum === 0 ? 6 : weekdayNum - 1; // Sunday is 6 days from Monday
+              const occurrenceDate = new Date(currentWeekStart);
+              occurrenceDate.setDate(currentWeekStart.getDate() + daysFromMonday);
+              occurrenceDate.setHours(
+                startTime.hours,
+                startTime.minutes,
+                startTime.seconds,
+                startTime.milliseconds,
+              );
+
+              // Check if this occurrence is valid
+              if (
+                occurrenceDate >= interval.start &&
+                occurrenceDate <= repeatUntil &&
+                occurrenceDate >= windowStart &&
+                occurrenceDate <= windowEnd
+              ) {
+                occurrences.push(new Date(occurrenceDate));
+              }
+            }
+
+            // Advance to the next week (respecting interval)
+            currentWeekStart = new Date(
+              currentWeekStart.getTime() + interval.interval * 7 * 24 * 60 * 60 * 1000,
+            );
+
+            // Stop if we've passed the repeatUntil or windowEnd
+            if (currentWeekStart > repeatUntil || currentWeekStart > windowEnd) {
+              break;
+            }
+
+            iterations++;
+          }
+        } else {
+          // Original logic for non-weekly or no weekday filter
+          let current = new Date(interval.start);
+
+          // Limit iterations to prevent infinite loops
+          let iterations = 0;
+          const maxIterations = 1000;
+
+          while (current <= repeatUntil && current <= windowEnd && iterations < maxIterations) {
+            if (current >= windowStart) {
+              // Check if this occurrence matches the weekday filter (if any)
+              if (interval.weekdays && interval.weekdays.length > 0) {
+                const weekday = current
+                  .toLocaleDateString('en-US', { weekday: 'short' })
+                  .toUpperCase();
+                if (interval.weekdays.includes(weekday)) {
+                  occurrences.push(new Date(current));
+                }
+              } else {
                 occurrences.push(new Date(current));
               }
-            } else {
-              occurrences.push(new Date(current));
             }
-          }
 
-          // Advance to next occurrence based on frequency
-          switch (interval.freq) {
-            case ListingRecurrenceFreq.DAILY:
-              current = new Date(current.getTime() + interval.interval * 24 * 60 * 60 * 1000);
-              break;
-            case ListingRecurrenceFreq.WEEKLY:
-              current = new Date(current.getTime() + interval.interval * 7 * 24 * 60 * 60 * 1000);
-              break;
-            case ListingRecurrenceFreq.MONTHLY:
-              current = new Date(current);
-              current.setMonth(current.getMonth() + interval.interval);
-              break;
-            case ListingRecurrenceFreq.YEARLY:
-              current = new Date(current);
-              current.setFullYear(current.getFullYear() + interval.interval);
-              break;
-            default:
-              break;
-          }
+            // Advance to next occurrence based on frequency
+            switch (interval.freq) {
+              case ListingRecurrenceFreq.DAILY:
+                current = new Date(current.getTime() + interval.interval * 24 * 60 * 60 * 1000);
+                break;
+              case ListingRecurrenceFreq.WEEKLY:
+                current = new Date(current.getTime() + interval.interval * 7 * 24 * 60 * 60 * 1000);
+                break;
+              case ListingRecurrenceFreq.MONTHLY:
+                current = new Date(current);
+                current.setMonth(current.getMonth() + interval.interval);
+                break;
+              case ListingRecurrenceFreq.YEARLY:
+                current = new Date(current);
+                current.setFullYear(current.getFullYear() + interval.interval);
+                break;
+              default:
+                break;
+            }
 
-          iterations++;
+            iterations++;
+          }
         }
       }
     }
