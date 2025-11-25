@@ -4,6 +4,7 @@
  *
  * Creates or updates an Integration record with provider DESTINATION_ONE
  * and stores the configuration needed to sync data from destination_one API.
+ * Also creates a daily scheduled task to sync data at 2:00 AM.
  *
  * Env vars (required unless default provided):
  * - DO_EXPERIENCE: destination_one experience (default: heidi-app-kiel)
@@ -13,6 +14,8 @@
  * - DO_BASE_URL: Base URL (default: https://meta.et4.de/rest.ashx/search/)
  * - INTEGRATION_NAME: Display name (default: "Destination One - Kiel")
  * - INTEGRATION_ACTIVE: true|false (default: true)
+ * - SCHEDULE_NAME: Schedule name (default: "Destination One - Kiel Daily Sync")
+ * - SCHEDULE_CRON: Cron expression (default: "0 2 * * *" - 2:00 AM daily)
  */
 
 import 'tsconfig-paths/register';
@@ -23,11 +26,13 @@ import {
 } from '@prisma/client-integration';
 import { PrismaClient as UsersPrismaClient, UserRole as UsersUserRole } from '@prisma/client-users';
 import { PrismaClient as CityPrismaClient } from '@prisma/client-city';
+import { PrismaClient as SchedulerPrismaClient } from '@prisma/client-scheduler';
 import { DestinationOneConfig, DestinationOneCategoryMapping } from '@heidi/contracts';
 
 const prisma = new IntegrationPrismaClient();
 const usersPrisma = new UsersPrismaClient();
 const cityPrisma = new CityPrismaClient();
+const schedulerPrisma = new SchedulerPrismaClient();
 
 function requiredEnv(name: string): string {
   const v = process.env[name];
@@ -208,6 +213,7 @@ async function seed() {
     select: { id: true },
   });
 
+  let integrationId: string;
   if (existing) {
     const updated = await prisma.integration.update({
       where: { id: existing.id },
@@ -220,7 +226,8 @@ async function seed() {
       },
       select: { id: true, updatedAt: true },
     });
-    console.log(`↻ Updated DESTINATION_ONE integration (${updated.id})`);
+    integrationId = updated.id;
+    console.log(`↻ Updated DESTINATION_ONE integration (${integrationId})`);
   } else {
     const created = await prisma.integration.create({
       data: {
@@ -233,7 +240,44 @@ async function seed() {
       },
       select: { id: true, createdAt: true },
     });
-    console.log(`✓ Created DESTINATION_ONE integration (${created.id})`);
+    integrationId = created.id;
+    console.log(`✓ Created DESTINATION_ONE integration (${integrationId})`);
+  }
+
+  // Create or update scheduled task for daily sync
+  const scheduleName = process.env.SCHEDULE_NAME?.trim() || 'Destination One - Kiel Daily Sync';
+  const scheduleCron = process.env.SCHEDULE_CRON?.trim() || '0 2 * * *';
+  const scheduleDescription = 'Daily sync of Destination One data at 2:00 AM';
+
+  const existingSchedule = await schedulerPrisma.schedule.findFirst({
+    where: { name: scheduleName },
+    select: { id: true },
+  });
+
+  if (existingSchedule) {
+    const updatedSchedule = await schedulerPrisma.schedule.update({
+      where: { id: existingSchedule.id },
+      data: {
+        description: scheduleDescription,
+        cronExpression: scheduleCron,
+        payload: { integrationId },
+        isEnabled: true,
+      },
+      select: { id: true, updatedAt: true },
+    });
+    console.log(`↻ Updated schedule (${updatedSchedule.id})`);
+  } else {
+    const createdSchedule = await schedulerPrisma.schedule.create({
+      data: {
+        name: scheduleName,
+        description: scheduleDescription,
+        cronExpression: scheduleCron,
+        payload: { integrationId },
+        isEnabled: true,
+      },
+      select: { id: true, createdAt: true },
+    });
+    console.log(`✓ Created schedule (${createdSchedule.id})`);
   }
 
   console.log('✅ Seeding complete.');
@@ -249,5 +293,6 @@ seed()
       prisma.$disconnect(),
       usersPrisma.$disconnect(),
       cityPrisma.$disconnect(),
+      schedulerPrisma.$disconnect(),
     ]);
   });
