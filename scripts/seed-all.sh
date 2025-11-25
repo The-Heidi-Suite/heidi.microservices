@@ -34,7 +34,7 @@ fi
 
 cd "$ROOT_DIR"
 
-read -r -d '' PIPELINE_DATA <<'EOF'
+mapfile -t PIPELINE <<'EOF'
 seed:terms|scripts/seed-terms.ts|Seed global terms of use for the users service
 seed:salutations|scripts/seed-salutations.ts|Seed localized salutations for user profiles
 seed:categories|scripts/seed-categories.ts|Seed core categories and subcategories
@@ -49,8 +49,6 @@ seed:mobilithek-parking|scripts/seed-mobilithek-parking-integration.ts|Configure
 seed:kiel-newsletter|scripts/seed-kiel-newsletter-integration.ts|Configure Kiel newsletter integration
 seed:firebase-project|scripts/seed-firebase-project.ts|Seed Firebase project configuration
 EOF
-
-IFS=$'\n' read -r -d '' -a PIPELINE <<<"$PIPELINE_DATA"$'\0'
 
 declare -A SKIP_STEPS=()
 declare -A ONLY_STEPS=()
