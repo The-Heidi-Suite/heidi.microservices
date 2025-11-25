@@ -228,10 +228,10 @@ export class UserDto {
   lastName: string;
 
   @ApiPropertyOptional({
-    example: 'Mr',
-    description: 'User salutation/title - respects preferred language',
+    example: 'MR',
+    description: 'User salutation code (e.g., "MR", "MRS", "MS", "DR", "PROF")',
   })
-  salutation?: string;
+  salutationCode?: string;
 
   @ApiProperty({
     example: 3,

@@ -10,3 +10,4 @@ export * from './upload-profile-photo-response.dto';
 export * from './register-device.dto';
 export * from './device-response.dto';
 export * from './topic-subscription.dto';
+export * from './salutation-response.dto';

@@ -60,12 +60,13 @@ export class RegisterDto {
   lastName?: string;
 
   @ApiPropertyOptional({
-    description: 'User salutation/title (e.g., Mr, Mrs, Dr) - respects user preferred language',
-    example: 'Mr',
+    description:
+      'User salutation code (e.g., "MR", "MRS", "MS", "DR", "PROF"). Use GET /salutations to fetch available options.',
+    example: 'MR',
   })
   @IsString()
   @IsOptional()
-  salutation?: string;
+  salutationCode?: string;
 
   @ApiPropertyOptional({
     description: 'Whether the user has a vehicle',
