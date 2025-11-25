@@ -3,7 +3,9 @@ import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@heidi/config';
 import { LoggerService } from '@heidi/logger';
 import { firstValueFrom } from 'rxjs';
+import { AxiosError } from 'axios';
 import { ITranslationProvider } from './translation-provider.interface';
+import { RateLimitError } from '../errors/rate-limit.error';
 
 interface DeepLTranslationResponse {
   translations: Array<{
@@ -33,6 +35,8 @@ export class DeepLProvider implements ITranslationProvider {
   private readonly logger: LoggerService;
   private readonly apiKey: string;
   private readonly apiUrl: string;
+  private readonly maxRetries: number;
+  private readonly retryDelayMs: number;
 
   constructor(
     private readonly configService: ConfigService,
@@ -46,6 +50,14 @@ export class DeepLProvider implements ITranslationProvider {
     this.apiUrl =
       this.configService.get<string>('translations.deepl.apiUrl') ||
       'https://api-free.deepl.com/v2/translate';
+    this.maxRetries = parseInt(
+      this.configService.get<string>('translations.deepl.maxRetries', '3'),
+      10,
+    );
+    this.retryDelayMs = parseInt(
+      this.configService.get<string>('translations.deepl.retryDelayMs', '1000'),
+      10,
+    );
 
     if (!this.apiKey) {
       this.logger.warn('DeepL API key not configured. Translation provider will fail.');
@@ -65,7 +77,54 @@ export class DeepLProvider implements ITranslationProvider {
   }
 
   /**
-   * Translate a single text string
+   * Extract Retry-After header value from error response
+   */
+  private extractRetryAfter(error: AxiosError): number | undefined {
+    const retryAfter = error.response?.headers['retry-after'];
+    if (retryAfter) {
+      const seconds = parseInt(retryAfter, 10);
+      if (!isNaN(seconds) && seconds > 0) {
+        return seconds * 1000; // Convert to milliseconds
+      }
+    }
+    return undefined;
+  }
+
+  /**
+   * Check if error is a rate limit error (HTTP 429)
+   */
+  private isRateLimitError(error: any): boolean {
+    if (error instanceof AxiosError) {
+      return error.response?.status === 429;
+    }
+    return false;
+  }
+
+  /**
+   * Sleep for specified milliseconds
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Calculate exponential backoff delay with jitter
+   */
+  private calculateBackoffDelay(retryCount: number, retryAfter?: number): number {
+    if (retryAfter) {
+      // Use Retry-After header if provided, with some jitter
+      const jitter = Math.random() * 0.1 * retryAfter; // 0-10% jitter
+      return retryAfter + jitter;
+    }
+    // Exponential backoff: baseDelay * 2^retryCount with jitter
+    const baseDelay = this.retryDelayMs;
+    const exponentialDelay = baseDelay * Math.pow(2, retryCount);
+    const jitter = Math.random() * 0.3 * exponentialDelay; // 0-30% jitter
+    return exponentialDelay + jitter;
+  }
+
+  /**
+   * Translate a single text string with retry logic
    */
   async translate(text: string, targetLocale: string, sourceLocale?: string): Promise<string> {
     if (!this.apiKey) {
@@ -75,39 +134,82 @@ export class DeepLProvider implements ITranslationProvider {
     const targetLang = this.mapLanguageCode(targetLocale);
     const sourceLang = sourceLocale ? this.mapLanguageCode(sourceLocale) : undefined;
 
-    try {
-      const params = new URLSearchParams({
-        auth_key: this.apiKey,
-        text,
-        target_lang: targetLang,
-      });
+    let lastError: any;
+    let retryCount = 0;
 
-      if (sourceLang) {
-        params.append('source_lang', sourceLang);
+    while (retryCount <= this.maxRetries) {
+      try {
+        const params = new URLSearchParams({
+          auth_key: this.apiKey,
+          text,
+          target_lang: targetLang,
+        });
+
+        if (sourceLang) {
+          params.append('source_lang', sourceLang);
+        }
+
+        const response = await firstValueFrom(
+          this.http.post<DeepLTranslationResponse>(this.apiUrl, params, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            timeout: 30000,
+          }),
+        );
+
+        if (response.data.translations && response.data.translations.length > 0) {
+          return response.data.translations[0].text;
+        }
+
+        throw new Error('No translation returned from DeepL API');
+      } catch (error: any) {
+        lastError = error;
+
+        // Check if it's a rate limit error
+        if (this.isRateLimitError(error) && retryCount < this.maxRetries) {
+          const retryAfter = this.extractRetryAfter(error as AxiosError);
+          const delay = this.calculateBackoffDelay(retryCount, retryAfter);
+
+          this.logger.warn(
+            `DeepL rate limit hit (429). Retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${this.maxRetries})`,
+          );
+
+          await this.sleep(delay);
+          retryCount++;
+          continue;
+        }
+
+        // If not a rate limit error, or max retries reached, throw
+        if (this.isRateLimitError(error)) {
+          const retryAfter = this.extractRetryAfter(error as AxiosError);
+          this.logger.error(
+            `DeepL translation failed after ${retryCount} retries: ${error?.message}`,
+            error?.stack,
+          );
+          throw new RateLimitError(
+            `DeepL translation rate limited after ${retryCount} retries: ${error?.message || 'Unknown error'}`,
+            429,
+            retryAfter,
+            retryCount,
+            error,
+          );
+        }
+
+        // For non-rate-limit errors, throw immediately
+        this.logger.error(`DeepL translation failed: ${error?.message}`, error?.stack);
+        throw new Error(`DeepL translation failed: ${error?.message || 'Unknown error'}`);
       }
-
-      const response = await firstValueFrom(
-        this.http.post<DeepLTranslationResponse>(this.apiUrl, params, {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          timeout: 30000,
-        }),
-      );
-
-      if (response.data.translations && response.data.translations.length > 0) {
-        return response.data.translations[0].text;
-      }
-
-      throw new Error('No translation returned from DeepL API');
-    } catch (error: any) {
-      this.logger.error(`DeepL translation failed: ${error?.message}`, error?.stack);
-      throw new Error(`DeepL translation failed: ${error?.message || 'Unknown error'}`);
     }
+
+    // Should not reach here, but handle just in case
+    throw new Error(
+      `DeepL translation failed after ${retryCount} attempts: ${lastError?.message || 'Unknown error'}`,
+    );
   }
 
   /**
-   * Translate multiple texts in a single batch to the same target locale
+   * Translate multiple texts in a single batch to the same target locale with retry logic
    */
   async translateBatch(
     texts: string[],
@@ -125,40 +227,83 @@ export class DeepLProvider implements ITranslationProvider {
     const targetLang = this.mapLanguageCode(targetLocale);
     const sourceLang = sourceLocale ? this.mapLanguageCode(sourceLocale) : undefined;
 
-    try {
-      const params = new URLSearchParams({
-        auth_key: this.apiKey,
-        target_lang: targetLang,
-      });
+    let lastError: any;
+    let retryCount = 0;
 
-      // Add all texts as separate parameters (DeepL supports multiple text parameters)
-      texts.forEach((text) => {
-        params.append('text', text);
-      });
+    while (retryCount <= this.maxRetries) {
+      try {
+        const params = new URLSearchParams({
+          auth_key: this.apiKey,
+          target_lang: targetLang,
+        });
 
-      if (sourceLang) {
-        params.append('source_lang', sourceLang);
+        // Add all texts as separate parameters (DeepL supports multiple text parameters)
+        texts.forEach((text) => {
+          params.append('text', text);
+        });
+
+        if (sourceLang) {
+          params.append('source_lang', sourceLang);
+        }
+
+        const response = await firstValueFrom(
+          this.http.post<DeepLTranslationResponse>(this.apiUrl, params, {
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            timeout: 30000,
+          }),
+        );
+
+        if (response.data.translations && response.data.translations.length === texts.length) {
+          return response.data.translations.map((t) => t.text);
+        }
+
+        throw new Error(
+          `Expected ${texts.length} translations, got ${response.data.translations?.length || 0}`,
+        );
+      } catch (error: any) {
+        lastError = error;
+
+        // Check if it's a rate limit error
+        if (this.isRateLimitError(error) && retryCount < this.maxRetries) {
+          const retryAfter = this.extractRetryAfter(error as AxiosError);
+          const delay = this.calculateBackoffDelay(retryCount, retryAfter);
+
+          this.logger.warn(
+            `DeepL batch translation rate limit hit (429). Retrying in ${Math.round(delay)}ms (attempt ${retryCount + 1}/${this.maxRetries})`,
+          );
+
+          await this.sleep(delay);
+          retryCount++;
+          continue;
+        }
+
+        // If not a rate limit error, or max retries reached, throw
+        if (this.isRateLimitError(error)) {
+          const retryAfter = this.extractRetryAfter(error as AxiosError);
+          this.logger.error(
+            `DeepL batch translation failed after ${retryCount} retries: ${error?.message}`,
+            error?.stack,
+          );
+          throw new RateLimitError(
+            `DeepL batch translation rate limited after ${retryCount} retries: ${error?.message || 'Unknown error'}`,
+            429,
+            retryAfter,
+            retryCount,
+            error,
+          );
+        }
+
+        // For non-rate-limit errors, throw immediately
+        this.logger.error(`DeepL batch translation failed: ${error?.message}`, error?.stack);
+        throw new Error(`DeepL batch translation failed: ${error?.message || 'Unknown error'}`);
       }
-
-      const response = await firstValueFrom(
-        this.http.post<DeepLTranslationResponse>(this.apiUrl, params, {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          timeout: 30000,
-        }),
-      );
-
-      if (response.data.translations && response.data.translations.length === texts.length) {
-        return response.data.translations.map((t) => t.text);
-      }
-
-      throw new Error(
-        `Expected ${texts.length} translations, got ${response.data.translations?.length || 0}`,
-      );
-    } catch (error: any) {
-      this.logger.error(`DeepL batch translation failed: ${error?.message}`, error?.stack);
-      throw new Error(`DeepL batch translation failed: ${error?.message || 'Unknown error'}`);
     }
+
+    // Should not reach here, but handle just in case
+    throw new Error(
+      `DeepL batch translation failed after ${retryCount} attempts: ${lastError?.message || 'Unknown error'}`,
+    );
   }
 }

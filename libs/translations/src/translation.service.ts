@@ -7,13 +7,47 @@ import { DatabaseProvider } from './providers/database.provider';
 import { DeepLProvider } from './providers/deepl.provider';
 import { ITranslationProvider } from './providers/translation-provider.interface';
 import { TranslationSource } from './interfaces/translation.types';
+import { RateLimitError } from './errors/rate-limit.error';
 import { createHash } from 'crypto';
+
+/**
+ * Simple concurrency limiter using semaphore pattern
+ */
+class ConcurrencyLimiter {
+  private running = 0;
+  private queue: Array<() => void> = [];
+
+  constructor(private readonly limit: number) {}
+
+  async acquire(): Promise<void> {
+    if (this.running < this.limit) {
+      this.running++;
+      return;
+    }
+
+    return new Promise<void>((resolve) => {
+      this.queue.push(resolve);
+    });
+  }
+
+  release(): void {
+    this.running--;
+    if (this.queue.length > 0) {
+      const next = this.queue.shift();
+      if (next) {
+        this.running++;
+        next();
+      }
+    }
+  }
+}
 
 @Injectable()
 export class TranslationService {
   private readonly defaultSourceLocale: string;
   private readonly autoTranslateOnRead: boolean;
   private readonly supportedLocales: string[];
+  private readonly concurrencyLimiter: ConcurrencyLimiter;
 
   constructor(
     private readonly configService: ConfigService,
@@ -37,6 +71,13 @@ export class TranslationService {
       'ru',
       'uk',
     ];
+
+    const maxConcurrent = parseInt(
+      this.configService.get<string>('translations.maxConcurrent', '3'),
+      10,
+    );
+    this.concurrencyLimiter = new ConcurrencyLimiter(maxConcurrent);
+
     this.logger.setContext(TranslationService.name);
   }
 
@@ -205,8 +246,11 @@ export class TranslationService {
     }
 
     try {
-      // Translate each target locale separately (DeepL batch translates multiple texts to same locale)
-      for (const targetLocale of localesToTranslate) {
+      // Translate each target locale separately with concurrency control
+      const translationPromises = localesToTranslate.map(async (targetLocale) => {
+        // Acquire concurrency slot
+        await this.concurrencyLimiter.acquire();
+
         try {
           const translatedText = await provider.translate(text, targetLocale, sourceLocale);
 
@@ -226,14 +270,42 @@ export class TranslationService {
           });
         } catch (error: any) {
           // Log individual locale failure but continue with others
+          // Re-throw RateLimitError so it can be handled by the caller for requeue
+          if (error instanceof RateLimitError) {
+            this.logger.warn(
+              `Auto-translate rate limited for ${entityType}/${entityId}/${field} to ${targetLocale}`,
+            );
+            throw error; // Re-throw rate limit errors
+          }
+
           this.logger.error(
             `Auto-translate failed for ${entityType}/${entityId}/${field} to ${targetLocale}`,
             error,
           );
+          // Don't throw for non-rate-limit errors - continue with other locales
+        } finally {
+          // Always release concurrency slot
+          this.concurrencyLimiter.release();
         }
+      });
+
+      // Wait for all translations to complete and check for rate limit errors
+      const results = await Promise.allSettled(translationPromises);
+      const rateLimitErrors = results
+        .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+        .filter((result) => result.reason instanceof RateLimitError);
+
+      if (rateLimitErrors.length > 0) {
+        // Re-throw the first rate limit error so caller can requeue
+        throw rateLimitErrors[0].reason;
       }
     } catch (error: any) {
-      // Log error but don't throw - allow partial success
+      // Re-throw rate limit errors for requeue handling
+      if (error instanceof RateLimitError) {
+        throw error;
+      }
+
+      // Log other errors but don't throw - allow partial success
       this.logger.error(`Auto-translate failed for ${entityType}/${entityId}/${field}`, error);
       throw error; // Re-throw to allow caller to handle
     }
