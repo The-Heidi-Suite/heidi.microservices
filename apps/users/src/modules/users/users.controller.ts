@@ -62,6 +62,7 @@ import {
   TopicSubscriptionListResponseDto,
   SubscribeTopicResponseDto,
   UnsubscribeTopicResponseDto,
+  GetSalutationsResponseDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { GetLanguage } from '@heidi/i18n';
@@ -78,6 +79,31 @@ export class UsersController {
     private readonly fileUploadService: FileUploadService,
     private readonly configService: ConfigService,
   ) {}
+
+  @Get('salutations')
+  @Public()
+  @ApiOperation({
+    summary: 'Get available salutations',
+    description:
+      'Retrieve list of available salutations (titles) in the specified language (public endpoint)',
+  })
+  @ApiQuery({
+    name: 'locale',
+    required: false,
+    type: String,
+    description: 'Language code (e.g., en, de, ar). Defaults to English if not provided.',
+    example: 'en',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Salutations retrieved successfully',
+    type: GetSalutationsResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async getSalutations(@Query('locale') locale?: string, @GetLanguage() language?: string) {
+    const effectiveLocale = locale || language || 'en';
+    return this.usersService.getSalutations(effectiveLocale);
+  }
 
   @Post('register')
   @Public()
@@ -385,7 +411,7 @@ export class UsersController {
       username: profileData.username ?? '',
       firstName: profileData.firstName ?? '',
       lastName: profileData.lastName ?? '',
-      salutation: profileData.salutation ?? undefined,
+      salutationCode: profileData.salutationCode ?? undefined,
       role: profileData.role,
       hasVehicle: profileData.hasVehicle ?? false,
       isActive: profileData.isActive,

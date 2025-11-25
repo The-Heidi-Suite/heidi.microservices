@@ -91,7 +91,7 @@ export class UsersService {
         password: hashedPassword,
         firstName: dto.firstName || null,
         lastName: dto.lastName || null,
-        salutation: dto.salutation || null,
+        salutationCode: dto.salutationCode || null,
         hasVehicle: dto.hasVehicle ?? false,
         role: UserRole.CITIZEN,
         emailVerified: false,
@@ -103,7 +103,7 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
-        salutation: true,
+        salutationCode: true,
         hasVehicle: true,
         createdAt: true,
       },
@@ -174,7 +174,7 @@ export class UsersService {
           password: hashedPassword,
           firstName: dto.firstName || null,
           lastName: dto.lastName || null,
-          salutation: dto.salutation || null,
+          salutationCode: dto.salutationCode || null,
           hasVehicle: dto.hasVehicle ?? false,
           role: UserRole.CITIZEN,
           emailVerified: false,
@@ -186,7 +186,7 @@ export class UsersService {
           role: true,
           firstName: true,
           lastName: true,
-          salutation: true,
+          salutationCode: true,
           hasVehicle: true,
           createdAt: true,
         },
@@ -355,7 +355,7 @@ export class UsersService {
           role: true,
           firstName: true,
           lastName: true,
-          salutation: true,
+          salutationCode: true,
           hasVehicle: true,
           isActive: true,
           deletedAt: true,
@@ -403,7 +403,7 @@ export class UsersService {
           role: true,
           firstName: true,
           lastName: true,
-          salutation: true,
+          salutationCode: true,
           hasVehicle: true,
           cityId: true,
           preferredLanguage: true,
@@ -452,7 +452,7 @@ export class UsersService {
           role: true,
           firstName: true,
           lastName: true,
-          salutation: true,
+          salutationCode: true,
           hasVehicle: true,
           cityId: true,
           preferredLanguage: true,
@@ -495,7 +495,7 @@ export class UsersService {
         devicePlatform: true,
         firstName: true,
         lastName: true,
-        salutation: true,
+        salutationCode: true,
         hasVehicle: true,
         cityId: true,
         preferredLanguage: true,
@@ -570,7 +570,7 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
-        salutation: true,
+        salutationCode: true,
         hasVehicle: true,
         createdAt: true,
       },
@@ -600,7 +600,7 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
-        salutation: true,
+        salutationCode: true,
         hasVehicle: true,
         updatedAt: true,
       },
@@ -690,7 +690,7 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
-        salutation: true,
+        salutationCode: true,
         hasVehicle: true,
         profilePhotoUrl: true,
         preferredLanguage: true,
@@ -743,7 +743,7 @@ export class UsersService {
     const updateData: any = {};
     if (dto.firstName !== undefined) updateData.firstName = dto.firstName;
     if (dto.lastName !== undefined) updateData.lastName = dto.lastName;
-    if (dto.salutation !== undefined) updateData.salutation = dto.salutation;
+    if (dto.salutationCode !== undefined) updateData.salutationCode = dto.salutationCode;
     if (dto.hasVehicle !== undefined) updateData.hasVehicle = dto.hasVehicle;
     if (dto.profilePhotoUrl !== undefined) updateData.profilePhotoUrl = dto.profilePhotoUrl;
     if (dto.preferredLanguage !== undefined) updateData.preferredLanguage = dto.preferredLanguage;
@@ -758,7 +758,7 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
-        salutation: true,
+        salutationCode: true,
         hasVehicle: true,
         profilePhotoUrl: true,
         preferredLanguage: true,
@@ -1020,7 +1020,7 @@ export class UsersService {
         password: hashedPassword,
         firstName: dto.firstName || null,
         lastName: dto.lastName || null,
-        salutation: dto.salutation || null,
+        salutationCode: dto.salutationCode || null,
         hasVehicle: dto.hasVehicle ?? false,
         userType: UserType.REGISTERED,
         emailVerified: false,
@@ -1036,7 +1036,7 @@ export class UsersService {
         userType: true,
         firstName: true,
         lastName: true,
-        salutation: true,
+        salutationCode: true,
         hasVehicle: true,
         migratedFromGuestId: true,
         createdAt: true,
@@ -1205,7 +1205,7 @@ export class UsersService {
         role: true,
         firstName: true,
         lastName: true,
-        salutation: true,
+        salutationCode: true,
         hasVehicle: true,
         updatedAt: true,
       },
@@ -1486,5 +1486,53 @@ export class UsersService {
 
     this.logger.log(`Topic subscription deactivated: ${topicKey}`);
     return { success: true };
+  }
+
+  /**
+   * Get available salutations by language/locale
+   */
+  async getSalutations(locale?: string) {
+    const effectiveLocale = locale || 'en';
+    this.logger.log(`Getting salutations for locale: ${effectiveLocale}`);
+
+    const salutations = await this.prisma.salutation.findMany({
+      where: {
+        locale: effectiveLocale,
+        isActive: true,
+      },
+      select: {
+        code: true,
+        label: true,
+        locale: true,
+        sortOrder: true,
+      },
+      orderBy: {
+        sortOrder: 'asc',
+      },
+    });
+
+    // If no salutations found for the locale, fallback to English
+    if (salutations.length === 0 && effectiveLocale !== 'en') {
+      this.logger.warn(
+        `No salutations found for locale: ${effectiveLocale}, falling back to English`,
+      );
+      return this.prisma.salutation.findMany({
+        where: {
+          locale: 'en',
+          isActive: true,
+        },
+        select: {
+          code: true,
+          label: true,
+          locale: true,
+          sortOrder: true,
+        },
+        orderBy: {
+          sortOrder: 'asc',
+        },
+      });
+    }
+
+    return salutations;
   }
 }
