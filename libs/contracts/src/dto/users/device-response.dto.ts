@@ -58,7 +58,7 @@ export class DeviceDto {
   createdAt: string;
 }
 
-export class DeviceListResponseDto {
+export class DeviceListResponseDataDto {
   @ApiProperty({
     description: 'List of devices',
     type: [DeviceDto],
@@ -66,7 +66,27 @@ export class DeviceListResponseDto {
   devices: DeviceDto[];
 }
 
-export class RegisterDeviceResponseDto {
+export class DeviceListResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: DeviceListResponseDataDto })
+  data: DeviceListResponseDataDto;
+
+  @ApiProperty({ example: 'Devices retrieved successfully', description: 'Success message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/me/devices' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
+}
+
+export class RegisterDeviceResponseDataDto {
   @ApiProperty({
     description: 'Registered device',
     type: DeviceDto,
@@ -74,10 +94,50 @@ export class RegisterDeviceResponseDto {
   device: DeviceDto;
 }
 
-export class DeleteDeviceResponseDto {
+export class RegisterDeviceResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: RegisterDeviceResponseDataDto })
+  data: RegisterDeviceResponseDataDto;
+
+  @ApiProperty({ example: 'Device registered successfully', description: 'Success message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/me/devices' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
+}
+
+export class DeleteDeviceResponseDataDto {
   @ApiProperty({
     description: 'Success indicator',
     example: true,
   })
   success: boolean;
+}
+
+export class DeleteDeviceResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: DeleteDeviceResponseDataDto })
+  data: DeleteDeviceResponseDataDto;
+
+  @ApiProperty({ example: 'Device deleted successfully', description: 'Success message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/me/devices/:deviceId' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
 }

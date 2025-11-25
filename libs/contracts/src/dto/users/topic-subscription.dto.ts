@@ -45,7 +45,7 @@ export class TopicSubscriptionDto {
   createdAt: string;
 }
 
-export class TopicSubscriptionListResponseDto {
+export class TopicSubscriptionListResponseDataDto {
   @ApiProperty({
     description: 'List of topic subscriptions',
     type: [TopicSubscriptionDto],
@@ -53,7 +53,30 @@ export class TopicSubscriptionListResponseDto {
   subscriptions: TopicSubscriptionDto[];
 }
 
-export class SubscribeTopicResponseDto {
+export class TopicSubscriptionListResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: TopicSubscriptionListResponseDataDto })
+  data: TopicSubscriptionListResponseDataDto;
+
+  @ApiProperty({
+    example: 'Topic subscriptions retrieved successfully',
+    description: 'Success message',
+  })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/me/topics' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
+}
+
+export class SubscribeTopicResponseDataDto {
   @ApiProperty({
     description: 'Topic subscription',
     type: TopicSubscriptionDto,
@@ -61,10 +84,56 @@ export class SubscribeTopicResponseDto {
   subscription: TopicSubscriptionDto;
 }
 
-export class UnsubscribeTopicResponseDto {
+export class SubscribeTopicResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: SubscribeTopicResponseDataDto })
+  data: SubscribeTopicResponseDataDto;
+
+  @ApiProperty({
+    example: 'Topic subscription created successfully',
+    description: 'Success message',
+  })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/me/topics' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
+}
+
+export class UnsubscribeTopicResponseDataDto {
   @ApiProperty({
     description: 'Success indicator',
     example: true,
   })
   success: boolean;
+}
+
+export class UnsubscribeTopicResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: UnsubscribeTopicResponseDataDto })
+  data: UnsubscribeTopicResponseDataDto;
+
+  @ApiProperty({
+    example: 'Topic subscription removed successfully',
+    description: 'Success message',
+  })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/me/topics/:topicKey' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
 }
