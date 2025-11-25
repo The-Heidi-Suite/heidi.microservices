@@ -99,6 +99,15 @@ export class CategoryResponseDto {
   @IsOptional()
   @IsNumber()
   radiusMeters?: number | null;
+
+  @ApiPropertyOptional({
+    example: 0,
+    description:
+      'Display order for sorting quick filters. Only present when isQuickFilter is true. Lower values appear first.',
+  })
+  @IsOptional()
+  @IsNumber()
+  order?: number;
 }
 
 export class CityCategoryResponseDto {

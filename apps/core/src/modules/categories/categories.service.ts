@@ -391,6 +391,7 @@ export class CategoriesService {
             isQuickFilter: true,
             quickFilterKey: filter.key,
             radiusMeters: filter.radiusMeters ?? null,
+            order: filter.order,
           }));
 
           // Append virtual children to existing children array
