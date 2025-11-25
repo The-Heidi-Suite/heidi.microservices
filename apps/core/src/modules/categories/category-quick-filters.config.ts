@@ -37,7 +37,7 @@ const QUICK_FILTER_CONFIGS: Record<string, Record<string, QuickFilterConfig[]>> 
       {
         key: 'see-all',
         label: 'See all',
-        order: 1,
+        order: 999,
       },
     ],
     events: [
@@ -51,7 +51,7 @@ const QUICK_FILTER_CONFIGS: Record<string, Record<string, QuickFilterConfig[]>> 
       {
         key: 'see-all',
         label: 'See all',
-        order: 1,
+        order: 999,
       },
     ],
     'food-and-drink': [
@@ -65,7 +65,7 @@ const QUICK_FILTER_CONFIGS: Record<string, Record<string, QuickFilterConfig[]>> 
       {
         key: 'see-all',
         label: 'See all',
-        order: 1,
+        order: 999,
       },
     ],
     tours: [
@@ -79,7 +79,7 @@ const QUICK_FILTER_CONFIGS: Record<string, Record<string, QuickFilterConfig[]>> 
       {
         key: 'see-all',
         label: 'See all',
-        order: 1,
+        order: 999,
       },
     ],
     culture: [
@@ -93,7 +93,7 @@ const QUICK_FILTER_CONFIGS: Record<string, Record<string, QuickFilterConfig[]>> 
       {
         key: 'see-all',
         label: 'See all',
-        order: 1,
+        order: 999,
       },
     ],
   },

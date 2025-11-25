@@ -99,6 +99,15 @@ export class CategoryResponseDto {
   @IsOptional()
   @IsNumber()
   radiusMeters?: number | null;
+
+  @ApiPropertyOptional({
+    example: 0,
+    description:
+      'Display order for sorting quick filters. Only present when isQuickFilter is true. Lower values appear first.',
+  })
+  @IsOptional()
+  @IsNumber()
+  order?: number;
 }
 
 export class CityCategoryResponseDto {
@@ -418,14 +427,4 @@ export class CategoryRequestNotFoundErrorResponseDto {
     statusCode?: number;
     [key: string]: any;
   };
-}
-
-export class CityCategoriesWithFiltersResponseDto {
-  @ApiProperty({
-    type: [CategoryResponseDto],
-    description:
-      'Hierarchical category tree for the city. Quick filters (Nearby, See all) are included as virtual children in root categories, marked with isQuickFilter=true.',
-  })
-  @Type(() => CategoryResponseDto)
-  categories: CategoryResponseDto[];
 }
