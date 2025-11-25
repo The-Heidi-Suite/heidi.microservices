@@ -246,9 +246,13 @@ export default () => ({
   translations: {
     defaultSourceLocale: process.env.TRANSLATIONS_DEFAULT_SOURCE_LOCALE || 'en',
     autoTranslateOnRead: process.env.TRANSLATIONS_AUTO_TRANSLATE_ON_READ !== 'false',
+    maxConcurrent: parseInt(process.env.TRANSLATION_MAX_CONCURRENT || '3', 10),
+    maxRequeueAttempts: parseInt(process.env.TRANSLATION_MAX_REQUEUE_ATTEMPTS || '3', 10),
     deepl: {
       apiKey: process.env.DEEPL_API_KEY || '',
       apiUrl: process.env.DEEPL_API_URL || 'https://api-free.deepl.com/v2/translate',
+      maxRetries: parseInt(process.env.DEEPL_MAX_RETRIES || '3', 10),
+      retryDelayMs: parseInt(process.env.DEEPL_RETRY_DELAY_MS || '1000', 10),
     },
   },
 });

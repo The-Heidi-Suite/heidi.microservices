@@ -59,4 +59,13 @@ export class AutoTranslateFieldDto {
   @IsString()
   @IsOptional()
   sourceHash?: string;
+
+  @ApiProperty({
+    description: 'Number of requeue attempts (for rate limit handling)',
+    example: 0,
+    required: false,
+    default: 0,
+  })
+  @IsOptional()
+  requeueAttempts?: number;
 }
