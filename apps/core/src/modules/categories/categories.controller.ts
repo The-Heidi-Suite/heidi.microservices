@@ -32,7 +32,6 @@ import {
   CategoryRequestResponseDto,
   CategoryResponseDto,
   CityCategoryResponseDto,
-  CityCategoriesWithFiltersResponseDto,
   CategoryNotFoundErrorResponseDto,
   CategoryAssignmentNotFoundErrorResponseDto,
   CategoryRequestNotFoundErrorResponseDto,
@@ -357,11 +356,12 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'City categories with quick filters retrieved successfully',
-    type: CityCategoriesWithFiltersResponseDto,
+    type: [CategoryResponseDto],
     content: {
       'application/json': {
         example: {
-          categories: [
+          success: true,
+          data: [
             {
               id: 'cat_01HZXTY0YK3H2V4C5B6N7P8Q',
               name: 'Shopping',
@@ -441,6 +441,10 @@ export class CategoriesController {
               ],
             },
           ],
+          message: 'City categories with quick filters retrieved successfully',
+          timestamp: '2025-01-01T00:00:00.000Z',
+          path: '/categories/cities/city_01HZXTY0YK3H2V4C5B6N7P8Q/with-filters',
+          statusCode: 200,
         },
       },
     },

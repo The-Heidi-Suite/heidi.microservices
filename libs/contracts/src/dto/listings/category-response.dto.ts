@@ -419,13 +419,3 @@ export class CategoryRequestNotFoundErrorResponseDto {
     [key: string]: any;
   };
 }
-
-export class CityCategoriesWithFiltersResponseDto {
-  @ApiProperty({
-    type: [CategoryResponseDto],
-    description:
-      'Hierarchical category tree for the city. Quick filters (Nearby, See all) are included as virtual children in root categories, marked with isQuickFilter=true.',
-  })
-  @Type(() => CategoryResponseDto)
-  categories: CategoryResponseDto[];
-}

@@ -3,7 +3,7 @@ import { PrismaCoreService } from '@heidi/prisma';
 import {
   CreateCategoryDto,
   UpdateCategoryDto,
-  CityCategoriesWithFiltersResponseDto,
+  CategoryResponseDto,
   CategoryQuickFilterDto,
 } from '@heidi/contracts';
 import { CategoryRequestStatus, Prisma } from '@prisma/client-core';
@@ -413,9 +413,7 @@ export class CategoriesService {
    * Quick filters (Nearby, See all) are embedded in the children array of root categories,
    * marked with isQuickFilter=true for easy identification by the app.
    */
-  async listCityCategoriesWithFilters(
-    cityId: string,
-  ): Promise<CityCategoriesWithFiltersResponseDto> {
+  async listCityCategoriesWithFilters(cityId: string): Promise<CategoryResponseDto[]> {
     const categories = await this.listCityCategories(cityId);
     const quickFiltersByCategorySlug =
       await this.quickFiltersService.getQuickFiltersForCity(cityId);
@@ -423,9 +421,7 @@ export class CategoriesService {
     // Attach virtual quick-filter children to the category tree
     this.attachQuickFilterChildren(categories, quickFiltersByCategorySlug);
 
-    return {
-      categories,
-    };
+    return categories;
   }
 
   async getCategoryById(categoryId: string) {
