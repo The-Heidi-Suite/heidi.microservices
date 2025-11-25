@@ -4,6 +4,7 @@ import {
   CreateCategoryDto,
   UpdateCategoryDto,
   CityCategoriesWithFiltersResponseDto,
+  CategoryQuickFilterDto,
 } from '@heidi/contracts';
 import { CategoryRequestStatus, Prisma } from '@prisma/client-core';
 import { StorageService } from '@heidi/storage';
@@ -355,8 +356,62 @@ export class CategoriesService {
   }
 
   /**
-   * List city categories with quick filters attached.
-   * Returns both the category tree and quick filters grouped by root category slug.
+   * Attach virtual quick-filter children to root categories in the tree.
+   * Virtual children are marked with isQuickFilter=true and contain quickFilterKey.
+   */
+  private attachQuickFilterChildren(
+    categories: any[],
+    quickFiltersByCategorySlug: Record<string, CategoryQuickFilterDto[]>,
+  ): void {
+    for (const category of categories) {
+      // Only attach to root categories (no parentId)
+      if (!category.parentId) {
+        const quickFilters = quickFiltersByCategorySlug[category.slug];
+        if (quickFilters && quickFilters.length > 0) {
+          // Sort quick filters by order
+          const sortedFilters = [...quickFilters].sort((a, b) => a.order - b.order);
+
+          // Create virtual child nodes for each quick filter
+          const virtualChildren = sortedFilters.map((filter) => ({
+            id: `quick-${category.slug}-${filter.key}`,
+            name: filter.label,
+            slug: `${category.slug}__${filter.key}`,
+            description: null,
+            subtitle: null,
+            imageUrl: null,
+            iconUrl: null,
+            headerBackgroundColor: null,
+            contentBackgroundColor: null,
+            type: null,
+            parentId: category.id,
+            languageCode: null,
+            isActive: true,
+            createdAt: category.createdAt,
+            updatedAt: category.updatedAt,
+            isQuickFilter: true,
+            quickFilterKey: filter.key,
+            radiusMeters: filter.radiusMeters ?? null,
+          }));
+
+          // Append virtual children to existing children array
+          if (!category.children) {
+            category.children = [];
+          }
+          category.children.push(...virtualChildren);
+        }
+      }
+
+      // Recursively process children (in case we want to support nested quick filters later)
+      if (category.children && Array.isArray(category.children)) {
+        this.attachQuickFilterChildren(category.children, quickFiltersByCategorySlug);
+      }
+    }
+  }
+
+  /**
+   * List city categories with quick filters attached as virtual children.
+   * Quick filters (Nearby, See all) are embedded in the children array of root categories,
+   * marked with isQuickFilter=true for easy identification by the app.
    */
   async listCityCategoriesWithFilters(
     cityId: string,
@@ -365,34 +420,11 @@ export class CategoriesService {
     const quickFiltersByCategorySlug =
       await this.quickFiltersService.getQuickFiltersForCity(cityId);
 
-    // Only include quick filters for root categories that actually exist in the tree
-    const filteredQuickFilters: Record<string, any[]> = {};
-    const rootCategorySlugs = new Set<string>();
-
-    // Extract root category slugs from the tree
-    const extractRootSlugs = (cats: any[]) => {
-      for (const cat of cats) {
-        if (!cat.parentId) {
-          rootCategorySlugs.add(cat.slug);
-        }
-        if (cat.children && Array.isArray(cat.children)) {
-          extractRootSlugs(cat.children);
-        }
-      }
-    };
-
-    extractRootSlugs(categories);
-
-    // Only include quick filters for categories that exist
-    for (const slug of rootCategorySlugs) {
-      if (quickFiltersByCategorySlug[slug] && quickFiltersByCategorySlug[slug].length > 0) {
-        filteredQuickFilters[slug] = quickFiltersByCategorySlug[slug];
-      }
-    }
+    // Attach virtual quick-filter children to the category tree
+    this.attachQuickFilterChildren(categories, quickFiltersByCategorySlug);
 
     return {
       categories,
-      quickFiltersByCategorySlug: filteredQuickFilters,
     };
   }
 

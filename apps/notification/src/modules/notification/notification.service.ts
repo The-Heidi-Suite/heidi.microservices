@@ -46,6 +46,13 @@ export class NotificationService implements OnModuleInit {
       ...(dto.translationParams && { translationParams: dto.translationParams }),
     };
 
+    // Extract scheduleRunId from metadata if present
+    const scheduleRunId = dto.metadata?.scheduleRunId || null;
+    // Remove scheduleRunId from metadata to avoid duplication
+    if (metadata.scheduleRunId) {
+      delete metadata.scheduleRunId;
+    }
+
     // Create notification record
     const notification = await this.prisma.notification.create({
       data: {
@@ -55,6 +62,7 @@ export class NotificationService implements OnModuleInit {
         subject: dto.subject,
         content: dto.content,
         metadata: metadata,
+        scheduleRunId: scheduleRunId,
         status: 'PENDING',
       },
     });

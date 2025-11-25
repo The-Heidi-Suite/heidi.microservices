@@ -25,6 +25,7 @@ import { CATEGORY_ASSETS, getCityHeaderImageUrl } from './assets/category-assets
 
 const cityPrisma = new CityPrismaClient();
 const corePrisma = new CorePrismaClient();
+const DEFAULT_CITY_CATEGORY_LANGUAGE = 'en';
 
 // English display names for categories in Kiel
 const KIEL_DISPLAY_NAMES: Record<string, string> = {
@@ -169,6 +170,7 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
           where: { id: existing.id },
           data: {
             displayName,
+            languageCode: existing.languageCode ?? DEFAULT_CITY_CATEGORY_LANGUAGE,
             displayOrder,
             headerBackgroundColor,
             contentBackgroundColor,
@@ -185,6 +187,7 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
           data: {
             cityId,
             categoryId: category.id,
+            languageCode: DEFAULT_CITY_CATEGORY_LANGUAGE,
             displayName,
             displayOrder,
             headerBackgroundColor,

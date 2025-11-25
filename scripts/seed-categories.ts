@@ -20,6 +20,7 @@ import { PrismaClient, CategoryType } from '@prisma/client-core';
 import { CATEGORY_ASSETS, getCategoryImageUrl } from './assets/category-assets-mapping';
 
 const prisma = new PrismaClient();
+const DEFAULT_CATEGORY_LANGUAGE = 'en';
 
 type CategorySeed = {
   name: string;
@@ -28,6 +29,7 @@ type CategorySeed = {
   isActive?: boolean;
   subtitle?: string;
   description?: string;
+  languageCode?: string;
   imageUrl?: string;
   iconUrl?: string;
   headerBackgroundColor?: string;
@@ -218,6 +220,7 @@ async function seedCategoryTree(seed: CategorySeed, parentId?: string) {
   const categoryData = {
     name: seed.name,
     type: seed.type ?? null,
+    languageCode: seed.languageCode ?? existing?.languageCode ?? DEFAULT_CATEGORY_LANGUAGE,
     isActive,
     parentId: parentIdValue,
     subtitle: seed.subtitle || assetMapping?.subtitle || null,

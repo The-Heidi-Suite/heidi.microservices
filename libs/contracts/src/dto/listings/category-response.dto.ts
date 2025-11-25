@@ -2,7 +2,6 @@ import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CategoryRequestStatus, CategoryType } from '@prisma/client-core';
 import { Transform, Type } from 'class-transformer';
 import { IsEnum, IsNumber, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
-import { CategoryQuickFilterDto } from './category-quick-filter.dto';
 
 export class CategoryResponseDto {
   @ApiProperty({ example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890' })
@@ -74,6 +73,32 @@ export class CategoryResponseDto {
   })
   @Type(() => CategoryResponseDto)
   children?: CategoryResponseDto[];
+
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      'Indicates this is a virtual quick filter node (not a real DB category). When true, use quickFilterKey to determine behavior instead of categoryId.',
+  })
+  @IsOptional()
+  isQuickFilter?: boolean;
+
+  @ApiPropertyOptional({
+    example: 'nearby',
+    description:
+      'Quick filter key for virtual nodes (e.g., "nearby", "see-all"). Only present when isQuickFilter is true.',
+  })
+  @IsOptional()
+  @IsString()
+  quickFilterKey?: string;
+
+  @ApiPropertyOptional({
+    example: 1500,
+    description:
+      'Search radius in meters for distance-based quick filters (e.g., "nearby"). Only present when isQuickFilter is true and the filter supports distance.',
+  })
+  @IsOptional()
+  @IsNumber()
+  radiusMeters?: number | null;
 }
 
 export class CityCategoryResponseDto {
@@ -398,34 +423,9 @@ export class CategoryRequestNotFoundErrorResponseDto {
 export class CityCategoriesWithFiltersResponseDto {
   @ApiProperty({
     type: [CategoryResponseDto],
-    description: 'Hierarchical category tree for the city',
+    description:
+      'Hierarchical category tree for the city. Quick filters (Nearby, See all) are included as virtual children in root categories, marked with isQuickFilter=true.',
   })
   @Type(() => CategoryResponseDto)
   categories: CategoryResponseDto[];
-
-  @ApiProperty({
-    type: 'object',
-    additionalProperties: {
-      type: 'array',
-      items: { $ref: '#/components/schemas/CategoryQuickFilterDto' },
-    },
-    description: 'Quick filters grouped by root category slug (e.g., "shopping", "events")',
-    example: {
-      shopping: [
-        {
-          key: 'nearby',
-          label: 'Nearby',
-          order: 0,
-          radiusMeters: 1500,
-          sortByDistance: true,
-        },
-        {
-          key: 'see-all',
-          label: 'See all',
-          order: 1,
-        },
-      ],
-    },
-  })
-  quickFiltersByCategorySlug: Record<string, CategoryQuickFilterDto[]>;
 }

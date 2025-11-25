@@ -77,25 +77,53 @@ export class TasksService implements OnModuleInit {
   private async executeTask(task: any) {
     this.logger.log(`Executing task: ${task.name}`);
 
+    // Create schedule run log
+    let runLog: any;
     try {
-      // Check if task payload contains integrationId for integration sync
-      if (task.payload && task.payload.integrationId) {
+      runLog = await this.prisma.scheduleRunLog.create({
+        data: {
+          scheduleId: task.id,
+          startedAt: new Date(),
+          status: 'SUCCESS', // Will be updated if it fails
+        },
+      });
+      this.logger.debug(`Created schedule run log: ${runLog.id} for task: ${task.id}`);
+    } catch (error) {
+      this.logger.error(`Failed to create schedule run log for task: ${task.id}`, error);
+      // Continue execution even if log creation fails
+    }
+
+    try {
+      // Check task kind to route to appropriate handler
+      if (task.payload && task.payload.kind === 'favorite-event-reminders') {
+        this.logger.log(
+          `Task ${task.name} is favorite-event-reminders, triggering reminder processing`,
+        );
+        this.client.emit(RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN, {
+          taskId: task.id,
+          scheduleRunId: runLog?.id,
+          triggeredAt: new Date().toISOString(),
+        });
+      } else if (task.payload && task.payload.integrationId) {
         this.logger.log(`Task ${task.name} contains integrationId, triggering integration sync`);
         this.client.emit(RabbitMQPatterns.INTEGRATION_SYNC, {
           integrationId: task.payload.integrationId,
           taskId: task.id,
+          scheduleRunId: runLog?.id,
           timestamp: new Date().toISOString(),
         });
       } else {
         // Default task execution
         this.client.emit(RabbitMQPatterns.SCHEDULE_EXECUTE, {
           taskId: task.id,
+          scheduleRunId: runLog?.id,
           name: task.name,
           payload: task.payload,
           timestamp: new Date().toISOString(),
         });
       }
 
+      // Update schedule
       await this.prisma.schedule.update({
         where: { id: task.id },
         data: {
@@ -105,14 +133,28 @@ export class TasksService implements OnModuleInit {
         },
       });
 
+      // Update run log with success status
+      if (runLog) {
+        await this.prisma.scheduleRunLog.update({
+          where: { id: runLog.id },
+          data: {
+            finishedAt: new Date(),
+            status: 'SUCCESS',
+            runSummary: { completed: true },
+          },
+        });
+      }
+
       this.client.emit(RabbitMQPatterns.SCHEDULE_COMPLETED, {
         taskId: task.id,
+        scheduleRunId: runLog?.id,
         status: 'SUCCESS',
         timestamp: new Date().toISOString(),
       });
     } catch (error) {
       this.logger.error(`Task execution failed: ${task.name}`, error);
 
+      // Update schedule with failure
       await this.prisma.schedule.update({
         where: { id: task.id },
         data: {
@@ -120,6 +162,19 @@ export class TasksService implements OnModuleInit {
           lastRunStatus: 'FAILED',
         },
       });
+
+      // Update run log with failure status
+      if (runLog) {
+        await this.prisma.scheduleRunLog.update({
+          where: { id: runLog.id },
+          data: {
+            finishedAt: new Date(),
+            status: 'FAILED',
+            errorMessage: error instanceof Error ? error.message : String(error),
+            runSummary: { error: true },
+          },
+        });
+      }
     }
   }
 }

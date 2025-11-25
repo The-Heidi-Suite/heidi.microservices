@@ -303,10 +303,7 @@ export class AuthController {
     type: AuthNotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.CREATED)
-  async assignCityAdmin(
-    @Body() dto: AssignCityAdminDto,
-    @GetCurrentUser() user: any,
-  ) {
+  async assignCityAdmin(@Body() dto: AssignCityAdminDto, @GetCurrentUser() user: any) {
     return this.authService.assignCityAdmin(dto, user.userId, user.role);
   }
 

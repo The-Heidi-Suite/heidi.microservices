@@ -26,5 +26,15 @@
   "generic": {
     "title": "{subject}",
     "body": "{content}"
+  },
+  "event": {
+    "reminder24h": {
+      "title": "Etkinlik Hatırlatıcısı: {eventTitle}",
+      "body": "Unutmayın! {eventTitle} yarın {eventDate} tarihinde başlıyor"
+    },
+    "reminder2h": {
+      "title": "Etkinlik Yakında Başlıyor: {eventTitle}",
+      "body": "{eventTitle} 2 saat içinde {eventDate} tarihinde başlıyor"
+    }
   }
 }

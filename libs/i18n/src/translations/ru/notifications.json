@@ -26,5 +26,15 @@
   "generic": {
     "title": "{subject}",
     "body": "{content}"
+  },
+  "event": {
+    "reminder24h": {
+      "title": "Напоминание о событии: {eventTitle}",
+      "body": "Не забудьте! {eventTitle} начинается завтра в {eventDate}"
+    },
+    "reminder2h": {
+      "title": "Событие скоро начнется: {eventTitle}",
+      "body": "{eventTitle} начнется через 2 часа в {eventDate}"
+    }
   }
 }

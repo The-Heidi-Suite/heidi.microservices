@@ -291,4 +291,153 @@ export class UsersMessageController {
       throw error; // Throwing error causes NestJS to NACK the message
     }
   }
+
+  @MessagePattern(RabbitMQPatterns.USER_GET_DEVICES)
+  async getDevices(@Payload() data: { userId: string }) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_GET_DEVICES} for userId: ${data.userId}`,
+    );
+
+    try {
+      const devices = await this.usersService.getDevices(data.userId);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_GET_DEVICES} for userId: ${data.userId} (will ACK)`,
+      );
+      return devices;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_GET_DEVICES} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.USER_REGISTER_DEVICE)
+  async registerDevice(
+    @Payload()
+    data: {
+      userId: string;
+      deviceId?: string;
+      fcmToken: string;
+      platform: string;
+      appVersion?: string;
+      osVersion?: string;
+      language?: string;
+      cityId?: string;
+    },
+  ) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_REGISTER_DEVICE} for userId: ${data.userId}`,
+    );
+
+    try {
+      const device = await this.usersService.registerDevice(data.userId, {
+        deviceId: data.deviceId,
+        fcmToken: data.fcmToken,
+        platform: data.platform as any,
+        appVersion: data.appVersion,
+        osVersion: data.osVersion,
+        language: data.language,
+        cityId: data.cityId,
+      });
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_REGISTER_DEVICE} for userId: ${data.userId} (will ACK)`,
+      );
+      return device;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_REGISTER_DEVICE} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.USER_DELETE_DEVICE)
+  async deleteDevice(@Payload() data: { userId: string; deviceId: string }) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_DELETE_DEVICE} for userId: ${data.userId}, deviceId: ${data.deviceId}`,
+    );
+
+    try {
+      const result = await this.usersService.deleteDevice(data.userId, data.deviceId);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_DELETE_DEVICE} for userId: ${data.userId} (will ACK)`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_DELETE_DEVICE} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.USER_GET_TOPIC_SUBSCRIPTIONS)
+  async getTopicSubscriptions(@Payload() data: { userId: string }) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_GET_TOPIC_SUBSCRIPTIONS} for userId: ${data.userId}`,
+    );
+
+    try {
+      const subscriptions = await this.usersService.getTopicSubscriptions(data.userId);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_GET_TOPIC_SUBSCRIPTIONS} for userId: ${data.userId} (will ACK)`,
+      );
+      return subscriptions;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_GET_TOPIC_SUBSCRIPTIONS} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.USER_SUBSCRIBE_TOPIC)
+  async subscribeTopic(@Payload() data: { userId: string; topicKey: string; cityId?: string }) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_SUBSCRIBE_TOPIC} for userId: ${data.userId}, topicKey: ${data.topicKey}`,
+    );
+
+    try {
+      const subscription = await this.usersService.subscribeTopic(data.userId, {
+        topicKey: data.topicKey,
+        cityId: data.cityId,
+      });
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_SUBSCRIBE_TOPIC} for userId: ${data.userId} (will ACK)`,
+      );
+      return subscription;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_SUBSCRIBE_TOPIC} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @MessagePattern(RabbitMQPatterns.USER_UNSUBSCRIBE_TOPIC)
+  async unsubscribeTopic(@Payload() data: { userId: string; topicKey: string }) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.USER_UNSUBSCRIBE_TOPIC} for userId: ${data.userId}, topicKey: ${data.topicKey}`,
+    );
+
+    try {
+      const result = await this.usersService.unsubscribeTopic(data.userId, data.topicKey);
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.USER_UNSUBSCRIBE_TOPIC} for userId: ${data.userId} (will ACK)`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.USER_UNSUBSCRIBE_TOPIC} for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
 }

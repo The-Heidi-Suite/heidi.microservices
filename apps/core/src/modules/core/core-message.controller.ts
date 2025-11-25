@@ -171,4 +171,30 @@ export class CoreMessageController {
       throw error; // Throwing error causes NestJS to NACK the message
     }
   }
+
+  @MessagePattern(RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN)
+  async handleFavoriteRemindersRun(
+    @Payload() data: { taskId?: string; scheduleRunId?: string; triggeredAt?: string },
+  ) {
+    this.logger.log(
+      `Received message: ${RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN} for taskId: ${data.taskId || 'N/A'}, scheduleRunId: ${data.scheduleRunId || 'N/A'}`,
+    );
+
+    try {
+      const result = await this.coreService.processFavoriteEventReminders(
+        data.triggeredAt,
+        data.scheduleRunId,
+      );
+      this.logger.debug(
+        `Successfully processed message: ${RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN} - sent ${result.sent24h} 24h reminders, ${result.sent2h} 2h reminders (will ACK)`,
+      );
+      return result;
+    } catch (error) {
+      this.logger.error(
+        `Error processing message: ${RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
 }

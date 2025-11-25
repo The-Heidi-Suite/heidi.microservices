@@ -11,11 +11,11 @@ export class SendNotificationDto {
 
   @ApiProperty({
     description: 'Notification type',
-    enum: ['INFO', 'WARNING', 'ERROR', 'SUCCESS', 'ALERT'],
+    enum: ['INFO', 'WARNING', 'ERROR', 'SUCCESS', 'ALERT', 'EVENT_REMINDER'],
     example: 'INFO',
   })
-  @IsEnum(['INFO', 'WARNING', 'ERROR', 'SUCCESS', 'ALERT'])
-  type: 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS' | 'ALERT';
+  @IsEnum(['INFO', 'WARNING', 'ERROR', 'SUCCESS', 'ALERT', 'EVENT_REMINDER'])
+  type: 'INFO' | 'WARNING' | 'ERROR' | 'SUCCESS' | 'ALERT' | 'EVENT_REMINDER';
 
   @ApiProperty({
     description: 'Notification channel',
