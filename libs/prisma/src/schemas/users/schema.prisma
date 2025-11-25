@@ -25,7 +25,7 @@ model User {
   cityId              String?
   firstName           String?
   lastName            String?
-  salutation          String?          // Title (e.g., Mr, Mrs, Dr) - respects preferredLanguage
+  salutationCode      String?          // Reference to Salutation.code (e.g., "MR", "MRS", "DR")
   profilePhotoUrl     String?
   preferredLanguage   String?          // ISO 639-1 language code (e.g., 'en', 'de')
   hasVehicle          Boolean          @default(false)
@@ -45,6 +45,7 @@ model User {
   @@index([role])
   @@index([cityId])
   @@index([preferredLanguage])
+  @@index([salutationCode])
   @@unique([deviceId, devicePlatform])
   @@map("users")
 }
@@ -63,6 +64,25 @@ enum UserType {
 enum DevicePlatform {
   IOS
   ANDROID
+}
+
+// Salutation model - Stores salutation options with multi-language support
+model Salutation {
+  id        String   @id @default(uuid())
+  code      String   // Unique code like "MR", "MRS", "MS", "DR", "PROF"
+  label     String   // Translated label (e.g., "Mr", "Herr", "السيد")
+  locale    String   // e.g., 'en', 'de', 'ar'
+  sortOrder Int      @default(0) // For display ordering
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([code, locale])
+  @@index([code])
+  @@index([locale])
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("salutations")
 }
 
 // Terms of Use model - Stores terms versions with multi-language support
