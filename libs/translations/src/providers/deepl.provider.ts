@@ -143,6 +143,9 @@ export class DeepLProvider implements ITranslationProvider {
           auth_key: this.apiKey,
           text,
           target_lang: targetLang,
+          // Enable DeepL beta languages (e.g. FA for Persian) as per docs:
+          // https://developers.deepl.com/docs/getting-started/supported-languages
+          enable_beta_languages: '1',
         });
 
         if (sourceLang) {
@@ -235,6 +238,9 @@ export class DeepLProvider implements ITranslationProvider {
         const params = new URLSearchParams({
           auth_key: this.apiKey,
           target_lang: targetLang,
+          // Enable DeepL beta languages (e.g. FA for Persian) as per docs:
+          // https://developers.deepl.com/docs/getting-started/supported-languages
+          enable_beta_languages: '1',
         });
 
         // Add all texts as separate parameters (DeepL supports multiple text parameters)
