@@ -30,6 +30,8 @@ api.$DEV_IP.nip.io {
     @notApi {
         not path /api/*
         not path /health
+        not path /pgadmin*
+        not path /redis*
     }
     handle @notApi {
         root * /var/www/frontend

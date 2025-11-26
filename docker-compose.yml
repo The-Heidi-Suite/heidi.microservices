@@ -335,8 +335,9 @@ services:
     container_name: heidi-redis-commander
     restart: always
     environment:
-      REDIS_HOSTS: local:redis:6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      # Format: label:hostname:port:dbIndex:password
+      # Connects to Redis service via Docker network with password authentication
+      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-}
       HTTP_USER: ${REDIS_COMMANDER_USER:-admin}
       HTTP_PASSWORD: ${REDIS_COMMANDER_PASSWORD:-admin}
     # Bound to localhost only for security - accessible only from host machine
