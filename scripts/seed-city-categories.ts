@@ -34,7 +34,7 @@ const KIEL_DISPLAY_NAMES: Record<string, string> = {
   'food-and-drink': 'Food & Drink',
   tours: 'Your way through Kiel',
   shopping: "Shop to your heart's content",
-  culture: 'Keil Culture',
+  culture: 'Keil & Culture',
 
   // Food & Drink subcategories
   'food-cafes-bakeries': 'Cafés',
