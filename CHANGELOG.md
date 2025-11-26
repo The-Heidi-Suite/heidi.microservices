@@ -2,6 +2,67 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.20.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.19.0...v1.20.0) (2025-11-26)
+
+
+### ♻️ Code Refactoring
+
+* **auth, city, tags, integration:** clean up code formatting and improve readability ([f1c58ea](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f1c58eadf45e81fdbd3d258b197fc192253b4e58))
+* **categories, listings, destination-one:** clean up code formatting and improve readability ([746f625](https://github.com/The-Heidi-Suite/heidi.microservices/commit/746f6258c8b575bad09d1699d4f17c428694240b))
+* **categories:** update city categories response structure and remove deprecated DTO ([f18f6c2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f18f6c2707f114f345bc6dfc588f587a9a7b7fc2))
+* **seed-all:** update pipeline data handling in seed-all.sh script ([305fea4](https://github.com/The-Heidi-Suite/heidi.microservices/commit/305fea486f0353f93b9b6801f44761d900858ea3))
+
+
+### 🐛 Bug Fixes
+
+* **core, tasks:** streamline event occurrence logic and adjust task scheduling ([4662ddd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4662dddbeb5ea483712c36096d911193c8d1f89a))
+* **seed-all:** improve error handling in seed-all.sh script ([0b6223d](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0b6223db39d9ffc50ad972d945d5fecd2dad1eff))
+* **tasks:** update task scheduling frequency from every 5 minutes to hourly ([91fae93](https://github.com/The-Heidi-Suite/heidi.microservices/commit/91fae9344e0167f9043ddfe413c1a23fecea4983))
+
+
+### ✨ Features
+
+* **assets:** add tile assets mapping and corresponding image files ([613b96b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/613b96b03be8a3746a26cda9ccfea70867cf1c42))
+* **categories:** enhance city category listing and sorting logic ([cc7c923](https://github.com/The-Heidi-Suite/heidi.microservices/commit/cc7c9231d04e2d39927f06c5c19e35b38ace051f))
+* **categories:** enhance city category listing and sorting logic ([51e3d84](https://github.com/The-Heidi-Suite/heidi.microservices/commit/51e3d84b948836227fc72fb748baa5c8c53a1a61))
+* **categories:** enhance quick filter configuration and response structure ([ca76cef](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ca76cef1990122b64e375fdee753d67a9da5918b))
+* **core, integration:** add repeatUntil property to scheduling and destination interfaces ([e5e0c2b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e5e0c2b8f8f5fe8b198a74bd927f8fa180e93eb8))
+* **core:** enhance category creation to include city mapping ([03e31e3](https://github.com/The-Heidi-Suite/heidi.microservices/commit/03e31e3ce892c1488fd16f51922a16541ae7845d))
+* **core:** streamline city-category mapping logic ([82b3961](https://github.com/The-Heidi-Suite/heidi.microservices/commit/82b39616f94250141408d96f279a4ac53376398f))
+* **destination-one:** add calculateLatestEventDates method for event date calculations ([ec164d7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ec164d74682427edcafaf66bf59e184e533de565))
+* **favorites:** enhance user favorites retrieval with filtering and pagination ([e3bd06e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e3bd06e040955a5ca7b04b2b1cdfd64d552f0e7d))
+* **i18n:** add quick filter translations for multiple languages ([f408119](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f408119fe429a214a1638273d1a5805668a92006))
+* **integration:** add IntegrationMessageController for RabbitMQ message handling ([aea901e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/aea901e49f8b75f009f4f36b88af88d9a81841a6))
+* **listings:** add bulk media deletion and hero image removal endpoints ([6b94d00](https://github.com/The-Heidi-Suite/heidi.microservices/commit/6b94d007591c198a696a515344baa31e37b69391))
+* **newsletter:** update consent storage purposes format and improve language selector script ([c32ccb8](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c32ccb8679e1abcc8bcb9adc8beaee6b7e5fe39a))
+* **package:** add seed:all script for comprehensive seeding process ([14b8f0e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/14b8f0eee986faaa27a54c13d543dbe0211eb3a3))
+* **preferences:** add user preferences DTOs for newsletter and notification settings ([b5c769c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b5c769c1ec5798a75e7da8febccbed95e51f583b))
+* **preferences:** implement user preferences update endpoint for newsletter and notification settings ([88aecc8](https://github.com/The-Heidi-Suite/heidi.microservices/commit/88aecc8d9e3e8eba6a55fdade25b9205d44b9a1d))
+* **salutations:** add seeding script for multi-language salutations ([493862f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/493862f5f35d2ddc14527990c13dbd891c3dc1f2))
+* **schedules:** add seed script for default schedules ([cb590a9](https://github.com/The-Heidi-Suite/heidi.microservices/commit/cb590a93aaee13ee4e1f14ae2b0208cfbd65b896))
+* **seed-destination-one:** add daily sync task for Destination One integration ([0f02898](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0f028989788e7947b1860c685c96a5425d100b2e))
+* **seeding:** introduce seed-all.sh script for comprehensive environment bootstrapping ([c808819](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c808819a4f7c9c5855c20b8171554246a7919528))
+* **swagger:** enhance Swagger documentation setup across services ([81ace38](https://github.com/The-Heidi-Suite/heidi.microservices/commit/81ace3813f2e11efbfa596624527ac6a07c9e8e0))
+* **tasks:** add cron helper functions for scheduling management ([ab8c363](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ab8c363fe516ddfe8a09c628d90f7e8b0f87c5a8))
+* **tasks:** enhance task execution logging and error handling ([785a2f9](https://github.com/The-Heidi-Suite/heidi.microservices/commit/785a2f92b33d0edc67b55541fca025d65ad5181e))
+* **tasks:** enhance task management endpoints with detailed operations ([852299b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/852299b3d8e1682ba55675392f6eb6931dcf56c1))
+* **tiles:** add upload scripts and enhance tile seeding process ([f976854](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f976854842203b32abc405cb208c9cb3e9094cca))
+* **translations:** add DeepL retry configuration and translation concurrency control ([e1b4bd3](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e1b4bd3b802827334d39f77bb39c3c0254cc9c40))
+* **translations:** enhance translation handling with rate limit requeue logic ([d1999a4](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d1999a44771e20a51ce30db47f3afc6ace3d438c))
+* **translations:** implement concurrency control and rate limit handling in translation service ([6f1f2b7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/6f1f2b701eecfcf429acee0e9180f7d9762e035b))
+* **users:** add salutation and hasVehicle fields to User model ([2d5b9a7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/2d5b9a776cc84b2a3b09b38d0c531d8c4217f621))
+* **users:** enhance user DTOs with salutation and hasVehicle fields ([b0ae43e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b0ae43efe2f4fdd897beafd384bfb6b3f45f064f))
+* **users:** implement notification preferences management ([6e984fd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/6e984fd803b4e27259d97b42aa029eeb05e8a188))
+* **users:** implement salutations endpoint and update user model ([bebf469](https://github.com/The-Heidi-Suite/heidi.microservices/commit/bebf469a89975e9bbb1640569aa4a67cbafee68d))
+* **users:** refactor salutation handling and introduce Salutation model ([59b793f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/59b793f008c1b8c3c940c7888c3e3ec69890df92))
+* **users:** standardize salutation handling and introduce Salutation response DTO ([39be2dc](https://github.com/The-Heidi-Suite/heidi.microservices/commit/39be2dce1203e36a607ab1e5bb7d6fc97bb19969))
+* **users:** update user DTOs and service to include salutation and hasVehicle fields ([130e661](https://github.com/The-Heidi-Suite/heidi.microservices/commit/130e66174e2f236e84bcd661eeb64905f3c19987))
+
+
+### 🔧 Chores
+
+* **dependencies:** update package version and add cron-parser dependency ([e9a9cc2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e9a9cc2b7294e26e783ef6ca8e372790ecab70e5))
+
 ## [1.19.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.18.0...v1.19.0) (2025-11-25)
 
 
