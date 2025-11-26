@@ -1,5 +1,5 @@
 {
-  "USER_REGISTERED": "Bruker registrert vellykket",
+  "USER_REGISTERED": "En bekreftelses-e-post er sendt til din registrerte e-postadresse. Bekreft venligst e-posten din for å fullføre registreringen.",
   "USERS_RETRIEVED": "Brukere hentet vellykket",
   "USER_RETRIEVED": "Bruker hentet vellykket",
   "USER_CREATED": "Bruker opprettet vellykket",
@@ -49,6 +49,8 @@
   "CITY_DARK_LOGO_DELETED": "Byens mørke logo slettet vellykket",
   "CITY_LIGHT_LOGO_UPLOADED": "Byens lyse logo lastet opp vellykket",
   "CITY_LIGHT_LOGO_DELETED": "Byens lyse logo slettet vellykket",
+  "LISTING_HERO_IMAGE_DELETED": "Hero-bilde for oppføringen ble slettet vellykket",
+  "LISTING_MEDIA_BULK_DELETED": "Flere medier for oppføringen ble slettet vellykket",
   "TAGS_RETRIEVED": "Tagger hentet vellykket",
   "TAG_RETRIEVED": "Tag hentet vellykket",
   "TAG_CREATED": "Tag opprettet vellykket",

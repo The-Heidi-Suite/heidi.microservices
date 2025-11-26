@@ -1,5 +1,5 @@
 {
-  "USER_REGISTERED": "Användare registrerad framgångsrikt",
+  "USER_REGISTERED": "Ett verifierings-e-postmeddelande har skickats till din registrerade e-postadress. Verifiera din e-postadress för att slutföra registreringen.",
   "USERS_RETRIEVED": "Användare hämtade framgångsrikt",
   "USER_RETRIEVED": "Användare hämtad framgångsrikt",
   "USER_CREATED": "Användare skapad framgångsrikt",
@@ -49,6 +49,8 @@
   "CITY_DARK_LOGO_DELETED": "Stadens mörka logo raderad framgångsrikt",
   "CITY_LIGHT_LOGO_UPLOADED": "Stadens ljusa logo uppladdad framgångsrikt",
   "CITY_LIGHT_LOGO_DELETED": "Stadens ljusa logo raderad framgångsrikt",
+  "LISTING_HERO_IMAGE_DELETED": "Hero-bilden för listningen togs bort framgångsrikt",
+  "LISTING_MEDIA_BULK_DELETED": "Flera mediafiler för listningen togs bort framgångsrikt",
   "TAGS_RETRIEVED": "Taggar hämtade framgångsrikt",
   "TAG_RETRIEVED": "Tagg hämtad framgångsrikt",
   "TAG_CREATED": "Tagg skapad framgångsrikt",
