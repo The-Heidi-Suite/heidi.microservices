@@ -1,5 +1,15 @@
 # Docker Compose configuration for HEIDI microservices
 #
+# ⚠️  SECURITY: PORT EXPOSURE ⚠️
+# Internal services (Redis, PostgreSQL, RabbitMQ, microservices) are NOT exposed
+# to the internet. They are only accessible via Docker network.
+# - Only the reverse proxy (Caddy/Nginx) ports 80/443 are publicly exposed
+# - Admin tools (pgAdmin, Redis Commander) are bound to localhost (127.0.0.1) only
+# - Monitoring tools are bound to localhost (127.0.0.1) only
+# - Redis password is MANDATORY in production - set REDIS_PASSWORD in .env
+# - In production, use firewall rules to restrict access even to exposed ports
+# - For production access to admin tools, use VPN or SSH tunnel
+#
 # ⚠️  DATA PERSISTENCE ⚠️
 # All infrastructure data is stored in ./data/ directory using bind mounts.
 # This means:
@@ -23,8 +33,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-heidi}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-heidi_password}
       POSTGRES_DB: ${POSTGRES_DB:-heidi_db}
-    ports:
-      - '${POSTGRES_PORT:-5432}:5432'
+    # Port mapping removed for security - only accessible via Docker network
+    # If local access needed, use: ports: ['127.0.0.1:5432:5432']
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
       - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
@@ -41,14 +51,16 @@ services:
     image: redis:7.4-alpine
     container_name: heidi-redis
     restart: always
+    # ⚠️  SECURITY: Redis password is MANDATORY in production!
+    # Set REDIS_PASSWORD in your .env file to prevent unauthorized access
     command: >
       sh -c "if [ -n \"$$REDIS_PASSWORD\" ]; then
         redis-server --requirepass \"$$REDIS_PASSWORD\";
       else
         redis-server;
       fi"
-    ports:
-      - '${REDIS_PORT:-6379}:6379'
+    # Port mapping removed for security - only accessible via Docker network
+    # This prevents Redis from being exposed to the internet
     volumes:
       - ./data/redis:/data
     healthcheck:
@@ -67,10 +79,7 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-heidi}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-heidi_password}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-/}
-    ports:
-      - '${RABBITMQ_PORT:-5672}:5672'
-      - '${RABBITMQ_MANAGEMENT_PORT:-15672}:15672'
-      - '${RABBITMQ_PROMETHEUS_PORT:-15692}:15692'
+    # Port mappings removed for security - only accessible via Docker network
     volumes:
       - ./data/rabbitmq:/var/lib/rabbitmq
       - ./infra/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
@@ -136,8 +145,9 @@ services:
     environment:
       DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/postgres?sslmode=disable"
       PG_EXPORTER_EXTEND_QUERY_PATH: /etc/postgres_exporter/queries.yaml
+    # Bound to localhost only for security - accessible only from host machine
     ports:
-      - '${POSTGRES_EXPORTER_PORT:-9187}:9187'
+      - '127.0.0.1:${POSTGRES_EXPORTER_PORT:-9187}:9187'
     networks:
       - backend
     depends_on:
@@ -158,8 +168,9 @@ services:
     environment:
       REDIS_ADDR: "redis:6379"
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+    # Bound to localhost only for security - accessible only from host machine
     ports:
-      - '${REDIS_EXPORTER_PORT:-9121}:9121'
+      - '127.0.0.1:${REDIS_EXPORTER_PORT:-9121}:9121'
     networks:
       - backend
     depends_on:
@@ -186,8 +197,9 @@ services:
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
       - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    # Bound to localhost only for security - accessible only from host machine
     ports:
-      - '${NODE_EXPORTER_PORT:-9100}:9100'
+      - '127.0.0.1:${NODE_EXPORTER_PORT:-9100}:9100'
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro
@@ -213,8 +225,10 @@ services:
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
       - '--web.enable-lifecycle'
+    # Bound to localhost only for security - accessible only from host machine
+    # In production, access via VPN or SSH tunnel
     ports:
-      - '${PROMETHEUS_PORT:-9090}:9090'
+      - '127.0.0.1:${PROMETHEUS_PORT:-9090}:9090'
     volumes:
       - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./infra/prometheus/alerts:/etc/prometheus/alerts:ro
@@ -242,8 +256,9 @@ services:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
       - '--web.external-url=http://localhost:${ALERTMANAGER_PORT:-9093}'
+    # Bound to localhost only for security - accessible only from host machine
     ports:
-      - '${ALERTMANAGER_PORT:-9093}:9093'
+      - '127.0.0.1:${ALERTMANAGER_PORT:-9093}:9093'
     volumes:
       - ./infra/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
       - ./data/alertmanager:/alertmanager
@@ -268,8 +283,10 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
       GF_USERS_ALLOW_SIGN_UP: ${GRAFANA_ALLOW_SIGN_UP:-false}
       GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://localhost:${GRAFANA_PORT:-3000}}
+    # Bound to localhost only for security - accessible only from host machine
+    # In production, access via VPN or SSH tunnel
     ports:
-      - '${GRAFANA_PORT:-3000}:3000'
+      - '127.0.0.1:${GRAFANA_PORT:-3000}:3000'
     volumes:
       - ./data/grafana:/var/lib/grafana
       - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -295,8 +312,10 @@ services:
       PGADMIN_CONFIG_SERVER_MODE: 'False'
       # Configure for reverse proxy
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
+    # Bound to localhost only for security - accessible only from host machine
+    # In production, access via VPN or SSH tunnel
     ports:
-      - '${PGADMIN_PORT:-5050}:80'
+      - '127.0.0.1:${PGADMIN_PORT:-5050}:80'
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     networks:
@@ -320,8 +339,10 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD:-}
       HTTP_USER: ${REDIS_COMMANDER_USER:-admin}
       HTTP_PASSWORD: ${REDIS_COMMANDER_PASSWORD:-admin}
+    # Bound to localhost only for security - accessible only from host machine
+    # In production, access via VPN or SSH tunnel
     ports:
-      - '${REDIS_COMMANDER_PORT:-8081}:8081'
+      - '127.0.0.1:${REDIS_COMMANDER_PORT:-8081}:8081'
     networks:
       - backend
     depends_on:
@@ -378,8 +399,7 @@ services:
       NODE_ENV: production
       SERVICE_NAME: auth
       SERVICE_PORT: 3001
-    ports:
-      - '3001:3001'
+    # Port mapping removed - service only accessible via reverse proxy (Caddy/Nginx)
     depends_on:
       postgres:
         condition: service_healthy
@@ -411,8 +431,7 @@ services:
       NODE_ENV: production
       SERVICE_NAME: users
       SERVICE_PORT: 3002
-    ports:
-      - '3002:3002'
+    # Port mapping removed - service only accessible via reverse proxy (Caddy/Nginx)
     depends_on:
       postgres:
         condition: service_healthy
@@ -444,8 +463,7 @@ services:
       NODE_ENV: production
       SERVICE_NAME: city
       SERVICE_PORT: 3003
-    ports:
-      - '3003:3003'
+    # Port mapping removed - service only accessible via reverse proxy (Caddy/Nginx)
     depends_on:
       postgres:
         condition: service_healthy
@@ -477,8 +495,7 @@ services:
       NODE_ENV: production
       SERVICE_NAME: core
       SERVICE_PORT: 3004
-    ports:
-      - '3004:3004'
+    # Port mapping removed - service only accessible via reverse proxy (Caddy/Nginx)
     depends_on:
       postgres:
         condition: service_healthy
@@ -510,8 +527,7 @@ services:
       NODE_ENV: production
       SERVICE_NAME: notification
       SERVICE_PORT: 3005
-    ports:
-      - '3005:3005'
+    # Port mapping removed - service only accessible via reverse proxy (Caddy/Nginx)
     depends_on:
       postgres:
         condition: service_healthy
@@ -543,8 +559,7 @@ services:
       NODE_ENV: production
       SERVICE_NAME: scheduler
       SERVICE_PORT: 3006
-    ports:
-      - '3006:3006'
+    # Port mapping removed - service only accessible via reverse proxy (Caddy/Nginx)
     depends_on:
       postgres:
         condition: service_healthy
@@ -576,8 +591,7 @@ services:
       NODE_ENV: production
       SERVICE_NAME: integration
       SERVICE_PORT: 3007
-    ports:
-      - '3007:3007'
+    # Port mapping removed - service only accessible via reverse proxy (Caddy/Nginx)
     depends_on:
       postgres:
         condition: service_healthy
@@ -609,8 +623,7 @@ services:
       NODE_ENV: production
       SERVICE_NAME: admin
       SERVICE_PORT: 3008
-    ports:
-      - '3008:3008'
+    # Port mapping removed - service only accessible via reverse proxy (Caddy/Nginx)
     depends_on:
       postgres:
         condition: service_healthy
@@ -652,8 +665,7 @@ services:
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
       JWT_SECRET: ${JWT_SECRET}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
-    ports:
-      - '3009:3009'
+    # Port mapping removed - service only accessible via reverse proxy (Caddy/Nginx)
     depends_on:
       postgres:
         condition: service_healthy
