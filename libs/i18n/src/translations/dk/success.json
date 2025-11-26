@@ -68,5 +68,7 @@
   "TAG_RETRIEVED": "Tag hentet succesfuldt",
   "TAG_CREATED": "Tag oprettet succesfuldt",
   "TAG_DELETED": "Tag slettet succesfuldt",
-  "OPERATION_SUCCESS": "Handling gennemført succesfuldt"
+  "OPERATION_SUCCESS": "Handling gennemført succesfuldt",
+  "NOTIFICATION_PREFERENCES_UPDATED": "Notifikationsindstillinger opdateret succesfuldt",
+  "NOTIFICATION_PREFERENCES_RETRIEVED": "Notifikationsindstillinger hentet succesfuldt"
 }

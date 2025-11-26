@@ -53,5 +53,7 @@
   "TAG_RETRIEVED": "Etiket başarıyla alındı",
   "TAG_CREATED": "Etiket başarıyla oluşturuldu",
   "TAG_DELETED": "Etiket başarıyla silindi",
-  "OPERATION_SUCCESS": "İşlem başarıyla tamamlandı"
+  "OPERATION_SUCCESS": "İşlem başarıyla tamamlandı",
+  "NOTIFICATION_PREFERENCES_UPDATED": "Bildirim tercihleri başarıyla güncellendi",
+  "NOTIFICATION_PREFERENCES_RETRIEVED": "Bildirim tercihleri başarıyla alındı"
 }

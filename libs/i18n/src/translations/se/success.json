@@ -53,5 +53,7 @@
   "TAG_RETRIEVED": "Tagg hämtad framgångsrikt",
   "TAG_CREATED": "Tagg skapad framgångsrikt",
   "TAG_DELETED": "Tagg raderad framgångsrikt",
-  "OPERATION_SUCCESS": "Åtgärd slutförd framgångsrikt"
+  "OPERATION_SUCCESS": "Åtgärd slutförd framgångsrikt",
+  "NOTIFICATION_PREFERENCES_UPDATED": "Aviseringsinställningar uppdaterade framgångsrikt",
+  "NOTIFICATION_PREFERENCES_RETRIEVED": "Aviseringsinställningar hämtade framgångsrikt"
 }

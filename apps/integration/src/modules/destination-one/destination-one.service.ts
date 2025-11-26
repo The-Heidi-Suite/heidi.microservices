@@ -38,6 +38,7 @@ interface DestinationOneItem {
     tz: string;
     freq: string;
     interval: number;
+    repeatUntil?: string;
   }>;
   company?: string;
   district?: string;
@@ -96,6 +97,7 @@ interface TransformedListingData {
     tz: string;
     freq: ListingRecurrenceFreq;
     interval: number;
+    repeatUntil?: string;
   }>;
   eventStart?: string;
   eventEnd?: string;
@@ -327,11 +329,25 @@ export class DestinationOneService {
     return categoryValues.map((val) => `category:"${val}"`).join(' OR ');
   }
 
-  private generateSyncHash(title: string, summary: string | undefined, content: string): string {
+  private generateSyncHash(
+    title: string,
+    summary: string | undefined,
+    content: string,
+    timeIntervals?: Array<{
+      weekdays: string[];
+      start: string;
+      end: string;
+      tz: string;
+      freq: ListingRecurrenceFreq;
+      interval: number;
+      repeatUntil?: string;
+    }>,
+  ): string {
     const hashData = {
       title,
       summary: summary || '',
       content,
+      timeIntervals: timeIntervals || [],
     };
     return createHash('sha256').update(JSON.stringify(hashData)).digest('hex');
   }
@@ -357,6 +373,245 @@ export class DestinationOneService {
       Yearly: ListingRecurrenceFreq.YEARLY,
     };
     return freqMap[freq] || ListingRecurrenceFreq.NONE;
+  }
+
+  /**
+   * Calculate the latest ongoing or upcoming event start and end dates from time intervals.
+   * Prioritizes ongoing intervals, then upcoming intervals. Ignores past intervals.
+   */
+  private calculateLatestEventDates(
+    timeIntervals: Array<{
+      weekdays: string[];
+      start: string;
+      end: string;
+      tz: string;
+      freq: string;
+      interval: number;
+      repeatUntil?: string;
+    }>,
+  ): { eventStart: string | undefined; eventEnd: string | undefined } {
+    if (!timeIntervals || timeIntervals.length === 0) {
+      return { eventStart: undefined, eventEnd: undefined };
+    }
+
+    const now = new Date();
+    const ongoingIntervals: Array<{ start: Date; end: Date }> = [];
+    const upcomingIntervals: Array<{ start: Date; end: Date }> = [];
+
+    // Map weekday names to day numbers (0 = Sunday, 1 = Monday, etc.)
+    const weekdayToNumber: Record<string, number> = {
+      Sunday: 0,
+      Monday: 1,
+      Tuesday: 2,
+      Wednesday: 3,
+      Thursday: 4,
+      Friday: 5,
+      Saturday: 6,
+    };
+
+    for (const interval of timeIntervals) {
+      const intervalStart = new Date(interval.start);
+      const intervalEnd = new Date(interval.end);
+      const repeatUntil = interval.repeatUntil ? new Date(interval.repeatUntil) : null;
+      const freq = this.mapRecurrenceFreq(interval.freq);
+
+      if (freq === ListingRecurrenceFreq.NONE) {
+        // Single occurrence - check if ongoing or upcoming
+        if (intervalStart <= now && (intervalEnd > now || !intervalEnd)) {
+          // Ongoing
+          ongoingIntervals.push({ start: intervalStart, end: intervalEnd });
+        } else if (intervalStart > now) {
+          // Upcoming
+          upcomingIntervals.push({ start: intervalStart, end: intervalEnd });
+        }
+        // Past intervals are ignored
+      } else {
+        // Recurring interval - compute next occurrence
+        let nextOccurrence: { start: Date; end: Date } | null = null as { start: Date; end: Date } | null;
+
+        if (freq === ListingRecurrenceFreq.WEEKLY && interval.weekdays && interval.weekdays.length > 0) {
+          // Weekly with specific weekdays
+          const startTime = {
+            hours: intervalStart.getUTCHours(),
+            minutes: intervalStart.getUTCMinutes(),
+            seconds: intervalStart.getUTCSeconds(),
+            milliseconds: intervalStart.getUTCMilliseconds(),
+          };
+
+          const duration = intervalEnd.getTime() - intervalStart.getTime();
+
+          // Check if the interval has already ended (past repeatUntil)
+          if (repeatUntil && now > repeatUntil) {
+            continue; // Skip past intervals
+          }
+
+          // Check if the interval hasn't started yet
+          if (intervalStart > now) {
+            // Find the first occurrence
+            for (const weekdayName of interval.weekdays) {
+              const weekdayNum = weekdayToNumber[weekdayName];
+              if (weekdayNum === undefined) continue;
+
+              // Find when this weekday first occurs after intervalStart
+              const firstOccurrence = new Date(intervalStart);
+              const firstDay = firstOccurrence.getUTCDay();
+              let daysToAdd = weekdayNum - firstDay;
+              if (daysToAdd < 0) {
+                daysToAdd += 7;
+              }
+
+              const occurrenceStart = new Date(firstOccurrence);
+              occurrenceStart.setUTCDate(firstOccurrence.getUTCDate() + daysToAdd);
+              occurrenceStart.setUTCHours(
+                startTime.hours,
+                startTime.minutes,
+                startTime.seconds,
+                startTime.milliseconds,
+              );
+
+              if (occurrenceStart > now) {
+                const occurrenceEnd = new Date(occurrenceStart.getTime() + duration);
+                const shouldUpdate =
+                  nextOccurrence === null || occurrenceStart.getTime() < nextOccurrence.start.getTime();
+                if (shouldUpdate) {
+                  nextOccurrence = { start: occurrenceStart, end: occurrenceEnd };
+                }
+              }
+            }
+          } else {
+            // Interval has started - check for ongoing or next occurrence
+            // Find occurrences for each weekday starting from intervalStart
+            const maxWeeksToCheck = repeatUntil
+              ? Math.ceil((repeatUntil.getTime() - intervalStart.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
+              : 52; // Check up to 1 year if no repeatUntil
+
+            for (let weekOffset = 0; weekOffset < maxWeeksToCheck; weekOffset++) {
+              for (const weekdayName of interval.weekdays) {
+                const weekdayNum = weekdayToNumber[weekdayName];
+                if (weekdayNum === undefined) continue;
+
+                // Calculate occurrence date
+                const baseDate = new Date(intervalStart);
+                const baseDay = baseDate.getUTCDay();
+                let daysToAdd = weekdayNum - baseDay;
+                if (daysToAdd < 0) {
+                  daysToAdd += 7;
+                }
+                daysToAdd += weekOffset * 7 * interval.interval;
+
+                const occurrenceStart = new Date(baseDate);
+                occurrenceStart.setUTCDate(baseDate.getUTCDate() + daysToAdd);
+                occurrenceStart.setUTCHours(
+                  startTime.hours,
+                  startTime.minutes,
+                  startTime.seconds,
+                  startTime.milliseconds,
+                );
+
+                const occurrenceEnd = new Date(occurrenceStart.getTime() + duration);
+
+                // Check if within repeatUntil
+                if (repeatUntil && occurrenceStart > repeatUntil) {
+                  continue;
+                }
+
+                // Check if this occurrence is ongoing or upcoming
+                if (occurrenceStart <= now && occurrenceEnd > now) {
+                  ongoingIntervals.push({ start: occurrenceStart, end: occurrenceEnd });
+                } else if (occurrenceStart > now) {
+                  const shouldUpdate =
+                    nextOccurrence === null || occurrenceStart.getTime() < nextOccurrence.start.getTime();
+                  if (shouldUpdate) {
+                    nextOccurrence = { start: occurrenceStart, end: occurrenceEnd };
+                  }
+                  break; // Found next occurrence, no need to check more weeks
+                }
+              }
+
+              // If we found an ongoing or next occurrence, we can stop
+              if (ongoingIntervals.length > 0 || nextOccurrence) {
+                break;
+              }
+            }
+          }
+
+          if (nextOccurrence) {
+            upcomingIntervals.push(nextOccurrence);
+          }
+        } else {
+          // Other recurring frequencies (DAILY, MONTHLY, YEARLY)
+          // Check if the interval has already ended (past repeatUntil)
+          if (repeatUntil && now > repeatUntil) {
+            continue; // Skip past intervals
+          }
+
+          let current = new Date(intervalStart);
+          const maxIterations = 1000;
+          let iterations = 0;
+
+          while (iterations < maxIterations) {
+            const duration = intervalEnd.getTime() - intervalStart.getTime();
+            const currentEnd = new Date(current.getTime() + duration);
+
+            // Check if within repeatUntil
+            if (repeatUntil && current > repeatUntil) {
+              break;
+            }
+
+            // Check if this occurrence is ongoing or upcoming
+            if (current <= now && currentEnd > now) {
+              ongoingIntervals.push({ start: new Date(current), end: currentEnd });
+              break; // Found ongoing, no need to continue
+            } else if (current > now) {
+              upcomingIntervals.push({ start: new Date(current), end: currentEnd });
+              break; // Found upcoming, no need to continue
+            }
+
+            // Advance to next occurrence
+            switch (freq) {
+              case ListingRecurrenceFreq.DAILY:
+                current = new Date(current.getTime() + interval.interval * 24 * 60 * 60 * 1000);
+                break;
+              case ListingRecurrenceFreq.WEEKLY:
+                current = new Date(current.getTime() + interval.interval * 7 * 24 * 60 * 60 * 1000);
+                break;
+              case ListingRecurrenceFreq.MONTHLY:
+                current = new Date(current);
+                current.setUTCMonth(current.getUTCMonth() + interval.interval);
+                break;
+              case ListingRecurrenceFreq.YEARLY:
+                current = new Date(current);
+                current.setUTCFullYear(current.getUTCFullYear() + interval.interval);
+                break;
+            }
+
+            iterations++;
+          }
+        }
+      }
+    }
+
+    // Prioritize ongoing intervals, then upcoming intervals
+    if (ongoingIntervals.length > 0) {
+      // Use the earliest ongoing start and latest ongoing end
+      const starts = ongoingIntervals.map((i) => i.start.getTime());
+      const ends = ongoingIntervals.map((i) => i.end.getTime());
+      return {
+        eventStart: new Date(Math.min(...starts)).toISOString(),
+        eventEnd: new Date(Math.max(...ends)).toISOString(),
+      };
+    } else if (upcomingIntervals.length > 0) {
+      // Use the earliest upcoming start and its corresponding end
+      // Sort by start time to get the earliest
+      upcomingIntervals.sort((a, b) => a.start.getTime() - b.start.getTime());
+      return {
+        eventStart: upcomingIntervals[0].start.toISOString(),
+        eventEnd: upcomingIntervals[0].end.toISOString(),
+      };
+    }
+
+    // No ongoing or upcoming intervals found
+    return { eventStart: undefined, eventEnd: undefined };
   }
 
   transformToListing(
@@ -460,6 +715,7 @@ export class DestinationOneService {
       tz: ti.tz,
       freq: this.mapRecurrenceFreq(ti.freq),
       interval: ti.interval || 1,
+      repeatUntil: ti.repeatUntil ? new Date(ti.repeatUntil).toISOString() : undefined,
     }));
 
     // Build attribute map (for interval_start / interval_end etc.)
@@ -475,14 +731,28 @@ export class DestinationOneService {
 
     if (intervalStartAttr && intervalEndAttr) {
       // Use explicit interval_start / interval_end when the API was called with mode=date&unrollintervals=true
-      eventStart = new Date(intervalStartAttr).toISOString();
-      eventEnd = new Date(intervalEndAttr).toISOString();
-    } else if (item.timeIntervals && item.timeIntervals.length > 0) {
-      // Fallback: derive a coarse listing-level window from timeIntervals
-      const starts = item.timeIntervals.map((ti) => new Date(ti.start).getTime());
-      const ends = item.timeIntervals.map((ti) => new Date(ti.end).getTime());
-      eventStart = new Date(Math.min(...starts)).toISOString();
-      eventEnd = new Date(Math.max(...ends)).toISOString();
+      const attrStart = new Date(intervalStartAttr);
+      const attrEnd = new Date(intervalEndAttr);
+      const now = new Date();
+      
+      // Only use if it's ongoing or upcoming, not past
+      if (attrStart <= now && attrEnd > now) {
+        // Ongoing
+        eventStart = attrStart.toISOString();
+        eventEnd = attrEnd.toISOString();
+      } else if (attrStart > now) {
+        // Upcoming
+        eventStart = attrStart.toISOString();
+        eventEnd = attrEnd.toISOString();
+      }
+      // If past, fall through to timeIntervals calculation
+    }
+    
+    // If not set from attributes or attributes were past, calculate from timeIntervals
+    if (!eventStart && !eventEnd && item.timeIntervals && item.timeIntervals.length > 0) {
+      const calculated = this.calculateLatestEventDates(item.timeIntervals);
+      eventStart = calculated.eventStart;
+      eventEnd = calculated.eventEnd;
     }
 
     const mediaItems =
@@ -509,7 +779,12 @@ export class DestinationOneService {
       slug,
       externalSource: 'destination_one',
       externalId: item.id,
-      syncHash: this.generateSyncHash(item.title, teaserText || undefined, content || item.title),
+      syncHash: this.generateSyncHash(
+        item.title,
+        teaserText || undefined,
+        content || item.title,
+        timeIntervals,
+      ),
       sourceType: 'API_IMPORT',
       primaryCityId: config.cityId,
       venueName: item.company || item.title,

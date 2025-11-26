@@ -243,4 +243,14 @@ export class ListingFilterDto {
   @Type(() => Number)
   @Min(0)
   radiusMeters?: number;
+
+  @ApiPropertyOptional({
+    example: true,
+    description:
+      'Sort events by temporal priority: ongoing events first, then events starting today, then future events. When enabled, overrides sortBy for event listings.',
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => transformBooleanParam(value))
+  eventSort?: boolean;
 }
