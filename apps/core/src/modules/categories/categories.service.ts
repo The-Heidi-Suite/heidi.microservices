@@ -357,7 +357,7 @@ export class CategoriesService {
 
     // Get all root categories that have CityCategory entries
     const rootCategoryIds = cityCategories.map((cc) => cc.categoryId);
-    
+
     // Get all categories (root and their children) that should be included
     const categories = await this.prisma.category.findMany({
       where: {
@@ -405,7 +405,7 @@ export class CategoriesService {
       // Only attach to root categories (no parentId)
       if (!category.parentId) {
         const quickFilters = quickFiltersByCategorySlug[category.slug];
-        
+
         // Get existing subcategories (real children) and assign order from CityCategory displayOrder
         const existingChildren = (category.children || []).map((child: any) => ({
           ...child,

@@ -99,6 +99,27 @@ export class IntegrationService {
     }
   }
 
+  @MessagePattern(RabbitMQPatterns.INTEGRATION_SUBSCRIBE_NEWSLETTER)
+  async handleSubscribeNewsletter(@Payload() data: { userId: string; email: string }) {
+    this.logger.log(
+      `Received newsletter subscription request: ${RabbitMQPatterns.INTEGRATION_SUBSCRIBE_NEWSLETTER} for userId: ${data.userId}, email: ${data.email}`,
+    );
+
+    try {
+      const result = await this.subscribeToNewsletter(data.userId, data.email);
+      this.logger.debug(
+        `Successfully processed newsletter subscription for userId: ${data.userId} (will ACK)`,
+      );
+      return result;
+    } catch (error: any) {
+      this.logger.error(
+        `Error processing newsletter subscription for userId: ${data.userId} (will NACK)`,
+        error,
+      );
+      throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
   async handleWebhook(provider: string, payload: any) {
     this.logger.log(`Received webhook from provider: ${provider}`);
 

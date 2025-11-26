@@ -22,6 +22,7 @@ import {
   ChangePasswordDto,
   UserFilterDto,
   UserSortDirection,
+  UpdatePreferencesDto,
 } from '@heidi/contracts';
 import { SagaOrchestratorService } from '@heidi/saga';
 import { ErrorCode } from '@heidi/errors';
@@ -1603,6 +1604,133 @@ export class UsersService {
     return {
       userId: user.id,
       notificationsEnabled: user.notificationsEnabled,
+      updatedAt: user.updatedAt.toISOString(),
+    };
+  }
+
+  /**
+   * Update user preferences (newsletter subscription and/or notification preferences)
+   */
+  async updatePreferences(
+    userId: string,
+    email: string,
+    dto: UpdatePreferencesDto,
+  ): Promise<{
+    userId: string;
+    newsletterSubscription: any | null;
+    notificationsEnabled: boolean;
+    updatedAt: string;
+  }> {
+    this.logger.log(`Updating preferences for user: ${userId}`);
+
+    // Check if user exists first
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException({ errorCode: 'AUTH_USER_NOT_FOUND' });
+    }
+
+    let newsletterSubscription: any | null = null;
+    let notificationsEnabled: boolean | undefined = undefined;
+
+    // Handle newsletter subscription if provided
+    if (dto.newsletterSubscribed !== undefined) {
+      if (dto.newsletterSubscribed) {
+        // Subscribe to newsletter via RabbitMQ
+        try {
+          newsletterSubscription = await firstValueFrom(
+            this.client
+              .send<any, { userId: string; email: string }>(
+                RabbitMQPatterns.INTEGRATION_SUBSCRIBE_NEWSLETTER,
+                {
+                  userId,
+                  email,
+                },
+              )
+              .pipe(timeout(30000)),
+          );
+          this.logger.log(`Newsletter subscription successful for user: ${userId}`);
+        } catch (error: any) {
+          // Handle conflict (already subscribed) gracefully
+          const isConflict =
+            error?.response?.status === 409 ||
+            error?.status === 409 ||
+            error?.message?.includes('already subscribed') ||
+            error?.message?.includes('CONFLICT');
+          if (isConflict) {
+            this.logger.warn(`User ${userId} is already subscribed to newsletter`);
+            // Continue without throwing - user can still update notification preferences
+          } else {
+            this.logger.error(`Failed to subscribe user ${userId} to newsletter`, error);
+            throw error;
+          }
+        }
+      } else {
+        // Unsubscribe from newsletter (if needed in the future)
+        this.logger.log(`Newsletter unsubscribe requested for user: ${userId}`);
+        // Note: Unsubscribe functionality can be added later if needed
+      }
+    }
+
+    // Handle notification preferences if provided
+    if (dto.notificationsEnabled !== undefined) {
+      const user = await this.prisma.user.update({
+        where: { id: userId },
+        data: { notificationsEnabled: dto.notificationsEnabled },
+        select: {
+          id: true,
+          notificationsEnabled: true,
+          updatedAt: true,
+        },
+      });
+
+      notificationsEnabled = user.notificationsEnabled;
+
+      // Emit user updated event
+      this.client.emit(RabbitMQPatterns.USER_UPDATED, {
+        userId: user.id,
+        action: 'NOTIFICATION_PREFERENCES_UPDATED',
+        notificationsEnabled: user.notificationsEnabled,
+        timestamp: new Date().toISOString(),
+      });
+    } else {
+      // Get current notification preferences if not being updated
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          notificationsEnabled: true,
+          updatedAt: true,
+        },
+      });
+
+      if (user) {
+        notificationsEnabled = user.notificationsEnabled;
+      }
+    }
+
+    // Get updated user to get the latest updatedAt timestamp
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        notificationsEnabled: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException({ errorCode: 'AUTH_USER_NOT_FOUND' });
+    }
+
+    this.logger.log(`Preferences updated for user: ${userId}`);
+    return {
+      userId: user.id,
+      newsletterSubscription,
+      notificationsEnabled: notificationsEnabled ?? user.notificationsEnabled,
       updatedAt: user.updatedAt.toISOString(),
     };
   }

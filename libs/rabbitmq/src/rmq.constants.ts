@@ -105,6 +105,8 @@ export const RabbitMQPatterns = {
   INTEGRATION_SYNC_LISTING: 'core.syncListing',
   INTEGRATION_SYNC_CATEGORIES: 'core.syncCategories',
   PARKING_SPACE_SYNC: 'core.syncParkingSpace',
+  // Integration request-response patterns
+  INTEGRATION_SUBSCRIBE_NEWSLETTER: 'integration.subscribeNewsletter',
 
   // Scheduler events
   SCHEDULE_EXECUTE: 'schedule.execute',
