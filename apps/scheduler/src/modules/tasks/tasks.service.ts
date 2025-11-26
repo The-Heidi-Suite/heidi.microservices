@@ -5,6 +5,7 @@ import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabb
 import { RedisService } from '@heidi/redis';
 import { LoggerService } from '@heidi/logger';
 import { CreateTaskDto } from './dto';
+import { firstValueFrom, timeout } from 'rxjs';
 
 @Injectable()
 export class TasksService implements OnModuleInit {
@@ -77,13 +78,17 @@ export class TasksService implements OnModuleInit {
   private async executeTask(task: any) {
     this.logger.log(`Executing task: ${task.name}`);
 
-    // Create schedule run log
+    const executionStartTime = new Date();
     let runLog: any;
+    let executionResult: any = null;
+    let taskType: string = 'unknown';
+
+    // Create schedule run log
     try {
       runLog = await this.prisma.scheduleRunLog.create({
         data: {
           scheduleId: task.id,
-          startedAt: new Date(),
+          startedAt: executionStartTime,
           status: 'SUCCESS', // Will be updated if it fails
         },
       });
@@ -96,51 +101,143 @@ export class TasksService implements OnModuleInit {
     try {
       // Check task kind to route to appropriate handler
       if (task.payload && task.payload.kind === 'favorite-event-reminders') {
+        taskType = 'favorite-event-reminders';
         this.logger.log(
           `Task ${task.name} is favorite-event-reminders, triggering reminder processing`,
         );
-        this.client.emit(RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN, {
-          taskId: task.id,
-          scheduleRunId: runLog?.id,
-          triggeredAt: new Date().toISOString(),
-        });
+
+        // Use send() to wait for response and capture results
+        try {
+          executionResult = await firstValueFrom(
+            this.client
+              .send<{ sent24h: number; sent2h: number }>(
+                RabbitMQPatterns.LISTING_FAVORITE_REMINDERS_RUN,
+                {
+                  taskId: task.id,
+                  scheduleRunId: runLog?.id,
+                  triggeredAt: executionStartTime.toISOString(),
+                },
+              )
+              .pipe(timeout(300000)), // 5 minute timeout
+          );
+          this.logger.debug(
+            `Favorite reminders completed: ${executionResult.sent24h} 24h reminders, ${executionResult.sent2h} 2h reminders`,
+          );
+        } catch (error) {
+          this.logger.error('Failed to get response from favorite reminders handler', error);
+          throw error;
+        }
       } else if (task.payload && task.payload.integrationId) {
+        taskType = 'integration-sync';
         this.logger.log(`Task ${task.name} contains integrationId, triggering integration sync`);
-        this.client.emit(RabbitMQPatterns.INTEGRATION_SYNC, {
-          integrationId: task.payload.integrationId,
-          taskId: task.id,
-          scheduleRunId: runLog?.id,
-          timestamp: new Date().toISOString(),
-        });
+
+        // Use send() to wait for response and capture results
+        try {
+          executionResult = await firstValueFrom(
+            this.client
+              .send<{ created: number; updated: number; skipped: number }>(
+                RabbitMQPatterns.INTEGRATION_SYNC,
+                {
+                  integrationId: task.payload.integrationId,
+                  taskId: task.id,
+                  scheduleRunId: runLog?.id,
+                  timestamp: executionStartTime.toISOString(),
+                },
+              )
+              .pipe(timeout(600000)), // 10 minute timeout for integration syncs
+          );
+          this.logger.debug(
+            `Integration sync completed: ${executionResult.created} created, ${executionResult.updated} updated, ${executionResult.skipped} skipped`,
+          );
+        } catch (error) {
+          this.logger.error('Failed to get response from integration sync handler', error);
+          // For integration sync, we might want to continue even if response fails
+          // since the sync might still be processing asynchronously
+          // But we'll mark it as failed for now
+          throw error;
+        }
       } else {
+        taskType = 'default';
         // Default task execution
         this.client.emit(RabbitMQPatterns.SCHEDULE_EXECUTE, {
           taskId: task.id,
           scheduleRunId: runLog?.id,
           name: task.name,
           payload: task.payload,
-          timestamp: new Date().toISOString(),
+          timestamp: executionStartTime.toISOString(),
         });
+        executionResult = { message: 'Task executed (fire-and-forget)' };
       }
+
+      const executionEndTime = new Date();
+      const executionDuration = executionEndTime.getTime() - executionStartTime.getTime();
 
       // Update schedule
       await this.prisma.schedule.update({
         where: { id: task.id },
         data: {
-          lastRun: new Date(),
+          lastRun: executionEndTime,
           lastRunStatus: 'SUCCESS',
           runCount: { increment: 1 },
         },
       });
 
-      // Update run log with success status
+      // Build comprehensive run summary
+      const runSummary: any = {
+        taskType,
+        taskName: task.name,
+        executionStartTime: executionStartTime.toISOString(),
+        executionEndTime: executionEndTime.toISOString(),
+        executionDurationMs: executionDuration,
+        executionDurationSeconds: Math.round(executionDuration / 1000),
+        status: 'SUCCESS',
+        completed: true,
+      };
+
+      // Add task-specific results
+      if (executionResult) {
+        if (taskType === 'favorite-event-reminders') {
+          runSummary.reminders = {
+            sent24h: executionResult.sent24h || 0,
+            sent2h: executionResult.sent2h || 0,
+            total: (executionResult.sent24h || 0) + (executionResult.sent2h || 0),
+          };
+        } else if (taskType === 'integration-sync') {
+          runSummary.sync = {
+            created: executionResult.created || 0,
+            updated: executionResult.updated || 0,
+            skipped: executionResult.skipped || 0,
+            total:
+              (executionResult.created || 0) +
+              (executionResult.updated || 0) +
+              (executionResult.skipped || 0),
+          };
+          if (task.payload?.integrationId) {
+            runSummary.integrationId = task.payload.integrationId;
+          }
+        } else {
+          runSummary.result = executionResult;
+        }
+      }
+
+      // Add task payload metadata (excluding sensitive data)
+      if (task.payload) {
+        const payloadCopy = { ...task.payload };
+        // Remove sensitive fields if present
+        delete payloadCopy.apiKey;
+        delete payloadCopy.password;
+        delete payloadCopy.secret;
+        runSummary.payload = payloadCopy;
+      }
+
+      // Update run log with detailed success status
       if (runLog) {
         await this.prisma.scheduleRunLog.update({
           where: { id: runLog.id },
           data: {
-            finishedAt: new Date(),
+            finishedAt: executionEndTime,
             status: 'SUCCESS',
-            runSummary: { completed: true },
+            runSummary,
           },
         });
       }
@@ -149,29 +246,68 @@ export class TasksService implements OnModuleInit {
         taskId: task.id,
         scheduleRunId: runLog?.id,
         status: 'SUCCESS',
-        timestamp: new Date().toISOString(),
+        timestamp: executionEndTime.toISOString(),
       });
     } catch (error) {
+      const executionEndTime = new Date();
+      const executionDuration = executionEndTime.getTime() - executionStartTime.getTime();
+
       this.logger.error(`Task execution failed: ${task.name}`, error);
 
       // Update schedule with failure
       await this.prisma.schedule.update({
         where: { id: task.id },
         data: {
-          lastRun: new Date(),
+          lastRun: executionEndTime,
           lastRunStatus: 'FAILED',
         },
       });
 
-      // Update run log with failure status
+      // Build comprehensive error summary
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
+      const errorName = error instanceof Error ? error.name : 'UnknownError';
+
+      const runSummary: any = {
+        taskType,
+        taskName: task.name,
+        executionStartTime: executionStartTime.toISOString(),
+        executionEndTime: executionEndTime.toISOString(),
+        executionDurationMs: executionDuration,
+        executionDurationSeconds: Math.round(executionDuration / 1000),
+        status: 'FAILED',
+        error: true,
+        errorName,
+        errorMessage,
+      };
+
+      if (errorStack) {
+        runSummary.errorStack = errorStack;
+      }
+
+      // Add partial results if available
+      if (executionResult) {
+        runSummary.partialResult = executionResult;
+      }
+
+      // Add task payload metadata (excluding sensitive data)
+      if (task.payload) {
+        const payloadCopy = { ...task.payload };
+        delete payloadCopy.apiKey;
+        delete payloadCopy.password;
+        delete payloadCopy.secret;
+        runSummary.payload = payloadCopy;
+      }
+
+      // Update run log with detailed failure status
       if (runLog) {
         await this.prisma.scheduleRunLog.update({
           where: { id: runLog.id },
           data: {
-            finishedAt: new Date(),
+            finishedAt: executionEndTime,
             status: 'FAILED',
-            errorMessage: error instanceof Error ? error.message : String(error),
-            runSummary: { error: true },
+            errorMessage,
+            runSummary,
           },
         });
       }
