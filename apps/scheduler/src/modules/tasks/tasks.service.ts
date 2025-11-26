@@ -75,6 +75,59 @@ export class TasksService implements OnModuleInit {
     return task;
   }
 
+  /**
+   * Manually trigger a schedule to run immediately
+   * Does not modify the cron configuration - only executes the task once
+   */
+  async runById(id: string) {
+    const task = await this.prisma.schedule.findUnique({ where: { id } });
+
+    if (!task) {
+      throw new Error(`Schedule with id ${id} not found`);
+    }
+
+    this.logger.log(`Manually triggering schedule: ${task.name} (${id})`);
+
+    // Execute the task (this will create a run log and update schedule stats)
+    await this.executeTask(task);
+
+    // Fetch the latest run log for this schedule
+    const latestRunLog = await this.prisma.scheduleRunLog.findFirst({
+      where: { scheduleId: id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      schedule: task,
+      runLog: latestRunLog || null,
+    };
+  }
+
+  /**
+   * Get run history for a schedule
+   */
+  async getRunHistory(scheduleId: string, limit: number = 20) {
+    const schedule = await this.prisma.schedule.findUnique({
+      where: { id: scheduleId },
+    });
+
+    if (!schedule) {
+      throw new Error(`Schedule with id ${scheduleId} not found`);
+    }
+
+    const runLogs = await this.prisma.scheduleRunLog.findMany({
+      where: { scheduleId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return {
+      schedule,
+      runLogs,
+      total: runLogs.length,
+    };
+  }
+
   private async executeTask(task: any) {
     this.logger.log(`Executing task: ${task.name}`);
 

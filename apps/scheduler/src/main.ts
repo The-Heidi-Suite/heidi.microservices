@@ -75,7 +75,10 @@ async function bootstrap() {
       },
       'JWT-auth',
     )
-    .addTag('tasks', 'Scheduled tasks management endpoints')
+    .addTag(
+      'tasks',
+      'Scheduled tasks management endpoints - create, list, view, and manually run schedules',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
