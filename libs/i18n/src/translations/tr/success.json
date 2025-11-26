@@ -49,6 +49,8 @@
   "CITY_DARK_LOGO_DELETED": "Şehir koyu logo başarıyla silindi",
   "CITY_LIGHT_LOGO_UPLOADED": "Şehir açık logo başarıyla yüklendi",
   "CITY_LIGHT_LOGO_DELETED": "Şehir açık logo başarıyla silindi",
+  "LISTING_HERO_IMAGE_DELETED": "Liste kahraman görseli başarıyla silindi",
+  "LISTING_MEDIA_BULK_DELETED": "Birden fazla liste medyası başarıyla silindi",
   "TAGS_RETRIEVED": "Etiketler başarıyla alındı",
   "TAG_RETRIEVED": "Etiket başarıyla alındı",
   "TAG_CREATED": "Etiket başarıyla oluşturuldu",

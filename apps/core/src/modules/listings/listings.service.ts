@@ -612,6 +612,104 @@ export class ListingsService {
     });
   }
 
+  async deleteListingMediaBatch(
+    listingId: string,
+    mediaIds: string[],
+    _userId: string,
+    _roles: UserRole[],
+  ): Promise<string[]> {
+    const uniqueIds = Array.from(new Set(mediaIds.filter(Boolean)));
+
+    if (uniqueIds.length === 0) {
+      throw new BadRequestException('No media IDs provided');
+    }
+
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { id: true },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+
+    const mediaRecords = await this.prisma.listingMedia.findMany({
+      where: { listingId, id: { in: uniqueIds } },
+    });
+
+    if (mediaRecords.length !== uniqueIds.length) {
+      const foundIds = new Set(mediaRecords.map((media) => media.id));
+      const missingIds = uniqueIds.filter((id) => !foundIds.has(id));
+      throw new NotFoundException({
+        message: 'One or more media items were not found for this listing',
+        errorCode: 'LISTING_MEDIA_NOT_FOUND',
+        missingIds,
+      });
+    }
+
+    const bucket = this.configService.storageConfig.defaultBucket;
+    for (const media of mediaRecords) {
+      if (!bucket) {
+        this.logger.warn('Storage bucket is not configured; skipping file deletion');
+        break;
+      }
+
+      try {
+        const key = this.extractKeyFromUrl(media.url);
+        await this.storageService.deleteFile({ bucket, key });
+      } catch (error) {
+        this.logger.warn(`Failed to delete media file ${media.id}`, error);
+      }
+    }
+
+    await this.prisma.listingMedia.deleteMany({
+      where: { id: { in: uniqueIds } },
+    });
+
+    return uniqueIds;
+  }
+
+  async deleteListingHeroImage(
+    listingId: string,
+  ): Promise<{ listing: ListingResponseDto; removedImageUrl?: string | null }> {
+    const listing = await this.prisma.listing.findUnique({
+      where: { id: listingId },
+      select: { id: true, heroImageUrl: true },
+    });
+
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+
+    if (!listing.heroImageUrl) {
+      throw new BadRequestException('Listing does not have a hero image to delete');
+    }
+
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    try {
+      const key = this.extractKeyFromUrl(listing.heroImageUrl);
+      await this.storageService.deleteFile({ bucket, key });
+    } catch (error) {
+      this.logger.warn(`Failed to delete hero image for listing ${listingId}`, error);
+    }
+
+    await this.prisma.listing.update({
+      where: { id: listingId },
+      data: { heroImageUrl: null },
+    });
+
+    const refreshed = await this.getListingById(listingId);
+
+    return {
+      listing: refreshed,
+      removedImageUrl: listing.heroImageUrl,
+    };
+  }
+
   private extractKeyFromUrl(url: string): string {
     try {
       const urlObj = new URL(url);

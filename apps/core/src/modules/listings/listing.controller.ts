@@ -15,6 +15,7 @@ import {
   UploadedFile,
   UploadedFiles,
   BadRequestException,
+  ParseArrayPipe,
 } from '@nestjs/common';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import {
@@ -43,6 +44,9 @@ import {
   UploadMediaResponseDto,
   ListingMediaDto,
   DeleteMediaResponseDto,
+  DeleteMediaBulkResponseDto,
+  DeleteMediaItemDto,
+  DeleteHeroImageResponseDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { AdminOnlyGuard, PermissionsGuard, numberToRole } from '@heidi/rbac';
@@ -1053,6 +1057,34 @@ export class ListingController {
     };
   }
 
+  @Delete(':id/hero-image')
+  @UseGuards(AdminOnlyGuard, PermissionsGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Delete hero image for a listing',
+    description: 'Removes the hero image from storage and clears the heroImageUrl field for the listing.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'Unique identifier for the listing',
+    example: 'lst_01J3MJG0YX6FT5PB9SJ9Y2KQW4',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Hero image deleted successfully',
+    type: DeleteHeroImageResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Listing not found',
+    type: ListingNotFoundErrorResponseDto,
+  })
+  async deleteHeroImage(@Param('id') id: string): Promise<DeleteHeroImageResponseDto> {
+    const result = await this.listingsService.deleteListingHeroImage(id);
+    return result;
+  }
+
   @Post(':id/media')
   @UseInterceptors(FilesInterceptor('files', 10))
   @HttpCode(HttpStatus.CREATED)
@@ -1195,6 +1227,60 @@ export class ListingController {
 
     return {
       media: uploadedMedia,
+    };
+  }
+
+  @Delete(':id/media')
+  @UseGuards(AdminOnlyGuard, PermissionsGuard)
+  @HttpCode(HttpStatus.OK)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Delete multiple media files from a listing',
+    description:
+      'Delete multiple media files from a listing in one request. Removes each file from storage and deletes the associated database record.',
+  })
+  @ApiParam({ name: 'id', description: 'Listing ID' })
+  @ApiBody({
+    description: 'Array of media IDs to delete',
+    type: DeleteMediaItemDto,
+    isArray: true,
+    examples: {
+      sample: {
+        summary: 'Delete two media files',
+        value: [{ id: 'med_01J3MJG0YX6FT5PB9SJ9Y2KQW4' }, { id: 'med_01J3MJG0YX6FT5PB9SJ9Y2KQW5' }],
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Media files deleted successfully',
+    type: DeleteMediaBulkResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Listing or media not found',
+    type: ListingNotFoundErrorResponseDto,
+  })
+  async deleteMediaBulk(
+    @Param('id') id: string,
+    @Body(
+      new ParseArrayPipe({
+        items: DeleteMediaItemDto,
+        whitelist: true,
+        forbidNonWhitelisted: true,
+      }),
+    )
+    payload: DeleteMediaItemDto[],
+    @GetCurrentUser() user: CurrentUser,
+  ): Promise<DeleteMediaBulkResponseDto> {
+    const userId = user.userId;
+    const roles = this.getRoles(user.role);
+    const mediaIds = payload.map((item) => item.id);
+    const deletedIds = await this.listingsService.deleteListingMediaBatch(id, mediaIds, userId, roles);
+
+    return {
+      deletedIds,
+      deletedCount: deletedIds.length,
     };
   }
 
