@@ -32,6 +32,7 @@ api.$DEV_IP.nip.io {
         not path /health
         not path /pgadmin*
         not path /redis*
+        not path /sqleditor*
     }
     handle @notApi {
         root * /var/www/frontend
@@ -392,7 +393,20 @@ api.$DEV_IP.nip.io {
         }
     }
 
+    # pgAdmin SQL editor and related endpoints (absolute /sqleditor URLs)
+    # pgAdmin sometimes issues requests to /sqleditor/* at the root,
+    # so we proxy those directly to the pgAdmin container as well.
+    handle /sqleditor* {
+        reverse_proxy pgadmin:80 {
+            header_up X-Forwarded-Proto https
+            header_up X-Real-IP {remote_host}
+            header_up X-Forwarded-For {remote_host}
+            header_up Host {host}
+        }
+    }
+
     # Redis Commander - Redis administration tool (mounted under /api/redis)
+    # Main app entrypoint
     handle /api/redis* {
         uri strip_prefix /api/redis
         reverse_proxy redis-commander:8081 {
@@ -401,6 +415,32 @@ api.$DEV_IP.nip.io {
             header_up X-Forwarded-For {remote_host}
             header_up Host {host}
         }
+    }
+
+    # Redis Commander static assets (loaded from absolute /api/* URLs)
+    handle /api/bootstrap* {
+        uri strip_prefix /api
+        reverse_proxy redis-commander:8081
+    }
+    handle /api/css* {
+        uri strip_prefix /api
+        reverse_proxy redis-commander:8081
+    }
+    handle /api/scripts* {
+        uri strip_prefix /api
+        reverse_proxy redis-commander:8081
+    }
+    handle /api/images* {
+        uri strip_prefix /api
+        reverse_proxy redis-commander:8081
+    }
+    handle /api/jstree* {
+        uri strip_prefix /api
+        reverse_proxy redis-commander:8081
+    }
+    handle /api/json-viewer* {
+        uri strip_prefix /api
+        reverse_proxy redis-commander:8081
     }
 
     # Default response for unmatched routes
