@@ -66,6 +66,8 @@ import {
   UpdateNotificationPreferencesDto,
   GetNotificationPreferencesResponseDto,
   UpdateNotificationPreferencesResponseDto,
+  UpdatePreferencesDto,
+  UpdatePreferencesResponseDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { GetLanguage } from '@heidi/i18n';
@@ -817,5 +819,57 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   async getNotificationPreferences(@GetCurrentUser('userId') userId: string) {
     return this.usersService.getNotificationPreferences(userId);
+  }
+
+  // Preferences Endpoint (merged newsletter subscription and notification preferences)
+  @Patch('me/preferences')
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('PREFERENCES_UPDATED')
+  @ApiOperation({
+    summary: 'Update user preferences',
+    description:
+      'Update newsletter subscription and/or notification preferences. Both fields are optional. Newsletter subscription uses JWT userId and email.',
+  })
+  @ApiBody({ type: UpdatePreferencesDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Preferences updated successfully',
+    type: UpdatePreferencesResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'User is already subscribed to the newsletter',
+    type: ConflictErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async updatePreferences(
+    @GetCurrentUser('userId') userId: string,
+    @GetCurrentUser('email') email: string,
+    @Body() dto: UpdatePreferencesDto,
+  ) {
+    const result = await this.usersService.updatePreferences(userId, email, dto);
+    return {
+      success: true,
+      data: {
+        userId: result.userId,
+        newsletterSubscription: result.newsletterSubscription,
+        notificationsEnabled: result.notificationsEnabled,
+        updatedAt: result.updatedAt,
+      },
+      message: 'Preferences updated successfully',
+      timestamp: new Date().toISOString(),
+      path: '/me/preferences',
+      statusCode: 200,
+    };
   }
 }
