@@ -2016,7 +2016,10 @@ export class ListingsService {
     }
   }
 
-  async getUserFavorites(userId: string, filter: { search?: string; categoryIds?: string[]; page?: number; pageSize?: number } = {}) {
+  async getUserFavorites(
+    userId: string,
+    filter: { search?: string; categoryIds?: string[]; page?: number; pageSize?: number } = {},
+  ) {
     this.logger.log(`Getting favorites for userId: ${userId}`, filter);
 
     const page = filter.page && filter.page > 0 ? filter.page : 1;

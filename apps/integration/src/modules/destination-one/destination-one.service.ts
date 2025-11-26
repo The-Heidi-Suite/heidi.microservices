@@ -427,9 +427,16 @@ export class DestinationOneService {
         // Past intervals are ignored
       } else {
         // Recurring interval - compute next occurrence
-        let nextOccurrence: { start: Date; end: Date } | null = null as { start: Date; end: Date } | null;
+        let nextOccurrence: { start: Date; end: Date } | null = null as {
+          start: Date;
+          end: Date;
+        } | null;
 
-        if (freq === ListingRecurrenceFreq.WEEKLY && interval.weekdays && interval.weekdays.length > 0) {
+        if (
+          freq === ListingRecurrenceFreq.WEEKLY &&
+          interval.weekdays &&
+          interval.weekdays.length > 0
+        ) {
           // Weekly with specific weekdays
           const startTime = {
             hours: intervalStart.getUTCHours(),
@@ -472,7 +479,8 @@ export class DestinationOneService {
               if (occurrenceStart > now) {
                 const occurrenceEnd = new Date(occurrenceStart.getTime() + duration);
                 const shouldUpdate =
-                  nextOccurrence === null || occurrenceStart.getTime() < nextOccurrence.start.getTime();
+                  nextOccurrence === null ||
+                  occurrenceStart.getTime() < nextOccurrence.start.getTime();
                 if (shouldUpdate) {
                   nextOccurrence = { start: occurrenceStart, end: occurrenceEnd };
                 }
@@ -482,7 +490,9 @@ export class DestinationOneService {
             // Interval has started - check for ongoing or next occurrence
             // Find occurrences for each weekday starting from intervalStart
             const maxWeeksToCheck = repeatUntil
-              ? Math.ceil((repeatUntil.getTime() - intervalStart.getTime()) / (7 * 24 * 60 * 60 * 1000)) + 1
+              ? Math.ceil(
+                  (repeatUntil.getTime() - intervalStart.getTime()) / (7 * 24 * 60 * 60 * 1000),
+                ) + 1
               : 52; // Check up to 1 year if no repeatUntil
 
             for (let weekOffset = 0; weekOffset < maxWeeksToCheck; weekOffset++) {
@@ -520,7 +530,8 @@ export class DestinationOneService {
                   ongoingIntervals.push({ start: occurrenceStart, end: occurrenceEnd });
                 } else if (occurrenceStart > now) {
                   const shouldUpdate =
-                    nextOccurrence === null || occurrenceStart.getTime() < nextOccurrence.start.getTime();
+                    nextOccurrence === null ||
+                    occurrenceStart.getTime() < nextOccurrence.start.getTime();
                   if (shouldUpdate) {
                     nextOccurrence = { start: occurrenceStart, end: occurrenceEnd };
                   }
@@ -734,7 +745,7 @@ export class DestinationOneService {
       const attrStart = new Date(intervalStartAttr);
       const attrEnd = new Date(intervalEndAttr);
       const now = new Date();
-      
+
       // Only use if it's ongoing or upcoming, not past
       if (attrStart <= now && attrEnd > now) {
         // Ongoing
@@ -747,7 +758,7 @@ export class DestinationOneService {
       }
       // If past, fall through to timeIntervals calculation
     }
-    
+
     // If not set from attributes or attributes were past, calculate from timeIntervals
     if (!eventStart && !eventEnd && item.timeIntervals && item.timeIntervals.length > 0) {
       const calculated = this.calculateLatestEventDates(item.timeIntervals);
