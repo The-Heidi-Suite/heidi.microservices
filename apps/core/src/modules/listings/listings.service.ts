@@ -2016,22 +2016,63 @@ export class ListingsService {
     }
   }
 
-  async getUserFavorites(userId: string) {
-    this.logger.log(`Getting favorites for userId: ${userId}`);
+  async getUserFavorites(userId: string, filter: { search?: string; categoryIds?: string[]; page?: number; pageSize?: number } = {}) {
+    this.logger.log(`Getting favorites for userId: ${userId}`, filter);
 
-    const favorites = await this.prisma.userFavorite.findMany({
-      where: {
-        userId,
-      },
-      include: {
-        listing: {
-          include: listingWithRelations.include,
+    const page = filter.page && filter.page > 0 ? filter.page : 1;
+    const pageSizeCandidate = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 20;
+    const pageSize = Math.min(pageSizeCandidate, 100);
+    const skip = (page - 1) * pageSize;
+
+    // Build where clause for listing filters
+    const listingWhere: Prisma.ListingWhereInput = {};
+
+    // Search filter
+    if (filter.search) {
+      const searchTerm = filter.search.trim();
+      listingWhere.OR = [
+        { title: { contains: searchTerm, mode: 'insensitive' } },
+        { summary: { contains: searchTerm, mode: 'insensitive' } },
+        { content: { contains: searchTerm, mode: 'insensitive' } },
+      ];
+    }
+
+    // Category filter
+    if (filter.categoryIds?.length) {
+      listingWhere.categories = {
+        some: {
+          categoryId: {
+            in: filter.categoryIds,
+          },
         },
-      },
-      orderBy: {
-        createdAt: 'desc',
-      },
-    });
+      };
+    }
+
+    const where: Prisma.UserFavoriteWhereInput = {
+      userId,
+      ...(Object.keys(listingWhere).length > 0
+        ? {
+            listing: listingWhere,
+          }
+        : {}),
+    };
+
+    const [favorites, total] = await this.prisma.$transaction([
+      this.prisma.userFavorite.findMany({
+        where,
+        include: {
+          listing: {
+            include: listingWithRelations.include,
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: pageSize,
+      }),
+      this.prisma.userFavorite.count({ where }),
+    ]);
 
     const items = await Promise.all(
       favorites.map(async (f) => {
@@ -2043,10 +2084,7 @@ export class ListingsService {
       }),
     );
 
-    const total = items.length;
-    const pageSize = total;
-    const page = 1;
-    const totalPages = 1;
+    const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
     return {
       items,

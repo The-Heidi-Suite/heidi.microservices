@@ -1,7 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsBoolean, IsUUID } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
+import { IsBoolean, IsUUID, IsOptional, IsString, IsArray, IsNumber, Min } from 'class-validator';
 import { ListingResponseDto } from './listing-response.dto';
+
+const transformArrayParam = (value: unknown) => {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+  if (Array.isArray(value)) {
+    return value;
+  }
+  return String(value)
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+};
 
 export class AddFavoriteDto {
   @ApiProperty({
@@ -63,4 +76,47 @@ export class RemoveFavoriteResponseDto {
     description: 'Confirmation message describing the operation outcome',
   })
   message: string;
+}
+
+export class FavoriteFilterDto {
+  @ApiPropertyOptional({
+    example: 'cleanup',
+    description: 'Search term to filter favorites by listing title, summary, or content',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    example: ['c1a2b3c4-d5e6-7890-abcd-ef1234567890'],
+    isArray: true,
+    description: 'Filter by category IDs (comma-separated or array)',
+  })
+  @IsOptional()
+  @IsArray()
+  @Transform(({ value }) => transformArrayParam(value))
+  @IsString({ each: true })
+  categoryIds?: string[];
+
+  @ApiPropertyOptional({
+    example: 1,
+    description: 'Page number (1-indexed)',
+    default: 1,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(1)
+  page?: number;
+
+  @ApiPropertyOptional({
+    example: 20,
+    description: 'Number of items per page',
+    default: 20,
+  })
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  @Min(1)
+  pageSize?: number;
 }
