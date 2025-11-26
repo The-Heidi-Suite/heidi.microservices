@@ -309,7 +309,6 @@ services:
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@heidi.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
       # Configure for reverse proxy
       PGADMIN_CONFIG_MASTER_PASSWORD_REQUIRED: 'False'
     # Bound to localhost only for security - accessible only from host machine
@@ -661,7 +660,7 @@ services:
       SERVICE_NAME: terminal
       SERVICE_PORT: 3009
       TERMINAL_DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_terminal?schema=public
-      DATABASE_URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_terminal?schema=public
+      URL: postgresql://${POSTGRES_USER:-heidi}:${POSTGRES_PASSWORD:-heidi_password}@postgres:5432/heidi_terminal?schema=public
       REDIS_URL: redis://:${REDIS_PASSWORD:-}@redis:6379
       RABBITMQ_URL: amqp://${RABBITMQ_USER:-heidi}:${RABBITMQ_PASSWORD:-heidi_password}@rabbitmq:5672
       JWT_SECRET: ${JWT_SECRET}
