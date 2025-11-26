@@ -1,5 +1,5 @@
 {
-  "USER_REGISTERED": "User registered successfully",
+  "USER_REGISTERED": "A verification email has been sent to your registered email address. Please verify your email to complete the registration.",
   "USERS_RETRIEVED": "Users retrieved successfully",
   "USER_RETRIEVED": "User retrieved successfully",
   "USER_CREATED": "User created successfully",

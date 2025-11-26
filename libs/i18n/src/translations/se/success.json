@@ -1,5 +1,5 @@
 {
-  "USER_REGISTERED": "Användare registrerad framgångsrikt",
+  "USER_REGISTERED": "Ett verifierings-e-postmeddelande har skickats till din registrerade e-postadress. Verifiera din e-postadress för att slutföra registreringen.",
   "USERS_RETRIEVED": "Användare hämtade framgångsrikt",
   "USER_RETRIEVED": "Användare hämtad framgångsrikt",
   "USER_CREATED": "Användare skapad framgångsrikt",

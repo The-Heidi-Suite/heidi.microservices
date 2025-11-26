@@ -1,5 +1,5 @@
 {
-  "USER_REGISTERED": "Bruger registreret succesfuldt",
+  "USER_REGISTERED": "En bekræftelses-e-mail er blevet sendt til din registrerede e-mailadresse. Bekræft venligst din e-mail for at fuldføre registreringen.",
   "USERS_RETRIEVED": "Brugere hentet succesfuldt",
   "USER_RETRIEVED": "Bruger hentet succesfuldt",
   "USER_CREATED": "Bruger oprettet succesfuldt",

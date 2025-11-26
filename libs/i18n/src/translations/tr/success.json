@@ -1,5 +1,5 @@
 {
-  "USER_REGISTERED": "Kullanıcı başarıyla kaydedildi",
+  "USER_REGISTERED": "Kayıtlı e-posta adresinize bir doğrulama e-postası gönderildi. Kaydı tamamlamak için lütfen e-postanızı doğrulayın.",
   "USERS_RETRIEVED": "Kullanıcılar başarıyla alındı",
   "USER_RETRIEVED": "Kullanıcı başarıyla alındı",
   "USER_CREATED": "Kullanıcı başarıyla oluşturuldu",
