@@ -15,4 +15,3 @@ export class DeleteHeroImageResponseDto {
   })
   removedImageUrl?: string | null;
 }
-

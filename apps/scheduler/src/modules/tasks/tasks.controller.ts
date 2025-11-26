@@ -72,7 +72,8 @@ export class TasksController {
         runLog: {
           type: 'object',
           nullable: true,
-          description: 'The run log entry created for this execution, including detailed runSummary',
+          description:
+            'The run log entry created for this execution, including detailed runSummary',
         },
       },
     },
