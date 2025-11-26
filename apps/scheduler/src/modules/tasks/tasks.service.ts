@@ -26,7 +26,7 @@ export class TasksService implements OnModuleInit {
   }
 
   // Example cron job - runs every hour
-  @Cron(CronExpression.EVERY_5_MINUTES)
+  @Cron(CronExpression.EVERY_HOUR)
   async handleHourlyTasks() {
     const lockKey = 'scheduler:hourly:lock';
     const acquired = await this.redis.acquireLock(lockKey, 300);
