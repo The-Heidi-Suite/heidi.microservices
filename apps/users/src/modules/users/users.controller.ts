@@ -63,12 +63,16 @@ import {
   SubscribeTopicResponseDto,
   UnsubscribeTopicResponseDto,
   GetSalutationsResponseDto,
+  UpdateNotificationPreferencesDto,
+  GetNotificationPreferencesResponseDto,
+  UpdateNotificationPreferencesResponseDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { GetLanguage } from '@heidi/i18n';
 import { AdminOnlyGuard, SuperAdminOnly } from '@heidi/rbac';
 import { FileUploadService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
+import { SuccessMessage } from '@heidi/interceptors';
 
 @ApiTags('users')
 @Controller()
@@ -753,5 +757,65 @@ export class UsersController {
     @Param('topicKey') topicKey: string,
   ) {
     return this.usersService.unsubscribeTopic(userId, topicKey);
+  }
+
+  // Notification Preferences Endpoint
+  @Patch('me/notifications')
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('NOTIFICATION_PREFERENCES_UPDATED')
+  @ApiOperation({
+    summary: 'Update notification preferences',
+    description:
+      'Enable or disable push notifications for favorite event reminders. When disabled, the user will not receive Firebase notifications for upcoming favorite events.',
+  })
+  @ApiBody({ type: UpdateNotificationPreferencesDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification preferences updated successfully',
+    type: UpdateNotificationPreferencesResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async updateNotificationPreferences(
+    @GetCurrentUser('userId') userId: string,
+    @Body() dto: UpdateNotificationPreferencesDto,
+  ) {
+    return this.usersService.updateNotificationPreferences(userId, dto.notificationsEnabled);
+  }
+
+  @Get('me/notifications')
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('NOTIFICATION_PREFERENCES_RETRIEVED')
+  @ApiOperation({
+    summary: 'Get notification preferences',
+    description: 'Get the current notification preferences for the authenticated user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Notification preferences retrieved successfully',
+    type: GetNotificationPreferencesResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async getNotificationPreferences(@GetCurrentUser('userId') userId: string) {
+    return this.usersService.getNotificationPreferences(userId);
   }
 }

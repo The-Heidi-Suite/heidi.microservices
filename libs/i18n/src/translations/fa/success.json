@@ -68,5 +68,7 @@
   "TAG_RETRIEVED": "برچسب با موفقیت بازیابی شد",
   "TAG_CREATED": "برچسب با موفقیت ایجاد شد",
   "TAG_DELETED": "برچسب با موفقیت حذف شد",
-  "OPERATION_SUCCESS": "عملیات با موفقیت انجام شد"
+  "OPERATION_SUCCESS": "عملیات با موفقیت انجام شد",
+  "NOTIFICATION_PREFERENCES_UPDATED": "تنظیمات اعلان‌ها با موفقیت به‌روزرسانی شد",
+  "NOTIFICATION_PREFERENCES_RETRIEVED": "تنظیمات اعلان‌ها با موفقیت بازیابی شد"
 }

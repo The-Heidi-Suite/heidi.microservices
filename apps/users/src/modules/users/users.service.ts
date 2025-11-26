@@ -499,6 +499,7 @@ export class UsersService {
         hasVehicle: true,
         cityId: true,
         preferredLanguage: true,
+        notificationsEnabled: true,
         isActive: true,
         createdAt: true,
         updatedAt: true,
@@ -1534,5 +1535,75 @@ export class UsersService {
     }
 
     return salutations;
+  }
+
+  /**
+   * Update user's notification preferences
+   */
+  async updateNotificationPreferences(userId: string, notificationsEnabled: boolean) {
+    this.logger.log(
+      `Updating notification preferences for user: ${userId} to ${notificationsEnabled}`,
+    );
+
+    // Check if user exists first
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true },
+    });
+
+    if (!existingUser) {
+      throw new NotFoundException({ errorCode: 'AUTH_USER_NOT_FOUND' });
+    }
+
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { notificationsEnabled },
+      select: {
+        id: true,
+        notificationsEnabled: true,
+        updatedAt: true,
+      },
+    });
+
+    // Emit user updated event
+    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
+      userId: user.id,
+      action: 'NOTIFICATION_PREFERENCES_UPDATED',
+      notificationsEnabled,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Notification preferences updated for user: ${userId}`);
+    return {
+      userId: user.id,
+      notificationsEnabled: user.notificationsEnabled,
+      updatedAt: user.updatedAt.toISOString(),
+    };
+  }
+
+  /**
+   * Get user's notification preferences
+   */
+  async getNotificationPreferences(userId: string) {
+    this.logger.log(`Getting notification preferences for user: ${userId}`);
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        notificationsEnabled: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException({ errorCode: 'AUTH_USER_NOT_FOUND' });
+    }
+
+    return {
+      userId: user.id,
+      notificationsEnabled: user.notificationsEnabled,
+      updatedAt: user.updatedAt.toISOString(),
+    };
   }
 }

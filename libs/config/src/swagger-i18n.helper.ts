@@ -55,336 +55,168 @@ export function getSwaggerI18nOptions(configService: ConfigService) {
     .map((lang) => `<option value="${lang.code}">${lang.nativeName} (${lang.name})</option>`)
     .join('');
 
-  // Build the JavaScript code string at TypeScript level with interpolated values
-  const languageSelectorJs = `
-    (function() {
-      'use strict';
+  // Build the JavaScript code as a string to be injected via customJsStr
+  // This avoids using eval() and is CSP-compliant
+  const customJsStr = `
+(function() {
+  'use strict';
 
-      // Language storage key - shared across all services
-      const LANGUAGE_STORAGE_KEY = 'heidi-swagger-language';
-      const LANGUAGE_QUERY_PARAM = 'lang';
-      const DEFAULT_LANGUAGE = ${JSON.stringify(defaultLanguage)};
-      const LANGUAGE_OPTIONS_HTML = ${JSON.stringify(languageOptionsHtml)};
+  // Language storage key - shared across all services
+  var LANGUAGE_STORAGE_KEY = 'heidi-swagger-language';
+  var LANGUAGE_QUERY_PARAM = 'lang';
+  var DEFAULT_LANGUAGE = ${JSON.stringify(defaultLanguage)};
+  var LANGUAGE_OPTIONS_HTML = ${JSON.stringify(languageOptionsHtml)};
 
-      // Helper function to get language from URL or storage
-      function getLanguage() {
-        // First, check URL query parameter
-        const urlParams = new URLSearchParams(window.location.search);
-        const urlLang = urlParams.get(LANGUAGE_QUERY_PARAM);
-
-        if (urlLang) {
-          // Save to localStorage for persistence
-          localStorage.setItem(LANGUAGE_STORAGE_KEY, urlLang);
-          return urlLang;
-        }
-
-        // Fall back to localStorage
-        return localStorage.getItem(LANGUAGE_STORAGE_KEY) || DEFAULT_LANGUAGE;
-      }
-
-      // Helper function to update URL with language parameter
-      function updateUrlWithLanguage(lang) {
-        const url = new URL(window.location.href);
-        url.searchParams.set(LANGUAGE_QUERY_PARAM, lang);
-        // Update URL without reload (using history API)
-        window.history.replaceState({}, '', url.toString());
-      }
-
-      // Wait for DOM to be ready
-      function initLanguageSelector() {
-        // Check if selector already exists
-        if (document.getElementById('swagger-i18n-selector')) {
-          return;
-        }
-
-        // Create language selector container
-        const selector = document.createElement('div');
-        selector.id = 'swagger-i18n-selector';
-        selector.className = 'swagger-i18n-selector';
-
-        // Get current language (from URL or storage)
-        const savedLang = getLanguage();
-
-        // Create label
-        const label = document.createElement('label');
-        label.setAttribute('for', 'swagger-lang-select');
-        label.textContent = '🌐 Language:';
-
-        // Create indicator
-        const indicator = document.createElement('div');
-        indicator.className = 'language-indicator';
-        indicator.textContent = savedLang.toUpperCase();
-
-        // Create select element
-        const select = document.createElement('select');
-        select.id = 'swagger-lang-select';
-        select.innerHTML = LANGUAGE_OPTIONS_HTML;
-        select.value = savedLang;
-
-        // Update indicator, localStorage, and URL when language changes
-        select.addEventListener('change', function() {
-          const selectedLang = this.value;
-
-          // Save to localStorage
-          localStorage.setItem(LANGUAGE_STORAGE_KEY, selectedLang);
-
-          // Update URL
-          updateUrlWithLanguage(selectedLang);
-
-          // Update indicator
-          indicator.textContent = selectedLang.toUpperCase();
-
-          // Show notification
-          showLanguageChangeNotification(selectedLang);
-        });
-
-        // Assemble the selector
-        selector.appendChild(label);
-        selector.appendChild(indicator);
-        selector.appendChild(select);
-
-        // Insert into body
-        document.body.appendChild(selector);
-
-        // Add notification function
-        function showLanguageChangeNotification(lang) {
-          // Remove existing notification if any
-          const existing = document.getElementById('swagger-i18n-notification');
-          if (existing) {
-            existing.remove();
-          }
-
-          const notification = document.createElement('div');
-          notification.id = 'swagger-i18n-notification';
-          notification.style.cssText = 'position: fixed; top: 70px; right: 10px; z-index: 101; padding: 12px 20px; background: #4caf50; color: white; border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: 500; animation: slideIn 0.3s ease;';
-          notification.textContent = 'Language changed to: ' + lang.toUpperCase() + '. Accept-Language header will be set to ' + lang.toUpperCase() + ' for all API requests.';
-
-          // Add animation
-          const style = document.createElement('style');
-          style.textContent = '@keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }';
-          document.head.appendChild(style);
-
-          document.body.appendChild(notification);
-
-          // Remove after 3 seconds
-          setTimeout(() => {
-            if (notification.parentNode) {
-              notification.style.animation = 'slideIn 0.3s ease reverse';
-              setTimeout(() => notification.remove(), 300);
-            }
-          }, 3000);
-        }
-      }
-
-      // Initialize when DOM is ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initLanguageSelector);
-      } else {
-        initLanguageSelector();
-      }
-
-      // Also initialize after Swagger UI loads (in case of async loading)
-      const observer = new MutationObserver(function(mutations) {
-        if (document.querySelector('.swagger-ui')) {
-          initLanguageSelector();
-          observer.disconnect();
-        }
-      });
-
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
-    })();
-  `;
-
-  // Build the onComplete function body as a string with the code embedded
-  // IMPORTANT: This code runs in the browser, so we avoid using eval in the browser
-  // to satisfy strict Content Security Policy (CSP) configurations.
-  const onCompleteBody = `function () {
+  // Helper function to get language from URL or storage
+  function getLanguage() {
     try {
-${languageSelectorJs.trim()}
+      var urlParams = new URLSearchParams(window.location.search);
+      var urlLang = urlParams.get(LANGUAGE_QUERY_PARAM);
 
-      // Patch LiveResponse component to handle null responses
-      // This prevents "Cannot read properties of null (reading 'get')" errors
-      try {
-        // Wait a bit for Swagger UI to fully initialize
-        setTimeout(function() {
-          try {
-            const swaggerUI = window.ui || window.swaggerUi;
-            if (swaggerUI && swaggerUI.getSystem) {
-              const system = swaggerUI.getSystem();
-              const components = system.getComponents();
-
-              // Find LiveResponse component and patch its render method
-              if (components && components.LiveResponse) {
-                const OriginalLiveResponse = components.LiveResponse;
-                if (OriginalLiveResponse && OriginalLiveResponse.prototype) {
-                  const originalRender = OriginalLiveResponse.prototype.render;
-                  if (originalRender && typeof originalRender === 'function') {
-                    OriginalLiveResponse.prototype.render = function() {
-                      try {
-                        // Guard against null/undefined response prop
-                        if (!this.props || !this.props.response) {
-                          // Return null or empty element to prevent rendering
-                          const React = window.React || (window.Re && window.Re.createElement ? { createElement: window.Re.createElement } : null);
-                          if (React) {
-                            return React.createElement('div', { className: 'live-response-empty', style: { display: 'none' } });
-                          }
-                          return null;
-                        }
-                        // Call original render if response exists
-                        return originalRender.call(this);
-                      } catch (renderError) {
-                        // If render fails, return empty element
-                        console.debug('LiveResponse render error:', renderError);
-                        const React = window.React || (window.Re && window.Re.createElement ? { createElement: window.Re.createElement } : null);
-                        if (React) {
-                          return React.createElement('div', { className: 'live-response-error', style: { display: 'none' } });
-                        }
-                        return null;
-                      }
-                    };
-                  }
-                }
-              }
-            }
-          } catch (patchError) {
-            // Silently fail if patching doesn't work (Swagger UI version differences)
-            console.debug('Could not patch LiveResponse component:', patchError);
-          }
-        }, 100);
-      } catch (patchInitError) {
-        console.debug('Could not initialize LiveResponse patch:', patchInitError);
+      if (urlLang) {
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, urlLang);
+        return urlLang;
       }
-    } catch (error) {
-      console.error('Failed to initialize language selector:', error);
+
+      return localStorage.getItem(LANGUAGE_STORAGE_KEY) || DEFAULT_LANGUAGE;
+    } catch (e) {
+      return DEFAULT_LANGUAGE;
     }
-  }`;
+  }
+
+  // Helper function to update URL with language parameter
+  function updateUrlWithLanguage(lang) {
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.set(LANGUAGE_QUERY_PARAM, lang);
+      window.history.replaceState({}, '', url.toString());
+    } catch (e) {
+      console.debug('Could not update URL:', e);
+    }
+  }
+
+  // Show notification when language changes
+  function showLanguageChangeNotification(lang) {
+    try {
+      var existing = document.getElementById('swagger-i18n-notification');
+      if (existing) {
+        existing.remove();
+      }
+
+      var notification = document.createElement('div');
+      notification.id = 'swagger-i18n-notification';
+      notification.style.cssText = 'position: fixed; top: 70px; right: 10px; z-index: 101; padding: 12px 20px; background: #4caf50; color: white; border-radius: 6px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; font-size: 14px; font-weight: 500;';
+      notification.textContent = 'Language changed to: ' + lang.toUpperCase() + '. Accept-Language header will be set for API requests.';
+
+      document.body.appendChild(notification);
+
+      setTimeout(function() {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 3000);
+    } catch (e) {
+      console.debug('Could not show notification:', e);
+    }
+  }
+
+  // Initialize language selector
+  function initLanguageSelector() {
+    if (document.getElementById('swagger-i18n-selector')) {
+      return;
+    }
+
+    var selector = document.createElement('div');
+    selector.id = 'swagger-i18n-selector';
+    selector.className = 'swagger-i18n-selector';
+
+    var savedLang = getLanguage();
+
+    var label = document.createElement('label');
+    label.setAttribute('for', 'swagger-lang-select');
+    label.textContent = '🌐 Language:';
+
+    var indicator = document.createElement('div');
+    indicator.className = 'language-indicator';
+    indicator.textContent = savedLang.toUpperCase();
+
+    var select = document.createElement('select');
+    select.id = 'swagger-lang-select';
+    select.innerHTML = LANGUAGE_OPTIONS_HTML;
+    select.value = savedLang;
+
+    select.addEventListener('change', function() {
+      var selectedLang = this.value;
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, selectedLang);
+      updateUrlWithLanguage(selectedLang);
+      indicator.textContent = selectedLang.toUpperCase();
+      showLanguageChangeNotification(selectedLang);
+    });
+
+    selector.appendChild(label);
+    selector.appendChild(indicator);
+    selector.appendChild(select);
+
+    document.body.appendChild(selector);
+  }
+
+  // Patch Swagger UI request interceptor to add Accept-Language header
+  function patchRequestInterceptor() {
+    try {
+      if (window.ui && window.ui.getConfigs) {
+        var configs = window.ui.getConfigs();
+        var originalInterceptor = configs.requestInterceptor;
+
+        configs.requestInterceptor = function(request) {
+          if (originalInterceptor) {
+            request = originalInterceptor(request);
+          }
+
+          if (request && request.headers) {
+            var lang = getLanguage();
+            request.headers['Accept-Language'] = lang;
+          }
+
+          return request;
+        };
+      }
+    } catch (e) {
+      console.debug('Could not patch request interceptor:', e);
+    }
+  }
+
+  // Initialize when DOM is ready
+  function init() {
+    initLanguageSelector();
+    patchRequestInterceptor();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+
+  // Also initialize after Swagger UI loads (in case of async loading)
+  var observer = new MutationObserver(function(mutations) {
+    if (document.querySelector('.swagger-ui')) {
+      init();
+      observer.disconnect();
+    }
+  });
+
+  observer.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+})();
+`;
 
   return {
+    // Use customJsStr to inject JavaScript without eval() - CSP compliant
+    customJsStr: [customJsStr],
     swaggerOptions: {
       persistAuthorization: true,
-      // Request interceptor to add Accept-Language header
-      // Priority: URL query parameter (?lang=de) > localStorage > default
-      requestInterceptor: (request: any) => {
-        // Guard against null/undefined request object
-        if (!request) {
-          return request;
-        }
-
-        // Ensure headers object exists
-        if (!request.headers) {
-          request.headers = {};
-        }
-
-        // Check URL query parameter first
-        try {
-          // Only add Accept-Language for same-origin requests to avoid CORS issues
-          if (typeof window === 'undefined') {
-            return request;
-          }
-
-          const requestUrl = new URL(request.url, window.location.href);
-          const isSameOrigin = requestUrl.origin === window.location.origin;
-
-          // If the request is cross-origin, don't touch headers (let gateway/CORS handle it)
-          if (!isSameOrigin) {
-            return request;
-          }
-
-          const urlParams = new URLSearchParams(window.location.search);
-          const urlLang = urlParams.get('lang');
-          const language =
-            urlLang || localStorage.getItem('heidi-swagger-language') || defaultLanguage;
-          request.headers['Accept-Language'] = language;
-        } catch (error) {
-          // Fallback to default language if any error occurs
-          request.headers['Accept-Language'] = defaultLanguage;
-        }
-
-        return request;
-      },
-      // Response interceptor to handle null/undefined responses
-      // This prevents LiveResponse.render from crashing when response is null
-      responseInterceptor: (response: any) => {
-        // Guard against null/undefined response
-        if (!response) {
-          // Return a minimal valid response structure
-          return response; // Return as-is, let wrapComponents handle it
-        }
-
-        return response;
-      },
-      // Wrap LiveResponse component to handle null responses
-      // This is the proper way to fix the "Cannot read properties of null (reading 'get')" error
-      // NOTE: Component keys in Swagger UI are lowerCamelCase, so we use "liveResponse" here.
-      wrapComponents: {
-        liveResponse: (Original: any, system: any) => {
-          return (props: any) => {
-            // Guard against null/undefined response prop
-            if (!props || !props.response) {
-              // Return a safe fallback component
-              const React = system.React;
-              if (React) {
-                return React.createElement('div', {
-                  className: 'live-response-empty',
-                  style: { display: 'none' },
-                });
-              }
-              return null;
-            }
-
-            // Ensure response has a get method (Immutable.js Map)
-            try {
-              // Try to access a property to verify it's valid
-              if (typeof props.response.get !== 'function') {
-                // If response doesn't have get method, return empty
-                const React = system.React;
-                if (React) {
-                  return React.createElement('div', {
-                    className: 'live-response-invalid',
-                    style: { display: 'none' },
-                  });
-                }
-                return null;
-              }
-            } catch (error) {
-              // If accessing response causes error, return empty
-              const React = system.React;
-              if (React) {
-                return React.createElement('div', {
-                  className: 'live-response-error',
-                  style: { display: 'none' },
-                });
-              }
-              return null;
-            }
-
-            // If response is valid, render the original component
-            try {
-              const React = system.React;
-              if (!React) {
-                return null;
-              }
-              return React.createElement(Original, props);
-            } catch (renderError) {
-              // If render fails, return empty div
-              console.debug('LiveResponse render error:', renderError);
-              const React = system.React;
-              if (React) {
-                return React.createElement('div', {
-                  className: 'live-response-render-error',
-                  style: { display: 'none' },
-                });
-              }
-              return null;
-            }
-          };
-        },
-      },
-      // Inject JavaScript after Swagger UI loads
-      onComplete: eval('(' + onCompleteBody + ')') as () => void,
     },
     customCss: `
       /* Language Selector Styles */

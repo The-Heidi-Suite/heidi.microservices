@@ -53,5 +53,7 @@
   "TAG_RETRIEVED": "Тег успешно получен",
   "TAG_CREATED": "Тег успешно создан",
   "TAG_DELETED": "Тег успешно удален",
-  "OPERATION_SUCCESS": "Операция успешно завершена"
+  "OPERATION_SUCCESS": "Операция успешно завершена",
+  "NOTIFICATION_PREFERENCES_UPDATED": "Настройки уведомлений успешно обновлены",
+  "NOTIFICATION_PREFERENCES_RETRIEVED": "Настройки уведомлений успешно получены"
 }

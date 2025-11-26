@@ -30,7 +30,7 @@ interface CreateContactRequest {
   attributes?: Record<string, string | boolean>;
   consent: {
     storage: {
-      purposes: Record<string, string>;
+      purposes: Record<string, string>; // Value is date (YYYY-MM-DD) or "AUTO"
     };
   };
 }
@@ -144,11 +144,11 @@ export class KielNewsletterService {
         },
         consent: {
           storage: {
-            // Purposes is an object with purpose ID as key and date as value
-            // API requires YYYY-MM-DD format (not "AUTO")
-            // Client requirement: date → AUTO (interpreted as current date), permission → 10 (Preliminary consent)
+            // Purposes is an object with purpose ID as key and date/<AUTO> as value
+            // API requires: date (yyyy-MM-dd) later than today, OR literal "<AUTO>"
+            // Client requirement: consent.storage.purposes → object 1005 (Newsletter subscription), date → AUTO
             purposes: {
-              [config.consentPurposeId.toString()]: new Date().toISOString().split('T')[0], // YYYY-MM-DD format
+              [config.consentPurposeId.toString()]: '<AUTO>', // <AUTO> = system will set the date automatically
             },
           },
         },

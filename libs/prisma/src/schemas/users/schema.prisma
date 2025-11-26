@@ -30,6 +30,7 @@ model User {
   preferredLanguage   String?          // ISO 639-1 language code (e.g., 'en', 'de')
   hasVehicle          Boolean          @default(false)
   emailVerified       Boolean          @default(false)
+  notificationsEnabled Boolean         @default(true) // Whether user accepts push notifications
   isActive            Boolean           @default(true)
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt

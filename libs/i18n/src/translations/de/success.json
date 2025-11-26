@@ -68,5 +68,7 @@
   "TAG_RETRIEVED": "Tag erfolgreich abgerufen",
   "TAG_CREATED": "Tag erfolgreich erstellt",
   "TAG_DELETED": "Tag erfolgreich gelöscht",
-  "OPERATION_SUCCESS": "Vorgang erfolgreich abgeschlossen"
+  "OPERATION_SUCCESS": "Vorgang erfolgreich abgeschlossen",
+  "NOTIFICATION_PREFERENCES_UPDATED": "Benachrichtigungseinstellungen erfolgreich aktualisiert",
+  "NOTIFICATION_PREFERENCES_RETRIEVED": "Benachrichtigungseinstellungen erfolgreich abgerufen"
 }
