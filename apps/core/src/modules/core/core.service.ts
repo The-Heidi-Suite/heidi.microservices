@@ -1284,24 +1284,16 @@ export class CoreService implements OnModuleInit {
         }
 
         // Skip if listing has no event start time
-        if (!listing.eventStart && (!listing.timeIntervals || listing.timeIntervals.length === 0)) {
+        if (!listing.eventStart) {
           continue;
         }
 
-        // Compute upcoming occurrences
+        // Compute upcoming occurrences - use eventStart only for both recurring and non-recurring
         const allOccurrences = this.computeUpcomingOccurrences(
           {
             eventStart: listing.eventStart,
             eventEnd: listing.eventEnd,
-            timeIntervals: listing.timeIntervals.map((ti) => ({
-              weekdays: ti.weekdays as string[],
-              start: ti.start,
-              end: ti.end,
-              tz: ti.tz,
-              freq: ti.freq,
-              interval: ti.interval,
-              repeatUntil: ti.repeatUntil,
-            })),
+            timeIntervals: [], // Ignore timeIntervals, use eventStart only
             timezone: listing.timezone,
           },
           window24hStart,
@@ -1426,15 +1418,15 @@ export class CoreService implements OnModuleInit {
   ): Date[] {
     const occurrences: Date[] = [];
 
-    // For non-recurring events, use eventStart directly
-    if (listing.eventStart && !listing.timeIntervals?.length) {
+    // Use eventStart directly from database for both recurring and non-recurring events
+    if (listing.eventStart) {
       if (listing.eventStart >= windowStart && listing.eventStart <= windowEnd) {
         occurrences.push(listing.eventStart);
       }
       return occurrences;
     }
 
-    // For recurring events, compute occurrences from timeIntervals
+    // Fallback: if no eventStart, check timeIntervals (should not happen with new logic)
     if (listing.timeIntervals && listing.timeIntervals.length > 0) {
       // Map weekday names to day numbers (0 = Sunday, 1 = Monday, etc.)
       const weekdayToNumber: Record<string, number> = {
