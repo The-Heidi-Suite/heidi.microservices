@@ -1063,7 +1063,8 @@ export class ListingController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Delete hero image for a listing',
-    description: 'Removes the hero image from storage and clears the heroImageUrl field for the listing.',
+    description:
+      'Removes the hero image from storage and clears the heroImageUrl field for the listing.',
   })
   @ApiParam({
     name: 'id',
@@ -1276,7 +1277,12 @@ export class ListingController {
     const userId = user.userId;
     const roles = this.getRoles(user.role);
     const mediaIds = payload.map((item) => item.id);
-    const deletedIds = await this.listingsService.deleteListingMediaBatch(id, mediaIds, userId, roles);
+    const deletedIds = await this.listingsService.deleteListingMediaBatch(
+      id,
+      mediaIds,
+      userId,
+      roles,
+    );
 
     return {
       deletedIds,

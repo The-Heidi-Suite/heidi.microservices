@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { HttpModule } from '@nestjs/axios';
 import { IntegrationController } from './integration.controller';
+import { IntegrationMessageController } from './integration-message.controller';
 import { IntegrationService } from './integration.service';
 import { DestinationOneModule } from '../destination-one/destination-one.module';
 import { MobilithekParkingModule } from '../mobilithek-parking/mobilithek-parking.module';
@@ -15,7 +16,7 @@ import { RBACModule } from '@heidi/rbac';
     KielNewsletterModule,
     RBACModule,
   ],
-  controllers: [IntegrationController],
+  controllers: [IntegrationController, IntegrationMessageController],
   providers: [IntegrationService],
 })
 export class IntegrationModule {}

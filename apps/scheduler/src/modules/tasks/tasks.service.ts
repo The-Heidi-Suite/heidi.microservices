@@ -6,6 +6,7 @@ import { RedisService } from '@heidi/redis';
 import { LoggerService } from '@heidi/logger';
 import { CreateTaskDto } from './dto';
 import { firstValueFrom, timeout } from 'rxjs';
+import { computeNextRun, isValidCronExpression } from './cron.helper';
 
 @Injectable()
 export class TasksService implements OnModuleInit {
@@ -23,9 +24,62 @@ export class TasksService implements OnModuleInit {
 
   async onModuleInit() {
     this.logger.log('Scheduler service initialized');
+    await this.backfillNextRunForExistingSchedules();
   }
 
-  // Example cron job - runs every hour
+  /**
+   * Backfill nextRun for existing enabled schedules that have null nextRun
+   * This ensures schedules created before this feature was added will work correctly
+   */
+  private async backfillNextRunForExistingSchedules() {
+    try {
+      const schedulesNeedingBackfill = await this.prisma.schedule.findMany({
+        where: {
+          isEnabled: true,
+          nextRun: null,
+        },
+      });
+
+      if (schedulesNeedingBackfill.length === 0) {
+        this.logger.debug('No schedules need nextRun backfill');
+        return;
+      }
+
+      this.logger.log(
+        `Backfilling nextRun for ${schedulesNeedingBackfill.length} existing schedule(s)`,
+      );
+
+      const now = new Date();
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (const schedule of schedulesNeedingBackfill) {
+        try {
+          const nextRun = computeNextRun(schedule.cronExpression, now);
+          await this.prisma.schedule.update({
+            where: { id: schedule.id },
+            data: { nextRun },
+          });
+          this.logger.debug(
+            `Backfilled nextRun for schedule "${schedule.name}" (${schedule.id}): ${nextRun.toISOString()}`,
+          );
+          successCount++;
+        } catch (error) {
+          this.logger.error(
+            `Failed to backfill nextRun for schedule "${schedule.name}" (${schedule.id}) with cron "${schedule.cronExpression}": ${error instanceof Error ? error.message : String(error)}`,
+          );
+          errorCount++;
+        }
+      }
+
+      this.logger.log(`Backfill complete: ${successCount} succeeded, ${errorCount} failed`);
+    } catch (error) {
+      this.logger.error('Error during nextRun backfill', error);
+      // Don't throw - allow service to start even if backfill fails
+    }
+  }
+
+  // Cron job - runs every hour to check for due schedules
   @Cron(CronExpression.EVERY_HOUR)
   async handleHourlyTasks() {
     const lockKey = 'scheduler:hourly:lock';
@@ -37,10 +91,18 @@ export class TasksService implements OnModuleInit {
     }
 
     try {
-      this.logger.log('Running hourly scheduled tasks');
+      const now = new Date();
+      this.logger.log('Checking for due scheduled tasks');
+
+      // Fetch only schedules that are enabled and due (nextRun <= now, or null as fallback)
       const tasks = await this.prisma.schedule.findMany({
-        where: { isEnabled: true },
+        where: {
+          isEnabled: true,
+          OR: [{ nextRun: { lte: now } }, { nextRun: null }],
+        },
       });
+
+      this.logger.log(`Found ${tasks.length} due schedule(s) to execute`);
 
       for (const task of tasks) {
         await this.executeTask(task);
@@ -61,6 +123,14 @@ export class TasksService implements OnModuleInit {
   }
 
   async create(dto: CreateTaskDto) {
+    // Validate cron expression
+    if (!isValidCronExpression(dto.cronExpression)) {
+      throw new Error(`Invalid cron expression: ${dto.cronExpression}`);
+    }
+
+    // Compute next run time
+    const nextRun = computeNextRun(dto.cronExpression);
+
     const task = await this.prisma.schedule.create({
       data: {
         name: dto.name,
@@ -68,11 +138,65 @@ export class TasksService implements OnModuleInit {
         cronExpression: dto.cronExpression,
         payload: dto.payload || {},
         isEnabled: true,
+        nextRun,
       },
     });
 
-    this.logger.log(`Task created: ${task.id}`);
+    this.logger.log(`Task created: ${task.id} (next run: ${nextRun.toISOString()})`);
     return task;
+  }
+
+  /**
+   * Manually trigger a schedule to run immediately
+   * Does not modify the cron configuration - only executes the task once
+   */
+  async runById(id: string) {
+    const task = await this.prisma.schedule.findUnique({ where: { id } });
+
+    if (!task) {
+      throw new Error(`Schedule with id ${id} not found`);
+    }
+
+    this.logger.log(`Manually triggering schedule: ${task.name} (${id})`);
+
+    // Execute the task (this will create a run log and update schedule stats)
+    await this.executeTask(task);
+
+    // Fetch the latest run log for this schedule
+    const latestRunLog = await this.prisma.scheduleRunLog.findFirst({
+      where: { scheduleId: id },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return {
+      schedule: task,
+      runLog: latestRunLog || null,
+    };
+  }
+
+  /**
+   * Get run history for a schedule
+   */
+  async getRunHistory(scheduleId: string, limit: number = 20) {
+    const schedule = await this.prisma.schedule.findUnique({
+      where: { id: scheduleId },
+    });
+
+    if (!schedule) {
+      throw new Error(`Schedule with id ${scheduleId} not found`);
+    }
+
+    const runLogs = await this.prisma.scheduleRunLog.findMany({
+      where: { scheduleId },
+      orderBy: { createdAt: 'desc' },
+      take: limit,
+    });
+
+    return {
+      schedule,
+      runLogs,
+      total: runLogs.length,
+    };
   }
 
   private async executeTask(task: any) {
@@ -172,13 +296,26 @@ export class TasksService implements OnModuleInit {
       const executionEndTime = new Date();
       const executionDuration = executionEndTime.getTime() - executionStartTime.getTime();
 
-      // Update schedule
+      // Compute next run time based on cron expression
+      let nextRun: Date | null = null;
+      try {
+        nextRun = computeNextRun(task.cronExpression, executionEndTime);
+      } catch (error) {
+        this.logger.error(
+          `Failed to compute next run for task ${task.id} with cron "${task.cronExpression}": ${error instanceof Error ? error.message : String(error)}`,
+        );
+        // If cron parsing fails, set nextRun to null to prevent infinite retries
+        // The startup backfill will attempt to fix it on next service restart
+      }
+
+      // Update schedule with last run info and next run time
       await this.prisma.schedule.update({
         where: { id: task.id },
         data: {
           lastRun: executionEndTime,
           lastRunStatus: 'SUCCESS',
           runCount: { increment: 1 },
+          nextRun: nextRun || undefined,
         },
       });
 
@@ -254,12 +391,25 @@ export class TasksService implements OnModuleInit {
 
       this.logger.error(`Task execution failed: ${task.name}`, error);
 
-      // Update schedule with failure
+      // Compute next run time even on failure (so the task can retry later)
+      let nextRun: Date | null = null;
+      try {
+        nextRun = computeNextRun(task.cronExpression, executionEndTime);
+      } catch (error) {
+        this.logger.error(
+          `Failed to compute next run for failed task ${task.id} with cron "${task.cronExpression}": ${error instanceof Error ? error.message : String(error)}`,
+        );
+        // If cron parsing fails, nextRun remains null
+        // The startup backfill will attempt to fix it on next service restart
+      }
+
+      // Update schedule with failure info and next run time
       await this.prisma.schedule.update({
         where: { id: task.id },
         data: {
           lastRun: executionEndTime,
           lastRunStatus: 'FAILED',
+          nextRun: nextRun || undefined,
         },
       });
 
