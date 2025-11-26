@@ -29,12 +29,16 @@ services:
     image: postgres:16-alpine
     container_name: heidi-postgres
     restart: always
+    # ⚠️ SECURITY: Exposing PostgreSQL port
+    # This publishes PostgreSQL on the host so tools like pgAdmin or local clients
+    # can connect via 49.13.145.221:5432. In production, restrict access with
+    # firewall rules or bind to 127.0.0.1 if only local access is required.
+    ports:
+      - '5432:5432'
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-heidi}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-heidi_password}
       POSTGRES_DB: ${POSTGRES_DB:-heidi_db}
-    # Port mapping removed for security - only accessible via Docker network
-    # If local access needed, use: ports: ['127.0.0.1:5432:5432']
     volumes:
       - ./data/postgres:/var/lib/postgresql/data
       - ./infra/postgres/init-databases.sh:/docker-entrypoint-initdb.d/init-databases.sh:ro
