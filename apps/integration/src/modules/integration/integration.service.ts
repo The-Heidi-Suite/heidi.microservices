@@ -1,6 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { MessagePattern, Payload } from '@nestjs/microservices';
 import { PrismaIntegrationService } from '@heidi/prisma';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
@@ -76,48 +75,6 @@ export class IntegrationService {
     }
 
     return this.destinationOneService.syncIntegration(integrationId);
-  }
-
-  @MessagePattern(RabbitMQPatterns.INTEGRATION_SYNC)
-  async handleIntegrationSync(@Payload() data: { integrationId: string; timestamp?: string }) {
-    this.logger.log(
-      `Received integration sync request: ${RabbitMQPatterns.INTEGRATION_SYNC} for integrationId: ${data.integrationId}`,
-    );
-
-    try {
-      const result = await this.syncIntegration(data.integrationId);
-      this.logger.debug(
-        `Successfully processed integration sync for integrationId: ${data.integrationId} (will ACK)`,
-      );
-      return result;
-    } catch (error: any) {
-      this.logger.error(
-        `Error processing integration sync for integrationId: ${data.integrationId} (will NACK)`,
-        error,
-      );
-      throw error; // Throwing error causes NestJS to NACK the message
-    }
-  }
-
-  @MessagePattern(RabbitMQPatterns.INTEGRATION_SUBSCRIBE_NEWSLETTER)
-  async handleSubscribeNewsletter(@Payload() data: { userId: string; email: string }) {
-    this.logger.log(
-      `Received newsletter subscription request: ${RabbitMQPatterns.INTEGRATION_SUBSCRIBE_NEWSLETTER} for userId: ${data.userId}, email: ${data.email}`,
-    );
-
-    try {
-      const result = await this.subscribeToNewsletter(data.userId, data.email);
-      this.logger.debug(
-        `Successfully processed newsletter subscription for userId: ${data.userId} (will ACK)`,
-      );
-      return result;
-    } catch (error: any) {
-      this.logger.error(
-        `Error processing newsletter subscription for userId: ${data.userId} (will NACK)`,
-        error,
-      );
-      throw error; // Throwing error causes NestJS to NACK the message
-    }
   }
 
   async handleWebhook(provider: string, payload: any) {
