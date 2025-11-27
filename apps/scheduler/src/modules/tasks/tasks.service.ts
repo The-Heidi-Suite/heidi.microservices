@@ -379,12 +379,21 @@ export class TasksService implements OnModuleInit {
         });
       }
 
-      this.client.emit(RabbitMQPatterns.SCHEDULE_COMPLETED, {
-        taskId: task.id,
-        scheduleRunId: runLog?.id,
-        status: 'SUCCESS',
-        timestamp: executionEndTime.toISOString(),
-      });
+      // Emit schedule completed event (fire-and-forget, no handler required)
+      // This event can be used for monitoring/logging in the future
+      try {
+        this.client.emit(RabbitMQPatterns.SCHEDULE_COMPLETED, {
+          taskId: task.id,
+          scheduleRunId: runLog?.id,
+          status: 'SUCCESS',
+          timestamp: executionEndTime.toISOString(),
+        });
+      } catch (error) {
+        // Silently ignore if no handler exists - this is expected for fire-and-forget events
+        this.logger.debug(
+          `Schedule completed event emitted (no handler required): ${task.id}`,
+        );
+      }
     } catch (error) {
       const executionEndTime = new Date();
       const executionDuration = executionEndTime.getTime() - executionStartTime.getTime();
