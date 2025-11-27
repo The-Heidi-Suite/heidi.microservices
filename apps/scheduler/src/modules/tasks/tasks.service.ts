@@ -80,7 +80,7 @@ export class TasksService implements OnModuleInit {
   }
 
   // Cron job - runs every hour to check for due schedules
-  @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_MINUTE)
   async handleHourlyTasks() {
     const lockKey = 'scheduler:hourly:lock';
     const acquired = await this.redis.acquireLock(lockKey, 300);

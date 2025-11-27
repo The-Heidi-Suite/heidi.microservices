@@ -62,10 +62,23 @@ export class FCMPushService {
         .map((device) => device.fcmToken || device.token)
         .filter((token) => token && token.length > 0);
 
+      this.logger.debug(
+        `Found ${devices.length} device(s) with ${fcmTokens.length} FCM token(s) for user ${dto.userId}`,
+      );
+
       if (!fcmTokens || fcmTokens.length === 0) {
-        this.logger.warn(`No FCM tokens found for user ${dto.userId}`);
-        return;
+        this.logger.warn(
+          `No FCM tokens found for user ${dto.userId} - notification will not be delivered. User needs to register device with FCM token.`,
+        );
+        // Throw error so notification is marked as FAILED instead of SUCCESS
+        throw new Error(`No FCM tokens found for user ${dto.userId}`);
       }
+
+      // Log truncated tokens for debugging (first/last 10 chars)
+      fcmTokens.forEach((token, index) => {
+        const truncated = token.length > 20 ? `${token.slice(0, 10)}...${token.slice(-10)}` : token;
+        this.logger.debug(`FCM token ${index + 1}: ${truncated}`);
+      });
 
       // Determine cityId - use provided, user's city, or null (default)
       const targetCityId = dto.cityId || user.cityId || null;

@@ -1228,6 +1228,10 @@ export class CoreService implements OnModuleInit {
       const window2hStart = new Date(now.getTime() + 2 * 60 * 60 * 1000);
       const window2hEnd = new Date(now.getTime() + 2 * 60 * 60 * 1000 + graceWindow);
 
+      this.logger.debug(
+        `Time windows - Now: ${now.toISOString()}, 24h: [${window24hStart.toISOString()}, ${window24hEnd.toISOString()}], 2h: [${window2hStart.toISOString()}, ${window2hEnd.toISOString()}]`,
+      );
+
       // Fetch all active favorites with their listings
       const favorites = await this.prisma.userFavorite.findMany({
         include: {
@@ -1243,14 +1247,22 @@ export class CoreService implements OnModuleInit {
         },
       });
 
+      this.logger.debug(`Found ${favorites.length} total favorites to process`);
+
       let sent24h = 0;
       let sent2h = 0;
+      let skippedCount = 0;
+      const skipReasons: Record<string, number> = {};
 
       // Cache user notification preferences to avoid repeated RabbitMQ calls
       const userNotificationCache = new Map<string, boolean>();
 
       for (const favorite of favorites) {
         const listing = favorite.listing;
+
+        this.logger.debug(
+          `Processing favorite ${favorite.id} for listing ${listing.id} (eventStart: ${listing.eventStart?.toISOString() || 'null'})`,
+        );
 
         // Skip if listing is not approved/visible or archived
         if (
@@ -1259,6 +1271,10 @@ export class CoreService implements OnModuleInit {
           listing.visibility !== ListingVisibility.PUBLIC ||
           listing.isArchived
         ) {
+          skippedCount++;
+          const reason = `listing not approved/visible (status: ${listing.status}, moderation: ${listing.moderationStatus}, visibility: ${listing.visibility}, archived: ${listing.isArchived})`;
+          skipReasons[reason] = (skipReasons[reason] || 0) + 1;
+          this.logger.debug(`Skipping listing ${listing.id} - ${reason}`);
           continue;
         }
 
@@ -1285,6 +1301,8 @@ export class CoreService implements OnModuleInit {
 
         // Skip if user has disabled notifications
         if (!notificationsEnabled) {
+          skippedCount++;
+          skipReasons['notifications disabled'] = (skipReasons['notifications disabled'] || 0) + 1;
           this.logger.debug(
             `Skipping reminder for user ${favorite.userId} - notifications disabled`,
           );
@@ -1293,10 +1311,14 @@ export class CoreService implements OnModuleInit {
 
         // Skip if listing has no event start time
         if (!listing.eventStart) {
+          skippedCount++;
+          skipReasons['no eventStart'] = (skipReasons['no eventStart'] || 0) + 1;
+          this.logger.debug(`Skipping listing ${listing.id} - no eventStart`);
           continue;
         }
 
         // Compute upcoming occurrences - use eventStart only for both recurring and non-recurring
+        // Search window spans from earliest (2h start) to latest (24h end) to capture all reminder types
         const allOccurrences = this.computeUpcomingOccurrences(
           {
             eventStart: listing.eventStart,
@@ -1304,13 +1326,26 @@ export class CoreService implements OnModuleInit {
             timeIntervals: [], // Ignore timeIntervals, use eventStart only
             timezone: listing.timezone,
           },
-          window24hStart,
-          window2hEnd, // Use the larger window to capture both reminder types
+          window2hStart, // Earliest boundary (now + 2h)
+          window24hEnd,  // Latest boundary (now + 25h)
         );
+
+        this.logger.debug(
+          `Listing ${listing.id} - eventStart: ${listing.eventStart.toISOString()}, found ${allOccurrences.length} occurrences in search window`,
+        );
+        if (allOccurrences.length > 0) {
+          this.logger.debug(
+            `Occurrences: ${allOccurrences.map((o) => o.toISOString()).join(', ')}`,
+          );
+        }
 
         // Process 24h reminders
         const occurrences24h = allOccurrences.filter(
           (occ) => occ >= window24hStart && occ <= window24hEnd,
+        );
+
+        this.logger.debug(
+          `Listing ${listing.id} - ${occurrences24h.length} occurrences in 24h window [${window24hStart.toISOString()}, ${window24hEnd.toISOString()}]`,
         );
 
         for (const occurrence of occurrences24h) {
@@ -1327,6 +1362,9 @@ export class CoreService implements OnModuleInit {
           });
 
           if (!existing) {
+            this.logger.debug(
+              `Creating 24h reminder for user ${favorite.userId}, listing ${listing.id}, occurrence ${occurrence.toISOString()}`,
+            );
             // Create reminder record
             await this.prisma.listingReminder.create({
               data: {
@@ -1347,12 +1385,23 @@ export class CoreService implements OnModuleInit {
             );
 
             sent24h++;
+            this.logger.debug(
+              `Sent 24h reminder to user ${favorite.userId} for listing ${listing.id} at ${occurrence.toISOString()}`,
+            );
+          } else {
+            this.logger.debug(
+              `Skipping 24h reminder for user ${favorite.userId}, listing ${listing.id}, occurrence ${occurrence.toISOString()} - already sent (reminder ID: ${existing.id})`,
+            );
           }
         }
 
         // Process 2h reminders
         const occurrences2h = allOccurrences.filter(
           (occ) => occ >= window2hStart && occ <= window2hEnd,
+        );
+
+        this.logger.debug(
+          `Listing ${listing.id} - ${occurrences2h.length} occurrences in 2h window [${window2hStart.toISOString()}, ${window2hEnd.toISOString()}]`,
         );
 
         for (const occurrence of occurrences2h) {
@@ -1369,6 +1418,9 @@ export class CoreService implements OnModuleInit {
           });
 
           if (!existing) {
+            this.logger.debug(
+              `Creating 2h reminder for user ${favorite.userId}, listing ${listing.id}, occurrence ${occurrence.toISOString()}`,
+            );
             // Create reminder record
             await this.prisma.listingReminder.create({
               data: {
@@ -1389,13 +1441,23 @@ export class CoreService implements OnModuleInit {
             );
 
             sent2h++;
+            this.logger.debug(
+              `Sent 2h reminder to user ${favorite.userId} for listing ${listing.id} at ${occurrence.toISOString()}`,
+            );
+          } else {
+            this.logger.debug(
+              `Skipping 2h reminder for user ${favorite.userId}, listing ${listing.id}, occurrence ${occurrence.toISOString()} - already sent (reminder ID: ${existing.id})`,
+            );
           }
         }
       }
 
       this.logger.log(
-        `Processed favorite event reminders: ${sent24h} 24h reminders, ${sent2h} 2h reminders`,
+        `Processed favorite event reminders: ${sent24h} 24h reminders, ${sent2h} 2h reminders, ${skippedCount} skipped`,
       );
+      if (Object.keys(skipReasons).length > 0) {
+        this.logger.debug(`Skip reasons: ${JSON.stringify(skipReasons, null, 2)}`);
+      }
 
       return { sent24h, sent2h };
     } finally {

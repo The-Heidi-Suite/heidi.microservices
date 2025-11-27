@@ -299,9 +299,10 @@ export class UsersMessageController {
     );
 
     try {
-      const devices = await this.usersService.getDevices(data.userId);
+      // Include FCM tokens for internal service calls (needed for push notifications)
+      const devices = await this.usersService.getDevices(data.userId, true);
       this.logger.debug(
-        `Successfully processed message: ${RabbitMQPatterns.USER_GET_DEVICES} for userId: ${data.userId} (will ACK)`,
+        `Successfully processed message: ${RabbitMQPatterns.USER_GET_DEVICES} for userId: ${data.userId} - found ${devices.length} device(s) (will ACK)`,
       );
       return devices;
     } catch (error) {
