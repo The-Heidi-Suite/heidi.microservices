@@ -140,6 +140,7 @@ export default () => ({
   // I18n configuration
   i18n: {
     defaultLanguage: process.env.I18N_DEFAULT_LANGUAGE || 'en',
+    pushNotificationDefaultLanguage: process.env.PUSH_NOTIFICATION_DEFAULT_LANGUAGE || 'de',
     supportedLanguages: process.env.I18N_SUPPORTED_LANGUAGES?.split(',') || [
       'de',
       'en',

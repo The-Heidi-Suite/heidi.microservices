@@ -286,6 +286,11 @@ export class ConfigService {
     };
   }
 
+  // Push notification default language (for FCM notifications)
+  get pushNotificationDefaultLanguage(): string {
+    return this.get<string>('i18n.pushNotificationDefaultLanguage', 'de');
+  }
+
   // Translations / DeepL configuration
   get translationsConfig() {
     return this.get('translations');

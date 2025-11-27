@@ -19,7 +19,7 @@ export class FCMTranslationService {
   ) {
     this.logger = logger;
     this.logger.setContext(FCMTranslationService.name);
-    this.defaultLanguage = this.configService.get<string>('i18n.defaultLanguage', 'en');
+    this.defaultLanguage = this.configService.pushNotificationDefaultLanguage;
   }
 
   /**

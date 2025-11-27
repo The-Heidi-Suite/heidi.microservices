@@ -226,7 +226,7 @@ async function seed() {
     // Enable fetching Event category facets during sync (for logging and dynamic category usage)
     eventFacetsEnabled: true,
     // Enable fetching Tour/POI category facets during sync (for logging and dynamic category usage)
-    tourFacetsEnabled: true,
+    tourFacetsEnabled: false,
   };
 
   // Find by provider + name (no unique index, so do manual upsert logic)
