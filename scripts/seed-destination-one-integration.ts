@@ -138,15 +138,20 @@ async function seed() {
       heidiCategorySlug: 'shopping',
       heidiSubcategorySlug: 'shopping-city-center',
       doTypes: ['POI'],
-      doCategoryValues: ['Kieler Innenstadt', 'Altstadt'],
+      doCategoryValues: ['Kieler Stadtgebiet', 'Altstadt'],
     },
 
     // Food & Drink category mappings (Gastro type)
     {
       heidiCategorySlug: 'food-and-drink',
+      doTypes: ['Gastro'],
+      doCategoryValues: [],
+    },
+    {
+      heidiCategorySlug: 'food-and-drink',
       heidiSubcategorySlug: 'food-cafes-bakeries',
       doTypes: ['Gastro'],
-      doCategoryValues: ['Café', 'Eisdiele', 'Eiscafé'],
+      doCategoryValues: ['Café', 'Eisdiele/Eiscafé'],
     },
     {
       heidiCategorySlug: 'food-and-drink',
@@ -177,20 +182,20 @@ async function seed() {
     {
       heidiCategorySlug: 'culture',
       heidiSubcategorySlug: 'culture-on-foot',
-      doTypes: ['Tour'],
+      doTypes: ['Tour', 'POI'],
       doCategoryValues: ['Wandern', 'Themenstraße'],
     },
     {
       heidiCategorySlug: 'culture',
       heidiSubcategorySlug: 'culture-bike-tours',
-      doTypes: ['Tour'],
+      doTypes: ['Tour', 'POI'],
       doCategoryValues: ['Radfahren', 'Themen-Radtouren'],
     },
     {
       heidiCategorySlug: 'culture',
       heidiSubcategorySlug: 'culture-museums',
       doTypes: ['Tour', 'POI'],
-      doCategoryValues: ['Museumstour', 'Museen', 'Sammlungen'],
+      doCategoryValues: ['Museumstour', 'Museen/Sammlungen'],
     },
     // "Show all" filter tile - maps to main culture category
     {
