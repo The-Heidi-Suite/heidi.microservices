@@ -5,6 +5,8 @@ import {
   UpdateCategoryDto,
   CategoryResponseDto,
   CategoryQuickFilterDto,
+  CategoryFilterDto,
+  CategoryListResponseDto,
 } from '@heidi/contracts';
 import { CategoryRequestStatus, Prisma } from '@prisma/client-core';
 import { StorageService } from '@heidi/storage';
@@ -200,9 +202,91 @@ export class CategoriesService {
     return Promise.all(categories.map((category) => translateNode(category)));
   }
 
-  async listCategories() {
+  async listCategories(filter?: CategoryFilterDto): Promise<CategoryListResponseDto | CategoryResponseDto[]> {
+    // Build where clause for filtering
+    const where: Prisma.CategoryWhereInput = {};
+
+    // Search filter - search in name, description, and subtitle
+    if (filter?.search) {
+      where.OR = [
+        { name: { contains: filter.search, mode: 'insensitive' } },
+        { description: { contains: filter.search, mode: 'insensitive' } },
+        { subtitle: { contains: filter.search, mode: 'insensitive' } },
+      ];
+    }
+
+    // Type filter
+    if (filter?.type) {
+      where.type = filter.type;
+    }
+
+    // Parent ID filter
+    if (filter?.parentId !== undefined) {
+      if (filter.parentId === null || filter.parentId === '') {
+        // Explicitly filter for root categories (no parent)
+        where.parentId = null;
+      } else {
+        where.parentId = filter.parentId;
+      }
+    }
+
+    // Active status filter
+    if (filter?.isActive !== undefined) {
+      where.isActive = filter.isActive;
+    }
+
+    // Category IDs filter
+    if (filter?.categoryIds && filter.categoryIds.length > 0) {
+      where.id = { in: filter.categoryIds };
+    }
+
+    // Build orderBy clause
+    const orderBy: Prisma.CategoryOrderByWithRelationInput[] = [];
+    if (filter?.sortBy) {
+      const direction = filter.sortDirection === 'desc' ? 'desc' : 'asc';
+      orderBy.push({ [filter.sortBy]: direction });
+    } else {
+      // Default ordering
+      orderBy.push({ type: 'asc' }, { name: 'asc' });
+    }
+
+    // Handle pagination
+    const page = filter?.page && filter.page > 0 ? filter.page : 1;
+    const pageSize = filter?.pageSize && filter.pageSize > 0 ? Math.min(filter.pageSize, 100) : 20;
+    const skip = (page - 1) * pageSize;
+
+    // If pagination is requested, return paginated response
+    if (filter?.page || filter?.pageSize) {
+      const [categories, total] = await Promise.all([
+        this.prisma.category.findMany({
+          where,
+          orderBy,
+          skip,
+          take: pageSize,
+        }),
+        this.prisma.category.count({ where }),
+      ]);
+
+      const tree = this.buildCategoryHierarchy(categories);
+      const translatedTree = await this.translateCategoryTree(tree);
+
+      const totalPages = Math.ceil(total / pageSize);
+
+      return {
+        items: translatedTree,
+        meta: {
+          page,
+          pageSize,
+          total,
+          totalPages,
+        },
+      };
+    }
+
+    // If no pagination, return all categories as before (for backward compatibility)
     const categories = await this.prisma.category.findMany({
-      orderBy: [{ type: 'asc' }, { name: 'asc' }],
+      where,
+      orderBy,
     });
 
     const tree = this.buildCategoryHierarchy(categories);

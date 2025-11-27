@@ -1231,9 +1231,11 @@ export class UsersService {
 
   /**
    * Get all active devices for a user
+   * @param userId - The user ID to get devices for
+   * @param includeToken - Whether to include FCM token (only for internal service calls)
    */
-  async getDevices(userId: string) {
-    this.logger.log(`Getting devices for userId: ${userId}`);
+  async getDevices(userId: string, includeToken: boolean = false) {
+    this.logger.log(`Getting devices for userId: ${userId} (includeToken: ${includeToken})`);
 
     const devices = await this.prisma.userDevice.findMany({
       where: {
@@ -1255,6 +1257,8 @@ export class UsersService {
       cityId: device.cityId,
       lastSeenAt: device.lastSeenAt,
       createdAt: device.createdAt,
+      // Include FCM token only for internal service calls (not exposed in public API)
+      ...(includeToken && device.fcmToken ? { fcmToken: device.fcmToken } : {}),
     }));
   }
 

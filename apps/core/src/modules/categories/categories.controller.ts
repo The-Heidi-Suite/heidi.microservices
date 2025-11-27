@@ -45,6 +45,8 @@ import {
   UpdateCityCategoryDisplayNameDto,
   UploadCategoryImageResponseDto,
   UploadCategoryIconResponseDto,
+  CategoryFilterDto,
+  CategoryListResponseDto,
 } from '@heidi/contracts';
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { CategoryRequestStatus, UserRole } from '@prisma/client-core';
@@ -109,7 +111,7 @@ export class CategoriesController {
   @ApiOperation({
     summary: 'List categories',
     description:
-      'Retrieve all categories available in the taxonomy. Category names, descriptions, and subtitles are returned in the requested language when translations exist, otherwise they fall back to the default language.',
+      'Retrieve categories with filtering, search, and pagination. Category names, descriptions, and subtitles are returned in the requested language when translations exist, otherwise they fall back to the default language.',
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -121,11 +123,10 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'Categories retrieved successfully',
-    type: CategoryResponseDto,
-    isArray: true,
+    type: CategoryListResponseDto,
   })
-  async list() {
-    return this.categoriesService.listCategories();
+  async list(@Query() filter: CategoryFilterDto) {
+    return this.categoriesService.listCategories(filter);
   }
 
   @ApiBearerAuth('JWT-auth')
