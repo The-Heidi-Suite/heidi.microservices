@@ -246,6 +246,7 @@ export default () => ({
   translations: {
     defaultSourceLocale: process.env.TRANSLATIONS_DEFAULT_SOURCE_LOCALE || 'en',
     autoTranslateOnRead: process.env.TRANSLATIONS_AUTO_TRANSLATE_ON_READ !== 'false',
+    autoTranslateOnSync: process.env.TRANSLATIONS_AUTO_TRANSLATE_ON_SYNC !== 'false',
     maxConcurrent: parseInt(process.env.TRANSLATION_MAX_CONCURRENT || '3', 10),
     maxRequeueAttempts: parseInt(process.env.TRANSLATION_MAX_REQUEUE_ATTEMPTS || '3', 10),
     deepl: {
