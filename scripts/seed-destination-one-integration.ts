@@ -95,6 +95,13 @@ async function seed() {
 
   // Category mappings for Kiel based on screenshot requirements
   // Maps Destination One categories to Heidi categories/subcategories
+  //
+  // MAPPING OVERVIEW:
+  // - "Kiel & Kultur" (culture category): Contains filter tiles for Ausflugsziele, zu Fuß erleben,
+  //   Radtouren, Museen, and "Alles anzeigen" - all sourced from Destination.one TOUREN & POI facets
+  // - "Dein Weg durch Kiel" (tours category): Currently no Destination.one mappings.
+  //   Should display tours like "Blaue Linie" - mappings to be added based on specific DO categories
+  // - Other categories (events, shopping, food-and-drink): Mapped as before
   const categoryMappings: DestinationOneCategoryMapping[] = [
     // Event category mapping (Event type) - empty doCategoryValues means fetch all Events
     {
@@ -160,37 +167,42 @@ async function seed() {
       doCategoryValues: ['vegan', 'vegetarisch'],
     },
 
-    // Tours & POI category mappings (Tour and POI types)
+    // Culture category mappings (Tour and POI types) - for "Kiel & Kultur" filter tiles
     {
-      heidiCategorySlug: 'tours',
-      heidiSubcategorySlug: 'tours-excursions',
+      heidiCategorySlug: 'culture',
+      heidiSubcategorySlug: 'culture-excursions',
       doTypes: ['Tour', 'POI'],
       doCategoryValues: ['Ausflugsziele'],
     },
     {
-      heidiCategorySlug: 'tours',
-      heidiSubcategorySlug: 'tours-on-foot',
+      heidiCategorySlug: 'culture',
+      heidiSubcategorySlug: 'culture-on-foot',
       doTypes: ['Tour'],
       doCategoryValues: ['Wandern', 'Themenstraße'],
     },
     {
-      heidiCategorySlug: 'tours',
-      heidiSubcategorySlug: 'tours-bike-tours',
+      heidiCategorySlug: 'culture',
+      heidiSubcategorySlug: 'culture-bike-tours',
       doTypes: ['Tour'],
       doCategoryValues: ['Radfahren', 'Themen-Radtouren'],
     },
     {
-      heidiCategorySlug: 'tours',
-      heidiSubcategorySlug: 'tours-museum-tours',
+      heidiCategorySlug: 'culture',
+      heidiSubcategorySlug: 'culture-museums',
       doTypes: ['Tour', 'POI'],
       doCategoryValues: ['Museumstour', 'Museen', 'Sammlungen'],
     },
+    // "Show all" filter tile - maps to main culture category
     {
       heidiCategorySlug: 'culture',
-      heidiSubcategorySlug: 'culture-museums',
-      doTypes: ['POI'],
-      doCategoryValues: ['Museen', 'Sammlungen'],
+      doTypes: ['Tour', 'POI'],
+      doCategoryValues: ['Ausflugsziele', 'Unterhaltung', 'Sport und Freizeit', 'bühne'],
     },
+
+    // Tours category mappings (for "Dein Weg durch Kiel")
+    // Note: The tours category should display tours like "Blaue Linie" from Destination.one
+    // Add specific mappings here based on the DO categories/types for these tours
+    // Available tours subcategories: tours-guided, tours-self-guided, tours-family-experiences
   ];
 
   const config: DestinationOneConfig = {

@@ -667,6 +667,14 @@ export class CoreService implements OnModuleInit {
       languageCode?: string;
     },
   ): Promise<void> {
+    // Check if auto-translation on sync is enabled
+    if (!this.configService.translationsAutoTranslateOnSync) {
+      this.logger.debug(
+        `Auto-translation on sync is disabled, skipping translations for listing ${listingId}`,
+      );
+      return;
+    }
+
     // Get the listing to determine its source language
     const listing = await this.prisma.listing.findUnique({
       where: { id: listingId },

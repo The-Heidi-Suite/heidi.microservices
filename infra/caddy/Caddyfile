@@ -377,31 +377,75 @@ api.$DEV_IP.nip.io {
         }
     }
 
-    # pgAdmin - Database administration tool
-    # pgAdmin needs path stripping to work behind reverse proxy
-    handle /pgadmin* {
-        uri strip_prefix /pgadmin
-        reverse_proxy pgadmin:80 {
-            header_up X-Forwarded-Proto https
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up Host {host}
-            header_up X-Script-Name /pgadmin
-        }
-    }
-
-    # Redis Commander - Redis administration tool
-    handle /redis* {
-        reverse_proxy redis-commander:8081 {
-            header_up X-Forwarded-Proto https
-            header_up X-Real-IP {remote_host}
-            header_up X-Forwarded-For {remote_host}
-            header_up Host {host}
-        }
-    }
 
     # Default response for unmatched routes
     handle {
         respond "Not Found" 404
+    }
+}
+
+# pgAdmin - Database administration tool
+# Accessible at: https://pgadmin.$DEV_IP.nip.io/
+pgadmin.$DEV_IP.nip.io {
+    reverse_proxy pgadmin:80 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+    }
+}
+
+# Redis Commander - Redis administration tool
+# Accessible at: https://redis.$DEV_IP.nip.io/
+redis.$DEV_IP.nip.io {
+    reverse_proxy redis-commander:8081 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+    }
+}
+
+# Grafana - Monitoring and visualization
+# Accessible at: https://grafana.$DEV_IP.nip.io/
+grafana.$DEV_IP.nip.io {
+    reverse_proxy grafana:3000 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+    }
+}
+
+# Prometheus - Metrics collection and querying
+# Accessible at: https://prometheus.$DEV_IP.nip.io/
+prometheus.$DEV_IP.nip.io {
+    reverse_proxy prometheus:9090 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+    }
+}
+
+# Alertmanager - Alert routing and management
+# Accessible at: https://alertmanager.$DEV_IP.nip.io/
+alertmanager.$DEV_IP.nip.io {
+    reverse_proxy alertmanager:9093 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
+    }
+}
+
+# RabbitMQ Management UI - Message queue administration
+# Accessible at: https://rabbitmq.$DEV_IP.nip.io/
+rabbitmq.$DEV_IP.nip.io {
+    reverse_proxy rabbitmq:15672 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-Host {host}
+        header_up X-Real-IP {remote_host}
+        header_up X-Forwarded-For {remote_host}
     }
 }

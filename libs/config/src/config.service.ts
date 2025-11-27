@@ -299,6 +299,10 @@ export class ConfigService {
     return this.get<boolean>('translations.autoTranslateOnRead', true);
   }
 
+  get translationsAutoTranslateOnSync(): boolean {
+    return this.get<boolean>('translations.autoTranslateOnSync', true);
+  }
+
   get deeplApiKey(): string {
     return this.get<string>('translations.deepl.apiKey', '');
   }

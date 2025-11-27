@@ -68,9 +68,8 @@ services:
     container_name: heidi-pgadmin-dev
     restart: unless-stopped
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@heidi.com
-      PGADMIN_DEFAULT_PASSWORD: admin
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@heidi.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin}
     # Bound to localhost only for security - prevents internet exposure
     ports:
       - '127.0.0.1:5050:80'
@@ -86,8 +85,9 @@ services:
     container_name: heidi-redis-commander-dev
     restart: unless-stopped
     environment:
-      REDIS_HOSTS: local:redis:6379
-      REDIS_PASSWORD: ''
+      # Format: label:hostname:port:dbIndex:password
+      # Connects to Redis service via Docker network with password authentication
+      REDIS_HOSTS: local:redis:6379:0:${REDIS_PASSWORD:-}
       HTTP_USER: admin
       HTTP_PASSWORD: admin
     # Bound to localhost only for security - prevents internet exposure
