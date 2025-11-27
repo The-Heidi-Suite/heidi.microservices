@@ -200,9 +200,12 @@ async function seed() {
     },
 
     // Tours category mappings (for "Dein Weg durch Kiel")
-    // Note: The tours category should display tours like "Blaue Linie" from Destination.one
-    // Add specific mappings here based on the DO categories/types for these tours
-    // Available tours subcategories: tours-guided, tours-self-guided, tours-family-experiences
+    // Maps POI items with "Blaue Linie" category to tours
+    {
+      heidiCategorySlug: 'tours',
+      doTypes: ['POI'],
+      doCategoryValues: ['Blaue Linie'],
+    },
   ];
 
   const config: DestinationOneConfig = {
@@ -217,6 +220,8 @@ async function seed() {
     storeItemCategoriesAsTags: true, // Default to storing categories as tags
     // Enable fetching Event category facets during sync (for logging and dynamic category usage)
     eventFacetsEnabled: true,
+    // Enable fetching Tour/POI category facets during sync (for logging and dynamic category usage)
+    tourFacetsEnabled: true,
   };
 
   // Find by provider + name (no unique index, so do manual upsert logic)

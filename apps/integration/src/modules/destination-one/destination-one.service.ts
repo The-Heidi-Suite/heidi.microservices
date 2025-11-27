@@ -188,11 +188,12 @@ export class DestinationOneService {
   }
 
   /**
-   * Fetches Destination One facets for Event categories.
+   * Fetches Destination One facets for a given type (e.g., Event, Tour, POI).
    * Uses facets=true and extracts facetGroups where field === "category".
    */
-  private async fetchEventCategoryFacets(
+  private async fetchCategoryFacets(
     config: DestinationOneConfig,
+    type: string,
     apiCalls?: string[],
   ): Promise<string[]> {
     const baseUrl = config.baseUrl || 'https://meta.et4.de/rest.ashx/search/';
@@ -202,7 +203,7 @@ export class DestinationOneService {
       experience: config.experience,
       licensekey: config.licensekey,
       template,
-      type: 'Event',
+      type,
       facets: 'true',
     });
 
@@ -214,7 +215,7 @@ export class DestinationOneService {
       apiCalls.push(sanitizedUrl);
     }
 
-    this.logger.debug(`Fetching Event category facets from destination_one API: ${sanitizedUrl}`);
+    this.logger.debug(`Fetching ${type} category facets from destination_one API: ${sanitizedUrl}`);
 
     try {
       const response = await firstValueFrom(
@@ -234,17 +235,50 @@ export class DestinationOneService {
       const uniqueSorted = Array.from(new Set(facetValues)).sort((a, b) => a.localeCompare(b));
 
       this.logger.log(
-        `Fetched ${uniqueSorted.length} Event category facets from destination_one API: ${JSON.stringify(uniqueSorted)}`,
+        `Fetched ${uniqueSorted.length} ${type} category facets from destination_one API: ${JSON.stringify(uniqueSorted)}`,
       );
 
       return uniqueSorted;
     } catch (error: any) {
       this.logger.warn(
-        `Failed to fetch Event category facets from destination_one API: ${sanitizedUrl}`,
+        `Failed to fetch ${type} category facets from destination_one API: ${sanitizedUrl}`,
         error?.message,
       );
       return [];
     }
+  }
+
+  /**
+   * Fetches Destination One facets for Event categories.
+   * Uses facets=true and extracts facetGroups where field === "category".
+   */
+  private async fetchEventCategoryFacets(
+    config: DestinationOneConfig,
+    apiCalls?: string[],
+  ): Promise<string[]> {
+    return this.fetchCategoryFacets(config, 'Event', apiCalls);
+  }
+
+  /**
+   * Fetches Destination One facets for Tour categories.
+   * Uses facets=true and extracts facetGroups where field === "category".
+   */
+  private async fetchTourCategoryFacets(
+    config: DestinationOneConfig,
+    apiCalls?: string[],
+  ): Promise<string[]> {
+    return this.fetchCategoryFacets(config, 'Tour', apiCalls);
+  }
+
+  /**
+   * Fetches Destination One facets for POI categories.
+   * Uses facets=true and extracts facetGroups where field === "category".
+   */
+  private async fetchPoiCategoryFacets(
+    config: DestinationOneConfig,
+    apiCalls?: string[],
+  ): Promise<string[]> {
+    return this.fetchCategoryFacets(config, 'POI', apiCalls);
   }
 
   /**
@@ -866,6 +900,8 @@ export class DestinationOneService {
       tagOperations: { created: 0, updated: 0 },
       errorsByCategory: {} as Record<string, number>,
       eventCategoryFacets: [] as string[],
+      tourCategoryFacets: [] as string[],
+      poiCategoryFacets: [] as string[],
       apiCalls: [] as string[], // Track all API call URLs (sanitized)
     };
 
@@ -881,6 +917,22 @@ export class DestinationOneService {
           config,
           syncStats.apiCalls,
         );
+      }
+
+      // Optionally prefetch Tour/POI category facets for logging / downstream usage
+      if (config.tourFacetsEnabled === true) {
+        if (config.typeFilter?.includes('Tour')) {
+          syncStats.tourCategoryFacets = await this.fetchTourCategoryFacets(
+            config,
+            syncStats.apiCalls,
+          );
+        }
+        if (config.typeFilter?.includes('POI')) {
+          syncStats.poiCategoryFacets = await this.fetchPoiCategoryFacets(
+            config,
+            syncStats.apiCalls,
+          );
+        }
       }
 
       // Fetch items using category mapping queries only
@@ -1007,6 +1059,8 @@ export class DestinationOneService {
             itemsByMapping: syncStats.itemsByMapping,
             tagOperations: syncStats.tagOperations,
             eventCategoryFacets: syncStats.eventCategoryFacets,
+            tourCategoryFacets: syncStats.tourCategoryFacets,
+            poiCategoryFacets: syncStats.poiCategoryFacets,
             apiCalls: syncStats.apiCalls,
             apiCallCount: syncStats.apiCalls.length,
           },

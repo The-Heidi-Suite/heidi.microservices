@@ -28,4 +28,9 @@ export interface DestinationOneConfig {
    * and log them during sync. This can be used to drive dynamic Event subcategory creation.
    */
   eventFacetsEnabled?: boolean;
+  /**
+   * When true, the integration will query Destination One facets for Tour/POI categories
+   * and log them during sync. This can be used to drive dynamic Tour subcategory creation.
+   */
+  tourFacetsEnabled?: boolean;
 }
