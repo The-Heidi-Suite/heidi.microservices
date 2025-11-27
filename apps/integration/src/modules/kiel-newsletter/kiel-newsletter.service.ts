@@ -133,7 +133,7 @@ export class KielNewsletterService {
           {
             '@type': 'Email',
             email: email,
-            permission: '1', // Permission for email (1 = granted)
+            permission: '10', // Permission for email (10 = preliminary consent, triggers Double-Opt-In)
           },
         ],
         attributes: {
