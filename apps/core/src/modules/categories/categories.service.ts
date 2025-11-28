@@ -163,30 +163,35 @@ export class CategoriesService {
       const sourceLocale =
         category.languageCode || this.configService.get<string>('i18n.defaultLanguage', 'en');
 
+      // Use city-specific entity type if category has city overrides
+      // This ensures city-specific displayNames get their own translations
+      const entityType = category.hasCityOverride ? 'city-category' : 'category';
+      const entityId = category.hasCityOverride ? `${category.cityId}:${category.id}` : category.id;
+
       this.logger.debug(
-        `Translating category ${category.id} (${category.name}) from ${sourceLocale} to ${locale}`,
+        `Translating ${entityType} ${entityId} (${category.name}) from ${sourceLocale} to ${locale}`,
       );
 
       const [name, description, subtitle] = await Promise.all([
         this.translationService.getTranslation(
-          'category',
-          category.id,
+          entityType,
+          entityId,
           'name',
           locale,
           category.name,
           sourceLocale,
         ),
         this.translationService.getTranslation(
-          'category',
-          category.id,
+          entityType,
+          entityId,
           'description',
           locale,
           category.description ?? '',
           sourceLocale,
         ),
         this.translationService.getTranslation(
-          'category',
-          category.id,
+          entityType,
+          entityId,
           'subtitle',
           locale,
           category.subtitle ?? '',
@@ -473,6 +478,7 @@ export class CategoriesService {
     // CityCategory fields take precedence over base Category fields when not null
     const categoriesWithOrder = categories.map((category) => {
       const cityOverrides = cityCategoryMap.get(category.id);
+      const hasCityOverride = Boolean(cityOverrides?.displayName);
       return {
         ...category,
         // Use city-specific values if they exist, otherwise fall back to base category values
@@ -488,6 +494,9 @@ export class CategoriesService {
         // Use CityCategory's languageCode for translation source if available
         languageCode: cityOverrides?.languageCode || category.languageCode,
         cityCategoryDisplayOrder: cityOverrides?.displayOrder,
+        // Flag to indicate this category has city-specific text that needs city-specific translation
+        hasCityOverride,
+        cityId, // Pass cityId for translation lookup
       };
     });
 
