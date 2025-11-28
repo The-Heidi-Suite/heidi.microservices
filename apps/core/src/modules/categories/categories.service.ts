@@ -441,16 +441,13 @@ export class CategoriesService {
       displayOrderMap.set(cc.categoryId, cc.displayOrder);
     });
 
-    // Get all root categories that have CityCategory entries
-    const rootCategoryIds = cityCategories.map((cc) => cc.categoryId);
+    // Get all category IDs that are explicitly assigned to this city
+    const assignedCategoryIds = cityCategories.map((cc) => cc.categoryId);
 
-    // Get all categories (root and their children) that should be included
+    // Only fetch categories that are explicitly assigned via CityCategory
     const categories = await this.prisma.category.findMany({
       where: {
-        OR: [
-          { id: { in: rootCategoryIds } }, // Root categories with CityCategory entries
-          { parentId: { in: rootCategoryIds } }, // Subcategories of those root categories
-        ],
+        id: { in: assignedCategoryIds },
         isActive: true,
       },
     });
