@@ -145,9 +145,13 @@ export class ListingsService {
 
   private mapListing(
     listing: ListingWithRelations,
-    options: { isFavorite?: boolean } = {},
+    options: { isFavorite?: boolean; defaultImageUrl?: string | null } = {},
   ): ListingResponseDto {
     const isFavorite = options.isFavorite ?? false;
+    const effectiveHeroImageUrl = this.computeEffectiveHeroImageUrl(
+      listing,
+      options.defaultImageUrl,
+    );
     return {
       id: listing.id,
       slug: listing.slug,
@@ -163,7 +167,7 @@ export class ListingsService {
       expireAt: listing.expireAt?.toISOString() ?? null,
       languageCode: listing.languageCode,
       sourceUrl: listing.sourceUrl,
-      heroImageUrl: listing.heroImageUrl,
+      heroImageUrl: effectiveHeroImageUrl,
       metadata: listing.metadata as Record<string, unknown> | null,
       viewCount: listing.viewCount,
       likeCount: listing.likeCount,
@@ -260,6 +264,133 @@ export class ListingsService {
           languageCode: listingTag.tag?.languageCode ?? null,
         })) ?? [],
     };
+  }
+
+  /**
+   * Compute the effective hero image URL for a listing.
+   * If the listing has no heroImageUrl AND no media images, returns the city category image as default.
+   * Uses the provided defaultImageUrl (from city category) or falls back to the category's imageUrl.
+   */
+  private computeEffectiveHeroImageUrl(
+    listing: ListingWithRelations,
+    providedDefaultImageUrl?: string | null,
+  ): string | null {
+    // If listing has a hero image, use it
+    if (listing.heroImageUrl) {
+      return listing.heroImageUrl;
+    }
+
+    // If listing has media images, don't override (app will use media)
+    const hasMediaImages =
+      listing.media && listing.media.length > 0 && listing.media.some((m) => m.type === 'IMAGE');
+    if (hasMediaImages) {
+      return null;
+    }
+
+    // No images at all - use default from city category
+    if (providedDefaultImageUrl) {
+      return providedDefaultImageUrl;
+    }
+
+    // Fall back to first category's imageUrl if available
+    if (listing.categories && listing.categories.length > 0) {
+      const categoryWithImage = listing.categories.find(
+        (lc) => lc.category && (lc.category as any).imageUrl,
+      );
+      if (categoryWithImage) {
+        return (categoryWithImage.category as any).imageUrl;
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Get default image URLs for multiple listings from city categories.
+   * Looks up CityCategory.imageUrl for each listing's primaryCityId and categories.
+   * Falls back to Category.imageUrl if CityCategory doesn't have an image.
+   * Returns a map of listingId -> defaultImageUrl
+   */
+  private async getDefaultImagesForListings(
+    listings: ListingWithRelations[],
+  ): Promise<Map<string, string | null>> {
+    const result = new Map<string, string | null>();
+
+    // Filter listings that actually need default images
+    const listingsNeedingDefaults = listings.filter(
+      (listing) =>
+        !listing.heroImageUrl &&
+        (!listing.media ||
+          listing.media.length === 0 ||
+          !listing.media.some((m) => m.type === 'IMAGE')),
+    );
+
+    if (listingsNeedingDefaults.length === 0) {
+      return result;
+    }
+
+    // Collect all unique cityId-categoryId pairs to query
+    const cityCategoriesToQuery: { cityId: string; categoryId: string }[] = [];
+    for (const listing of listingsNeedingDefaults) {
+      if (listing.primaryCityId && listing.categories.length > 0) {
+        for (const lc of listing.categories) {
+          cityCategoriesToQuery.push({
+            cityId: listing.primaryCityId,
+            categoryId: lc.categoryId,
+          });
+        }
+      }
+    }
+
+    if (cityCategoriesToQuery.length === 0) {
+      return result;
+    }
+
+    // Query all relevant city categories at once
+    const cityCategories = await this.prisma.cityCategory.findMany({
+      where: {
+        OR: cityCategoriesToQuery.map(({ cityId, categoryId }) => ({
+          cityId,
+          categoryId,
+        })),
+        isActive: true,
+      },
+      select: {
+        cityId: true,
+        categoryId: true,
+        imageUrl: true,
+        category: {
+          select: {
+            imageUrl: true,
+          },
+        },
+      },
+    });
+
+    // Build a lookup map: "cityId:categoryId" -> imageUrl
+    const cityCategoryImageMap = new Map<string, string | null>();
+    for (const cc of cityCategories) {
+      const key = `${cc.cityId}:${cc.categoryId}`;
+      // Prefer CityCategory.imageUrl, fall back to Category.imageUrl
+      cityCategoryImageMap.set(key, cc.imageUrl || cc.category?.imageUrl || null);
+    }
+
+    // Assign default images to listings
+    for (const listing of listingsNeedingDefaults) {
+      if (listing.primaryCityId && listing.categories.length > 0) {
+        // Find the first category that has an image in CityCategory
+        for (const lc of listing.categories) {
+          const key = `${listing.primaryCityId}:${lc.categoryId}`;
+          const imageUrl = cityCategoryImageMap.get(key);
+          if (imageUrl) {
+            result.set(listing.id, imageUrl);
+            break;
+          }
+        }
+      }
+    }
+
+    return result;
   }
 
   /**
@@ -1070,7 +1201,11 @@ export class ListingsService {
       throw new NotFoundException(`Listing ${listing.id} not found`);
     }
 
-    const listingDto = this.mapListing(listingWithTags);
+    // Get default image from city category if listing has no images
+    const defaultImagesMap = await this.getDefaultImagesForListings([listingWithTags]);
+    const defaultImageUrl = defaultImagesMap.get(listingWithTags.id) ?? null;
+
+    const listingDto = this.mapListing(listingWithTags, { defaultImageUrl });
     return this.applyListingTranslations(listingWithTags, listingDto);
   }
 
@@ -1375,7 +1510,12 @@ export class ListingsService {
         throw new NotFoundException('Listing not found after update');
       }
 
-      const listingDto = this.mapListing(refreshed);
+      // Get default image from city category if listing has no images
+      // Note: We use this.prisma here since tx is the transaction client
+      const defaultImagesMap = await this.getDefaultImagesForListings([refreshed]);
+      const defaultImageUrl = defaultImagesMap.get(refreshed.id) ?? null;
+
+      const listingDto = this.mapListing(refreshed, { defaultImageUrl });
       return this.applyListingTranslations(refreshed, listingDto);
     });
   }
@@ -1396,7 +1536,11 @@ export class ListingsService {
       isFavorite = favoriteIds.has(listing.id);
     }
 
-    const dto = this.mapListing(listing, { isFavorite });
+    // Get default image from city category if listing has no images
+    const defaultImagesMap = await this.getDefaultImagesForListings([listing]);
+    const defaultImageUrl = defaultImagesMap.get(listing.id) ?? null;
+
+    const dto = this.mapListing(listing, { isFavorite, defaultImageUrl });
     return this.applyListingTranslations(listing, dto);
   }
 
@@ -1416,7 +1560,11 @@ export class ListingsService {
       isFavorite = favoriteIds.has(listing.id);
     }
 
-    const dto = this.mapListing(listing, { isFavorite });
+    // Get default image from city category if listing has no images
+    const defaultImagesMap = await this.getDefaultImagesForListings([listing]);
+    const defaultImageUrl = defaultImagesMap.get(listing.id) ?? null;
+
+    const dto = this.mapListing(listing, { isFavorite, defaultImageUrl });
     return this.applyListingTranslations(listing, dto);
   }
 
@@ -1774,10 +1922,14 @@ export class ListingsService {
       );
     }
 
+    // Get default images for listings that need them
+    const defaultImagesMap = await this.getDefaultImagesForListings(sortedRows);
+
     const items = await Promise.all(
       sortedRows.map(async (row) => {
         const dto = this.mapListing(row, {
           isFavorite: favoriteIds?.has(row.id) ?? false,
+          defaultImageUrl: defaultImagesMap.get(row.id) ?? null,
         });
         return this.applyListingTranslations(row, dto);
       }),
@@ -1853,7 +2005,11 @@ export class ListingsService {
       include: listingWithRelations.include,
     });
 
-    const listingDto = this.mapListing(listing);
+    // Get default image from city category if listing has no images
+    const defaultImagesMap = await this.getDefaultImagesForListings([listing]);
+    const defaultImageUrl = defaultImagesMap.get(listing.id) ?? null;
+
+    const listingDto = this.mapListing(listing, { defaultImageUrl });
     return this.applyListingTranslations(listing, listingDto);
   }
 
@@ -1883,8 +2039,13 @@ export class ListingsService {
       include: listingWithRelations.include,
     });
 
-    const listingDto = this.mapListing(updated as ListingWithRelations);
-    return this.applyListingTranslations(updated as ListingWithRelations, listingDto);
+    // Get default image from city category if listing has no images
+    const updatedListing = updated as ListingWithRelations;
+    const defaultImagesMap = await this.getDefaultImagesForListings([updatedListing]);
+    const defaultImageUrl = defaultImagesMap.get(updatedListing.id) ?? null;
+
+    const listingDto = this.mapListing(updatedListing, { defaultImageUrl });
+    return this.applyListingTranslations(updatedListing, listingDto);
   }
 
   async approveListing(listingId: string, moderatorId: string, body: ListingModerationActionDto) {
@@ -1963,9 +2124,14 @@ export class ListingsService {
         });
 
         this.logger.log(`Favorite added successfully: ${favorite.id}`);
+        const favListing = favorite.listing as ListingWithRelations;
+        const defaultImagesMap = await this.getDefaultImagesForListings([favListing]);
         const listingDto = await this.applyListingTranslations(
-          favorite.listing as ListingWithRelations,
-          this.mapListing(favorite.listing as ListingWithRelations, { isFavorite: true }),
+          favListing,
+          this.mapListing(favListing, {
+            isFavorite: true,
+            defaultImageUrl: defaultImagesMap.get(favListing.id) ?? null,
+          }),
         );
         return {
           id: favorite.id,
@@ -2050,9 +2216,14 @@ export class ListingsService {
       });
 
       this.logger.log(`Favorite added successfully: ${favorite.id}`);
+      const addedListing = favorite.listing as ListingWithRelations;
+      const defaultImagesMap = await this.getDefaultImagesForListings([addedListing]);
       const listingDto = await this.applyListingTranslations(
-        favorite.listing as ListingWithRelations,
-        this.mapListing(favorite.listing as ListingWithRelations, { isFavorite: true }),
+        addedListing,
+        this.mapListing(addedListing, {
+          isFavorite: true,
+          defaultImageUrl: defaultImagesMap.get(addedListing.id) ?? null,
+        }),
       );
       return {
         id: favorite.id,
@@ -2172,11 +2343,19 @@ export class ListingsService {
       this.prisma.userFavorite.count({ where }),
     ]);
 
+    // Get default images for listings that need them
+    const listingsForDefaultImages = favorites.map((f) => f.listing as ListingWithRelations);
+    const defaultImagesMap = await this.getDefaultImagesForListings(listingsForDefaultImages);
+
     const items = await Promise.all(
       favorites.map(async (f) => {
+        const listing = f.listing as ListingWithRelations;
         const listingDto = await this.applyListingTranslations(
-          f.listing as ListingWithRelations,
-          this.mapListing(f.listing as ListingWithRelations, { isFavorite: true }),
+          listing,
+          this.mapListing(listing, {
+            isFavorite: true,
+            defaultImageUrl: defaultImagesMap.get(listing.id) ?? null,
+          }),
         );
         return listingDto;
       }),
