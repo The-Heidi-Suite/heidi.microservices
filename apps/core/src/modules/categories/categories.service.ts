@@ -149,7 +149,12 @@ export class CategoriesService {
     const locale = this.i18nService.getLanguage();
     const defaultLocale = this.configService.get<string>('i18n.defaultLanguage', 'en');
 
+    this.logger.debug(
+      `translateCategoryTree: locale=${locale}, defaultLocale=${defaultLocale}, categoriesCount=${categories.length}`,
+    );
+
     if (!locale || locale === defaultLocale) {
+      this.logger.debug(`Skipping translation: locale=${locale}, defaultLocale=${defaultLocale}`);
       return categories;
     }
 
@@ -157,6 +162,10 @@ export class CategoriesService {
       // Get source language from category
       const sourceLocale =
         category.languageCode || this.configService.get<string>('i18n.defaultLanguage', 'en');
+
+      this.logger.debug(
+        `Translating category ${category.id} (${category.name}) from ${sourceLocale} to ${locale}`,
+      );
 
       const [name, description, subtitle] = await Promise.all([
         this.translationService.getTranslation(

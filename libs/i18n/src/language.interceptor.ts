@@ -1,4 +1,4 @@
-import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { Request } from 'express';
 import { LanguageDetectorService } from './language-detector.service';
@@ -7,6 +7,8 @@ import { I18nContext } from './interfaces/translation.interface';
 
 @Injectable()
 export class LanguageInterceptor implements NestInterceptor {
+  private readonly logger = new Logger(LanguageInterceptor.name);
+
   constructor(private readonly languageDetector: LanguageDetectorService) {}
 
   intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
@@ -15,6 +17,8 @@ export class LanguageInterceptor implements NestInterceptor {
 
     // Detect language from Accept-Language header
     const language = this.languageDetector.detectLanguage(acceptLanguage);
+
+    this.logger.debug(`Accept-Language header: ${acceptLanguage}, detected language: ${language}`);
 
     // Create i18n context
     const i18nContext: I18nContext = {
