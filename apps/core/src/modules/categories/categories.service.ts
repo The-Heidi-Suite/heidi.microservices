@@ -426,19 +426,27 @@ export class CategoriesService {
   }
 
   async listCityCategories(cityId: string) {
-    // First, get all CityCategory entries for this city to create a map of categoryId -> displayOrder
+    // First, get all CityCategory entries for this city including city-specific overrides
     const cityCategories = await this.prisma.cityCategory.findMany({
       where: { cityId, isActive: true },
       select: {
         categoryId: true,
         displayOrder: true,
+        displayName: true,
+        description: true,
+        subtitle: true,
+        languageCode: true,
+        imageUrl: true,
+        iconUrl: true,
+        headerBackgroundColor: true,
+        contentBackgroundColor: true,
       },
     });
 
-    // Create a map for quick lookup
-    const displayOrderMap = new Map<string, number>();
+    // Create a map for quick lookup of city-specific overrides
+    const cityCategoryMap = new Map<string, (typeof cityCategories)[number]>();
     cityCategories.forEach((cc) => {
-      displayOrderMap.set(cc.categoryId, cc.displayOrder);
+      cityCategoryMap.set(cc.categoryId, cc);
     });
 
     // Get all category IDs that are explicitly assigned to this city
@@ -452,23 +460,37 @@ export class CategoriesService {
       },
     });
 
-    // Attach displayOrder from CityCategory to each category
-    const categoriesWithOrder = categories.map((category) => ({
-      ...category,
-      cityCategoryDisplayOrder: displayOrderMap.get(category.id),
-    }));
+    // Merge CityCategory overrides with base Category data
+    // CityCategory fields take precedence over base Category fields when not null
+    const categoriesWithOrder = categories.map((category) => {
+      const cityOverrides = cityCategoryMap.get(category.id);
+      return {
+        ...category,
+        // Use city-specific values if they exist, otherwise fall back to base category values
+        name: cityOverrides?.displayName || category.name,
+        description: cityOverrides?.description ?? category.description,
+        subtitle: cityOverrides?.subtitle ?? category.subtitle,
+        imageUrl: cityOverrides?.imageUrl || category.imageUrl,
+        iconUrl: cityOverrides?.iconUrl || category.iconUrl,
+        headerBackgroundColor:
+          cityOverrides?.headerBackgroundColor || category.headerBackgroundColor,
+        contentBackgroundColor:
+          cityOverrides?.contentBackgroundColor || category.contentBackgroundColor,
+        // Use CityCategory's languageCode for translation source if available
+        languageCode: cityOverrides?.languageCode || category.languageCode,
+        cityCategoryDisplayOrder: cityOverrides?.displayOrder,
+      };
+    });
 
-    // Sort root categories by their CityCategory displayOrder
-    const rootCategories = categoriesWithOrder
-      .filter((c) => !c.parentId)
-      .sort((a, b) => {
-        const orderA = a.cityCategoryDisplayOrder ?? 0;
-        const orderB = b.cityCategoryDisplayOrder ?? 0;
-        return orderA - orderB;
-      });
+    // Sort categories by their CityCategory displayOrder before building hierarchy
+    const sortedCategories = [...categoriesWithOrder].sort((a, b) => {
+      const orderA = a.cityCategoryDisplayOrder ?? 0;
+      const orderB = b.cityCategoryDisplayOrder ?? 0;
+      return orderA - orderB;
+    });
 
     // Build hierarchy
-    const tree = this.buildCategoryHierarchy(categoriesWithOrder);
+    const tree = this.buildCategoryHierarchy(sortedCategories);
     return this.translateCategoryTree(tree);
   }
 
