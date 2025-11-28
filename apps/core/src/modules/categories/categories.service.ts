@@ -767,6 +767,8 @@ export class CategoriesService {
     cityId: string,
     categoryId: string,
     displayName: string | null,
+    description?: string | null,
+    subtitle?: string | null,
     displayOrder?: number,
     headerBackgroundColor?: string | null,
     contentBackgroundColor?: string | null,
@@ -790,6 +792,14 @@ export class CategoriesService {
     const updateData: Prisma.CityCategoryUpdateInput = {
       displayName,
     };
+
+    if (description !== undefined) {
+      updateData.description = description;
+    }
+
+    if (subtitle !== undefined) {
+      updateData.subtitle = subtitle;
+    }
 
     if (displayOrder !== undefined) {
       updateData.displayOrder = displayOrder;

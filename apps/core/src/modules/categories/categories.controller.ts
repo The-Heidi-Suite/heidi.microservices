@@ -580,11 +580,11 @@ export class CategoriesController {
   }
 
   @ApiBearerAuth('JWT-auth')
-  @Patch('cities/:cityId/categories/:categoryId/display-name')
+  @Patch('cities/:cityId/categories/:categoryId')
   @ApiOperation({
-    summary: 'Update category display name for city',
+    summary: 'Update city category settings',
     description:
-      'Update the custom display name for a category in a specific city. City admins can update for their cities, super admins can update for any city.',
+      'Update the custom display name, description, subtitle, images, and colors for a category in a specific city. City admins can update for their cities, super admins can update for any city.',
   })
   @ApiParam({
     name: 'cityId',
@@ -599,23 +599,58 @@ export class CategoriesController {
   @ApiBody({
     type: UpdateCityCategoryDisplayNameDto,
     examples: {
-      set: {
-        summary: 'Set custom display name',
+      fullUpdate: {
+        summary: 'Update all customizable fields',
+        value: {
+          displayName: 'Local Events',
+          description: 'Discover and participate in local community events',
+          subtitle: 'Connect with your community',
+          displayOrder: 1,
+          headerBackgroundColor: '#7C3AED',
+          contentBackgroundColor: '#F3E8FF',
+        },
+      },
+      setDisplayName: {
+        summary: 'Set custom display name only',
         value: {
           displayName: 'Local Events',
         },
       },
-      reset: {
-        summary: 'Reset to default category name',
+      setDescription: {
+        summary: 'Set custom description and subtitle',
+        value: {
+          description: 'Discover and participate in local community events',
+          subtitle: 'Connect with your community',
+        },
+      },
+      setColors: {
+        summary: 'Set custom colors',
+        value: {
+          headerBackgroundColor: '#7C3AED',
+          contentBackgroundColor: '#F3E8FF',
+        },
+      },
+      setDisplayOrder: {
+        summary: 'Set display order',
+        value: {
+          displayOrder: 1,
+        },
+      },
+      resetToDefault: {
+        summary: 'Reset all fields to default (use category values)',
         value: {
           displayName: null,
+          description: null,
+          subtitle: null,
+          headerBackgroundColor: null,
+          contentBackgroundColor: null,
         },
       },
     },
   })
   @ApiResponse({
     status: 200,
-    description: 'Display name updated successfully',
+    description: 'City category settings updated successfully',
     type: CityCategoryResponseDto,
   })
   @ApiResponse({
@@ -651,10 +686,390 @@ export class CategoriesController {
       cityId,
       categoryId,
       dto.displayName ?? null,
+      dto.description,
+      dto.subtitle,
       dto.displayOrder,
       dto.headerBackgroundColor,
       dto.contentBackgroundColor,
     );
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Post('cities/:cityId/categories/:categoryId/image')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'City category image file to upload',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiOperation({
+    summary: 'Upload city category image',
+    description:
+      'Upload and process a custom background image for a city category. City admins can upload for their cities, super admins can upload for any city.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'City category image uploaded successfully',
+    type: CityCategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'City Admin or Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City/category assignment not found',
+    type: CategoryAssignmentNotFoundErrorResponseDto,
+  })
+  @CityAdminOnly()
+  async uploadCityCategoryImage(
+    @Param('cityId') cityId: string,
+    @Param('categoryId') categoryId: string,
+    @UploadedFile() file: any,
+    @GetCurrentUser() user: CurrentUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
+      if (!hasAccess) {
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
+      }
+    }
+
+    const existing = await this.prisma.cityCategory.findUnique({
+      where: { cityId_categoryId: { cityId, categoryId } },
+      include: { category: true },
+    });
+
+    if (!existing) {
+      throw new BadRequestException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
+    }
+
+    await this.fileUploadService.validateImage(file);
+    const processedFile = await this.fileUploadService.processImage(file);
+
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Delete old image if exists
+    if (existing.imageUrl) {
+      try {
+        const oldKey = this.extractKeyFromUrl(existing.imageUrl);
+        await this.storageService.deleteFile({ bucket, key: oldKey });
+      } catch (error) {
+        this.logger.warn(`Failed to delete old image for city category ${cityId}/${categoryId}`, error);
+      }
+    }
+
+    const key = this.fileUploadService.generateCityCategoryImageKey(cityId, categoryId, processedFile.extension);
+    const imageUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    return this.prisma.cityCategory.update({
+      where: { cityId_categoryId: { cityId, categoryId } },
+      data: { imageUrl },
+      include: { category: true },
+    });
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Delete('cities/:cityId/categories/:categoryId/image')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete city category image',
+    description:
+      'Remove the custom background image from a city category. City admins can delete for their cities, super admins can delete for any city.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'City category image deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'City Admin or Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City/category assignment not found',
+    type: CategoryAssignmentNotFoundErrorResponseDto,
+  })
+  @CityAdminOnly()
+  async deleteCityCategoryImage(
+    @Param('cityId') cityId: string,
+    @Param('categoryId') categoryId: string,
+    @GetCurrentUser() user: CurrentUser,
+  ) {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
+      if (!hasAccess) {
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
+      }
+    }
+
+    const existing = await this.prisma.cityCategory.findUnique({
+      where: { cityId_categoryId: { cityId, categoryId } },
+    });
+
+    if (!existing) {
+      throw new BadRequestException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
+    }
+
+    if (existing.imageUrl) {
+      try {
+        const key = this.extractKeyFromUrl(existing.imageUrl);
+        const bucket = this.configService.storageConfig.defaultBucket;
+        if (bucket) {
+          await this.storageService.deleteFile({ bucket, key });
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to delete image for city category ${cityId}/${categoryId}`, error);
+      }
+
+      await this.prisma.cityCategory.update({
+        where: { cityId_categoryId: { cityId, categoryId } },
+        data: { imageUrl: null },
+      });
+    }
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Post('cities/:cityId/categories/:categoryId/icon')
+  @UseInterceptors(FileInterceptor('file'))
+  @HttpCode(HttpStatus.OK)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'City category icon file to upload',
+        },
+      },
+      required: ['file'],
+    },
+  })
+  @ApiOperation({
+    summary: 'Upload city category icon',
+    description:
+      'Upload and process a custom icon for a city category. City admins can upload for their cities, super admins can upload for any city.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'City category icon uploaded successfully',
+    type: CityCategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file or validation failed',
+    type: ValidationErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'City Admin or Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City/category assignment not found',
+    type: CategoryAssignmentNotFoundErrorResponseDto,
+  })
+  @CityAdminOnly()
+  async uploadCityCategoryIcon(
+    @Param('cityId') cityId: string,
+    @Param('categoryId') categoryId: string,
+    @UploadedFile() file: any,
+    @GetCurrentUser() user: CurrentUser,
+  ) {
+    if (!file) {
+      throw new BadRequestException('No file provided');
+    }
+
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
+      if (!hasAccess) {
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
+      }
+    }
+
+    const existing = await this.prisma.cityCategory.findUnique({
+      where: { cityId_categoryId: { cityId, categoryId } },
+      include: { category: true },
+    });
+
+    if (!existing) {
+      throw new BadRequestException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
+    }
+
+    await this.fileUploadService.validateImage(file);
+    const processedFile = await this.fileUploadService.processImage(file);
+
+    const bucket = this.configService.storageConfig.defaultBucket;
+    if (!bucket) {
+      throw new BadRequestException('Storage bucket is not configured');
+    }
+
+    // Delete old icon if exists
+    if (existing.iconUrl) {
+      try {
+        const oldKey = this.extractKeyFromUrl(existing.iconUrl);
+        await this.storageService.deleteFile({ bucket, key: oldKey });
+      } catch (error) {
+        this.logger.warn(`Failed to delete old icon for city category ${cityId}/${categoryId}`, error);
+      }
+    }
+
+    const key = this.fileUploadService.generateCityCategoryIconKey(cityId, categoryId, processedFile.extension);
+    const iconUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
+
+    return this.prisma.cityCategory.update({
+      where: { cityId_categoryId: { cityId, categoryId } },
+      data: { iconUrl },
+      include: { category: true },
+    });
+  }
+
+  @ApiBearerAuth('JWT-auth')
+  @Delete('cities/:cityId/categories/:categoryId/icon')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({
+    summary: 'Delete city category icon',
+    description:
+      'Remove the custom icon from a city category. City admins can delete for their cities, super admins can delete for any city.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 204,
+    description: 'City category icon deleted successfully',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Authentication required',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 403,
+    description: 'City Admin or Super Admin access required',
+    type: ForbiddenErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City/category assignment not found',
+    type: CategoryAssignmentNotFoundErrorResponseDto,
+  })
+  @CityAdminOnly()
+  async deleteCityCategoryIcon(
+    @Param('cityId') cityId: string,
+    @Param('categoryId') categoryId: string,
+    @GetCurrentUser() user: CurrentUser,
+  ) {
+    if (user.role !== UserRole.SUPER_ADMIN) {
+      const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
+      if (!hasAccess) {
+        throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
+      }
+    }
+
+    const existing = await this.prisma.cityCategory.findUnique({
+      where: { cityId_categoryId: { cityId, categoryId } },
+    });
+
+    if (!existing) {
+      throw new BadRequestException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
+    }
+
+    if (existing.iconUrl) {
+      try {
+        const key = this.extractKeyFromUrl(existing.iconUrl);
+        const bucket = this.configService.storageConfig.defaultBucket;
+        if (bucket) {
+          await this.storageService.deleteFile({ bucket, key });
+        }
+      } catch (error) {
+        this.logger.warn(`Failed to delete icon for city category ${cityId}/${categoryId}`, error);
+      }
+
+      await this.prisma.cityCategory.update({
+        where: { cityId_categoryId: { cityId, categoryId } },
+        data: { iconUrl: null },
+      });
+    }
   }
 
   @ApiBearerAuth('JWT-auth')
