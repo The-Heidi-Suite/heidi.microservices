@@ -709,7 +709,13 @@ export class DestinationOneService {
         }
 
         // Check if any of the item's categories match this mapping
-        const hasMatchingCategory = item.categories.some((cat) =>
+        // For Gastro items, also check cuisine_types (vegan/vegetarisch are stored there)
+        const categoriesToCheck = [...(item.categories || [])];
+        if (item.type === 'Gastro' && item.cuisine_types) {
+          categoriesToCheck.push(...item.cuisine_types);
+        }
+
+        const hasMatchingCategory = categoriesToCheck.some((cat) =>
           mapping.doCategoryValues.includes(cat),
         );
 
