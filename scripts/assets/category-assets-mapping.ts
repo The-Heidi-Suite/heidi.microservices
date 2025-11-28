@@ -28,6 +28,66 @@ export interface CategoryAssetMapping {
  * Based on Musterbilder folder structure
  */
 export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
+  // Tours - "YOUR WAY THROUGH KIEL"
+  tours: {
+    slug: 'tours',
+    imageFileName: 'tours.webp',
+    displayName: 'YOUR WAY THROUGH KIEL',
+    subtitle: 'Blue line',
+    description: '67 activities in your city',
+    headerBackgroundColor: '#059669', // Green
+    contentBackgroundColor: '#D1FAE5',
+    displayOrder: 1,
+  },
+
+  // Food & Drink - "EATING & DRINKING"
+  'food-and-drink': {
+    slug: 'food-and-drink',
+    imageFileName: 'food-and-drink.webp',
+    displayName: 'EATING & DRINKING',
+    subtitle: "Kiel's diverse restaurant scene",
+    description: 'North German and international cuisine',
+    headerBackgroundColor: '#DC2626', // Red
+    contentBackgroundColor: '#FEE2E2',
+    displayOrder: 2,
+  },
+
+  // Shopping - "SHOP TO YOUR HEART'S CONTENT"
+  shopping: {
+    slug: 'shopping',
+    imageFileName: 'shopping.webp',
+    displayName: "SHOP TO YOUR HEART'S CONTENT",
+    subtitle: 'Over 400 stores',
+    description: 'In your city center',
+    headerBackgroundColor: '#EA580C', // Orange
+    contentBackgroundColor: '#FFEDD5',
+    displayOrder: 3,
+  },
+
+  // Culture - "KIEL CULTURE"
+  culture: {
+    slug: 'culture',
+    imageFileName: 'culture.webp',
+    displayName: 'KIEL CULTURE',
+    subtitle: 'Diverse, from the sea to museums',
+    description: 'Art, history, music, water',
+    headerBackgroundColor: '#BE185D', // Pink
+    contentBackgroundColor: '#FCE7F3',
+    displayOrder: 4,
+  },
+
+  // Show Me More - "SHOW ME MORE"
+  'show-me-more': {
+    slug: 'show-me-more',
+    imageFileName: 'show-me-more.webp',
+    displayName: 'SHOW ME MORE',
+    subtitle: 'Everything at a glance',
+    description: 'Discover your city with your filters',
+    headerBackgroundColor: '#0EA5E9', // Sky blue
+    contentBackgroundColor: '#E0F2FE',
+    displayOrder: 5,
+  },
+
   // News
   news: {
     slug: 'news',
@@ -37,7 +97,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     description: 'Latest news and official announcements for your city.',
     headerBackgroundColor: '#1E3A8A', // Blue
     contentBackgroundColor: '#EFF6FF',
-    displayOrder: 1,
+    displayOrder: 6,
   },
 
   // Events
@@ -49,55 +109,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     description: 'Events, festivals and activities happening in your city.',
     headerBackgroundColor: '#7C3AED', // Purple
     contentBackgroundColor: '#F3E8FF',
-    displayOrder: 2,
-  },
-
-  // Food & Drink
-  'food-and-drink': {
-    slug: 'food-and-drink',
-    imageFileName: 'food-and-drink.webp',
-    displayName: 'Food & Drink',
-    subtitle: 'Eat & drink',
-    description: 'Restaurants, cafés, bars and culinary experiences across the city.',
-    headerBackgroundColor: '#DC2626', // Red
-    contentBackgroundColor: '#FEE2E2',
-    displayOrder: 3,
-  },
-
-  // Tours
-  tours: {
-    slug: 'tours',
-    imageFileName: 'tours.webp',
-    displayName: 'Tours',
-    subtitle: 'Discover the city',
-    description: 'Guided tours, walking routes and experiences to explore the city.',
-    headerBackgroundColor: '#059669', // Green
-    contentBackgroundColor: '#D1FAE5',
-    displayOrder: 4,
-  },
-
-  // Shopping (fed from POI)
-  shopping: {
-    slug: 'shopping',
-    imageFileName: 'shopping.webp',
-    displayName: 'Shopping',
-    subtitle: 'Where to shop',
-    description: 'Shops, boutiques and malls in your city.',
-    headerBackgroundColor: '#EA580C', // Orange
-    contentBackgroundColor: '#FFEDD5',
-    displayOrder: 5,
-  },
-
-  // Culture
-  culture: {
-    slug: 'culture',
-    imageFileName: 'culture.webp',
-    displayName: 'Culture',
-    subtitle: 'Arts & culture',
-    description: 'Museums, galleries, theaters and cultural venues.',
-    headerBackgroundColor: '#BE185D', // Pink
-    contentBackgroundColor: '#FCE7F3',
-    displayOrder: 6,
+    displayOrder: 7,
   },
 
   // Points of Interest
@@ -109,7 +121,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     description: 'Landmarks, museums, parks and other sights worth visiting.',
     headerBackgroundColor: '#0891B2', // Cyan
     contentBackgroundColor: '#CFFAFE',
-    displayOrder: 7,
+    displayOrder: 8,
   },
 
   // Hotels & Stays
@@ -121,7 +133,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     description: 'Hotels, guesthouses and other accommodation options.',
     headerBackgroundColor: '#92400E', // Brown/Amber
     contentBackgroundColor: '#FEF3C7',
-    displayOrder: 8,
+    displayOrder: 9,
   },
 
   // Articles & Stories
@@ -133,7 +145,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     description: 'Guides, stories and inspiration for exploring the city.',
     headerBackgroundColor: '#4B5563', // Gray
     contentBackgroundColor: '#F3F4F6',
-    displayOrder: 9,
+    displayOrder: 10,
   },
 
   // Restaurants
@@ -145,7 +157,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     description: 'Restaurant listings and gastronomy highlights.',
     headerBackgroundColor: '#DC2626',
     contentBackgroundColor: '#FEE2E2',
-    displayOrder: 10,
+    displayOrder: 11,
   },
 
   // Other
@@ -157,16 +169,23 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     description: 'Additional content and information.',
     headerBackgroundColor: '#6B7280',
     contentBackgroundColor: '#F9FAFB',
-    displayOrder: 11,
+    displayOrder: 12,
   },
 };
+
+export interface CityHeaderMapping {
+  key: string;
+  primary: string;
+  alternatives: string[];
+}
 
 /**
  * City header image mapping
  * Primary image for Kiel city header
  */
-export const CITY_HEADER_IMAGE = {
+export const CITY_HEADER_IMAGE: Record<string, CityHeaderMapping> = {
   kiel: {
+    key: 'kiel',
     primary: 'city-header-kiel-1.webp',
     alternatives: ['city-header-kiel-2.webp', 'city-header-kiel-3.webp'],
   },

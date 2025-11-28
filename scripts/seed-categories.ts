@@ -149,6 +149,12 @@ const CATEGORY_SEEDS: CategorySeed[] = [
     ],
   },
   {
+    name: 'Show Me More',
+    slug: 'show-me-more',
+    type: CategoryType.OTHER, // Special category for discovering more content
+    // No children - this is a discovery/filter category
+  },
+  {
     name: 'Hotels & Stays',
     slug: 'hotels-and-stays',
     type: CategoryType.HOTEL,

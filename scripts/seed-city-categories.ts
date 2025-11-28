@@ -27,14 +27,15 @@ const cityPrisma = new CityPrismaClient();
 const corePrisma = new CorePrismaClient();
 const DEFAULT_CITY_CATEGORY_LANGUAGE = 'en';
 
-// English display names for categories in Kiel
+// English display names for categories in Kiel (UPPERCASE for main categories)
 const KIEL_DISPLAY_NAMES: Record<string, string> = {
-  // Main categories
-  events: 'Events',
-  'food-and-drink': 'Food & Drink',
-  tours: 'Your way through Kiel',
-  shopping: "Shop to your heart's content",
-  culture: 'Keil & Culture',
+  // Main categories (ordered as per screenshot - UPPERCASE)
+  tours: 'YOUR WAY THROUGH KIEL',
+  'food-and-drink': 'EATING & DRINKING',
+  shopping: "SHOP TO YOUR HEART'S CONTENT",
+  culture: 'KIEL CULTURE',
+  'show-me-more': 'SHOW ME MORE',
+  events: 'EVENTS',
 
   // Food & Drink subcategories
   'food-cafes-bakeries': 'Cafés',
@@ -61,13 +62,15 @@ const KIEL_DISPLAY_NAMES: Record<string, string> = {
 };
 
 // Slugs of categories (and their subcategories) that should be seeded for Kiel
+// Ordered as per screenshot: Tours, Food & Drink, Shopping, Culture, Show Me More
 const KIEL_ALLOWED_CATEGORY_SLUGS: string[] = [
-  // Main categories
-  'events',
-  'food-and-drink',
-  'shopping',
-  'culture',
-  'tours',
+  // Main categories (display order from screenshot)
+  'tours', // 1 - DEIN WEG DURCH KIEL
+  'food-and-drink', // 2 - ESSEN & TRINKEN
+  'shopping', // 3 - NACH HERZENSLUST SHOPPEN
+  'culture', // 4 - KIELER KULTUR
+  'show-me-more', // 5 - ZEIGE MIR MEHR
+  'events', // 6 - Events
 
   // Food & Drink subcategories
   'food-cafes-bakeries',
@@ -142,6 +145,8 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
     const displayName =
       KIEL_DISPLAY_NAMES[category.slug] || assetMapping?.displayName || category.name;
     const displayOrder = assetMapping?.displayOrder || 99; // Default to end if not specified
+    const subtitle = assetMapping?.subtitle || null;
+    const description = assetMapping?.description || null;
     const headerBackgroundColor = assetMapping?.headerBackgroundColor || null;
     const contentBackgroundColor = assetMapping?.contentBackgroundColor || null;
 
@@ -160,6 +165,8 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
           where: { id: existing.id },
           data: {
             displayName,
+            subtitle,
+            description,
             languageCode: existing.languageCode ?? DEFAULT_CITY_CATEGORY_LANGUAGE,
             displayOrder,
             headerBackgroundColor,
@@ -179,6 +186,8 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
             categoryId: category.id,
             languageCode: DEFAULT_CITY_CATEGORY_LANGUAGE,
             displayName,
+            subtitle,
+            description,
             displayOrder,
             headerBackgroundColor,
             contentBackgroundColor,

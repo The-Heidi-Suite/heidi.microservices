@@ -23,6 +23,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaClient as UsersPrismaClient, UserRole as UsersUserRole } from '@prisma/client-users';
 import { PrismaClient as CityPrismaClient } from '@prisma/client-city';
 import { PrismaClient as CorePrismaClient, UserRole as CoreUserRole } from '@prisma/client-core';
+import { getCityHeaderImageUrl } from './assets/category-assets-mapping';
 
 const usersPrisma = new UsersPrismaClient();
 const cityPrisma = new CityPrismaClient();
@@ -113,8 +114,10 @@ async function ensureSuperAdmin(): Promise<string> {
 
 async function ensureKielCity(): Promise<string> {
   const name = 'Kiel';
+  const key = 'kiel';
   const country = 'Germany';
   const state = 'Schleswig-Holstein';
+  const headerImageUrl = getCityHeaderImageUrl('kiel');
 
   const emailTheme = {
     appName: 'mein.Kiel',
@@ -137,13 +140,20 @@ async function ensureKielCity(): Promise<string> {
       country,
       state,
     },
-    select: { id: true },
+    select: { id: true, headerImageUrl: true },
   });
 
   if (existing) {
+    // Preserve existing storage URL if it's already set (starts with http/https)
+    const shouldUpdateHeaderImage =
+      !existing.headerImageUrl ||
+      (!existing.headerImageUrl.startsWith('http://') &&
+        !existing.headerImageUrl.startsWith('https://'));
+
     await cityPrisma.city.update({
       where: { id: existing.id },
       data: {
+        key,
         latitude: 54.3233,
         longitude: 10.1228,
         timezone: 'Europe/Berlin',
@@ -152,15 +162,20 @@ async function ensureKielCity(): Promise<string> {
         metadata: {
           emailTheme,
         },
+        ...(shouldUpdateHeaderImage && headerImageUrl ? { headerImageUrl } : {}),
       },
     });
-    console.log('↻ Updated city record for Kiel with email theme');
+    console.log('↻ Updated city record for Kiel with email theme and key');
+    if (shouldUpdateHeaderImage && headerImageUrl) {
+      console.log(`  • Header image set: ${headerImageUrl}`);
+    }
     return existing.id;
   }
 
   const created = await cityPrisma.city.create({
     data: {
       name,
+      key,
       country,
       state,
       latitude: 54.3233,
@@ -168,6 +183,7 @@ async function ensureKielCity(): Promise<string> {
       timezone: 'Europe/Berlin',
       population: 246601,
       isActive: true,
+      headerImageUrl,
       metadata: {
         emailTheme,
       },
@@ -175,7 +191,10 @@ async function ensureKielCity(): Promise<string> {
     select: { id: true },
   });
 
-  console.log('✓ Created city record for Kiel with email theme');
+  console.log('✓ Created city record for Kiel with email theme, key, and header image');
+  if (headerImageUrl) {
+    console.log(`  • Header image: ${headerImageUrl}`);
+  }
   return created.id;
 }
 
