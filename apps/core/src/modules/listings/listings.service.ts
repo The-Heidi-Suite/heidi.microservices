@@ -1750,15 +1750,12 @@ export class ListingsService {
       // Update total to reflect actual filtered count
       actualTotal = itemsWithDistance.length;
 
-      // Sort by distance, then apply event priority if enabled
-      let distanceSortedRows = itemsWithDistance
+      // Sort by distance (ascending) - nearest listings first
+      // Note: We intentionally do NOT apply event priority sorting here
+      // because "nearby" filter means distance is the primary sort criteria
+      const distanceSortedRows = itemsWithDistance
         .sort((a, b) => (a.distance || Infinity) - (b.distance || Infinity))
         .map((item) => item.row);
-
-      // Apply event priority sorting on top of distance sorting if enabled
-      if (filter.eventSort) {
-        distanceSortedRows = this.sortEventsByTemporalPriority(distanceSortedRows);
-      }
 
       // Apply pagination after sorting
       sortedRows = distanceSortedRows.slice(skip, skip + pageSize);

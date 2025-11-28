@@ -29,7 +29,7 @@ export interface ProcessedFile {
 @Injectable()
 export class FileUploadService {
   // File size limits (in bytes)
-  private readonly MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+  // Note: No file size limits - frontend handles any size restrictions
   private readonly MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50MB
   private readonly MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -70,8 +70,8 @@ export class FileUploadService {
    * Validate file size and type
    */
   async validateFile(file: any, options: FileValidationOptions): Promise<void> {
-    // Check file size
-    if (file.size > options.maxSize) {
+    // Check file size (skip if maxSize is 0 = no limit)
+    if (options.maxSize > 0 && file.size > options.maxSize) {
       throw new BadRequestException(
         `File size exceeds maximum allowed size of ${this.formatBytes(options.maxSize)}`,
       );
@@ -101,11 +101,11 @@ export class FileUploadService {
   }
 
   /**
-   * Validate image file
+   * Validate image file (no file size limit)
    */
   async validateImage(file: any): Promise<void> {
     await this.validateFile(file, {
-      maxSize: this.MAX_IMAGE_SIZE,
+      maxSize: 0, // No size limit
       allowedMimeTypes: this.ALLOWED_IMAGE_TYPES,
       allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
     });
