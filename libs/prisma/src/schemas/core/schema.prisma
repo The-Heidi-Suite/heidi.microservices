@@ -339,7 +339,11 @@ model CityCategory {
   cityId                String
   categoryId            String
   displayName           String?  // Custom display name for this city (defaults to category.name if null)
+  description           String?  // Custom description for this city category
+  subtitle              String?  // Custom subtitle for this city category
   displayOrder          Int      @default(0)
+  imageUrl              String?  // Custom background image URL for this city category
+  iconUrl               String?  // Custom icon URL for this city category
   headerBackgroundColor String? // Hex color code
   contentBackgroundColor String? // Hex color code
   languageCode          String?  // Source language of the displayName (e.g., "en", "de")
