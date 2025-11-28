@@ -50,7 +50,7 @@ const KIEL_DISPLAY_NAMES: Record<string, string> = {
   'shopping-for-children': 'For Children',
 
   // Culture subcategories
-  'culture-excursions': 'Excursions',
+  'culture-excursions': 'Excursion Destinations',
   'culture-on-foot': 'Explore on Foot',
   'culture-bike-tours': 'Bike Tours',
   'culture-museums': 'Museums & Collections',
