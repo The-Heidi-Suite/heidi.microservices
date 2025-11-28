@@ -81,29 +81,39 @@ export class UpdateListingDto extends PartialType(CreateListingDto) {
     type: [ListingCategoryReferenceDto],
     description: 'Categories to associate with this listing (with id for updates)',
   })
+  @IsOptional()
+  @IsArray()
   categories?: ListingCategoryReferenceDto[];
 
   @ApiPropertyOptional({
     type: [ListingCityReferenceDto],
     description: 'Cities to associate with this listing (with id for updates)',
   })
+  @IsOptional()
+  @IsArray()
   cities?: ListingCityReferenceDto[];
 
   @ApiPropertyOptional({
     type: [ListingTimeIntervalInputDto],
     description: 'Time intervals for recurring events (with id for updates)',
   })
+  @IsOptional()
+  @IsArray()
   timeIntervals?: ListingTimeIntervalInputDto[];
 
   @ApiPropertyOptional({
     type: [ListingTimeIntervalExceptionInputDto],
     description: 'Exceptions to recurring time intervals (with id for updates)',
   })
+  @IsOptional()
+  @IsArray()
   timeIntervalExceptions?: ListingTimeIntervalExceptionInputDto[];
 
   @ApiPropertyOptional({
     type: [ListingTagReferenceDto],
     description: 'Tags to associate with this listing (with id for updates)',
   })
+  @IsOptional()
+  @IsArray()
   tags?: ListingTagReferenceDto[];
 }
