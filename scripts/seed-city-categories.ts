@@ -49,11 +49,6 @@ const KIEL_DISPLAY_NAMES: Record<string, string> = {
   'shopping-conscious-shopping': 'Conscious Shopping',
   'shopping-for-children': 'For Children',
 
-  // Tours subcategories
-  'tours-guided': 'Guided Tours',
-  'tours-self-guided': 'Self-Guided Routes',
-  'tours-family-experiences': 'Family Experiences',
-
   // Culture subcategories
   'culture-excursions': 'Excursions',
   'culture-on-foot': 'Explore on Foot',
@@ -83,11 +78,6 @@ const KIEL_ALLOWED_CATEGORY_SLUGS: string[] = [
   'shopping-clothing',
   'shopping-conscious-shopping',
   'shopping-for-children',
-
-  // Tours subcategories
-  'tours-guided',
-  'tours-self-guided',
-  'tours-family-experiences',
 
   // Culture subcategories
   'culture-excursions',
