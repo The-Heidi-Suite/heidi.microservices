@@ -126,11 +126,35 @@ export class CityCategoryResponseDto {
   })
   displayName?: string | null;
 
+  @ApiPropertyOptional({
+    example: 'Discover and participate in local community events',
+    description: 'Custom description for this city category. Falls back to category description if not set.',
+  })
+  description?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Connect with your community',
+    description: 'Custom subtitle for this city category. Falls back to category subtitle if not set.',
+  })
+  subtitle?: string | null;
+
   @ApiProperty({
     example: 1,
     description: 'Display order for sorting categories in the city',
   })
   displayOrder: number;
+
+  @ApiPropertyOptional({
+    example: 'https://storage.example.com/city-categories/city123/cat456/image.webp',
+    description: 'Custom background image URL for this city category',
+  })
+  imageUrl?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'https://storage.example.com/city-categories/city123/cat456/icon.webp',
+    description: 'Custom icon URL for this city category',
+  })
+  iconUrl?: string | null;
 
   @ApiPropertyOptional({
     example: '#7C3AED',
@@ -259,6 +283,26 @@ export class UpdateCityCategoryDisplayNameDto {
   @IsString()
   @MaxLength(255)
   displayName?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Discover and participate in local community events',
+    description: 'Custom description for this city category. Set to null to use default.',
+    maxLength: 2000,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(2000)
+  description?: string | null;
+
+  @ApiPropertyOptional({
+    example: 'Connect with your community',
+    description: 'Custom subtitle for this city category. Set to null to use default.',
+    maxLength: 255,
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  subtitle?: string | null;
 
   @ApiPropertyOptional({
     example: 1,

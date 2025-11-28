@@ -316,6 +316,20 @@ export class FileUploadService {
   }
 
   /**
+   * Generate storage key for city category image
+   */
+  generateCityCategoryImageKey(cityId: string, categoryId: string, extension: string): string {
+    return `city-categories/${cityId}/${categoryId}/image.${extension}`;
+  }
+
+  /**
+   * Generate storage key for city category icon
+   */
+  generateCityCategoryIconKey(cityId: string, categoryId: string, extension: string): string {
+    return `city-categories/${cityId}/${categoryId}/icon.${extension}`;
+  }
+
+  /**
    * Generate storage key for city header asset image (used for seeding)
    * Returns: cities/{cityId}/header.{extension}
    */
