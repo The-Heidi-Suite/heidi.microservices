@@ -36,11 +36,11 @@ cd "$ROOT_DIR"
 
 mapfile -t PIPELINE <<'EOF'
 seed:terms|scripts/seed-terms.ts|Seed global terms of use for the users service
+seed:initial-admin|scripts/seed-initial-admin.ts|Create Super Admin, City Admin, and Kiel city
+seed:permissions|scripts/seed-permissions.ts|Seed RBAC permissions and role mappings
 seed:salutations|scripts/seed-salutations.ts|Seed localized salutations for user profiles
 seed:categories|scripts/seed-categories.ts|Seed core categories and subcategories
 upload:category-assets|scripts/upload-category-assets.ts|Upload category and city header assets
-seed:permissions|scripts/seed-permissions.ts|Seed RBAC permissions and role mappings
-seed:initial-admin|scripts/seed-initial-admin.ts|Create Super Admin, City Admin, and Kiel city
 seed:city-categories|scripts/seed-city-categories.ts|Link Kiel city to curated categories
 seed:tiles|scripts/seed-tiles.ts|Seed default promotional tiles for Kiel
 upload:tile-assets|scripts/upload-tile-assets.ts|Upload tile creative assets
