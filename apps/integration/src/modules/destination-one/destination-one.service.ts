@@ -662,6 +662,7 @@ export class DestinationOneService {
   transformToListing(
     item: DestinationOneItem,
     config: DestinationOneConfig,
+    facets?: { eventFacets?: string[]; tourFacets?: string[]; poiFacets?: string[] },
   ): TransformedListingData {
     // Get content from texts
     // Prefer HTML "details" (rich content), then HTML "teaser", then plain-text fallbacks
@@ -724,14 +725,21 @@ export class DestinationOneService {
       }
     }
 
-    // Fallback: Process item.categories using automatic mapping strategy if no mappings matched
-    if (
-      item.categories &&
-      item.categories.length > 0 &&
-      categorySlugsSet.size === (rootSlug ? 1 : 0)
-    ) {
+    // Dynamic subcategory generation from facetGroups
+    // Only for Event/Tour/POI types, filter item.categories against fetched facets
+    if (item.categories && item.categories.length > 0 && facets) {
+      let validFacets: string[] = [];
+      if (item.type === 'Event' && facets.eventFacets) {
+        validFacets = facets.eventFacets;
+      } else if (item.type === 'Tour' && facets.tourFacets) {
+        validFacets = facets.tourFacets;
+      } else if (item.type === 'POI' && facets.poiFacets) {
+        validFacets = facets.poiFacets;
+      }
+
+      // Only create subcategories for categories that exist in facetGroups
       for (const doCategory of item.categories) {
-        if (rootSlug) {
+        if (validFacets.includes(doCategory) && rootSlug) {
           const categorySlug = `${rootSlug}-${this.slugify(doCategory)}`;
           categorySlugsSet.add(categorySlug);
         }
@@ -1004,7 +1012,11 @@ export class DestinationOneService {
 
       for (const item of items) {
         try {
-          const listingData = this.transformToListing(item, config);
+          const listingData = this.transformToListing(item, config, {
+            eventFacets: syncStats.eventCategoryFacets,
+            tourFacets: syncStats.tourCategoryFacets,
+            poiFacets: syncStats.poiCategoryFacets,
+          });
 
           const result = await firstValueFrom(
             this.client.send<{ action: string; listingId: string }>(
