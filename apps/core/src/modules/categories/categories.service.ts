@@ -477,7 +477,7 @@ export class CategoriesService {
 
   /**
    * Attach virtual quick-filter children to root categories in the tree.
-   * Virtual children are marked with isQuickFilter=true and contain quickFilterKey.
+   * Virtual children are marked with isQuickFilter=true and contain quickFilter.
    * Quick filters and subcategories are merged and sorted together by order:
    * - Quick filters with order 0 (e.g., "nearby") appear first
    * - Subcategories appear in the middle (using displayOrder from CityCategory, default 100)
@@ -520,7 +520,7 @@ export class CategoriesService {
             createdAt: category.createdAt,
             updatedAt: category.updatedAt,
             isQuickFilter: true,
-            quickFilterKey: filter.key,
+            quickFilter: filter.key,
             radiusMeters: filter.radiusMeters ?? null,
             order: filter.order,
           }));

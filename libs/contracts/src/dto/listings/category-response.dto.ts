@@ -77,7 +77,7 @@ export class CategoryResponseDto {
   @ApiPropertyOptional({
     example: true,
     description:
-      'Indicates this is a virtual quick filter node (not a real DB category). When true, use quickFilterKey to determine behavior instead of categoryId.',
+      'Indicates this is a virtual quick filter node (not a real DB category). When true, use quickFilter to determine behavior instead of categoryId.',
   })
   @IsOptional()
   isQuickFilter?: boolean;
@@ -85,11 +85,11 @@ export class CategoryResponseDto {
   @ApiPropertyOptional({
     example: 'nearby',
     description:
-      'Quick filter key for virtual nodes (e.g., "nearby", "see-all"). Only present when isQuickFilter is true.',
+      'Quick filter value for virtual nodes (e.g., "nearby", "see-all"). Only present when isQuickFilter is true. Use this value as the quickFilter parameter in listing requests.',
   })
   @IsOptional()
   @IsString()
-  quickFilterKey?: string;
+  quickFilter?: string;
 
   @ApiPropertyOptional({
     example: 1500,

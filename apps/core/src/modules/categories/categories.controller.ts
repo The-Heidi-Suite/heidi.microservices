@@ -346,7 +346,7 @@ export class CategoriesController {
     summary: 'List categories with quick filters for a city',
     description:
       'Retrieve active category assignments for a specific city with quick filters (e.g., "Nearby", "See all") embedded as virtual children in root categories. ' +
-      'Quick filters are identified by the isQuickFilter=true flag and include quickFilterKey and radiusMeters fields. ' +
+      'Quick filters are identified by the isQuickFilter=true flag and include quickFilter and radiusMeters fields. ' +
       'Category names, descriptions, subtitles, and quick filter labels are returned in the requested language when translations exist, otherwise they fall back to the default language.',
   })
   @ApiParam({
@@ -395,7 +395,7 @@ export class CategoriesController {
                   createdAt: '2025-01-01T00:00:00.000Z',
                   updatedAt: '2025-01-01T00:00:00.000Z',
                   isQuickFilter: true,
-                  quickFilterKey: 'nearby',
+                  quickFilter: 'nearby',
                   radiusMeters: 1500,
                   children: [],
                 },
@@ -415,7 +415,7 @@ export class CategoriesController {
                   createdAt: '2025-01-01T00:00:00.000Z',
                   updatedAt: '2025-01-01T00:00:00.000Z',
                   isQuickFilter: true,
-                  quickFilterKey: 'see-all',
+                  quickFilter: 'see-all',
                   radiusMeters: null,
                   children: [],
                 },
@@ -435,7 +435,7 @@ export class CategoriesController {
                   createdAt: '2025-01-01T00:00:00.000Z',
                   updatedAt: '2025-01-01T00:00:00.000Z',
                   isQuickFilter: false,
-                  quickFilterKey: null,
+                  quickFilter: null,
                   radiusMeters: null,
                   children: [],
                 },
