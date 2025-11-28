@@ -43,5 +43,3 @@ export class CategoryListResponseDto {
   @Type(() => CategoryListMetaDto)
   meta: CategoryListMetaDto;
 }
-
-

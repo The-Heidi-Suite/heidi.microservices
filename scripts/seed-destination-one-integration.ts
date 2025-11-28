@@ -120,7 +120,14 @@ async function seed() {
       heidiCategorySlug: 'shopping',
       heidiSubcategorySlug: 'shopping-clothing',
       doTypes: ['POI'],
-      doCategoryValues: ['Bekleidung', 'Damen' , 'Herren', 'Schuhe', 'Baby & Kind', 'Schuhe & Lederwaren'],
+      doCategoryValues: [
+        'Bekleidung',
+        'Damen',
+        'Herren',
+        'Schuhe',
+        'Baby & Kind',
+        'Schuhe & Lederwaren',
+      ],
     },
     {
       heidiCategorySlug: 'shopping',
@@ -138,7 +145,15 @@ async function seed() {
       heidiCategorySlug: 'shopping',
       heidiSubcategorySlug: 'shopping-city-center',
       doTypes: ['POI'],
-      doCategoryValues: ['Melting Pot', 'Fleet Quartier',  'Obere Holstenstraße', 'Kehden-Küter-Kiez', 'Schlossquartier', 'Holstenplatz', 'Altstadt'],
+      doCategoryValues: [
+        'Melting Pot',
+        'Fleet Quartier',
+        'Obere Holstenstraße',
+        'Kehden-Küter-Kiez',
+        'Schlossquartier',
+        'Holstenplatz',
+        'Altstadt',
+      ],
     },
 
     // Food & Drink category mappings (Gastro type)

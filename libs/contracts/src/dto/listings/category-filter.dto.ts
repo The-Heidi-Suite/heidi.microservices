@@ -29,7 +29,10 @@ const transformArrayParam = (value: any): string[] => {
     return value;
   }
   if (typeof value === 'string') {
-    return value.split(',').map((item) => item.trim()).filter(Boolean);
+    return value
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
   }
   return [];
 };
@@ -124,4 +127,3 @@ export class CategoryFilterDto {
   @IsEnum(['asc', 'desc'])
   sortDirection?: 'asc' | 'desc';
 }
-

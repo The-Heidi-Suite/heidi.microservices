@@ -202,7 +202,9 @@ export class CategoriesService {
     return Promise.all(categories.map((category) => translateNode(category)));
   }
 
-  async listCategories(filter?: CategoryFilterDto): Promise<CategoryListResponseDto | CategoryResponseDto[]> {
+  async listCategories(
+    filter?: CategoryFilterDto,
+  ): Promise<CategoryListResponseDto | CategoryResponseDto[]> {
     // Build where clause for filtering
     const where: Prisma.CategoryWhereInput = {};
 

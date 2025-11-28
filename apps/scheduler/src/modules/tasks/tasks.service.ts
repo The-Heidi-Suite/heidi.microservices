@@ -390,9 +390,7 @@ export class TasksService implements OnModuleInit {
         });
       } catch (error) {
         // Silently ignore if no handler exists - this is expected for fire-and-forget events
-        this.logger.debug(
-          `Schedule completed event emitted (no handler required): ${task.id}`,
-        );
+        this.logger.debug(`Schedule completed event emitted (no handler required): ${task.id}`);
       }
     } catch (error) {
       const executionEndTime = new Date();

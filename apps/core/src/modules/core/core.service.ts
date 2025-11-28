@@ -1327,7 +1327,7 @@ export class CoreService implements OnModuleInit {
             timezone: listing.timezone,
           },
           window2hStart, // Earliest boundary (now + 2h)
-          window24hEnd,  // Latest boundary (now + 25h)
+          window24hEnd, // Latest boundary (now + 25h)
         );
 
         this.logger.debug(
