@@ -68,20 +68,6 @@ const QUICK_FILTER_CONFIGS: Record<string, Record<string, QuickFilterConfig[]>> 
         order: 999,
       },
     ],
-    tours: [
-      {
-        key: 'nearby',
-        label: 'Nearby',
-        order: 0,
-        radiusMeters: 2000,
-        sortByDistance: true,
-      },
-      {
-        key: 'see-all',
-        label: 'See all',
-        order: 999,
-      },
-    ],
     culture: [
       {
         key: 'nearby',
