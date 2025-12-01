@@ -89,7 +89,7 @@ async function seed() {
         .map((t) => t.trim())
         .filter(Boolean)
     : // Default to all major Destination One types we support (skip City, Area, Package)
-      ['Hotel', 'Event', 'Gastro', 'Tour', 'POI', 'Article'];
+      ['Event', 'Gastro', 'Tour', 'POI'];
   const name = process.env.INTEGRATION_NAME?.trim() || 'Destination One - Kiel';
   const isActive = (process.env.INTEGRATION_ACTIVE ?? 'true').toLowerCase() !== 'false';
 

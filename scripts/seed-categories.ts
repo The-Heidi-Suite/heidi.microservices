@@ -93,26 +93,6 @@ const CATEGORY_SEEDS: CategorySeed[] = [
     ],
   },
   {
-    name: 'Restaurants',
-    slug: 'restaurants',
-    type: CategoryType.RESTAURANT,
-    children: [
-      { name: 'Fine Dining', slug: 'restaurants-fine-dining', type: CategoryType.RESTAURANT },
-      { name: 'Casual Dining', slug: 'restaurants-casual-dining', type: CategoryType.RESTAURANT },
-      { name: 'Street Food', slug: 'restaurants-street-food', type: CategoryType.RESTAURANT },
-    ],
-  },
-  {
-    name: 'Points of Interest',
-    slug: 'points-of-interest',
-    type: CategoryType.POI,
-    children: [
-      { name: 'Museums & Galleries', slug: 'poi-museums-galleries', type: CategoryType.POI },
-      { name: 'Parks & Nature', slug: 'poi-parks-nature', type: CategoryType.POI },
-      { name: 'Historic Landmarks', slug: 'poi-historic-landmarks', type: CategoryType.POI },
-    ],
-  },
-  {
     name: 'Shopping',
     slug: 'shopping',
     type: CategoryType.POI, // Shopping is fed from POI data
@@ -153,36 +133,6 @@ const CATEGORY_SEEDS: CategorySeed[] = [
     slug: 'show-me-more',
     type: CategoryType.OTHER, // Special category for discovering more content
     // No children - this is a discovery/filter category
-  },
-  {
-    name: 'Hotels & Stays',
-    slug: 'hotels-and-stays',
-    type: CategoryType.HOTEL,
-    children: [
-      { name: 'Boutique Hotels', slug: 'hotels-boutique', type: CategoryType.HOTEL },
-      { name: 'Business Hotels', slug: 'hotels-business', type: CategoryType.HOTEL },
-      { name: 'Budget Stays', slug: 'hotels-budget-stays', type: CategoryType.HOTEL },
-    ],
-  },
-  {
-    name: 'Articles & Stories',
-    slug: 'articles-and-stories',
-    type: CategoryType.ARTICLE,
-    children: [
-      { name: 'City Guides', slug: 'articles-city-guides', type: CategoryType.ARTICLE },
-      { name: 'Community Stories', slug: 'articles-community-stories', type: CategoryType.ARTICLE },
-      { name: 'Insider Tips', slug: 'articles-insider-tips', type: CategoryType.ARTICLE },
-    ],
-  },
-  {
-    name: 'Other',
-    slug: 'other',
-    type: CategoryType.OTHER,
-    children: [
-      { name: 'Partner Content', slug: 'other-partner-content', type: CategoryType.OTHER },
-      { name: 'Legacy Content', slug: 'other-legacy-content', type: CategoryType.OTHER },
-      { name: 'Miscellaneous', slug: 'other-miscellaneous', type: CategoryType.OTHER },
-    ],
   },
 ];
 

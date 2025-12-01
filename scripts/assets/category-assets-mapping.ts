@@ -111,66 +111,6 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     contentBackgroundColor: '#F3E8FF',
     displayOrder: 7,
   },
-
-  // Points of Interest
-  'points-of-interest': {
-    slug: 'points-of-interest',
-    imageFileName: 'points-of-interest.webp',
-    displayName: 'Points of Interest',
-    subtitle: 'Explore the city',
-    description: 'Landmarks, museums, parks and other sights worth visiting.',
-    headerBackgroundColor: '#0891B2', // Cyan
-    contentBackgroundColor: '#CFFAFE',
-    displayOrder: 8,
-  },
-
-  // Hotels & Stays
-  'hotels-and-stays': {
-    slug: 'hotels-and-stays',
-    imageFileName: 'hotels-and-stays.webp',
-    displayName: 'Hotels & Stays',
-    subtitle: 'Stay overnight',
-    description: 'Hotels, guesthouses and other accommodation options.',
-    headerBackgroundColor: '#92400E', // Brown/Amber
-    contentBackgroundColor: '#FEF3C7',
-    displayOrder: 9,
-  },
-
-  // Articles & Stories
-  'articles-and-stories': {
-    slug: 'articles-and-stories',
-    imageFileName: 'articles-and-stories.webp',
-    displayName: 'Articles & Stories',
-    subtitle: 'Stories from the city',
-    description: 'Guides, stories and inspiration for exploring the city.',
-    headerBackgroundColor: '#4B5563', // Gray
-    contentBackgroundColor: '#F3F4F6',
-    displayOrder: 10,
-  },
-
-  // Restaurants
-  restaurants: {
-    slug: 'restaurants',
-    imageFileName: 'restaurants.webp',
-    displayName: 'Restaurants',
-    subtitle: 'Great places to eat',
-    description: 'Restaurant listings and gastronomy highlights.',
-    headerBackgroundColor: '#DC2626',
-    contentBackgroundColor: '#FEE2E2',
-    displayOrder: 11,
-  },
-
-  // Other
-  other: {
-    slug: 'other',
-    imageFileName: 'other.webp',
-    displayName: 'Other',
-    subtitle: 'More content',
-    description: 'Additional content and information.',
-    headerBackgroundColor: '#6B7280',
-    contentBackgroundColor: '#F9FAFB',
-    displayOrder: 12,
-  },
 };
 
 export interface CityHeaderMapping {
