@@ -129,6 +129,29 @@ export class CategoriesController {
     return this.categoriesService.listCategories(filter);
   }
 
+  @Public()
+  @Get('main')
+  @ApiOperation({
+    summary: 'Get all main categories',
+    description:
+      'Retrieve all main/root categories (categories without a parent). Returns a flat list of main categories without subcategories. Category names, descriptions, and subtitles are returned in the requested language when translations exist.',
+  })
+  @ApiHeader({
+    name: 'Accept-Language',
+    required: false,
+    description:
+      'Preferred response language (e.g. de, en, dk). When set, category text fields are translated where translations exist.',
+    example: 'de',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Main categories retrieved successfully',
+    type: [CategoryResponseDto],
+  })
+  async listMainCategories() {
+    return this.categoriesService.listMainCategories();
+  }
+
   @ApiBearerAuth('JWT-auth')
   @Post()
   @ApiOperation({

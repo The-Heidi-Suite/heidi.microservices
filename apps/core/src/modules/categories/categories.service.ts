@@ -143,6 +143,50 @@ export class CategoriesService {
   }
 
   /**
+   * Fetch and attach children to parent categories
+   * Also handles imageUrl inheritance (children inherit parent's imageUrl if their own is null)
+   */
+  private async attachChildrenToCategories(categories: any[]): Promise<any[]> {
+    if (categories.length === 0) return categories;
+
+    const categoryIds = categories.map((c) => c.id);
+    const children = await this.prisma.category.findMany({
+      where: { parentId: { in: categoryIds } },
+      orderBy: [{ name: 'asc' }],
+    });
+
+    // Group children by parentId
+    const childrenByParentId = new Map<string, typeof children>();
+    children.forEach((child) => {
+      if (child.parentId) {
+        const existing = childrenByParentId.get(child.parentId) || [];
+        existing.push(child);
+        childrenByParentId.set(child.parentId, existing);
+      }
+    });
+
+    // Attach children to their parents with imageUrl inheritance
+    return categories.map((cat) => {
+      const catChildren = childrenByParentId.get(cat.id) || [];
+
+      // Apply imageUrl inheritance: children without imageUrl inherit from parent
+      const childrenWithInheritedImageUrl = catChildren.map((child) => ({
+        ...child,
+        imageUrl: child.imageUrl || cat.imageUrl,
+      }));
+
+      // Only include children property if there are children
+      if (childrenWithInheritedImageUrl.length > 0) {
+        return {
+          ...cat,
+          children: childrenWithInheritedImageUrl,
+        };
+      }
+      return cat;
+    });
+  }
+
+  /**
    * Apply translations to a category node and its children
    */
   private async translateCategoryTree(categories: any[]): Promise<any[]> {
@@ -219,6 +263,11 @@ export class CategoriesService {
   async listCategories(
     filter?: CategoryFilterDto,
   ): Promise<CategoryListResponseDto | CategoryResponseDto[]> {
+    // Determine if we should only return root categories (default: true)
+    // rootOnly=true means: only fetch root categories (parentId=null), then attach their children
+    // rootOnly=false means: fetch all categories matching the filter (flat list for hierarchy building)
+    const rootOnly = filter?.rootOnly !== false;
+
     // Build where clause for filtering
     const where: Prisma.CategoryWhereInput = {};
 
@@ -236,7 +285,7 @@ export class CategoriesService {
       where.type = filter.type;
     }
 
-    // Parent ID filter
+    // Parent ID filter - takes precedence over rootOnly
     if (filter?.parentId !== undefined) {
       if (filter.parentId === null || filter.parentId === '') {
         // Explicitly filter for root categories (no parent)
@@ -244,6 +293,9 @@ export class CategoriesService {
       } else {
         where.parentId = filter.parentId;
       }
+    } else if (rootOnly) {
+      // Default behavior: only return root categories (main categories)
+      where.parentId = null;
     }
 
     // Active status filter
@@ -283,7 +335,15 @@ export class CategoriesService {
         this.prisma.category.count({ where }),
       ]);
 
-      const tree = this.buildCategoryHierarchy(categories);
+      // If rootOnly, fetch children for each root category
+      let categoriesWithChildren: any[] = categories;
+      if (rootOnly && categories.length > 0) {
+        categoriesWithChildren = await this.attachChildrenToCategories(categories);
+      }
+
+      const tree = rootOnly
+        ? categoriesWithChildren
+        : this.buildCategoryHierarchy(categoriesWithChildren);
       const translatedTree = await this.translateCategoryTree(tree);
 
       const totalPages = Math.ceil(total / pageSize);
@@ -305,8 +365,32 @@ export class CategoriesService {
       orderBy,
     });
 
-    const tree = this.buildCategoryHierarchy(categories);
+    // If rootOnly, fetch children for each root category
+    let categoriesWithChildren: any[] = categories;
+    if (rootOnly && categories.length > 0) {
+      categoriesWithChildren = await this.attachChildrenToCategories(categories);
+    }
+
+    const tree = rootOnly
+      ? categoriesWithChildren
+      : this.buildCategoryHierarchy(categoriesWithChildren);
     return this.translateCategoryTree(tree);
+  }
+
+  /**
+   * Get all main/root categories (categories without a parent)
+   * Returns a flat list without subcategories nested
+   */
+  async listMainCategories(): Promise<CategoryResponseDto[]> {
+    const categories = await this.prisma.category.findMany({
+      where: {
+        parentId: null,
+        isActive: true,
+      },
+      orderBy: [{ type: 'asc' }, { name: 'asc' }],
+    });
+
+    return this.translateCategoryTree(categories);
   }
 
   async createCategory(dto: CreateCategoryDto) {
