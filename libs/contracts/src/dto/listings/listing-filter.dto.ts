@@ -9,6 +9,7 @@ import {
   IsOptional,
   IsString,
   Min,
+  Max,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
 import {
@@ -184,20 +185,26 @@ export class ListingFilterDto {
     example: 1,
     description: 'Page number (1-indexed)',
     default: 1,
+    minimum: 1,
   })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
+  @Min(1)
   page?: number;
 
   @ApiPropertyOptional({
     example: 20,
     description: 'Number of items per page',
     default: 20,
+    minimum: 1,
+    maximum: 100,
   })
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
+  @Min(1)
+  @Max(100)
   pageSize?: number;
 
   @ApiPropertyOptional({

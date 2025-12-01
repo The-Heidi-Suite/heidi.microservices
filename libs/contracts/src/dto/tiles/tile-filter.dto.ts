@@ -6,6 +6,8 @@ import {
   IsDateString,
   IsNumber,
   IsEnum,
+  Min,
+  Max,
 } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
@@ -104,6 +106,7 @@ export class TileFilterDto {
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
+  @Min(1)
   page?: number;
 
   @ApiPropertyOptional({
@@ -115,6 +118,8 @@ export class TileFilterDto {
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
+  @Min(1)
+  @Max(100)
   pageSize?: number;
 
   @ApiPropertyOptional({

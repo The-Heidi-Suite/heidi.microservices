@@ -1,19 +1,22 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsOptional, IsPositive, IsString, Min } from 'class-validator';
+import { IsOptional, IsString, Min, Max, IsNumber } from 'class-validator';
 
 export class TagFilterDto {
-  @ApiPropertyOptional({ example: 1, description: 'Page number (1-indexed)' })
+  @ApiPropertyOptional({ example: 1, description: 'Page number (1-indexed)', minimum: 1 })
   @Type(() => Number)
   @IsOptional()
+  @IsNumber()
   @Min(1)
-  page?: number = 1;
+  page?: number;
 
-  @ApiPropertyOptional({ example: 20, description: 'Items per page' })
+  @ApiPropertyOptional({ example: 20, description: 'Items per page', minimum: 1, maximum: 100 })
   @Type(() => Number)
   @IsOptional()
-  @IsPositive()
-  pageSize?: number = 20;
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  pageSize?: number;
 
   @ApiPropertyOptional({ example: 'DESTINATION_ONE', description: 'Filter by provider' })
   @IsOptional()

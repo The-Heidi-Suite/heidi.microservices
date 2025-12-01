@@ -13,12 +13,14 @@ export class AdminService {
   }
 
   async findAll(page = 1, limit = 10) {
-    const skip = (page - 1) * limit;
+    const effectivePage = page > 0 ? page : 1;
+    const effectiveLimit = Math.min(limit > 0 ? limit : 10, 100);
+    const skip = (effectivePage - 1) * effectiveLimit;
     const [admins, total] = await Promise.all([
       this.prisma.adminUser.findMany({
         where: { deletedAt: null },
         skip,
-        take: limit,
+        take: effectiveLimit,
         select: {
           id: true,
           email: true,
@@ -34,7 +36,7 @@ export class AdminService {
     ]);
 
     this.logger.log(`AdminService: Retrieved ${admins.length} admin users`);
-    return { admins, total, page, limit, pages: Math.ceil(total / limit) };
+    return { admins, total, page: effectivePage, limit: effectiveLimit, pages: Math.ceil(total / effectiveLimit) };
   }
 
   async findOne(id: string) {

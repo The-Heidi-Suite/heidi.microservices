@@ -263,8 +263,9 @@ export class UsersService {
   }
 
   async findAll(filterDto?: UserFilterDto) {
-    const page = filterDto?.page || 1;
-    const limit = filterDto?.limit || 10;
+    const page = filterDto?.page && filterDto.page > 0 ? filterDto.page : 1;
+    const limitCandidate = filterDto?.limit && filterDto.limit > 0 ? filterDto.limit : 10;
+    const limit = Math.min(limitCandidate, 100);
     const skip = (page - 1) * limit;
 
     // Build where clause
@@ -386,7 +387,9 @@ export class UsersService {
    * Find users by city ID
    */
   async findByCity(cityId: string, page = 1, limit = 100) {
-    const skip = (page - 1) * limit;
+    const effectivePage = page > 0 ? page : 1;
+    const effectiveLimit = Math.min(limit > 0 ? limit : 100, 100);
+    const skip = (effectivePage - 1) * effectiveLimit;
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
         where: {
@@ -396,7 +399,7 @@ export class UsersService {
           userType: UserType.REGISTERED,
         },
         skip,
-        take: limit,
+        take: effectiveLimit,
         select: {
           id: true,
           email: true,
@@ -426,9 +429,9 @@ export class UsersService {
     return {
       users,
       total,
-      page,
-      limit,
-      pages: Math.ceil(total / limit),
+      page: effectivePage,
+      limit: effectiveLimit,
+      pages: Math.ceil(total / effectiveLimit),
     };
   }
 
@@ -436,7 +439,9 @@ export class UsersService {
    * Find all active users (paginated)
    */
   async findAllActive(page = 1, limit = 100) {
-    const skip = (page - 1) * limit;
+    const effectivePage = page > 0 ? page : 1;
+    const effectiveLimit = Math.min(limit > 0 ? limit : 100, 100);
+    const skip = (effectivePage - 1) * effectiveLimit;
     const [users, total] = await Promise.all([
       this.prisma.user.findMany({
         where: {
@@ -445,7 +450,7 @@ export class UsersService {
           userType: UserType.REGISTERED,
         },
         skip,
-        take: limit,
+        take: effectiveLimit,
         select: {
           id: true,
           email: true,
@@ -477,9 +482,9 @@ export class UsersService {
     return {
       users,
       total,
-      page,
-      limit,
-      pages: Math.ceil(total / limit),
+      page: effectivePage,
+      limit: effectiveLimit,
+      pages: Math.ceil(total / effectiveLimit),
     };
   }
 

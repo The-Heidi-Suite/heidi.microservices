@@ -14,8 +14,9 @@ export class TagsService {
   }
 
   async listTags(filter: TagFilterDto): Promise<TagListResponseDto> {
-    const page = filter.page ?? 1;
-    const pageSize = filter.pageSize ?? 20;
+    const page = filter.page && filter.page > 0 ? filter.page : 1;
+    const pageSizeCandidate = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 20;
+    const pageSize = Math.min(pageSizeCandidate, 100);
     const skip = (page - 1) * pageSize;
 
     const where: Prisma.TagWhereInput = {};
