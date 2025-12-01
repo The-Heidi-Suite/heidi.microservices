@@ -6,7 +6,7 @@ import { LoggerService } from '@heidi/logger';
 import { firstValueFrom } from 'rxjs';
 import { createHash } from 'crypto';
 import { ListingRecurrenceFreq, CategoryType, ListingMediaType } from '@prisma/client-core';
-import { DestinationOneConfig } from '@heidi/contracts';
+import { DestinationOneConfig, DestinationOneCategoryMapping } from '@heidi/contracts';
 
 interface DestinationOneItem {
   global_id: string;
@@ -663,6 +663,7 @@ export class DestinationOneService {
     item: DestinationOneItem,
     config: DestinationOneConfig,
     facets?: { eventFacets?: string[]; tourFacets?: string[]; poiFacets?: string[] },
+    fetchedByMappings?: DestinationOneCategoryMapping[],
   ): TransformedListingData {
     // Get content from texts
     // Prefer HTML "details" (rich content), then HTML "teaser", then plain-text fallbacks
@@ -700,7 +701,20 @@ export class DestinationOneService {
       categorySlugsSet.add(rootSlug);
     }
 
-    // Process category mappings from config
+    // Add categories from mappings that fetched this item (guaranteed match via API query)
+    // This handles meta-categories like "Einkaufen", "Ausflugsziele" that are used for API filtering
+    // but don't appear in individual item.categories
+    if (fetchedByMappings && fetchedByMappings.length > 0) {
+      for (const mapping of fetchedByMappings) {
+        categorySlugsSet.add(mapping.heidiCategorySlug);
+        if (mapping.heidiSubcategorySlug) {
+          categorySlugsSet.add(mapping.heidiSubcategorySlug);
+        }
+      }
+    }
+
+    // Also process category mappings from config for additional matches
+    // (items may match multiple mappings based on their actual categories)
     if (config.categoryMappings && config.categoryMappings.length > 0 && item.categories) {
       for (const mapping of config.categoryMappings) {
         // Check if this mapping applies to this item type
@@ -921,6 +935,8 @@ export class DestinationOneService {
 
     // Fetch items using category mapping queries only
     let items: DestinationOneItem[] = [];
+    // Track which mappings fetched each item (for category assignment)
+    const itemMappings = new Map<string, DestinationOneCategoryMapping[]>();
 
     try {
       const processedIds = new Set<string>();
@@ -975,6 +991,12 @@ export class DestinationOneService {
               );
               const mappingItems = result.items.filter((it) => !processedIds.has(it.id));
               items.push(...mappingItems);
+              // Track which mapping fetched each item (items can be fetched by multiple mappings)
+              for (const it of result.items) {
+                const existingMappings = itemMappings.get(it.id) || [];
+                existingMappings.push(mapping);
+                itemMappings.set(it.id, existingMappings);
+              }
               mappingItems.forEach((it) => processedIds.add(it.id));
               const mappingKey = `${mapping.heidiCategorySlug}${mapping.heidiSubcategorySlug ? `/${mapping.heidiSubcategorySlug}` : ''}`;
               syncStats.itemsByMapping[mappingKey] =
@@ -1018,11 +1040,18 @@ export class DestinationOneService {
 
       for (const item of items) {
         try {
-          const listingData = this.transformToListing(item, config, {
-            eventFacets: syncStats.eventCategoryFacets,
-            tourFacets: syncStats.tourCategoryFacets,
-            poiFacets: syncStats.poiCategoryFacets,
-          });
+          // Get the mappings that fetched this item (for guaranteed category assignment)
+          const fetchedByMappings = itemMappings.get(item.id);
+          const listingData = this.transformToListing(
+            item,
+            config,
+            {
+              eventFacets: syncStats.eventCategoryFacets,
+              tourFacets: syncStats.tourCategoryFacets,
+              poiFacets: syncStats.poiCategoryFacets,
+            },
+            fetchedByMappings,
+          );
 
           const result = await firstValueFrom(
             this.client.send<{ action: string; listingId: string }>(
