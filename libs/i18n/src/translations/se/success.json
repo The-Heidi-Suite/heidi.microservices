@@ -56,6 +56,7 @@
   "TAG_CREATED": "Tagg skapad framgångsrikt",
   "TAG_DELETED": "Tagg raderad framgångsrikt",
   "CATEGORIES_RETRIEVED": "Kategorier hämtade framgångsrikt",
+  "MAIN_CATEGORIES_RETRIEVED": "Huvudkategorier hämtade framgångsrikt",
   "CATEGORY_RETRIEVED": "Kategori hämtad framgångsrikt",
   "CATEGORY_CREATED": "Kategori skapad framgångsrikt",
   "CATEGORY_UPDATED": "Kategori uppdaterad framgångsrikt",

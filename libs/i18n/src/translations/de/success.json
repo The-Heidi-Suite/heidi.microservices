@@ -71,6 +71,7 @@
   "TAG_CREATED": "Tag erfolgreich erstellt",
   "TAG_DELETED": "Tag erfolgreich gelöscht",
   "CATEGORIES_RETRIEVED": "Kategorien erfolgreich abgerufen",
+  "MAIN_CATEGORIES_RETRIEVED": "Hauptkategorien erfolgreich abgerufen",
   "CATEGORY_RETRIEVED": "Kategorie erfolgreich abgerufen",
   "CATEGORY_CREATED": "Kategorie erfolgreich erstellt",
   "CATEGORY_UPDATED": "Kategorie erfolgreich aktualisiert",

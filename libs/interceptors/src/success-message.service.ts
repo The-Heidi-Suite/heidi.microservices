@@ -86,6 +86,7 @@ export class SuccessMessageService {
 
     // Category routes
     'GET:/categories': 'CATEGORIES_RETRIEVED',
+    'GET:/categories/main': 'MAIN_CATEGORIES_RETRIEVED',
     'GET:/categories/:id': 'CATEGORY_RETRIEVED',
     'POST:/categories': 'CATEGORY_CREATED',
     'PATCH:/categories/:id': 'CATEGORY_UPDATED',

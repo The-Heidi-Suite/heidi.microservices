@@ -71,6 +71,7 @@
   "TAG_CREATED": "تم إنشاء الوسم بنجاح",
   "TAG_DELETED": "تم حذف الوسم بنجاح",
   "CATEGORIES_RETRIEVED": "تم استرجاع الفئات بنجاح",
+  "MAIN_CATEGORIES_RETRIEVED": "تم استرجاع الفئات الرئيسية بنجاح",
   "CATEGORY_RETRIEVED": "تم استرجاع الفئة بنجاح",
   "CATEGORY_CREATED": "تم إنشاء الفئة بنجاح",
   "CATEGORY_UPDATED": "تم تحديث الفئة بنجاح",

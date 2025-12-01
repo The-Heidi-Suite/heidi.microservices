@@ -64,6 +64,17 @@ export class CategoryFilterDto {
   parentId?: string;
 
   @ApiPropertyOptional({
+    description:
+      'When true (default), only returns root/main categories with subcategories nested in children array. Set to false to get all categories in a flat list.',
+    example: true,
+    default: true,
+  })
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => transformBooleanParam(value))
+  rootOnly?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Filter by active status',
     example: true,
   })

@@ -56,6 +56,7 @@
   "TAG_CREATED": "Тег успешно создан",
   "TAG_DELETED": "Тег успешно удален",
   "CATEGORIES_RETRIEVED": "Категории успешно получены",
+  "MAIN_CATEGORIES_RETRIEVED": "Главные категории успешно получены",
   "CATEGORY_RETRIEVED": "Категория успешно получена",
   "CATEGORY_CREATED": "Категория успешно создана",
   "CATEGORY_UPDATED": "Категория успешно обновлена",

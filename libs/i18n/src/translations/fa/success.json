@@ -71,6 +71,7 @@
   "TAG_CREATED": "برچسب با موفقیت ایجاد شد",
   "TAG_DELETED": "برچسب با موفقیت حذف شد",
   "CATEGORIES_RETRIEVED": "دسته‌بندی‌ها با موفقیت بازیابی شدند",
+  "MAIN_CATEGORIES_RETRIEVED": "دسته‌بندی‌های اصلی با موفقیت بازیابی شدند",
   "CATEGORY_RETRIEVED": "دسته‌بندی با موفقیت بازیابی شد",
   "CATEGORY_CREATED": "دسته‌بندی با موفقیت ایجاد شد",
   "CATEGORY_UPDATED": "دسته‌بندی با موفقیت به‌روزرسانی شد",

@@ -71,6 +71,7 @@
   "TAG_CREATED": "Tag oprettet succesfuldt",
   "TAG_DELETED": "Tag slettet succesfuldt",
   "CATEGORIES_RETRIEVED": "Kategorier hentet succesfuldt",
+  "MAIN_CATEGORIES_RETRIEVED": "Hovedkategorier hentet succesfuldt",
   "CATEGORY_RETRIEVED": "Kategori hentet succesfuldt",
   "CATEGORY_CREATED": "Kategori oprettet succesfuldt",
   "CATEGORY_UPDATED": "Kategori opdateret succesfuldt",

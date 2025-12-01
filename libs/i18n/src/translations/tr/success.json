@@ -56,6 +56,7 @@
   "TAG_CREATED": "Etiket başarıyla oluşturuldu",
   "TAG_DELETED": "Etiket başarıyla silindi",
   "CATEGORIES_RETRIEVED": "Kategoriler başarıyla alındı",
+  "MAIN_CATEGORIES_RETRIEVED": "Ana kategoriler başarıyla alındı",
   "CATEGORY_RETRIEVED": "Kategori başarıyla alındı",
   "CATEGORY_CREATED": "Kategori başarıyla oluşturuldu",
   "CATEGORY_UPDATED": "Kategori başarıyla güncellendi",
