@@ -1055,7 +1055,12 @@ export class ListingsService {
       : ListingVisibility.PUBLIC;
     const sourceType = dto.sourceType ?? ListingSourceType.MANUAL;
     const isFeatured = isAdmin ? (dto.isFeatured ?? false) : false;
-    const publishAt = isAdmin && dto.publishAt ? new Date(dto.publishAt) : undefined;
+    // For admin-created listings, default publishAt to now if not provided (auto-publish)
+    const publishAt = isAdmin
+      ? dto.publishAt
+        ? new Date(dto.publishAt)
+        : new Date()
+      : undefined;
     const expireAt = isAdmin && dto.expireAt ? new Date(dto.expireAt) : undefined;
     const featuredUntil = isAdmin && dto.featuredUntil ? new Date(dto.featuredUntil) : undefined;
     const primaryCity =
@@ -1069,13 +1074,20 @@ export class ListingsService {
       this.i18nService.getLanguage() ??
       this.configService.get<string>('i18n.defaultLanguage', 'en');
 
+    // Auto-approve listings created by admins (SUPER_ADMIN or CITY_ADMIN)
+    const autoApproved = isAdmin;
+    const listingStatus = autoApproved ? ListingStatus.APPROVED : ListingStatus.PENDING;
+    const moderationStatus = autoApproved
+      ? ListingModerationStatus.APPROVED
+      : ListingModerationStatus.PENDING;
+
     const data: Prisma.ListingCreateInput = {
       slug,
       title: dto.title,
       summary: dto.summary,
       content: dto.content,
-      status: ListingStatus.PENDING,
-      moderationStatus: ListingModerationStatus.PENDING,
+      status: listingStatus,
+      moderationStatus: moderationStatus,
       visibility,
       isFeatured,
       featuredUntil,
@@ -1086,9 +1098,9 @@ export class ListingsService {
       metadata: this.toJson(dto.metadata),
       createdByUserId: userId,
       lastEditedByUserId: userId,
-      reviewedBy: undefined,
-      reviewedAt: undefined,
-      reviewNotes: undefined,
+      reviewedBy: autoApproved ? userId : undefined,
+      reviewedAt: autoApproved ? new Date() : undefined,
+      reviewNotes: autoApproved ? 'Auto-approved (created by admin)' : undefined,
       sourceType,
       externalSource: isAdmin ? dto.externalSource : undefined,
       externalId: isAdmin ? dto.externalId : undefined,
