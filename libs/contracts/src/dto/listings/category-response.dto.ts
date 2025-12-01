@@ -128,13 +128,15 @@ export class CityCategoryResponseDto {
 
   @ApiPropertyOptional({
     example: 'Discover and participate in local community events',
-    description: 'Custom description for this city category. Falls back to category description if not set.',
+    description:
+      'Custom description for this city category. Falls back to category description if not set.',
   })
   description?: string | null;
 
   @ApiPropertyOptional({
     example: 'Connect with your community',
-    description: 'Custom subtitle for this city category. Falls back to category subtitle if not set.',
+    description:
+      'Custom subtitle for this city category. Falls back to category subtitle if not set.',
   })
   subtitle?: string | null;
 

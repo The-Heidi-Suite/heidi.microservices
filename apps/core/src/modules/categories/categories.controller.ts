@@ -793,11 +793,18 @@ export class CategoriesController {
         const oldKey = this.extractKeyFromUrl(existing.imageUrl);
         await this.storageService.deleteFile({ bucket, key: oldKey });
       } catch (error) {
-        this.logger.warn(`Failed to delete old image for city category ${cityId}/${categoryId}`, error);
+        this.logger.warn(
+          `Failed to delete old image for city category ${cityId}/${categoryId}`,
+          error,
+        );
       }
     }
 
-    const key = this.fileUploadService.generateCityCategoryImageKey(cityId, categoryId, processedFile.extension);
+    const key = this.fileUploadService.generateCityCategoryImageKey(
+      cityId,
+      categoryId,
+      processedFile.extension,
+    );
     const imageUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
 
     return this.prisma.cityCategory.update({
@@ -982,11 +989,18 @@ export class CategoriesController {
         const oldKey = this.extractKeyFromUrl(existing.iconUrl);
         await this.storageService.deleteFile({ bucket, key: oldKey });
       } catch (error) {
-        this.logger.warn(`Failed to delete old icon for city category ${cityId}/${categoryId}`, error);
+        this.logger.warn(
+          `Failed to delete old icon for city category ${cityId}/${categoryId}`,
+          error,
+        );
       }
     }
 
-    const key = this.fileUploadService.generateCityCategoryIconKey(cityId, categoryId, processedFile.extension);
+    const key = this.fileUploadService.generateCityCategoryIconKey(
+      cityId,
+      categoryId,
+      processedFile.extension,
+    );
     const iconUrl = await this.fileUploadService.uploadFile(processedFile, bucket, key);
 
     return this.prisma.cityCategory.update({
