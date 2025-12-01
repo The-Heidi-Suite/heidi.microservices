@@ -84,6 +84,30 @@ export class SuccessMessageService {
     'POST:/listings/favorites': 'LISTING_FAVORITE_ADDED',
     'DELETE:/listings/favorites/:listingId': 'LISTING_FAVORITE_REMOVED',
 
+    // Category routes
+    'GET:/categories': 'CATEGORIES_RETRIEVED',
+    'GET:/categories/:id': 'CATEGORY_RETRIEVED',
+    'POST:/categories': 'CATEGORY_CREATED',
+    'PATCH:/categories/:id': 'CATEGORY_UPDATED',
+    'DELETE:/categories/:id': 'CATEGORY_DELETED',
+    'POST:/categories/:id/image': 'CATEGORY_IMAGE_UPLOADED',
+    'DELETE:/categories/:id/image': 'CATEGORY_IMAGE_DELETED',
+    'POST:/categories/:id/icon': 'CATEGORY_ICON_UPLOADED',
+    'DELETE:/categories/:id/icon': 'CATEGORY_ICON_DELETED',
+    'GET:/categories/cities/:cityId': 'CITY_CATEGORIES_RETRIEVED',
+    'GET:/categories/cities/:cityId/with-filters': 'CITY_CATEGORIES_RETRIEVED',
+    'POST:/categories/cities/:cityId/assign': 'CATEGORY_ASSIGNED_TO_CITY',
+    'DELETE:/categories/cities/:cityId/categories/:categoryId': 'CATEGORY_REMOVED_FROM_CITY',
+    'PATCH:/categories/cities/:cityId/categories/:categoryId': 'CITY_CATEGORY_UPDATED',
+    'POST:/categories/cities/:cityId/categories/:categoryId/image': 'CITY_CATEGORY_IMAGE_UPLOADED',
+    'DELETE:/categories/cities/:cityId/categories/:categoryId/image': 'CITY_CATEGORY_IMAGE_DELETED',
+    'POST:/categories/cities/:cityId/categories/:categoryId/icon': 'CITY_CATEGORY_ICON_UPLOADED',
+    'DELETE:/categories/cities/:cityId/categories/:categoryId/icon': 'CITY_CATEGORY_ICON_DELETED',
+    'POST:/categories/cities/:cityId/requests': 'CATEGORY_REQUEST_CREATED',
+    'GET:/categories/requests': 'CATEGORY_REQUESTS_RETRIEVED',
+    'GET:/categories/cities/:cityId/requests': 'CATEGORY_REQUESTS_RETRIEVED',
+    'POST:/categories/requests/:requestId/resolve': 'CATEGORY_REQUEST_RESOLVED',
+
     // City routes - handled by pattern matching below
     'GET:/search/nearby': 'CITIES_RETRIEVED',
   };

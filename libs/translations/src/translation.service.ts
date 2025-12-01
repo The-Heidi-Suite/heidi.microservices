@@ -141,6 +141,33 @@ export class TranslationService {
     );
 
     if (translation) {
+      // If sourceText is provided, check if it has changed by comparing hashes
+      // If the source content has changed, return the new source text instead of stale translation
+      if (sourceText && translation.sourceHash) {
+        const currentHash = this.computeSourceHash(sourceText);
+        if (currentHash !== translation.sourceHash) {
+          // Source content has changed - translation is stale
+          // Trigger re-translation in background if enabled
+          const effectiveSourceLocale = sourceLocale || this.defaultSourceLocale;
+          if (this.autoTranslateOnRead && locale !== effectiveSourceLocale && this.rmqClient) {
+            try {
+              this.rmqClient.emit(RabbitMQPatterns.TRANSLATION_AUTO_TRANSLATE, {
+                entityType,
+                entityId,
+                field,
+                sourceLocale: effectiveSourceLocale,
+                targetLocales: [locale],
+                text: sourceText,
+                sourceHash: currentHash,
+              });
+            } catch (error) {
+              this.logger.error('Failed to publish auto-translate job for stale translation', error);
+            }
+          }
+          // Return the updated source text (not the stale translation)
+          return sourceText;
+        }
+      }
       return translation.value;
     }
 
