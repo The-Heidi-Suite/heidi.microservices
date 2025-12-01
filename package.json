@@ -1,6 +1,6 @@
 {
   "name": "heidi.microservices",
-  "version": "1.20.0",
+  "version": "1.21.0",
   "description": "NestJS microservices monorepo for HEIDI platform",
   "private": true,
   "license": "MIT",

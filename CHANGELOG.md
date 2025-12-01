@@ -2,6 +2,66 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.21.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.20.0...v1.21.0) (2025-12-01)
+
+
+### 🔧 Chores
+
+* **caddy:** add routing for pgAdmin SQL editor and enhance Redis Commander paths ([b81315c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b81315cc150aaafdcab01542102f6427fe32d340))
+* **caddy:** refactor Caddyfile for improved routing and organization ([7916be7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/7916be71d740a690ce4a7714f7e95b034f30b71f))
+* **caddy:** update pgAdmin and Redis Commander paths for API integration ([344475c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/344475cafa29b14715e5d978defcd3f63c331aad))
+* **docker:** enhance security by binding service ports to localhost ([435fa12](https://github.com/The-Heidi-Suite/heidi.microservices/commit/435fa12163b9b8edf01b4c85d7f27496e84e2f27))
+* **docker:** enhance security by restricting port exposure in Docker configurations ([bd3d3dc](https://github.com/The-Heidi-Suite/heidi.microservices/commit/bd3d3dc7c4c683ab628f8cb8b6a5e1f8f084b492))
+* **docker:** reintroduce PostgreSQL port mapping with security notes ([a2d3878](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a2d3878104dfaab77474a5bb8d8d99d2e96463e1))
+* **docker:** update pgAdmin environment variables for improved configurability ([fe989c0](https://github.com/The-Heidi-Suite/heidi.microservices/commit/fe989c06a22699a4e6ad6c1c9e7acdf4992e4205))
+* **docker:** update Redis configuration for enhanced clarity and security ([4230799](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4230799afd4fa51197a8ce10c8b7dfabff193a3f))
+
+
+### 🐛 Bug Fixes
+
+* **docker:** restore port mapping for Redis service in development configuration ([69bc15c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/69bc15cdf61ad34048eabf12bbf8e2225fb999d0))
+* **kiel-newsletter:** update email permission value for Double-Opt-In process ([18e796c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/18e796cbc13fb87749bbdd8e770972c516a40d72))
+* **seed:** update Kiel culture category name and enhance category mappings ([827e0b7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/827e0b770e4f3ec3c39351752ae3d56dc485776c))
+* **tasks:** handle potential errors when emitting schedule completed event ([1a6903c](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1a6903c37290980a8f8e405f1cc39e125101b36f))
+
+
+### ✨ Features
+
+* **categories:** add logging for category translation and language detection ([81aa1cb](https://github.com/The-Heidi-Suite/heidi.microservices/commit/81aa1cbe53ab857011593c3564ffeb0f3d9c5898))
+* **categories:** enhance city category fetching with additional fields and overrides ([dc15f20](https://github.com/The-Heidi-Suite/heidi.microservices/commit/dc15f20be56ce3a912707b093c7c50d402713e14))
+* **categories:** implement category filtering, searching, and pagination ([a8db061](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a8db06180d3d41b5c5bf37142f733d4d8e9022e1))
+* **categories:** improve category translation handling with city-specific logic ([b39ae03](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b39ae038b420126050310f956837f5e06c839d1c))
+* **city-category:** add methods for generating storage keys and enhance DTO with new fields ([cdc2be5](https://github.com/The-Heidi-Suite/heidi.microservices/commit/cdc2be5df7ac4ff6021dbd28cf9566f0a4eb1a8c))
+* **city-category:** enhance category settings management with image and icon upload functionality ([111078e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/111078e864f9c271c28a056c1e9560bfaa36dacd))
+* **city-category:** enhance CityCategory model with additional fields ([b4fbf6f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b4fbf6f6892649d07de14cfda9c946c175ecb035))
+* **core:** enhance logging and skip reason tracking in reminder processing ([0ba5394](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0ba5394fd22a13be62e00688e51046614b798290))
+* **destination-one:** enhance category assignment with fetched mappings ([4e2be1f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4e2be1fef5c871bdc2cba7efbf137e9343afab28))
+* **destination-one:** enhance category fetching for multiple types ([28c1429](https://github.com/The-Heidi-Suite/heidi.microservices/commit/28c142937adb1472c93ccacff14ad292bc4be9ad))
+* **destination-one:** enhance category matching for Gastro items ([0c882e2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0c882e205657b9695c968bdd84ede179cb40c409))
+* **destination-one:** enhance category transformation with dynamic subcategory generation ([5ac8ffc](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5ac8ffc6c91da9cfee07e9442ffaef0a4976e790))
+* **destination-one:** refine category assignment logic for improved accuracy ([633f4b7](https://github.com/The-Heidi-Suite/heidi.microservices/commit/633f4b7964a86db4cc87571ad3c2c77c6cb8d1e8))
+* **i18n:** add push notification default language configuration ([5ea6cb8](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5ea6cb8e674271a644d3e998059eb547779208bb))
+* **listing-update:** enhance UpdateListingDto with optional array fields for categories, cities, time intervals, exceptions, and tags ([331cf89](https://github.com/The-Heidi-Suite/heidi.microservices/commit/331cf89d266121be43852c671621959055076b42))
+* **listings:** enhance image handling in listings service with default image logic ([bfc9800](https://github.com/The-Heidi-Suite/heidi.microservices/commit/bfc9800e3f2483f746dc753af459ccdc67884d08))
+* **seed:** add 'Show Me More' category and update Kiel city category settings ([6ca6a0f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/6ca6a0f2083ea95613dddee269e4a0b700d8495a))
+* **seed:** expand category values for shopping and city center ([4098f3f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4098f3fe6fe539e3ce6915f277d073c0a32b0a37))
+* **seed:** reorganize seed commands for clarity and remove duplicates ([477a02e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/477a02e0f47030b4582ec9ecf718c9f68a222f33))
+* **seed:** update category values and enhance category structure ([dfea556](https://github.com/The-Heidi-Suite/heidi.microservices/commit/dfea5563981150f484a1dbb833ef7cae9ce2aed5))
+* **translations:** add auto-translation configuration for integration sync ([2c93a16](https://github.com/The-Heidi-Suite/heidi.microservices/commit/2c93a16fcb37c8990b7666d1ab1580b8b5e5a82f))
+
+
+### ♻️ Code Refactoring
+
+* **categories:** improve logging and formatting in CategoriesController ([57c17e6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/57c17e637bc8d139278a86792712f23dbfaad095))
+* **categories:** remove tours subcategories from quick filters configuration ([0276506](https://github.com/The-Heidi-Suite/heidi.microservices/commit/02765069838cbbe946a043ca13328e29ae80a372))
+* **categories:** streamline category fetching logic in CategoriesService ([501f097](https://github.com/The-Heidi-Suite/heidi.microservices/commit/501f0978441a642bdd31943ee03064867f4eaa2e))
+* **categories:** update display name for culture excursions category ([da31560](https://github.com/The-Heidi-Suite/heidi.microservices/commit/da3156079986d0fb4a0e726fb06a0698779f54be))
+* **categories:** update quick filter terminology in controller, service, and DTO ([007cc28](https://github.com/The-Heidi-Suite/heidi.microservices/commit/007cc2854fa808c013cebb82266bd780a6c5f06f))
+* improve code formatting and readability across multiple files ([388b4fa](https://github.com/The-Heidi-Suite/heidi.microservices/commit/388b4fa7acac004d3ca715b61620bc4b870fea27))
+* **listings, tasks:** improve code formatting and documentation ([2bc504a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/2bc504ad71c899cb92043c9c51f9e7b972ba8457))
+* **listings:** simplify distance sorting logic in listings service ([b64cb06](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b64cb06220c0bca48d6ba00f27132e216652c216))
+* **seed:** remove tours subcategories from Kiel city category settings ([c6c5964](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c6c59641a22fa16879522f7a528a4b92e0511b39))
+
 ## [1.20.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.19.0...v1.20.0) (2025-11-26)
 
 
