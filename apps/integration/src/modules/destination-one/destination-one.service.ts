@@ -701,45 +701,13 @@ export class DestinationOneService {
     }
 
     // Add categories from mappings that fetched this item (guaranteed match via API query)
-    // This handles meta-categories like "Einkaufen", "Ausflugsziele" that are used for API filtering
-    // but don't appear in individual item.categories
+    // The API query already filtered items for each mapping, so we directly assign categories
+    // No need to re-check item.categories or cuisine_types - the mapping query is the source of truth
     if (fetchedByMappings && fetchedByMappings.length > 0) {
       for (const mapping of fetchedByMappings) {
         categorySlugsSet.add(mapping.heidiCategorySlug);
         if (mapping.heidiSubcategorySlug) {
           categorySlugsSet.add(mapping.heidiSubcategorySlug);
-        }
-      }
-    }
-
-    // Also process category mappings from config for additional matches
-    // (items may match multiple mappings based on their actual categories)
-    if (config.categoryMappings && config.categoryMappings.length > 0 && item.categories) {
-      for (const mapping of config.categoryMappings) {
-        // Check if this mapping applies to this item type
-        if (mapping.doTypes && !mapping.doTypes.includes(item.type)) {
-          continue;
-        }
-
-        // Check if any of the item's categories match this mapping
-        // For Gastro items, also check cuisine_types (vegan/vegetarisch are stored there)
-        const categoriesToCheck = [...(item.categories || [])];
-        if (item.type === 'Gastro' && item.cuisine_types) {
-          categoriesToCheck.push(...item.cuisine_types);
-        }
-
-        const hasMatchingCategory = categoriesToCheck.some((cat) =>
-          mapping.doCategoryValues.includes(cat),
-        );
-
-        if (hasMatchingCategory) {
-          // Add root category slug
-          categorySlugsSet.add(mapping.heidiCategorySlug);
-
-          // Add subcategory slug if specified
-          if (mapping.heidiSubcategorySlug) {
-            categorySlugsSet.add(mapping.heidiSubcategorySlug);
-          }
         }
       }
     }
