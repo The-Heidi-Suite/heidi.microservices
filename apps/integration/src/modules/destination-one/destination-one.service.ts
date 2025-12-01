@@ -118,9 +118,8 @@ const TYPE_TO_ROOT_CATEGORY: Record<string, { slug: string; categoryType: Catego
   Gastro: { slug: 'food-and-drink', categoryType: CategoryType.GASTRO },
   Event: { slug: 'events', categoryType: CategoryType.EVENT },
   Tour: { slug: 'tours', categoryType: CategoryType.TOUR },
-  POI: { slug: 'points-of-interest', categoryType: CategoryType.POI },
-  Hotel: { slug: 'hotels-and-stays', categoryType: CategoryType.HOTEL },
-  Article: { slug: 'articles-and-stories', categoryType: CategoryType.ARTICLE },
+  // POI items are mapped via categoryMappings to shopping/culture/tours
+  // Hotel and Article types are no longer imported
 };
 
 @Injectable()
