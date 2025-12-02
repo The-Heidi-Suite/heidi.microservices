@@ -191,21 +191,30 @@ export class CategoriesService {
    */
   private async translateCategoryTree(categories: any[]): Promise<any[]> {
     const locale = this.i18nService.getLanguage();
-    const defaultLocale = this.configService.get<string>('i18n.defaultLanguage', 'en');
+    const defaultSourceLocale = this.configService.get<string>('i18n.defaultLanguage', 'en');
 
     this.logger.debug(
-      `translateCategoryTree: locale=${locale}, defaultLocale=${defaultLocale}, categoriesCount=${categories.length}`,
+      `translateCategoryTree: locale=${locale}, defaultSourceLocale=${defaultSourceLocale}, categoriesCount=${categories.length}`,
     );
 
-    if (!locale || locale === defaultLocale) {
-      this.logger.debug(`Skipping translation: locale=${locale}, defaultLocale=${defaultLocale}`);
+    // If no locale requested, return without translation
+    if (!locale) {
+      this.logger.debug(`Skipping translation: no locale requested`);
       return categories;
     }
 
     const translateNode = async (category: any): Promise<any> => {
-      // Get source language from category
-      const sourceLocale =
-        category.languageCode || this.configService.get<string>('i18n.defaultLanguage', 'en');
+      // Get source language from category (the language the category content is stored in)
+      const sourceLocale = category.languageCode || defaultSourceLocale;
+
+      // Skip translation if requested locale matches the category's source language
+      if (locale === sourceLocale) {
+        // Still process children as they may have different source languages
+        if (category.children && category.children.length > 0) {
+          category.children = await Promise.all(category.children.map(translateNode));
+        }
+        return category;
+      }
 
       // Use city-specific entity type if category has city overrides
       // This ensures city-specific displayNames get their own translations
