@@ -36,7 +36,13 @@ export class AdminService {
     ]);
 
     this.logger.log(`AdminService: Retrieved ${admins.length} admin users`);
-    return { admins, total, page: effectivePage, limit: effectiveLimit, pages: Math.ceil(total / effectiveLimit) };
+    return {
+      admins,
+      total,
+      page: effectivePage,
+      limit: effectiveLimit,
+      pages: Math.ceil(total / effectiveLimit),
+    };
   }
 
   async findOne(id: string) {

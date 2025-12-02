@@ -1,11 +1,13 @@
 # New Module Scaffold
 
 ## Description
+
 Add a new feature module to an existing microservice.
 
 ## Steps
 
 1. **Create module directory:**
+
    ```
    apps/<service>/src/modules/<feature>/
    ├── <feature>.controller.ts
@@ -15,6 +17,7 @@ Add a new feature module to an existing microservice.
    ```
 
 2. **Create service file:**
+
    ```typescript
    import { Injectable, Inject } from '@nestjs/common';
    import { Prisma<Service>Service } from '@heidi/prisma';
@@ -39,6 +42,7 @@ Add a new feature module to an existing microservice.
    ```
 
 3. **Create controller file:**
+
    ```typescript
    import { Controller, Get, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
    import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
@@ -64,6 +68,7 @@ Add a new feature module to an existing microservice.
    ```
 
 4. **Create module file:**
+
    ```typescript
    import { Module } from '@nestjs/common';
    import { FeatureController } from './feature.controller';
@@ -82,6 +87,7 @@ Add a new feature module to an existing microservice.
    ```
 
 5. **Import module in app.module.ts:**
+
    ```typescript
    import { FeatureModule } from './modules/feature/feature.module';
 
@@ -95,6 +101,7 @@ Add a new feature module to an existing microservice.
    ```
 
 ## Naming Convention
+
 - Module: `FeatureModule` (PascalCase)
 - Service: `FeatureService` (PascalCase)
 - Controller: `FeatureController` (PascalCase)

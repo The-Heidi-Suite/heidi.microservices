@@ -21,6 +21,7 @@ HEIDI is a production-ready NestJS microservices monorepo with Docker, Prisma OR
 ### Multi-Database Architecture
 
 Each microservice has its own PostgreSQL database:
+
 - `heidi_auth`, `heidi_users`, `heidi_city`, `heidi_core`, etc.
 - Prisma schemas located in `libs/prisma/src/schemas/<service>/`
 - Use service-specific Prisma clients: `@prisma/client-auth`, `@prisma/client-core`, etc.
@@ -36,11 +37,13 @@ Each microservice has its own PostgreSQL database:
 ## Critical File Locations
 
 ### Services
+
 - `apps/<service>/src/main.ts` - Service bootstrap
 - `apps/<service>/src/app.module.ts` - Root module
 - `apps/<service>/src/modules/<feature>/` - Feature modules
 
 ### Shared Libraries
+
 - `libs/prisma/` - Database ORM (multi-database)
 - `libs/contracts/` - DTOs and API contracts
 - `libs/rabbitmq/` - Message queue client
@@ -50,12 +53,14 @@ Each microservice has its own PostgreSQL database:
 - `libs/metrics/` - Prometheus metrics
 
 ### Configuration
+
 - `tsconfig.json` - TypeScript configuration with path aliases
 - `nest-cli.json` - NestJS monorepo configuration
 - `docker-compose.yml` - Production Docker setup
 - `docker-compose.dev.yml` - Development Docker setup
 
 ### Scripts
+
 - `scripts/` - Seed scripts and utilities
 - `scripts/seed-all.sh` - Run all seed scripts
 - `scripts/prisma-migrate-all.sh` - Run migrations for all services
@@ -143,9 +148,7 @@ constructor(
 
 ```typescript
 const user = await firstValueFrom(
-  this.client
-    .send(RabbitMQPatterns.USER_FIND_BY_ID, { id })
-    .pipe(timeout(10000)),
+  this.client.send(RabbitMQPatterns.USER_FIND_BY_ID, { id }).pipe(timeout(10000)),
 );
 ```
 
@@ -172,6 +175,7 @@ if (!user) {
 ## Environment Variables
 
 Key variables (see `.env.example` for complete list):
+
 - `DATABASE_URL` - PostgreSQL connection
 - `REDIS_URL` - Redis connection
 - `RABBITMQ_URL` - RabbitMQ connection
@@ -205,16 +209,16 @@ Key variables (see `.env.example` for complete list):
 
 ## Quick Reference
 
-| Task | Command |
-|------|---------|
-| Run migrations | `yarn prisma:migrate` |
-| Generate Prisma clients | `yarn prisma:generate` |
-| Start dev services | `yarn dev:auth` (or other service) |
-| Start all dev services | `yarn dev:all` |
-| Lint code | `yarn lint` |
-| Format code | `yarn format` |
-| Run tests | `yarn test` |
-| Seed database | `yarn seed:all` |
+| Task                    | Command                            |
+| ----------------------- | ---------------------------------- |
+| Run migrations          | `yarn prisma:migrate`              |
+| Generate Prisma clients | `yarn prisma:generate`             |
+| Start dev services      | `yarn dev:auth` (or other service) |
+| Start all dev services  | `yarn dev:all`                     |
+| Lint code               | `yarn lint`                        |
+| Format code             | `yarn format`                      |
+| Run tests               | `yarn test`                        |
+| Seed database           | `yarn seed:all`                    |
 
 ## Important Notes
 

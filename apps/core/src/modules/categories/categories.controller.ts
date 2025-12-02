@@ -380,10 +380,7 @@ export class CategoriesController {
   @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
-  async listCityCategories(
-    @Param('cityId') cityId: string,
-    @Query() filter: CategoryFilterDto,
-  ) {
+  async listCityCategories(@Param('cityId') cityId: string, @Query() filter: CategoryFilterDto) {
     return this.categoriesService.listCityCategories(cityId, filter);
   }
 

@@ -1056,11 +1056,7 @@ export class ListingsService {
     const sourceType = dto.sourceType ?? ListingSourceType.MANUAL;
     const isFeatured = isAdmin ? (dto.isFeatured ?? false) : false;
     // For admin-created listings, default publishAt to now if not provided (auto-publish)
-    const publishAt = isAdmin
-      ? dto.publishAt
-        ? new Date(dto.publishAt)
-        : new Date()
-      : undefined;
+    const publishAt = isAdmin ? (dto.publishAt ? new Date(dto.publishAt) : new Date()) : undefined;
     const expireAt = isAdmin && dto.expireAt ? new Date(dto.expireAt) : undefined;
     const featuredUntil = isAdmin && dto.featuredUntil ? new Date(dto.featuredUntil) : undefined;
     const primaryCity =

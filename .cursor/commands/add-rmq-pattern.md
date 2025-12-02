@@ -1,11 +1,13 @@
 # Add RabbitMQ Pattern
 
 ## Description
+
 Add a new RabbitMQ message pattern for inter-service communication.
 
 ## Steps
 
 1. **Add pattern to constants:**
+
    ```typescript
    // libs/rabbitmq/src/rmq.constants.ts
    export const RabbitMQPatterns = {
@@ -24,6 +26,7 @@ Add a new RabbitMQ message pattern for inter-service communication.
    - Action: camelCase (e.g., `findByEmail`, `getUserAssignments`, `created`)
 
 4. **Implement handler (if request-response):**
+
    ```typescript
    // In target service message controller
    import { Controller } from '@nestjs/microservices';
@@ -42,6 +45,7 @@ Add a new RabbitMQ message pattern for inter-service communication.
    ```
 
 5. **Implement event listener (if fire-and-forget):**
+
    ```typescript
    // In target service message controller
    import { EventPattern, Payload } from '@nestjs/microservices';
@@ -61,6 +65,7 @@ Add a new RabbitMQ message pattern for inter-service communication.
    ```
 
 6. **Use in calling service:**
+
    ```typescript
    // Request-Response
    import { firstValueFrom, timeout } from 'rxjs';
@@ -73,14 +78,14 @@ Add a new RabbitMQ message pattern for inter-service communication.
      async callOtherService(data: RequestData) {
        try {
          const result = await firstValueFrom(
-           this.client
-             .send(RabbitMQPatterns.NEW_SERVICE_NEW_ACTION, data)
-             .pipe(timeout(10000)), // Always set timeout
+           this.client.send(RabbitMQPatterns.NEW_SERVICE_NEW_ACTION, data).pipe(timeout(10000)), // Always set timeout
          );
          return result;
        } catch (error) {
          if (error.name === 'TimeoutError') {
-           this.logger.error('Request timed out', { pattern: RabbitMQPatterns.NEW_SERVICE_NEW_ACTION });
+           this.logger.error('Request timed out', {
+             pattern: RabbitMQPatterns.NEW_SERVICE_NEW_ACTION,
+           });
            throw new ServiceUnavailableException('Service unavailable');
          }
          throw error;
@@ -100,29 +105,34 @@ Add a new RabbitMQ message pattern for inter-service communication.
 ## Pattern Types
 
 ### Request-Response Patterns
+
 - Use for operations that need a response
 - Always set timeout (default: 10 seconds)
 - Handle timeout errors gracefully
 - Examples: `USER_FIND_BY_ID`, `CORE_GET_USER_ASSIGNMENTS`
 
 ### Fire-and-Forget Events
+
 - Use for asynchronous operations
 - Don't expect a response
 - Handle errors gracefully (log, don't throw)
 - Examples: `USER_CREATED`, `NOTIFICATION_SEND`
 
 ## Timeout Guidelines
+
 - Default: 10 seconds
 - Quick operations: 5 seconds
 - Complex operations: 30 seconds
 - Always use `timeout()` operator from RxJS
 
 ## Error Handling
+
 - Request-Response: Convert to appropriate HTTP exceptions
 - Fire-and-Forget: Log errors but don't throw
 - Always log with context (pattern name, payload)
 
 ## Message Contracts
+
 - Define clear request/response types
 - Include version for future compatibility
 - Document in code comments

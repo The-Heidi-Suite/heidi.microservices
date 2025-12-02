@@ -1,11 +1,13 @@
 # New Service Scaffold
 
 ## Description
+
 Scaffold a new microservice in the HEIDI monorepo.
 
 ## Steps
 
 1. **Create service directory structure:**
+
    ```
    apps/<service-name>/
    ├── src/
@@ -66,7 +68,9 @@ Scaffold a new microservice in the HEIDI monorepo.
     ```
 
 ## Example Service Names
+
 - `auth`, `users`, `city`, `core`, `notification`, `scheduler`, `integration`, `admin`, `terminal`
 
 ## Port Assignment
+
 Check existing services and assign next available port (3001-3009).

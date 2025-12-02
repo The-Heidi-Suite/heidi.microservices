@@ -589,10 +589,7 @@ export class CategoriesService {
             OR: [
               { parentId: null },
               {
-                AND: [
-                  { parent: { isActive: true } },
-                  { parentId: { in: assignedCategoryIds } },
-                ],
+                AND: [{ parent: { isActive: true } }, { parentId: { in: assignedCategoryIds } }],
               },
             ],
           },
@@ -836,12 +833,7 @@ export class CategoriesService {
     };
   }
 
-  async assignCategoryToCity(
-    cityId: string,
-    categoryId: string,
-    addedBy: string,
-    name?: string,
-  ) {
+  async assignCategoryToCity(cityId: string, categoryId: string, addedBy: string, name?: string) {
     const result = await this.prisma.cityCategory.upsert({
       where: {
         cityId_categoryId: {
@@ -1081,12 +1073,7 @@ export class CategoriesService {
 
     // Build response with fallback to category defaults for null fields
     // Use categoryId as id, exclude original id and categoryId fields
-    const {
-      displayName,
-      categoryId: catId,
-      id: _originalId,
-      ...rest
-    } = cityCategory;
+    const { displayName, categoryId: catId, id: _originalId, ...rest } = cityCategory;
     return {
       id: catId,
       ...rest,

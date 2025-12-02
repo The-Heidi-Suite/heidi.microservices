@@ -161,7 +161,10 @@ export class TranslationService {
                 sourceHash: currentHash,
               });
             } catch (error) {
-              this.logger.error('Failed to publish auto-translate job for stale translation', error);
+              this.logger.error(
+                'Failed to publish auto-translate job for stale translation',
+                error,
+              );
             }
           }
           // Return the updated source text (not the stale translation)

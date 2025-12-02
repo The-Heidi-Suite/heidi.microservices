@@ -1,16 +1,19 @@
 # New Seed Script Scaffold
 
 ## Description
+
 Create a new seed script for database seeding.
 
 ## Steps
 
 1. **Create script file:**
+
    ```
    scripts/seed-<name>.ts
    ```
 
 2. **Script template:**
+
    ```typescript
    #!/usr/bin/env ts-node
    /**
@@ -71,6 +74,7 @@ Create a new seed script for database seeding.
    ```
 
 3. **Add to package.json:**
+
    ```json
    {
      "scripts": {
@@ -83,21 +87,25 @@ Create a new seed script for database seeding.
    Add script to the list of scripts to run in `scripts/seed-all.sh`
 
 ## Idempotency
+
 - Scripts must be safe to run multiple times
 - Use `upsert` instead of `create` when possible
 - Check for existing records before creating
 
 ## Prisma Client
+
 - Use service-specific client: `@prisma/client-<service>`
 - Import types: `import { Model, ModelType } from '@prisma/client-<service>';`
 
 ## Error Handling
+
 - Always use try-catch
 - Log errors with context
 - Exit with error code on failure
 - Disconnect Prisma client in finally block
 
 ## Summary Tracking
+
 - Track created, updated, skipped counts
 - Display summary at the end
 - Use emoji for visual clarity (🌱, ✓, ↻, ❌, 📊, 🎉)
