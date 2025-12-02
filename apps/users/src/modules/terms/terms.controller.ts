@@ -120,7 +120,8 @@ export class TermsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Accept terms of use',
-    description: 'Accept the current terms of use. Required after registration.',
+    description:
+      'Accept the current terms of use. Required after registration. The system automatically detects your language from the Accept-Language header and ensures you accept the terms in your current language. If you attempt to accept terms in a different language, you will receive an error with the correct terms ID.',
   })
   @ApiBody({ type: AcceptTermsDto })
   @ApiResponse({
@@ -130,7 +131,7 @@ export class TermsController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Bad request - validation failed',
+    description: 'Bad request - validation failed or locale mismatch',
     type: TermsValidationErrorResponseDto,
   })
   @ApiResponse({
@@ -145,14 +146,19 @@ export class TermsController {
   async acceptTerms(
     @Body() dto: AcceptTermsDto,
     @GetCurrentUser('userId') userId: string,
-    @Req() req: Request,
+    @GetLanguage() detectedLanguage?: string,
+    @Req() req?: Request,
   ) {
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
+    const ipAddress = req?.ip || req?.headers['x-forwarded-for'] || req?.socket.remoteAddress;
+    const userAgent = req?.headers['user-agent'];
+
+    // Use query param locale, fallback to Accept-Language header, then DTO locale
+    const targetLocale = dto.locale || detectedLanguage;
 
     const acceptance = await this.termsService.acceptTerms(
       userId,
       dto,
+      targetLocale,
       ipAddress as string,
       userAgent,
     );

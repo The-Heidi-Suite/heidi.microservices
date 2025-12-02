@@ -225,13 +225,18 @@ export class TermsService {
 
   /**
    * Accept terms of use
+   * Validates that the terms being accepted match the user's current language
    */
   async acceptTerms(
     userId: string,
     dto: AcceptTermsDto,
+    userLocale?: string,
     ipAddress?: string,
     userAgent?: string,
   ): Promise<any> {
+    const targetLocale = userLocale || this.defaultLocale;
+
+    // First, get the terms by ID
     const terms = await this.prisma.termsOfUse.findUnique({
       where: { id: dto.termsId },
     });
@@ -242,6 +247,39 @@ export class TermsService {
 
     if (!terms.isActive) {
       throw new BadRequestException('These terms are no longer active');
+    }
+
+    // Validate that the terms being accepted match the user's language
+    // If user is viewing terms in a specific language, they should accept that language version
+    if (terms.locale !== targetLocale) {
+      // Try to find the terms in the user's language with the same version
+      const termsInUserLanguage = await this.prisma.termsOfUse.findFirst({
+        where: {
+          version: terms.version,
+          locale: targetLocale,
+          cityId: terms.cityId,
+          isActive: true,
+        },
+      });
+
+      if (termsInUserLanguage) {
+        // User is trying to accept terms in wrong language, redirect to correct language version
+        this.logger.warn(
+          `User ${userId} attempted to accept terms ${dto.termsId} (locale: ${terms.locale}) but their language is ${targetLocale}. Found matching terms ${termsInUserLanguage.id}`,
+        );
+        throw new BadRequestException({
+          errorCode: 'TERMS_LOCALE_MISMATCH',
+          message: `Terms being accepted are in ${terms.locale}, but your language is ${targetLocale}. Please accept the terms in your language.`,
+          correctTermsId: termsInUserLanguage.id,
+          correctLocale: targetLocale,
+        });
+      } else {
+        // No terms available in user's language, but we should still allow acceptance
+        // Log warning but proceed
+        this.logger.warn(
+          `User ${userId} accepting terms ${dto.termsId} in locale ${terms.locale}, but their language is ${targetLocale}. No terms available in ${targetLocale} for version ${terms.version}`,
+        );
+      }
     }
 
     // Check if already accepted
@@ -258,13 +296,13 @@ export class TermsService {
       return existing; // Already accepted
     }
 
-    // Create acceptance record
+    // Create acceptance record with the user's locale (what they're viewing)
     const acceptance = await this.prisma.userTermsAcceptance.create({
       data: {
         userId,
         termsId: terms.id,
         version: terms.version,
-        locale: dto.locale || terms.locale,
+        locale: targetLocale, // Store the locale the user is viewing/accepting in
         ipAddress,
         userAgent,
       },
@@ -280,7 +318,9 @@ export class TermsService {
       },
     });
 
-    this.logger.log(`User ${userId} accepted terms version ${terms.version}`);
+    this.logger.log(
+      `User ${userId} accepted terms version ${terms.version} (terms locale: ${terms.locale}, user locale: ${targetLocale})`,
+    );
     return acceptance;
   }
 
