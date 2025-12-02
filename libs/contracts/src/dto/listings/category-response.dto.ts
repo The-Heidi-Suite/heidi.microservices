@@ -111,14 +111,14 @@ export class CategoryResponseDto {
 }
 
 export class CityCategoryResponseDto {
-  @ApiProperty({ example: 'cc1a2b3c4-d5e6-7890-abcd-ef1234567890' })
+  @ApiProperty({
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+    description: 'Category identifier (categoryId)',
+  })
   id: string;
 
   @ApiProperty({ example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q' })
   cityId: string;
-
-  @ApiProperty({ example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890' })
-  categoryId: string;
 
   @ApiPropertyOptional({
     example: 'Local Events',
