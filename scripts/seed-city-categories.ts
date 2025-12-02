@@ -56,6 +56,62 @@ const KIEL_DISPLAY_NAMES: Record<string, string> = {
   'culture-museums': 'Museums & Collections',
 };
 
+// German translations for Kiel city categories (exact translations we want, not from DeepL)
+const KIEL_GERMAN_TRANSLATIONS: Record<
+  string,
+  { displayName: string; subtitle?: string; description?: string }
+> = {
+  // Main categories
+  tours: {
+    displayName: 'DEIN WEG DURCH KIEL',
+    subtitle: 'Blaue Linie',
+    description: '67 Aktivitäten in deiner Stadt',
+  },
+  'food-and-drink': {
+    displayName: 'ESSEN & TRINKEN',
+    subtitle: 'Kieler Restaurantvielfalt',
+    description: 'Norddeutsche und internationale Küche',
+  },
+  shopping: {
+    displayName: 'NACH HERZENSLUST SHOPPEN',
+    subtitle: 'Über 400 Geschäfte',
+    description: 'In deiner Innenstadt',
+  },
+  culture: {
+    displayName: 'KIELER KULTUR',
+    subtitle: 'Facettenreich von Meer bis Museen',
+    description: 'Kunst, Geschichte, Musik, Wasser',
+  },
+  'show-me-more': {
+    displayName: 'ZEIGE MIR MEHR',
+    subtitle: 'Alles auf einen Blick',
+    description: 'Entdecke deine Stadt mit deinen Filtern',
+  },
+  events: {
+    displayName: 'VERANSTALTUNGEN',
+    subtitle: 'Was ist los',
+    description: 'Veranstaltungen, Feste und Aktivitäten in deiner Stadt',
+  },
+
+  // Food & Drink subcategories
+  'food-cafes-bakeries': { displayName: 'Cafés' },
+  'food-bars-nightlife': { displayName: 'Bars & Kneipen' },
+  'food-fish-restaurants': { displayName: 'Fischrestaurants' },
+  'food-vegetarian-vegan': { displayName: 'Vegetarisch & Vegan' },
+
+  // Shopping subcategories
+  'shopping-city-center': { displayName: 'Innenstadt' },
+  'shopping-clothing': { displayName: 'Kleidung' },
+  'shopping-conscious-shopping': { displayName: 'Bewusst Einkaufen' },
+  'shopping-for-children': { displayName: 'Für Kinder' },
+
+  // Culture subcategories
+  'culture-excursions': { displayName: 'Ausflugsziele' },
+  'culture-on-foot': { displayName: 'Zu Fuß erkunden' },
+  'culture-bike-tours': { displayName: 'Fahrradtouren' },
+  'culture-museums': { displayName: 'Museen & Sammlungen' },
+};
+
 // Slugs of categories (and their subcategories) that should be seeded for Kiel
 // Ordered as per screenshot: Tours, Food & Drink, Shopping, Culture, Show Me More
 const KIEL_ALLOWED_CATEGORY_SLUGS: string[] = [
@@ -211,6 +267,80 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
   return { created, updated, skipped };
 }
 
+async function seedCityCategoryTranslations(cityId: string) {
+  console.log('\n🌍 Seeding German translations for city categories...');
+
+  // Get all city categories for this city
+  const cityCategories = await corePrisma.cityCategory.findMany({
+    where: { cityId, isActive: true },
+    include: { category: { select: { slug: true } } },
+  });
+
+  let translationsCreated = 0;
+  let translationsUpdated = 0;
+
+  for (const cityCategory of cityCategories) {
+    const germanTranslation = KIEL_GERMAN_TRANSLATIONS[cityCategory.category.slug];
+    if (!germanTranslation) continue;
+
+    const fields: Array<{ field: string; value: string }> = [
+      { field: 'displayName', value: germanTranslation.displayName },
+      { field: 'subtitle', value: germanTranslation.subtitle },
+      { field: 'description', value: germanTranslation.description },
+    ].filter((f): f is { field: string; value: string } => Boolean(f.value));
+
+    for (const { field, value } of fields) {
+      try {
+        const existing = await corePrisma.translation.findUnique({
+          where: {
+            entityType_entityId_field_locale: {
+              entityType: 'city_category',
+              entityId: cityCategory.id,
+              field,
+              locale: 'de',
+            },
+          },
+        });
+
+        if (existing) {
+          await corePrisma.translation.update({
+            where: { id: existing.id },
+            data: {
+              value,
+              source: 'MANUAL',
+              updatedAt: new Date(),
+            },
+          });
+          translationsUpdated++;
+        } else {
+          await corePrisma.translation.create({
+            data: {
+              entityType: 'city_category',
+              entityId: cityCategory.id,
+              field,
+              locale: 'de',
+              sourceLocale: 'en', // English is the source language
+              value,
+              source: 'MANUAL',
+            },
+          });
+          translationsCreated++;
+        }
+      } catch (error) {
+        console.error(
+          `❌ Error saving translation for ${cityCategory.category.slug}.${field}:`,
+          error instanceof Error ? error.message : error,
+        );
+      }
+    }
+  }
+
+  console.log(
+    `✓ German translations created: ${translationsCreated}, updated: ${translationsUpdated}`,
+  );
+  return { created: translationsCreated, updated: translationsUpdated };
+}
+
 async function seed() {
   try {
     const cityId = await getKielCityId();
@@ -253,10 +383,15 @@ async function seed() {
 
     const summary = await seedCityCategories(cityId, addedBy);
 
+    // Seed German translations for city categories
+    const translationSummary = await seedCityCategoryTranslations(cityId);
+
     console.log('\n📊 Seeding summary:');
-    console.log(`  • Created: ${summary.created}`);
-    console.log(`  • Updated: ${summary.updated}`);
-    console.log(`  • Skipped: ${summary.skipped}`);
+    console.log(`  • City categories created: ${summary.created}`);
+    console.log(`  • City categories updated: ${summary.updated}`);
+    console.log(`  • City categories skipped: ${summary.skipped}`);
+    console.log(`  • German translations created: ${translationSummary.created}`);
+    console.log(`  • German translations updated: ${translationSummary.updated}`);
     console.log('\n🎉 City categories seeding completed successfully!');
   } catch (error) {
     console.error('❌ Error seeding city categories:', error);
