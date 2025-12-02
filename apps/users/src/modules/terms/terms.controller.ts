@@ -37,6 +37,7 @@ import {
 } from '@heidi/contracts';
 import { JwtAuthGuard, GetCurrentUser, Public } from '@heidi/jwt';
 import { AdminOnlyGuard, TermsExempt } from '@heidi/rbac';
+import { GetLanguage } from '@heidi/i18n';
 
 @ApiTags('terms')
 @Controller('terms')
@@ -67,8 +68,10 @@ export class TermsController {
     description: 'No terms found',
     type: TermsNotFoundErrorResponseDto,
   })
-  async getLatestTerms(@Query('locale') locale?: string) {
-    const terms = await this.termsService.getLatestTerms(locale);
+  async getLatestTerms(@Query('locale') locale?: string, @GetLanguage() detectedLanguage?: string) {
+    // Use query param locale, fallback to Accept-Language header, then default
+    const targetLocale = locale || detectedLanguage;
+    const terms = await this.termsService.getLatestTerms(targetLocale);
     // Return just the data - TransformInterceptor will wrap it
     return terms;
   }
@@ -100,8 +103,14 @@ export class TermsController {
     description: 'Terms not found',
     type: TermsNotFoundErrorResponseDto,
   })
-  async getTermsByVersion(@Param('version') version: string, @Query('locale') locale?: string) {
-    const terms = await this.termsService.getTermsByVersion(version, locale);
+  async getTermsByVersion(
+    @Param('version') version: string,
+    @Query('locale') locale?: string,
+    @GetLanguage() detectedLanguage?: string,
+  ) {
+    // Use query param locale, fallback to Accept-Language header, then default
+    const targetLocale = locale || detectedLanguage;
+    const terms = await this.termsService.getTermsByVersion(version, targetLocale);
     // Return just the data - TransformInterceptor will wrap it
     return terms;
   }
@@ -176,8 +185,11 @@ export class TermsController {
   async getAcceptanceStatus(
     @GetCurrentUser('userId') userId: string,
     @Query('locale') locale?: string,
+    @GetLanguage() detectedLanguage?: string,
   ) {
-    return this.termsService.getAcceptanceStatus(userId, locale);
+    // Use query param locale, fallback to Accept-Language header, then default
+    const targetLocale = locale || detectedLanguage;
+    return this.termsService.getAcceptanceStatus(userId, targetLocale);
   }
 
   // Admin endpoints
@@ -255,8 +267,10 @@ export class TermsController {
     description: 'Terms retrieved successfully',
     type: TermsListResponseDto,
   })
-  async getAllTerms(@Query('locale') locale?: string) {
-    const terms = await this.termsService.getAllTerms(locale);
+  async getAllTerms(@Query('locale') locale?: string, @GetLanguage() detectedLanguage?: string) {
+    // Use query param locale, fallback to Accept-Language header, then default
+    const targetLocale = locale || detectedLanguage;
+    const terms = await this.termsService.getAllTerms(targetLocale);
     // Return just the data - TransformInterceptor will wrap it
     return terms;
   }
