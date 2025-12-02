@@ -111,20 +111,20 @@ export class CategoryResponseDto {
 }
 
 export class CityCategoryResponseDto {
-  @ApiProperty({ example: 'cc1a2b3c4-d5e6-7890-abcd-ef1234567890' })
+  @ApiProperty({
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+    description: 'Category identifier (categoryId)',
+  })
   id: string;
 
   @ApiProperty({ example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q' })
   cityId: string;
 
-  @ApiProperty({ example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890' })
-  categoryId: string;
-
   @ApiPropertyOptional({
     example: 'Local Events',
-    description: 'Custom display name for this city. Falls back to category name if not set.',
+    description: 'Custom name for this city category. Falls back to category name if not set.',
   })
-  displayName?: string | null;
+  name?: string | null;
 
   @ApiPropertyOptional({
     example: 'Discover and participate in local community events',
@@ -194,13 +194,13 @@ export class AssignCategoryToCityDto {
 
   @ApiPropertyOptional({
     example: 'Local Events',
-    description: 'Custom display name for this city. If not provided, uses the category name.',
+    description: 'Custom name for this city category. If not provided, uses the category name.',
     maxLength: 255,
   })
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  displayName?: string;
+  name?: string;
 }
 
 export class RequestCategoryDto {
@@ -278,13 +278,13 @@ export class ResolveCategoryRequestDto {
 export class UpdateCityCategoryDisplayNameDto {
   @ApiPropertyOptional({
     example: 'Local Events',
-    description: 'Custom display name for this city. Set to null to use default category name.',
+    description: 'Custom name for this city category. Set to null to use default category name.',
     maxLength: 255,
   })
   @IsOptional()
   @IsString()
   @MaxLength(255)
-  displayName?: string | null;
+  name?: string | null;
 
   @ApiPropertyOptional({
     example: 'Discover and participate in local community events',

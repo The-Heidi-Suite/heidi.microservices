@@ -51,7 +51,7 @@ import {
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { CategoryRequestStatus, UserRole } from '@prisma/client-core';
 import { CategoriesService } from './categories.service';
-import { AdminOnlyGuard, SuperAdminOnly, CityAdminOnly } from '@heidi/rbac';
+import { AdminOnlyGuard, SuperAdminOnly, CityAdminOnly, numberToRole } from '@heidi/rbac';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileUploadService, StorageService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
@@ -71,6 +71,24 @@ export class CategoriesController {
     private readonly prisma: PrismaCoreService,
   ) {
     this.logger.setContext(CategoriesController.name);
+  }
+
+  private getRoles(role?: string | number): UserRole[] {
+    if (!role) {
+      return [];
+    }
+
+    // Handle number roles
+    if (typeof role === 'number') {
+      const roleEnum = numberToRole(role);
+      return roleEnum ? [roleEnum] : [];
+    }
+
+    // Handle string roles (backward compatibility)
+    const normalized = role.toUpperCase() as keyof typeof UserRole;
+    const mapped = UserRole[normalized];
+
+    return mapped ? [mapped] : [];
   }
 
   private extractKeyFromUrl(url: string): string {
@@ -339,7 +357,8 @@ export class CategoriesController {
   @ApiOperation({
     summary: 'List categories assigned to a city',
     description:
-      'Retrieve active category assignments for a specific city. Category names, descriptions, and subtitles are returned in the requested language when translations exist, otherwise they fall back to the default language.',
+      'Retrieve active category assignments for a specific city with optional search and pagination. ' +
+      'Category names, descriptions, and subtitles are returned in the requested language when translations exist, otherwise they fall back to the default language.',
   })
   @ApiParam({
     name: 'cityId',
@@ -349,8 +368,7 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'City categories retrieved successfully',
-    type: CategoryResponseDto,
-    isArray: true,
+    type: CategoryListResponseDto,
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -359,8 +377,14 @@ export class CategoriesController {
       'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), assigned category text fields are translated where translations exist.',
     example: 'de',
   })
-  async listCityCategories(@Param('cityId') cityId: string) {
-    return this.categoriesService.listCityCategories(cityId);
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  async listCityCategories(
+    @Param('cityId') cityId: string,
+    @Query() filter: CategoryFilterDto,
+  ) {
+    return this.categoriesService.listCityCategories(cityId, filter);
   }
 
   @Public()
@@ -552,7 +576,7 @@ export class CategoriesController {
       cityId,
       dto.categoryId,
       user.userId,
-      dto.displayName,
+      dto.name,
     );
   }
 
@@ -602,6 +626,40 @@ export class CategoriesController {
     return this.categoriesService.removeCategoryFromCity(cityId, categoryId);
   }
 
+  @Public()
+  @Get('cities/:cityId/categories/:categoryId')
+  @ApiOperation({
+    summary: 'Get a single city category by category ID',
+    description:
+      'Retrieve a specific category assignment for a city, including category details and city-specific overrides.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'City category retrieved successfully',
+    type: CityCategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City/category assignment not found',
+    type: CategoryAssignmentNotFoundErrorResponseDto,
+  })
+  async getCityCategoryById(
+    @Param('cityId') cityId: string,
+    @Param('categoryId') categoryId: string,
+  ) {
+    return this.categoriesService.getCityCategoryById(cityId, categoryId);
+  }
+
   @ApiBearerAuth('JWT-auth')
   @Patch('cities/:cityId/categories/:categoryId')
   @ApiOperation({
@@ -625,7 +683,7 @@ export class CategoriesController {
       fullUpdate: {
         summary: 'Update all customizable fields',
         value: {
-          displayName: 'Local Events',
+          name: 'Local Events',
           description: 'Discover and participate in local community events',
           subtitle: 'Connect with your community',
           displayOrder: 1,
@@ -633,10 +691,10 @@ export class CategoriesController {
           contentBackgroundColor: '#F3E8FF',
         },
       },
-      setDisplayName: {
-        summary: 'Set custom display name only',
+      setName: {
+        summary: 'Set custom name only',
         value: {
-          displayName: 'Local Events',
+          name: 'Local Events',
         },
       },
       setDescription: {
@@ -662,7 +720,7 @@ export class CategoriesController {
       resetToDefault: {
         summary: 'Reset all fields to default (use category values)',
         value: {
-          displayName: null,
+          name: null,
           description: null,
           subtitle: null,
           headerBackgroundColor: null,
@@ -698,7 +756,8 @@ export class CategoriesController {
     @GetCurrentUser() user: CurrentUser,
     @Body() dto: UpdateCityCategoryDisplayNameDto,
   ) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -708,7 +767,7 @@ export class CategoriesController {
     return this.categoriesService.updateCityCategoryDisplayName(
       cityId,
       categoryId,
-      dto.displayName ?? null,
+      dto.name ?? null,
       dto.description,
       dto.subtitle,
       dto.displayOrder,
@@ -786,7 +845,8 @@ export class CategoriesController {
       throw new BadRequestException('No file provided');
     }
 
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -880,7 +940,8 @@ export class CategoriesController {
     @Param('categoryId') categoryId: string,
     @GetCurrentUser() user: CurrentUser,
   ) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -982,7 +1043,8 @@ export class CategoriesController {
       throw new BadRequestException('No file provided');
     }
 
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -1076,7 +1138,8 @@ export class CategoriesController {
     @Param('categoryId') categoryId: string,
     @GetCurrentUser() user: CurrentUser,
   ) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -1159,7 +1222,8 @@ export class CategoriesController {
     @GetCurrentUser() user: CurrentUser,
     @Body() dto: RequestCategoryDto,
   ) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -1292,7 +1356,8 @@ export class CategoriesController {
     @GetCurrentUser() user: CurrentUser,
     @Query() query: CategoryRequestFilterDto,
   ) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });

@@ -317,6 +317,18 @@ export class CategoriesService {
       where.id = { in: filter.categoryIds };
     }
 
+    // Exclude children of inactive parents:
+    // - include all root categories (parentId = null)
+    // - include non-root categories only if their parent is active
+    const andConditions: Prisma.CategoryWhereInput[] = [];
+    if (where.AND) {
+      andConditions.push(...(Array.isArray(where.AND) ? where.AND : [where.AND]));
+    }
+    andConditions.push({
+      OR: [{ parentId: null }, { parent: { isActive: true } }],
+    });
+    where.AND = andConditions;
+
     // Build orderBy clause
     const orderBy: Prisma.CategoryOrderByWithRelationInput[] = [];
     if (filter?.sortBy) {
@@ -532,7 +544,10 @@ export class CategoriesService {
     });
   }
 
-  async listCityCategories(cityId: string) {
+  async listCityCategories(
+    cityId: string,
+    filter?: CategoryFilterDto,
+  ): Promise<CategoryListResponseDto | CategoryResponseDto[]> {
     // First, get all CityCategory entries for this city including city-specific overrides
     const cityCategories = await this.prisma.cityCategory.findMany({
       where: { cityId, isActive: true },
@@ -560,10 +575,28 @@ export class CategoriesService {
     const assignedCategoryIds = cityCategories.map((cc) => cc.categoryId);
 
     // Only fetch categories that are explicitly assigned via CityCategory
+    // and exclude children of inactive parents or parents not assigned to this city:
+    // - include all root categories (parentId = null)
+    // - include non-root categories only if:
+    //   - their parent category is active AND
+    //   - their parent is also assigned to this city (has active CityCategory)
     const categories = await this.prisma.category.findMany({
       where: {
         id: { in: assignedCategoryIds },
         isActive: true,
+        AND: [
+          {
+            OR: [
+              { parentId: null },
+              {
+                AND: [
+                  { parent: { isActive: true } },
+                  { parentId: { in: assignedCategoryIds } },
+                ],
+              },
+            ],
+          },
+        ],
       },
     });
 
@@ -602,7 +635,53 @@ export class CategoriesService {
 
     // Build hierarchy
     const tree = this.buildCategoryHierarchy(sortedCategories);
-    return this.translateCategoryTree(tree);
+
+    // Apply search filter (search in name, description, subtitle on root and children)
+    let filteredTree = tree;
+    if (filter?.search) {
+      const term = filter.search.toLowerCase();
+      const nodeMatches = (category: any): boolean => {
+        const text =
+          (category.name || '') +
+          ' ' +
+          (category.description || '') +
+          ' ' +
+          (category.subtitle || '');
+        if (text.toLowerCase().includes(term)) {
+          return true;
+        }
+        if (category.children && Array.isArray(category.children)) {
+          return category.children.some((child: any) => nodeMatches(child));
+        }
+        return false;
+      };
+      filteredTree = tree.filter((category) => nodeMatches(category));
+    }
+
+    // Handle pagination similar to listCategories
+    if (filter?.page || filter?.pageSize) {
+      const page = filter?.page && filter.page > 0 ? filter.page : 1;
+      const pageSize =
+        filter?.pageSize && filter.pageSize > 0 ? Math.min(filter.pageSize, 100) : 20;
+      const total = filteredTree.length;
+      const totalPages = Math.ceil(total / pageSize);
+      const skip = (page - 1) * pageSize;
+      const pagedItems = filteredTree.slice(skip, skip + pageSize);
+      const translatedItems = await this.translateCategoryTree(pagedItems);
+
+      return {
+        items: translatedItems,
+        meta: {
+          page,
+          pageSize,
+          total,
+          totalPages,
+        },
+      };
+    }
+
+    // No pagination: translate full filtered tree
+    return this.translateCategoryTree(filteredTree);
   }
 
   /**
@@ -698,7 +777,8 @@ export class CategoriesService {
    * marked with isQuickFilter=true for easy identification by the app.
    */
   async listCityCategoriesWithFilters(cityId: string): Promise<CategoryResponseDto[]> {
-    const categories = await this.listCityCategories(cityId);
+    const result = await this.listCityCategories(cityId);
+    const categories = Array.isArray(result) ? result : result.items;
     const quickFiltersByCategorySlug =
       await this.quickFiltersService.getQuickFiltersForCity(cityId);
 
@@ -741,13 +821,28 @@ export class CategoriesService {
     return tree[0];
   }
 
+  /**
+   * Transform CityCategory response:
+   * - Rename displayName to name
+   * - Use categoryId as id, remove categoryId field
+   */
+  private transformCityCategoryResponse(cityCategory: any): any {
+    if (!cityCategory) return cityCategory;
+    const { displayName, categoryId, id: _originalId, ...rest } = cityCategory;
+    return {
+      id: categoryId,
+      ...rest,
+      name: displayName,
+    };
+  }
+
   async assignCategoryToCity(
     cityId: string,
     categoryId: string,
     addedBy: string,
-    displayName?: string,
+    name?: string,
   ) {
-    return this.prisma.cityCategory.upsert({
+    const result = await this.prisma.cityCategory.upsert({
       where: {
         cityId_categoryId: {
           cityId,
@@ -758,18 +853,19 @@ export class CategoriesService {
         isActive: true,
         addedBy,
         addedAt: new Date(),
-        displayName: displayName !== undefined ? displayName : undefined, // Only update if provided
+        displayName: name !== undefined ? name : undefined, // Only update if provided
       },
       create: {
         cityId,
         categoryId,
         addedBy,
-        displayName: displayName ?? null, // Default to null if not provided
+        displayName: name ?? null, // Default to null if not provided
       },
       include: {
         category: true,
       },
     });
+    return this.transformCityCategoryResponse(result);
   }
 
   async removeCategoryFromCity(cityId: string, categoryId: string) {
@@ -790,10 +886,10 @@ export class CategoriesService {
     }
 
     if (!existing.isActive) {
-      return existing;
+      return this.transformCityCategoryResponse(existing);
     }
 
-    return this.prisma.cityCategory.update({
+    const result = await this.prisma.cityCategory.update({
       where: {
         cityId_categoryId: {
           cityId,
@@ -807,6 +903,7 @@ export class CategoriesService {
         category: true,
       },
     });
+    return this.transformCityCategoryResponse(result);
   }
 
   async requestCityCategory(
@@ -896,7 +993,7 @@ export class CategoriesService {
   async updateCityCategoryDisplayName(
     cityId: string,
     categoryId: string,
-    displayName: string | null,
+    name: string | null,
     description?: string | null,
     subtitle?: string | null,
     displayOrder?: number,
@@ -920,7 +1017,7 @@ export class CategoriesService {
     }
 
     const updateData: Prisma.CityCategoryUpdateInput = {
-      displayName,
+      displayName: name,
     };
 
     if (description !== undefined) {
@@ -943,7 +1040,7 @@ export class CategoriesService {
       updateData.contentBackgroundColor = contentBackgroundColor;
     }
 
-    return this.prisma.cityCategory.update({
+    const result = await this.prisma.cityCategory.update({
       where: {
         cityId_categoryId: {
           cityId,
@@ -955,5 +1052,53 @@ export class CategoriesService {
         category: true,
       },
     });
+    return this.transformCityCategoryResponse(result);
+  }
+
+  /**
+   * Get a single city category by cityId and categoryId
+   * Falls back to base category values for any null city-specific fields
+   * Uses categoryId as id field in response
+   */
+  async getCityCategoryById(cityId: string, categoryId: string) {
+    const cityCategory = await this.prisma.cityCategory.findUnique({
+      where: {
+        cityId_categoryId: {
+          cityId,
+          categoryId,
+        },
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    if (!cityCategory) {
+      throw new NotFoundException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
+    }
+
+    const category = cityCategory.category;
+
+    // Build response with fallback to category defaults for null fields
+    // Use categoryId as id, exclude original id and categoryId fields
+    const {
+      displayName,
+      categoryId: catId,
+      id: _originalId,
+      ...rest
+    } = cityCategory;
+    return {
+      id: catId,
+      ...rest,
+      name: displayName ?? category?.name ?? null,
+      description: cityCategory.description ?? category?.description ?? null,
+      subtitle: cityCategory.subtitle ?? category?.subtitle ?? null,
+      imageUrl: cityCategory.imageUrl ?? category?.imageUrl ?? null,
+      iconUrl: cityCategory.iconUrl ?? category?.iconUrl ?? null,
+      headerBackgroundColor:
+        cityCategory.headerBackgroundColor ?? category?.headerBackgroundColor ?? null,
+      contentBackgroundColor:
+        cityCategory.contentBackgroundColor ?? category?.contentBackgroundColor ?? null,
+    };
   }
 }
