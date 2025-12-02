@@ -576,7 +576,7 @@ export class CategoriesController {
       cityId,
       dto.categoryId,
       user.userId,
-      dto.displayName,
+      dto.name,
     );
   }
 
@@ -626,6 +626,40 @@ export class CategoriesController {
     return this.categoriesService.removeCategoryFromCity(cityId, categoryId);
   }
 
+  @Public()
+  @Get('cities/:cityId/categories/:categoryId')
+  @ApiOperation({
+    summary: 'Get a single city category by category ID',
+    description:
+      'Retrieve a specific category assignment for a city, including category details and city-specific overrides.',
+  })
+  @ApiParam({
+    name: 'cityId',
+    description: 'City identifier',
+    example: 'city_01HZXTY0YK3H2V4C5B6N7P8Q',
+  })
+  @ApiParam({
+    name: 'categoryId',
+    description: 'Category identifier',
+    example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'City category retrieved successfully',
+    type: CityCategoryResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'City/category assignment not found',
+    type: CategoryAssignmentNotFoundErrorResponseDto,
+  })
+  async getCityCategoryById(
+    @Param('cityId') cityId: string,
+    @Param('categoryId') categoryId: string,
+  ) {
+    return this.categoriesService.getCityCategoryById(cityId, categoryId);
+  }
+
   @ApiBearerAuth('JWT-auth')
   @Patch('cities/:cityId/categories/:categoryId')
   @ApiOperation({
@@ -649,7 +683,7 @@ export class CategoriesController {
       fullUpdate: {
         summary: 'Update all customizable fields',
         value: {
-          displayName: 'Local Events',
+          name: 'Local Events',
           description: 'Discover and participate in local community events',
           subtitle: 'Connect with your community',
           displayOrder: 1,
@@ -657,10 +691,10 @@ export class CategoriesController {
           contentBackgroundColor: '#F3E8FF',
         },
       },
-      setDisplayName: {
-        summary: 'Set custom display name only',
+      setName: {
+        summary: 'Set custom name only',
         value: {
-          displayName: 'Local Events',
+          name: 'Local Events',
         },
       },
       setDescription: {
@@ -686,7 +720,7 @@ export class CategoriesController {
       resetToDefault: {
         summary: 'Reset all fields to default (use category values)',
         value: {
-          displayName: null,
+          name: null,
           description: null,
           subtitle: null,
           headerBackgroundColor: null,
@@ -733,7 +767,7 @@ export class CategoriesController {
     return this.categoriesService.updateCityCategoryDisplayName(
       cityId,
       categoryId,
-      dto.displayName ?? null,
+      dto.name ?? null,
       dto.description,
       dto.subtitle,
       dto.displayOrder,

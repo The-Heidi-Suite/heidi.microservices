@@ -812,13 +812,25 @@ export class CategoriesService {
     return tree[0];
   }
 
+  /**
+   * Transform CityCategory response to rename displayName to name
+   */
+  private transformCityCategoryResponse(cityCategory: any): any {
+    if (!cityCategory) return cityCategory;
+    const { displayName, ...rest } = cityCategory;
+    return {
+      ...rest,
+      name: displayName,
+    };
+  }
+
   async assignCategoryToCity(
     cityId: string,
     categoryId: string,
     addedBy: string,
-    displayName?: string,
+    name?: string,
   ) {
-    return this.prisma.cityCategory.upsert({
+    const result = await this.prisma.cityCategory.upsert({
       where: {
         cityId_categoryId: {
           cityId,
@@ -829,18 +841,19 @@ export class CategoriesService {
         isActive: true,
         addedBy,
         addedAt: new Date(),
-        displayName: displayName !== undefined ? displayName : undefined, // Only update if provided
+        displayName: name !== undefined ? name : undefined, // Only update if provided
       },
       create: {
         cityId,
         categoryId,
         addedBy,
-        displayName: displayName ?? null, // Default to null if not provided
+        displayName: name ?? null, // Default to null if not provided
       },
       include: {
         category: true,
       },
     });
+    return this.transformCityCategoryResponse(result);
   }
 
   async removeCategoryFromCity(cityId: string, categoryId: string) {
@@ -861,10 +874,10 @@ export class CategoriesService {
     }
 
     if (!existing.isActive) {
-      return existing;
+      return this.transformCityCategoryResponse(existing);
     }
 
-    return this.prisma.cityCategory.update({
+    const result = await this.prisma.cityCategory.update({
       where: {
         cityId_categoryId: {
           cityId,
@@ -878,6 +891,7 @@ export class CategoriesService {
         category: true,
       },
     });
+    return this.transformCityCategoryResponse(result);
   }
 
   async requestCityCategory(
@@ -967,7 +981,7 @@ export class CategoriesService {
   async updateCityCategoryDisplayName(
     cityId: string,
     categoryId: string,
-    displayName: string | null,
+    name: string | null,
     description?: string | null,
     subtitle?: string | null,
     displayOrder?: number,
@@ -991,7 +1005,7 @@ export class CategoriesService {
     }
 
     const updateData: Prisma.CityCategoryUpdateInput = {
-      displayName,
+      displayName: name,
     };
 
     if (description !== undefined) {
@@ -1014,7 +1028,7 @@ export class CategoriesService {
       updateData.contentBackgroundColor = contentBackgroundColor;
     }
 
-    return this.prisma.cityCategory.update({
+    const result = await this.prisma.cityCategory.update({
       where: {
         cityId_categoryId: {
           cityId,
@@ -1026,5 +1040,29 @@ export class CategoriesService {
         category: true,
       },
     });
+    return this.transformCityCategoryResponse(result);
+  }
+
+  /**
+   * Get a single city category by cityId and categoryId
+   */
+  async getCityCategoryById(cityId: string, categoryId: string) {
+    const cityCategory = await this.prisma.cityCategory.findUnique({
+      where: {
+        cityId_categoryId: {
+          cityId,
+          categoryId,
+        },
+      },
+      include: {
+        category: true,
+      },
+    });
+
+    if (!cityCategory) {
+      throw new NotFoundException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
+    }
+
+    return this.transformCityCategoryResponse(cityCategory);
   }
 }
