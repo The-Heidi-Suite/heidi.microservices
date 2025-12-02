@@ -115,6 +115,7 @@ async function getAllCategories() {
       id: true,
       slug: true,
       name: true,
+      parentId: true, // Include parentId to check if it's a main category
     },
   });
 }
@@ -137,8 +138,16 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
     const displayOrder = assetMapping?.displayOrder || 99; // Default to end if not specified
     const subtitle = assetMapping?.subtitle || null;
     const description = assetMapping?.description || null;
-    const headerBackgroundColor = assetMapping?.headerBackgroundColor || null;
-    const contentBackgroundColor = assetMapping?.contentBackgroundColor || null;
+
+    // Only set colors for main categories (categories without a parent)
+    // Subcategories should have null colors
+    const isMainCategory = category.parentId === null;
+    const headerBackgroundColor = isMainCategory
+      ? assetMapping?.headerBackgroundColor || null
+      : null;
+    const contentBackgroundColor = isMainCategory
+      ? assetMapping?.contentBackgroundColor || null
+      : null;
 
     try {
       const existing = await corePrisma.cityCategory.findUnique({
