@@ -56,11 +56,7 @@ const CATEGORY_SEEDS: CategorySeed[] = [
     name: 'Events',
     slug: 'events',
     type: CategoryType.EVENT,
-    children: [
-      { name: 'Community Events', slug: 'events-community', type: CategoryType.EVENT },
-      { name: 'Workshops & Training', slug: 'events-workshops-training', type: CategoryType.EVENT },
-      { name: 'Cultural Festivals', slug: 'events-cultural-festivals', type: CategoryType.EVENT },
-    ],
+    children: [],
   },
   {
     name: 'Food & Drink',
