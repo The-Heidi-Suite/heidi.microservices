@@ -153,6 +153,10 @@ export class TermsService {
   /**
    * Check if user has accepted the latest terms
    * If cityId is provided, checks city-specific terms first, then general terms
+   *
+   * NOTE: Acceptance is VERSION-based, not locale-based. If user accepted v2024-01 in English,
+   * they don't need to re-accept in German. This allows users to switch app language
+   * without being prompted to re-accept terms they've already agreed to.
    */
   async hasUserAcceptedLatestTerms(
     userId: string,
@@ -169,11 +173,16 @@ export class TermsService {
       return { hasAccepted: true, termsId: null, gracePeriodEndsAt: null };
     }
 
-    const acceptance = await this.prisma.userTermsAcceptance.findUnique({
+    // Check if user has accepted this VERSION (any locale) for the same cityId context
+    // This way, accepting terms in one language covers all languages for that version
+    const acceptance = await this.prisma.userTermsAcceptance.findFirst({
       where: {
-        userId_termsId: {
-          userId,
-          termsId: latestTerms.id,
+        userId,
+        version: latestTerms.version,
+        // Also consider cityId context: if latestTerms is city-specific, check city-specific acceptance
+        // If latestTerms is general (cityId null), check general acceptance
+        terms: {
+          cityId: latestTerms.cityId,
         },
       },
     });
@@ -225,17 +234,15 @@ export class TermsService {
 
   /**
    * Accept terms of use
-   * Validates that the terms being accepted match the user's current language
+   * Acceptance is VERSION-based - accepting in any language covers all languages for that version
    */
   async acceptTerms(
     userId: string,
     dto: AcceptTermsDto,
-    userLocale?: string,
+    _userLocale?: string, // Kept for API compatibility, but not used since acceptance is version-based
     ipAddress?: string,
     userAgent?: string,
   ): Promise<any> {
-    const targetLocale = userLocale || this.defaultLocale;
-
     // First, get the terms by ID
     const terms = await this.prisma.termsOfUse.findUnique({
       where: { id: dto.termsId },
@@ -249,60 +256,42 @@ export class TermsService {
       throw new BadRequestException('These terms are no longer active');
     }
 
-    // Validate that the terms being accepted match the user's language
-    // If user is viewing terms in a specific language, they should accept that language version
-    if (terms.locale !== targetLocale) {
-      // Try to find the terms in the user's language with the same version
-      const termsInUserLanguage = await this.prisma.termsOfUse.findFirst({
-        where: {
-          version: terms.version,
-          locale: targetLocale,
-          cityId: terms.cityId,
-          isActive: true,
-        },
-      });
-
-      if (termsInUserLanguage) {
-        // User is trying to accept terms in wrong language, redirect to correct language version
-        this.logger.warn(
-          `User ${userId} attempted to accept terms ${dto.termsId} (locale: ${terms.locale}) but their language is ${targetLocale}. Found matching terms ${termsInUserLanguage.id}`,
-        );
-        throw new BadRequestException({
-          errorCode: 'TERMS_LOCALE_MISMATCH',
-          message: `Terms being accepted are in ${terms.locale}, but your language is ${targetLocale}. Please accept the terms in your language.`,
-          correctTermsId: termsInUserLanguage.id,
-          correctLocale: targetLocale,
-        });
-      } else {
-        // No terms available in user's language, but we should still allow acceptance
-        // Log warning but proceed
-        this.logger.warn(
-          `User ${userId} accepting terms ${dto.termsId} in locale ${terms.locale}, but their language is ${targetLocale}. No terms available in ${targetLocale} for version ${terms.version}`,
-        );
-      }
-    }
-
-    // Check if already accepted
-    const existing = await this.prisma.userTermsAcceptance.findUnique({
+    // Check if user has already accepted this VERSION (any locale, same cityId context)
+    // This ensures accepting terms once covers all languages for that version
+    const existingVersionAcceptance = await this.prisma.userTermsAcceptance.findFirst({
       where: {
-        userId_termsId: {
-          userId,
-          termsId: terms.id,
+        userId,
+        version: terms.version,
+        terms: {
+          cityId: terms.cityId,
+        },
+      },
+      include: {
+        terms: {
+          select: {
+            id: true,
+            version: true,
+            title: true,
+            locale: true,
+          },
         },
       },
     });
 
-    if (existing) {
-      return existing; // Already accepted
+    if (existingVersionAcceptance) {
+      this.logger.debug(
+        `User ${userId} already accepted terms version ${terms.version} in locale ${existingVersionAcceptance.locale}`,
+      );
+      return existingVersionAcceptance; // Already accepted this version
     }
 
-    // Create acceptance record with the user's locale (what they're viewing)
+    // Create acceptance record with the terms' locale (what they're actually accepting)
     const acceptance = await this.prisma.userTermsAcceptance.create({
       data: {
         userId,
         termsId: terms.id,
         version: terms.version,
-        locale: targetLocale, // Store the locale the user is viewing/accepting in
+        locale: terms.locale, // Store the actual terms locale being accepted
         ipAddress,
         userAgent,
       },
@@ -319,7 +308,7 @@ export class TermsService {
     });
 
     this.logger.log(
-      `User ${userId} accepted terms version ${terms.version} (terms locale: ${terms.locale}, user locale: ${targetLocale})`,
+      `User ${userId} accepted terms version ${terms.version} (locale: ${terms.locale})`,
     );
     return acceptance;
   }
