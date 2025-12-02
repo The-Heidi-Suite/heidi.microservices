@@ -308,6 +308,18 @@ export class CategoriesService {
       where.id = { in: filter.categoryIds };
     }
 
+    // Exclude children of inactive parents:
+    // - include all root categories (parentId = null)
+    // - include non-root categories only if their parent is active
+    const andConditions: Prisma.CategoryWhereInput[] = [];
+    if (where.AND) {
+      andConditions.push(...(Array.isArray(where.AND) ? where.AND : [where.AND]));
+    }
+    andConditions.push({
+      OR: [{ parentId: null }, { parent: { isActive: true } }],
+    });
+    where.AND = andConditions;
+
     // Build orderBy clause
     const orderBy: Prisma.CategoryOrderByWithRelationInput[] = [];
     if (filter?.sortBy) {
@@ -551,10 +563,28 @@ export class CategoriesService {
     const assignedCategoryIds = cityCategories.map((cc) => cc.categoryId);
 
     // Only fetch categories that are explicitly assigned via CityCategory
+    // and exclude children of inactive parents or parents not assigned to this city:
+    // - include all root categories (parentId = null)
+    // - include non-root categories only if:
+    //   - their parent category is active AND
+    //   - their parent is also assigned to this city (has active CityCategory)
     const categories = await this.prisma.category.findMany({
       where: {
         id: { in: assignedCategoryIds },
         isActive: true,
+        AND: [
+          {
+            OR: [
+              { parentId: null },
+              {
+                AND: [
+                  { parent: { isActive: true } },
+                  { parentId: { in: assignedCategoryIds } },
+                ],
+              },
+            ],
+          },
+        ],
       },
     });
 
