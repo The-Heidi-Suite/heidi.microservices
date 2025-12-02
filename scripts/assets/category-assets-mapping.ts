@@ -35,7 +35,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     displayName: 'YOUR WAY THROUGH KIEL',
     subtitle: 'Blue line',
     description: '67 activities in your city',
-    headerBackgroundColor: '#059669', // Green
+    headerBackgroundColor: '#00A1A3', // Green
     contentBackgroundColor: '#D1FAE5',
     displayOrder: 1,
   },
@@ -47,7 +47,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     displayName: 'EATING & DRINKING',
     subtitle: "Kiel's diverse restaurant scene",
     description: 'North German and international cuisine',
-    headerBackgroundColor: '#DC2626', // Red
+    headerBackgroundColor: '#B0CB52', // Red
     contentBackgroundColor: '#FEE2E2',
     displayOrder: 2,
   },
@@ -59,7 +59,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     displayName: "SHOP TO YOUR HEART'S CONTENT",
     subtitle: 'Over 400 stores',
     description: 'In your city center',
-    headerBackgroundColor: '#EA580C', // Orange
+    headerBackgroundColor: '#E30059', // Orange
     contentBackgroundColor: '#FFEDD5',
     displayOrder: 3,
   },
@@ -71,7 +71,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
     displayName: 'KIEL CULTURE',
     subtitle: 'Diverse, from the sea to museums',
     description: 'Art, history, music, water',
-    headerBackgroundColor: '#BE185D', // Pink
+    headerBackgroundColor: '#728ABB', // Pink
     contentBackgroundColor: '#FCE7F3',
     displayOrder: 4,
   },
