@@ -1378,27 +1378,39 @@ export class UsersService {
 
   /**
    * Delete (deactivate) a device
+   * Accepts either the database id or the client deviceId
    */
   async deleteDevice(userId: string, deviceId: string) {
     this.logger.log(`Deleting device for userId: ${userId}, deviceId: ${deviceId}`);
 
-    const device = await this.prisma.userDevice.findFirst({
+    // Try to find by client deviceId first (most common case)
+    let device = await this.prisma.userDevice.findFirst({
       where: {
-        id: deviceId,
+        deviceId,
         userId,
       },
     });
+
+    // If not found by deviceId, try by database id (for backward compatibility)
+    if (!device) {
+      device = await this.prisma.userDevice.findFirst({
+        where: {
+          id: deviceId,
+          userId,
+        },
+      });
+    }
 
     if (!device) {
       throw new NotFoundException('Device not found');
     }
 
     await this.prisma.userDevice.update({
-      where: { id: deviceId },
+      where: { id: device.id },
       data: { isActive: false },
     });
 
-    this.logger.log(`Device deactivated: ${deviceId}`);
+    this.logger.log(`Device deactivated: ${device.id}`);
     return { success: true };
   }
 
