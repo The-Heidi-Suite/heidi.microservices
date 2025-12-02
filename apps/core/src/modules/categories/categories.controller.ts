@@ -339,7 +339,8 @@ export class CategoriesController {
   @ApiOperation({
     summary: 'List categories assigned to a city',
     description:
-      'Retrieve active category assignments for a specific city. Category names, descriptions, and subtitles are returned in the requested language when translations exist, otherwise they fall back to the default language.',
+      'Retrieve active category assignments for a specific city with optional search and pagination. ' +
+      'Category names, descriptions, and subtitles are returned in the requested language when translations exist, otherwise they fall back to the default language.',
   })
   @ApiParam({
     name: 'cityId',
@@ -349,8 +350,7 @@ export class CategoriesController {
   @ApiResponse({
     status: 200,
     description: 'City categories retrieved successfully',
-    type: CategoryResponseDto,
-    isArray: true,
+    type: CategoryListResponseDto,
   })
   @ApiHeader({
     name: 'Accept-Language',
@@ -359,8 +359,14 @@ export class CategoriesController {
       'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), assigned category text fields are translated where translations exist.',
     example: 'de',
   })
-  async listCityCategories(@Param('cityId') cityId: string) {
-    return this.categoriesService.listCityCategories(cityId);
+  @ApiQuery({ name: 'search', required: false, type: String })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  async listCityCategories(
+    @Param('cityId') cityId: string,
+    @Query() filter: CategoryFilterDto,
+  ) {
+    return this.categoriesService.listCityCategories(cityId, filter);
   }
 
   @Public()

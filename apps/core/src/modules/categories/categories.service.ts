@@ -535,7 +535,10 @@ export class CategoriesService {
     });
   }
 
-  async listCityCategories(cityId: string) {
+  async listCityCategories(
+    cityId: string,
+    filter?: CategoryFilterDto,
+  ): Promise<CategoryListResponseDto | CategoryResponseDto[]> {
     // First, get all CityCategory entries for this city including city-specific overrides
     const cityCategories = await this.prisma.cityCategory.findMany({
       where: { cityId, isActive: true },
@@ -623,7 +626,53 @@ export class CategoriesService {
 
     // Build hierarchy
     const tree = this.buildCategoryHierarchy(sortedCategories);
-    return this.translateCategoryTree(tree);
+
+    // Apply search filter (search in name, description, subtitle on root and children)
+    let filteredTree = tree;
+    if (filter?.search) {
+      const term = filter.search.toLowerCase();
+      const nodeMatches = (category: any): boolean => {
+        const text =
+          (category.name || '') +
+          ' ' +
+          (category.description || '') +
+          ' ' +
+          (category.subtitle || '');
+        if (text.toLowerCase().includes(term)) {
+          return true;
+        }
+        if (category.children && Array.isArray(category.children)) {
+          return category.children.some((child: any) => nodeMatches(child));
+        }
+        return false;
+      };
+      filteredTree = tree.filter((category) => nodeMatches(category));
+    }
+
+    // Handle pagination similar to listCategories
+    if (filter?.page || filter?.pageSize) {
+      const page = filter?.page && filter.page > 0 ? filter.page : 1;
+      const pageSize =
+        filter?.pageSize && filter.pageSize > 0 ? Math.min(filter.pageSize, 100) : 20;
+      const total = filteredTree.length;
+      const totalPages = Math.ceil(total / pageSize);
+      const skip = (page - 1) * pageSize;
+      const pagedItems = filteredTree.slice(skip, skip + pageSize);
+      const translatedItems = await this.translateCategoryTree(pagedItems);
+
+      return {
+        items: translatedItems,
+        meta: {
+          page,
+          pageSize,
+          total,
+          totalPages,
+        },
+      };
+    }
+
+    // No pagination: translate full filtered tree
+    return this.translateCategoryTree(filteredTree);
   }
 
   /**
@@ -719,7 +768,8 @@ export class CategoriesService {
    * marked with isQuickFilter=true for easy identification by the app.
    */
   async listCityCategoriesWithFilters(cityId: string): Promise<CategoryResponseDto[]> {
-    const categories = await this.listCityCategories(cityId);
+    const result = await this.listCityCategories(cityId);
+    const categories = Array.isArray(result) ? result : result.items;
     const quickFiltersByCategorySlug =
       await this.quickFiltersService.getQuickFiltersForCity(cityId);
 
