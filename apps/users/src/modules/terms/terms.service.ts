@@ -24,6 +24,7 @@ export class TermsService {
   /**
    * Get the latest active terms of use
    * If cityId is provided, prefers city-specific terms, otherwise uses general terms (cityId = null)
+   * Falls back to default locale if requested locale is not found
    */
   async getLatestTerms(locale?: string, cityId?: string | null): Promise<any> {
     const targetLocale = locale || this.defaultLocale;
@@ -45,10 +46,32 @@ export class TermsService {
       if (cityTerms) {
         return cityTerms;
       }
+
+      // Try city-specific terms in default locale
+      if (targetLocale !== this.defaultLocale) {
+        const cityTermsDefault = await this.prisma.termsOfUse.findFirst({
+          where: {
+            isActive: true,
+            isLatest: true,
+            locale: this.defaultLocale,
+            cityId: cityId,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        });
+
+        if (cityTermsDefault) {
+          this.logger.warn(
+            `No city terms found for locale: ${targetLocale}, falling back to ${this.defaultLocale}`,
+          );
+          return cityTermsDefault;
+        }
+      }
     }
 
     // Fall back to general terms (cityId = null)
-    const generalTerms = await this.prisma.termsOfUse.findFirst({
+    let generalTerms = await this.prisma.termsOfUse.findFirst({
       where: {
         isActive: true,
         isLatest: true,
@@ -59,6 +82,24 @@ export class TermsService {
         createdAt: 'desc',
       },
     });
+
+    // Fallback to default locale if requested locale not found
+    if (!generalTerms && targetLocale !== this.defaultLocale) {
+      this.logger.warn(
+        `No terms found for locale: ${targetLocale}, falling back to ${this.defaultLocale}`,
+      );
+      generalTerms = await this.prisma.termsOfUse.findFirst({
+        where: {
+          isActive: true,
+          isLatest: true,
+          locale: this.defaultLocale,
+          cityId: null,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+    }
 
     if (!generalTerms) {
       throw new NotFoundException(`No active terms of use found for locale: ${targetLocale}`);
