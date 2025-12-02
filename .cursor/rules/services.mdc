@@ -1,0 +1,276 @@
+# Microservice Development Patterns
+
+## Service Structure
+
+Each microservice in `apps/<service-name>/` must follow this structure:
+
+```
+apps/<service-name>/
+├── src/
+│   ├── main.ts                 # Bootstrap file
+│   ├── app.module.ts           # Root module
+│   ├── health.controller.ts    # Health check endpoint
+│   └── modules/
+│       └── <feature>/
+│           ├── <feature>.controller.ts
+│           ├── <feature>.service.ts
+│           ├── <feature>.module.ts
+│           └── dto/            # Optional: feature-specific DTOs
+```
+
+## Main.ts Pattern
+
+```typescript
+import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { AppModule } from './app.module';
+import { LoggerService } from '@heidi/logger';
+import { MetricsModule } from '@heidi/metrics';
+import { HealthModule } from '@heidi/health';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  // Global validation pipe
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
+
+  // Enable CORS if needed
+  app.enableCors();
+
+  const port = process.env.SERVICE_PORT || 3001;
+  await app.listen(port);
+
+  const logger = app.get(LoggerService);
+  logger.log(`Service listening on port ${port}`);
+}
+
+bootstrap();
+```
+
+## App Module Pattern
+
+```typescript
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { PrismaAuthModule } from '@heidi/prisma';
+import { RabbitMQModule } from '@heidi/rabbitmq';
+import { RedisModule } from '@heidi/redis';
+import { LoggerModule } from '@heidi/logger';
+import { MetricsModule } from '@heidi/metrics';
+import { HealthModule } from '@heidi/health';
+import { FeatureModule } from './modules/feature/feature.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    PrismaAuthModule, // Service-specific Prisma module
+    RabbitMQModule,
+    RedisModule,
+    LoggerModule,
+    MetricsModule,
+    HealthModule,
+    FeatureModule,
+  ],
+})
+export class AppModule {}
+```
+
+## Health Controller Pattern
+
+Every service must have a health check endpoint:
+
+```typescript
+import { Controller, Get } from '@nestjs/common';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
+import { HealthCheck, HealthCheckService } from '@nestjs/terminus';
+import { PrismaHealthIndicator } from '@heidi/health';
+import { RedisHealthIndicator } from '@heidi/health';
+import { RabbitMQHealthIndicator } from '@heidi/health';
+
+@ApiTags('health')
+@Controller('healthz')
+export class HealthController {
+  constructor(
+    private health: HealthCheckService,
+    private prisma: PrismaHealthIndicator,
+    private redis: RedisHealthIndicator,
+    private rabbitmq: RabbitMQHealthIndicator,
+  ) {}
+
+  @Get()
+  @HealthCheck()
+  @ApiOperation({ summary: 'Health check' })
+  check() {
+    return this.health.check([
+      () => this.prisma.isHealthy('database'),
+      () => this.redis.isHealthy('redis'),
+      () => this.rabbitmq.isHealthy('rabbitmq'),
+    ]);
+  }
+}
+```
+
+## Controller Patterns
+
+### Basic Controller Structure
+
+```typescript
+import { Controller, Get, Post, Body, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { JwtAuthGuard, GetCurrentUser, Public } from '@heidi/jwt';
+import { FeatureService } from './feature.service';
+import { CreateFeatureDto, FeatureResponseDto } from '@heidi/contracts';
+
+@ApiTags('feature')
+@Controller('features')
+@UseGuards(JwtAuthGuard) // Default: require auth
+export class FeatureController {
+  constructor(private readonly featureService: FeatureService) {}
+
+  @Post()
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Create feature' })
+  @ApiResponse({ status: 201, type: FeatureResponseDto })
+  @HttpCode(HttpStatus.CREATED)
+  async create(@Body() dto: CreateFeatureDto, @GetCurrentUser('userId') userId: string) {
+    return this.featureService.create(dto, userId);
+  }
+
+  @Get()
+  @Public() // Override default auth requirement
+  @ApiOperation({ summary: 'Get all features' })
+  @ApiResponse({ status: 200, type: [FeatureResponseDto] })
+  async findAll() {
+    return this.featureService.findAll();
+  }
+}
+```
+
+### HTTP Status Codes
+
+- `200 OK`: Successful GET, PUT, PATCH
+- `201 Created`: Successful POST
+- `204 No Content`: Successful DELETE
+- `400 Bad Request`: Validation errors
+- `401 Unauthorized`: Missing/invalid auth
+- `403 Forbidden`: Insufficient permissions
+- `404 Not Found`: Resource not found
+- `409 Conflict`: Resource conflict (duplicate)
+- `500 Internal Server Error`: Server errors
+
+### Swagger Documentation
+
+- Always use `@ApiTags()` on controllers
+- Use `@ApiOperation()` on all endpoints
+- Use `@ApiResponse()` for all possible responses
+- Use `@ApiBearerAuth()` for protected endpoints
+- Use `@ApiBody()` for complex request bodies
+- Include examples in `@ApiResponse()` when helpful
+
+## Service Patterns
+
+### Dependency Injection
+
+```typescript
+import { Injectable, Inject } from '@nestjs/common';
+import { PrismaAuthService } from '@heidi/prisma';
+import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
+import { RedisService } from '@heidi/redis';
+import { LoggerService } from '@heidi/logger';
+
+@Injectable()
+export class FeatureService {
+  private readonly logger: LoggerService;
+
+  constructor(
+    private readonly prisma: PrismaAuthService,
+    @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
+    private readonly redis: RedisService,
+    logger: LoggerService,
+  ) {
+    this.logger = logger;
+    this.logger.setContext(FeatureService.name);
+  }
+}
+```
+
+### Error Handling in Services
+
+```typescript
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+
+@Injectable()
+export class FeatureService {
+  async findById(id: string) {
+    const feature = await this.prisma.feature.findUnique({ where: { id } });
+
+    if (!feature) {
+      this.logger.warn(`Feature not found: ${id}`);
+      throw new NotFoundException({
+        errorCode: 'FEATURE_NOT_FOUND',
+        message: `Feature with id ${id} not found`,
+      });
+    }
+
+    return feature;
+  }
+}
+```
+
+### Logging in Services
+
+- Log important business events: `this.logger.log('User created: ${userId}')`
+- Log warnings for recoverable issues: `this.logger.warn('Rate limit approaching')`
+- Log errors with context: `this.logger.error('Failed to process payment', error)`
+- Use debug for detailed tracing: `this.logger.debug('Processing step 1 of 3')`
+
+## Module Organization
+
+### Feature Module Structure
+
+```typescript
+import { Module } from '@nestjs/common';
+import { FeatureController } from './feature.controller';
+import { FeatureService } from './feature.service';
+import { PrismaAuthModule } from '@heidi/prisma';
+import { RabbitMQModule } from '@heidi/rabbitmq';
+import { RedisModule } from '@heidi/redis';
+
+@Module({
+  imports: [PrismaAuthModule, RabbitMQModule, RedisModule],
+  controllers: [FeatureController],
+  providers: [FeatureService],
+  exports: [FeatureService], // Export if used by other modules
+})
+export class FeatureModule {}
+```
+
+## Service Ports
+
+Each service has a dedicated port:
+
+- `auth`: 3001
+- `users`: 3002
+- `city`: 3003
+- `core`: 3004
+- `notification`: 3005
+- `scheduler`: 3006
+- `integration`: 3007
+- `admin`: 3008
+- `terminal`: 3009
+
+Set via `SERVICE_PORT` environment variable.
+
+## Service Communication
+
+- Use RabbitMQ for inter-service communication
+- Never make direct HTTP calls between services
+- Use request-response patterns for synchronous operations
+- Use fire-and-forget events for asynchronous operations
+- Always set timeouts on RabbitMQ requests (default: 10 seconds)

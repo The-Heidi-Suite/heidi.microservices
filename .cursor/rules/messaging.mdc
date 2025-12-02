@@ -1,0 +1,322 @@
+# RabbitMQ Messaging Patterns
+
+## Overview
+
+HEIDI uses RabbitMQ for inter-service communication. All message patterns are defined in `libs/rabbitmq/src/rmq.constants.ts`.
+
+## Pattern Constants
+
+All RabbitMQ patterns must be defined in `RabbitMQPatterns` object:
+
+```typescript
+export const RabbitMQPatterns = {
+  // Request-response patterns (synchronous)
+  USER_FIND_BY_EMAIL: 'user.findByEmail',
+  USER_FIND_BY_ID: 'user.findById',
+  CORE_GET_USER_ASSIGNMENTS: 'core.getUserAssignments',
+
+  // Fire-and-forget events (asynchronous)
+  USER_CREATED: 'user.created',
+  USER_UPDATED: 'user.updated',
+  NOTIFICATION_SEND: 'notification.send',
+} as const;
+```
+
+## Pattern Naming Convention
+
+Patterns follow the format: `<service>.<action>`
+
+- Service name: lowercase (e.g., `user`, `core`, `notification`)
+- Action: camelCase (e.g., `findByEmail`, `getUserAssignments`, `created`)
+
+Examples:
+
+- `user.findByEmail` - Request-response
+- `user.created` - Fire-and-forget event
+- `core.assignCityAdmin` - Request-response
+- `notification.send` - Fire-and-forget event
+
+## Request-Response Patterns
+
+Use for synchronous operations where you need a response:
+
+### Sending a Request
+
+```typescript
+import { firstValueFrom, timeout } from 'rxjs';
+import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
+
+@Injectable()
+export class AuthService {
+  constructor(@Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper) {}
+
+  async findUserByEmail(email: string) {
+    try {
+      const user = await firstValueFrom(
+        this.client
+          .send<any, { email: string }>(RabbitMQPatterns.USER_FIND_BY_EMAIL, { email })
+          .pipe(timeout(10000)), // 10 second timeout
+      );
+      return user;
+    } catch (error) {
+      this.logger.error('Failed to find user by email', error);
+      throw new NotFoundException('User not found');
+    }
+  }
+}
+```
+
+### Handling a Request
+
+```typescript
+import { Controller } from '@nestjs/microservices';
+import { MessagePattern, Payload } from '@nestjs/microservices';
+import { RabbitMQPatterns } from '@heidi/rabbitmq';
+
+@Controller()
+export class UserMessageController {
+  constructor(private readonly userService: UserService) {}
+
+  @MessagePattern(RabbitMQPatterns.USER_FIND_BY_EMAIL)
+  async findByEmail(@Payload() data: { email: string }) {
+    return this.userService.findByEmail(data.email);
+  }
+}
+```
+
+## Fire-and-Forget Events
+
+Use for asynchronous operations where you don't need a response:
+
+### Emitting an Event
+
+```typescript
+import { RabbitMQPatterns, RABBITMQ_CLIENT, RmqClientWrapper } from '@heidi/rabbitmq';
+
+@Injectable()
+export class UserService {
+  constructor(@Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper) {}
+
+  async createUser(dto: CreateUserDto) {
+    const user = await this.prisma.user.create({ data: dto });
+
+    // Emit event (fire-and-forget)
+    this.client.emit(RabbitMQPatterns.USER_CREATED, {
+      userId: user.id,
+      email: user.email,
+      timestamp: new Date().toISOString(),
+    });
+
+    return user;
+  }
+}
+```
+
+### Listening to Events
+
+```typescript
+import { Controller } from '@nestjs/microservices';
+import { EventPattern, Payload } from '@nestjs/microservices';
+import { RabbitMQPatterns } from '@heidi/rabbitmq';
+
+@Controller()
+export class NotificationMessageController {
+  constructor(private readonly notificationService: NotificationService) {}
+
+  @EventPattern(RabbitMQPatterns.USER_CREATED)
+  async handleUserCreated(@Payload() data: { userId: string; email: string }) {
+    await this.notificationService.sendWelcomeEmail(data.userId, data.email);
+  }
+}
+```
+
+## Timeout Configuration
+
+Always set timeouts on request-response patterns:
+
+```typescript
+import { timeout } from 'rxjs';
+
+// Default timeout: 10 seconds
+const result = await firstValueFrom(
+  this.client.send(RabbitMQPatterns.USER_FIND_BY_ID, { id }).pipe(timeout(10000)),
+);
+
+// Custom timeout: 5 seconds
+const quickResult = await firstValueFrom(
+  this.client.send(RabbitMQPatterns.USER_FIND_BY_EMAIL, { email }).pipe(timeout(5000)),
+);
+
+// Long timeout: 30 seconds (for complex operations)
+const complexResult = await firstValueFrom(
+  this.client.send(RabbitMQPatterns.CORE_ASSIGN_CITY_ADMIN, dto).pipe(timeout(30000)),
+);
+```
+
+## Error Handling
+
+### Request-Response Errors
+
+```typescript
+try {
+  const user = await firstValueFrom(
+    this.client.send(RabbitMQPatterns.USER_FIND_BY_ID, { id }).pipe(timeout(10000)),
+  );
+
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+
+  return user;
+} catch (error) {
+  if (error.name === 'TimeoutError') {
+    this.logger.error('Request to users service timed out', { id });
+    throw new ServiceUnavailableException('Users service unavailable');
+  }
+
+  this.logger.error('Failed to fetch user', error);
+  throw error;
+}
+```
+
+### Event Errors
+
+Events are fire-and-forget, so handle errors gracefully:
+
+```typescript
+@EventPattern(RabbitMQPatterns.USER_CREATED)
+async handleUserCreated(@Payload() data: { userId: string }) {
+  try {
+    await this.notificationService.sendWelcomeEmail(data.userId);
+  } catch (error) {
+    // Log but don't throw - event processing should not fail the sender
+    this.logger.error('Failed to send welcome email', { userId: data.userId, error });
+  }
+}
+```
+
+## Message Contracts
+
+### Request-Response Contracts
+
+Define clear request and response types:
+
+```typescript
+// Request
+interface FindUserByEmailRequest {
+  email: string;
+}
+
+// Response
+interface FindUserByEmailResponse {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+}
+```
+
+### Event Contracts
+
+Define event payload structure:
+
+```typescript
+interface UserCreatedEvent {
+  userId: string;
+  email: string;
+  role: UserRole;
+  timestamp: string;
+  metadata?: Record<string, any>;
+}
+```
+
+## Adding New Patterns
+
+When adding a new RabbitMQ pattern:
+
+1. **Add to constants file:**
+
+   ```typescript
+   // libs/rabbitmq/src/rmq.constants.ts
+   export const RabbitMQPatterns = {
+     // ... existing patterns
+     NEW_SERVICE_NEW_ACTION: 'newService.newAction',
+   } as const;
+   ```
+
+2. **Implement handler in target service:**
+
+   ```typescript
+   @MessagePattern(RabbitMQPatterns.NEW_SERVICE_NEW_ACTION)
+   async handleNewAction(@Payload() data: NewActionRequest) {
+     return this.service.newAction(data);
+   }
+   ```
+
+3. **Use in calling service:**
+   ```typescript
+   const result = await firstValueFrom(
+     this.client.send(RabbitMQPatterns.NEW_SERVICE_NEW_ACTION, requestData).pipe(timeout(10000)),
+   );
+   ```
+
+## RabbitMQ Module Setup
+
+Each service must import `RabbitMQModule`:
+
+```typescript
+import { RabbitMQModule } from '@heidi/rabbitmq';
+
+@Module({
+  imports: [
+    RabbitMQModule, // Provides RABBITMQ_CLIENT
+    // ... other modules
+  ],
+})
+export class AppModule {}
+```
+
+## Injecting RabbitMQ Client
+
+```typescript
+import { Inject } from '@nestjs/common';
+import { RABBITMQ_CLIENT, RmqClientWrapper } from '@heidi/rabbitmq';
+
+@Injectable()
+export class MyService {
+  constructor(@Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper) {}
+}
+```
+
+## Message Versioning
+
+Current message version is defined in `MESSAGE_VERSION`:
+
+```typescript
+export const MESSAGE_VERSION = '1.0';
+```
+
+Include version in message payloads for future compatibility:
+
+```typescript
+this.client.emit(RabbitMQPatterns.USER_CREATED, {
+  version: MESSAGE_VERSION,
+  userId: user.id,
+  email: user.email,
+});
+```
+
+## Dead Letter Queues
+
+RabbitMQ is configured with dead letter queues (DLX) for failed messages. Failed messages are automatically routed to `heidi_<service>_dlx` queues.
+
+## Service Communication Rules
+
+1. **Never make direct HTTP calls** between services
+2. **Always use RabbitMQ** for inter-service communication
+3. **Use request-response** for synchronous operations
+4. **Use fire-and-forget** for asynchronous operations
+5. **Always set timeouts** on request-response patterns
+6. **Handle errors gracefully** in event handlers
+7. **Log all inter-service calls** for debugging

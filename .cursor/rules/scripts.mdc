@@ -1,0 +1,394 @@
+# Seed and Utility Scripts
+
+## Script Location
+
+All seed and utility scripts are located in `scripts/` directory:
+
+```
+scripts/
+├── seed-categories.ts
+├── seed-users.ts
+├── seed-initial-admin.ts
+├── seed-all.sh
+└── assets/
+```
+
+## Script Structure
+
+### Basic Script Template
+
+```typescript
+#!/usr/bin/env ts-node
+/**
+ * Script Description
+ *
+ * Prerequisites:
+ * 1. Run Prisma migrations: yarn prisma:migrate
+ * 2. Regenerate Prisma client: yarn prisma:generate
+ *
+ * Run: yarn seed:<script-name>
+ * Or: npx ts-node -r tsconfig-paths/register scripts/<script-name>.ts
+ */
+
+// Register tsconfig-paths to resolve TypeScript path mappings
+import 'tsconfig-paths/register';
+
+import { PrismaClient } from '@prisma/client-core'; // Use service-specific client
+import { LoggerService } from '@heidi/logger'; // Optional: for better logging
+
+const prisma = new PrismaClient();
+
+async function main() {
+  console.log('🌱 Starting seeding...');
+
+  try {
+    // Seeding logic here
+
+    console.log('🎉 Seeding completed successfully!');
+  } catch (error) {
+    console.error('❌ Error seeding:', error);
+    throw error;
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
+```
+
+## Prisma Client Imports
+
+Always use service-specific Prisma clients:
+
+```typescript
+// For core database
+import { PrismaClient, Category, CategoryType } from '@prisma/client-core';
+
+// For auth database
+import { PrismaClient, Session, AuthAction } from '@prisma/client-auth';
+
+// For users database
+import { PrismaClient, User, UserRole } from '@prisma/client-users';
+```
+
+## Idempotent Upsert Patterns
+
+Scripts should be idempotent - running them multiple times should produce the same result.
+
+### Basic Upsert
+
+```typescript
+async function seedCategory(seed: CategorySeed) {
+  const existing = await prisma.category.findUnique({
+    where: { slug: seed.slug },
+  });
+
+  if (existing) {
+    await prisma.category.update({
+      where: { id: existing.id },
+      data: {
+        name: seed.name,
+        // ... other fields
+      },
+    });
+    console.log(`↻ Updated category: ${seed.name}`);
+    return existing.id;
+  } else {
+    const created = await prisma.category.create({
+      data: {
+        slug: seed.slug,
+        name: seed.name,
+        // ... other fields
+      },
+    });
+    console.log(`✓ Created category: ${seed.name}`);
+    return created.id;
+  }
+}
+```
+
+### Using Prisma Upsert
+
+```typescript
+async function seedCategory(seed: CategorySeed) {
+  const category = await prisma.category.upsert({
+    where: { slug: seed.slug },
+    update: {
+      name: seed.name,
+      // ... other fields to update
+    },
+    create: {
+      slug: seed.slug,
+      name: seed.name,
+      // ... all required fields
+    },
+  });
+
+  console.log(`✓ Seeded category: ${category.name}`);
+  return category.id;
+}
+```
+
+## Summary Logging
+
+Track created/updated counts:
+
+```typescript
+type SeedSummary = {
+  created: number;
+  updated: number;
+  skipped: number;
+};
+
+const summary: SeedSummary = {
+  created: 0,
+  updated: 0,
+  skipped: 0,
+};
+
+async function seedItem(seed: ItemSeed) {
+  const existing = await prisma.item.findUnique({
+    where: { slug: seed.slug },
+  });
+
+  if (existing) {
+    await prisma.item.update({
+      where: { id: existing.id },
+      data: seed,
+    });
+    summary.updated += 1;
+    console.log(`↻ Updated: ${seed.name}`);
+  } else {
+    await prisma.item.create({ data: seed });
+    summary.created += 1;
+    console.log(`✓ Created: ${seed.name}`);
+  }
+}
+
+// At the end
+console.log('\n📊 Seeding summary:');
+console.log(`  • Created: ${summary.created}`);
+console.log(`  • Updated: ${summary.updated}`);
+console.log(`  • Skipped: ${summary.skipped}`);
+```
+
+## Error Handling
+
+Always handle errors gracefully:
+
+```typescript
+async function seedData() {
+  try {
+    // Seeding logic
+  } catch (error) {
+    console.error('❌ Error seeding:', error);
+    throw error; // Re-throw to exit with error code
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1); // Exit with error code
+});
+```
+
+## Running Scripts
+
+### Via npm/yarn Scripts
+
+Add to `package.json`:
+
+```json
+{
+  "scripts": {
+    "seed:categories": "bash ./scripts/seed-wrapper.sh scripts/seed-categories.ts"
+  }
+}
+```
+
+### Direct Execution
+
+```bash
+# Using ts-node
+npx ts-node -r tsconfig-paths/register scripts/seed-categories.ts
+
+# Using node (after compilation)
+node dist/scripts/seed-categories.js
+```
+
+## Seed Wrapper Script
+
+Use `scripts/seed-wrapper.sh` for consistent execution:
+
+```bash
+#!/bin/bash
+# scripts/seed-wrapper.sh
+
+SCRIPT_PATH="$1"
+if [ -z "$SCRIPT_PATH" ]; then
+  echo "Usage: $0 <script-path>"
+  exit 1
+fi
+
+npx ts-node -r tsconfig-paths/register "$SCRIPT_PATH"
+```
+
+## Environment Variables
+
+Scripts should read from environment variables when needed:
+
+```typescript
+const adminEmail = process.env.ADMIN_EMAIL || 'admin@heidi.com';
+const adminPassword = process.env.ADMIN_PASSWORD || 'changeme123';
+```
+
+## Batch Operations
+
+For large datasets, use batch operations:
+
+```typescript
+// Create many
+await prisma.category.createMany({
+  data: categories.map(cat => ({
+    slug: cat.slug,
+    name: cat.name,
+    // ... other fields
+  })),
+  skipDuplicates: true, // Skip if already exists
+});
+
+// Update many
+await prisma.category.updateMany({
+  where: { isActive: false },
+  data: { isActive: true },
+});
+```
+
+## Transaction Patterns
+
+Use transactions for atomic operations:
+
+```typescript
+await prisma.$transaction(async (tx) => {
+  const category = await tx.category.create({ data: categoryData });
+  await tx.cityCategory.create({
+    data: {
+      cityId,
+      categoryId: category.id,
+    },
+  });
+});
+```
+
+## Progress Indicators
+
+For long-running scripts, show progress:
+
+```typescript
+const total = items.length;
+let processed = 0;
+
+for (const item of items) {
+  await seedItem(item);
+  processed += 1;
+
+  if (processed % 10 === 0) {
+    console.log(`Progress: ${processed}/${total} (${Math.round((processed / total) * 100)}%)`);
+  }
+}
+```
+
+## Data Validation
+
+Validate seed data before inserting:
+
+```typescript
+function validateCategorySeed(seed: CategorySeed): boolean {
+  if (!seed.slug || !seed.name) {
+    console.error('Invalid category seed: missing slug or name');
+    return false;
+  }
+
+  if (seed.slug.length < 3) {
+    console.error('Invalid category seed: slug too short');
+    return false;
+  }
+
+  return true;
+}
+
+async function seedCategory(seed: CategorySeed) {
+  if (!validateCategorySeed(seed)) {
+    return;
+  }
+
+  // ... seeding logic
+}
+```
+
+## Script Organization
+
+### Seed Data Structure
+
+Define seed data as TypeScript objects:
+
+```typescript
+type CategorySeed = {
+  name: string;
+  slug: string;
+  type?: CategoryType;
+  isActive?: boolean;
+  children?: CategorySeed[];
+};
+
+const CATEGORY_SEEDS: CategorySeed[] = [
+  {
+    name: 'News',
+    slug: 'news',
+    type: CategoryType.NEWS,
+    children: [
+      { name: 'Official Announcements', slug: 'news-official' },
+    ],
+  },
+];
+```
+
+### Recursive Seeding
+
+For hierarchical data:
+
+```typescript
+async function seedCategoryTree(seed: CategorySeed, parentId?: string) {
+  const category = await prisma.category.upsert({
+    where: { slug: seed.slug },
+    update: { name: seed.name },
+    create: {
+      slug: seed.slug,
+      name: seed.name,
+      parentId: parentId || null,
+    },
+  });
+
+  if (seed.children?.length) {
+    for (const child of seed.children) {
+      await seedCategoryTree(child, category.id);
+    }
+  }
+}
+```
+
+## Best Practices
+
+1. **Idempotency** - Scripts should be safe to run multiple times
+2. **Error handling** - Always catch and log errors
+3. **Progress tracking** - Show summary of created/updated items
+4. **Validation** - Validate seed data before inserting
+5. **Transactions** - Use transactions for related operations
+6. **Logging** - Use clear, consistent log messages
+7. **Documentation** - Document prerequisites and usage
+8. **Environment-aware** - Support different environments via env vars

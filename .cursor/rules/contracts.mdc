@@ -1,0 +1,438 @@
+# DTOs and API Contracts
+
+## DTO Location
+
+All DTOs are located in `libs/contracts/src/dto/` organized by domain:
+
+```
+libs/contracts/src/dto/
+├── auth/
+│   ├── login.dto.ts
+│   ├── login-response.dto.ts
+│   └── index.ts
+├── users/
+│   ├── create-user.dto.ts
+│   ├── update-user.dto.ts
+│   └── index.ts
+├── city/
+├── core/
+├── listings/
+├── notification/
+└── index.ts
+```
+
+## DTO Naming Convention
+
+- Request DTOs: `<Action><Entity>Dto` (e.g., `CreateUserDto`, `UpdateCityDto`, `LoginDto`)
+- Response DTOs: `<Entity>ResponseDto` (e.g., `UserResponseDto`, `CityResponseDto`)
+- Error DTOs: `<Entity>ErrorResponseDto` (e.g., `UserErrorResponseDto`, `AuthErrorResponseDto`)
+- Filter DTOs: `<Entity>FilterDto` (e.g., `UserFilterDto`, `ListingFilterDto`)
+
+## DTO Structure
+
+### Request DTO Pattern
+
+```typescript
+import { IsString, IsEmail, MinLength, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+
+export class CreateUserDto {
+  @ApiProperty({
+    description: 'User email address',
+    example: 'user@example.com',
+    format: 'email',
+  })
+  @IsEmail({}, { message: 'Please enter a valid email address.' })
+  email: string;
+
+  @ApiProperty({
+    description: 'User password',
+    example: 'password123',
+    minLength: 6,
+    format: 'password',
+  })
+  @IsString()
+  @MinLength(6, { message: 'Password must be at least 6 characters long.' })
+  password: string;
+
+  @ApiPropertyOptional({
+    description: 'User first name',
+    example: 'John',
+  })
+  @IsOptional()
+  @IsString()
+  firstName?: string;
+}
+```
+
+### Response DTO Pattern
+
+```typescript
+import { ApiProperty } from '@nestjs/swagger';
+
+export class UserResponseDto {
+  @ApiProperty({
+    description: 'User ID',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  id: string;
+
+  @ApiProperty({
+    description: 'User email',
+    example: 'user@example.com',
+  })
+  email: string;
+
+  @ApiProperty({
+    description: 'User first name',
+    example: 'John',
+  })
+  firstName: string;
+
+  @ApiProperty({
+    description: 'User last name',
+    example: 'Doe',
+  })
+  lastName: string;
+
+  @ApiProperty({
+    description: 'User role',
+    example: 3,
+    enum: [1, 2, 3],
+  })
+  role: number;
+}
+```
+
+### Error Response DTO Pattern
+
+```typescript
+import { ApiProperty } from '@nestjs/swagger';
+
+export class UserErrorResponseDto {
+  @ApiProperty({
+    description: 'Error code',
+    example: 'USER_NOT_FOUND',
+  })
+  errorCode: string;
+
+  @ApiProperty({
+    description: 'Error message',
+    example: 'User with id 123 not found',
+  })
+  message: string;
+
+  @ApiProperty({
+    description: 'HTTP status code',
+    example: 404,
+  })
+  statusCode: number;
+
+  @ApiProperty({
+    description: 'Timestamp',
+    example: '2024-01-01T00:00:00.000Z',
+  })
+  timestamp: string;
+
+  @ApiProperty({
+    description: 'Request path',
+    example: '/users/123',
+  })
+  path: string;
+}
+```
+
+## Validation Decorators
+
+Use `class-validator` decorators for validation:
+
+### Common Validators
+
+```typescript
+import {
+  IsString,
+  IsEmail,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
+  IsEnum,
+  IsUUID,
+  IsDate,
+  MinLength,
+  MaxLength,
+  Min,
+  Max,
+  IsArray,
+  ValidateNested,
+  IsObject,
+} from 'class-validator';
+```
+
+### Validation Examples
+
+```typescript
+export class CreateListingDto {
+  @IsString()
+  @MinLength(3)
+  @MaxLength(200)
+  title: string;
+
+  @IsEmail()
+  contactEmail: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  price?: number;
+
+  @IsEnum(ListingStatus)
+  status: ListingStatus;
+
+  @IsUUID()
+  cityId: string;
+
+  @IsArray()
+  @IsUUID('4', { each: true })
+  categoryIds: string[];
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => LocationDto)
+  location?: LocationDto;
+}
+```
+
+## Swagger Documentation
+
+### ApiProperty
+
+Always document DTO properties:
+
+```typescript
+@ApiProperty({
+  description: 'Clear description of the field',
+  example: 'example-value',
+  type: String, // Optional: explicit type
+  format: 'email', // Optional: format hint
+  enum: [1, 2, 3], // Optional: enum values
+  isArray: true, // Optional: for arrays
+  required: true, // Optional: default is true
+})
+```
+
+### ApiPropertyOptional
+
+For optional fields:
+
+```typescript
+@ApiPropertyOptional({
+  description: 'Optional field description',
+  example: 'optional-value',
+  default: 'default-value', // Optional: default value
+})
+```
+
+### ApiBody
+
+For complex request bodies:
+
+```typescript
+@ApiBody({
+  type: CreateUserDto,
+  examples: {
+    example1: {
+      summary: 'Example 1',
+      value: {
+        email: 'user@example.com',
+        password: 'password123',
+      },
+    },
+  },
+})
+```
+
+## DTO Index Files
+
+Each domain folder should have an `index.ts` that exports all DTOs:
+
+```typescript
+// libs/contracts/src/dto/auth/index.ts
+export * from './login.dto';
+export * from './login-response.dto';
+export * from './refresh-token.dto';
+export * from './refresh-token-response.dto';
+```
+
+Main index file exports all domains:
+
+```typescript
+// libs/contracts/src/dto/index.ts
+export * from './auth';
+export * from './users';
+export * from './city';
+// ... etc
+```
+
+## Response Wrapper Pattern
+
+For consistent API responses, use wrapper DTOs:
+
+```typescript
+export class ApiResponseDto<T> {
+  @ApiProperty()
+  success: boolean;
+
+  @ApiProperty()
+  data: T;
+
+  @ApiProperty()
+  message?: string;
+
+  @ApiProperty()
+  timestamp: string;
+}
+```
+
+Usage in controller:
+
+```typescript
+@Get(':id')
+@ApiResponse({ status: 200, type: ApiResponseDto<UserResponseDto> })
+async findOne(@Param('id') id: string) {
+  const user = await this.userService.findOne(id);
+  return {
+    success: true,
+    data: user,
+    timestamp: new Date().toISOString(),
+  };
+}
+```
+
+## Filter DTOs
+
+For query parameters and filtering:
+
+```typescript
+import { IsOptional, IsNumber, Min, Max, IsString, IsEnum } from 'class-validator';
+import { Type } from 'class-transformer';
+import { ApiPropertyOptional } from '@nestjs/swagger';
+
+export class UserFilterDto {
+  @ApiPropertyOptional({
+    description: 'Page number',
+    example: 1,
+    minimum: 1,
+    default: 1,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  page?: number = 1;
+
+  @ApiPropertyOptional({
+    description: 'Items per page',
+    example: 10,
+    minimum: 1,
+    maximum: 100,
+    default: 10,
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  @Max(100)
+  limit?: number = 10;
+
+  @ApiPropertyOptional({
+    description: 'Search term',
+    example: 'john',
+  })
+  @IsOptional()
+  @IsString()
+  search?: string;
+
+  @ApiPropertyOptional({
+    description: 'Filter by role',
+    enum: [1, 2, 3],
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsEnum([1, 2, 3])
+  role?: number;
+}
+```
+
+## Type Transformation
+
+Use `class-transformer` for type conversion:
+
+```typescript
+import { Type } from 'class-transformer';
+
+export class FilterDto {
+  @Type(() => Number)
+  @IsNumber()
+  page: number;
+
+  @Type(() => Boolean)
+  @IsBoolean()
+  isActive: boolean;
+
+  @Type(() => Date)
+  @IsDate()
+  createdAt: Date;
+}
+```
+
+## DTO Validation in Controllers
+
+Validation is handled automatically by `ValidationPipe`:
+
+```typescript
+// app.module.ts or main.ts
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true, // Strip unknown properties
+    forbidNonWhitelisted: true, // Throw error on unknown properties
+    transform: true, // Transform payloads to DTO instances
+    transformOptions: {
+      enableImplicitConversion: true, // Auto-convert types
+    },
+  }),
+);
+```
+
+## Importing DTOs
+
+Always import from `@heidi/contracts`:
+
+```typescript
+import {
+  CreateUserDto,
+  UserResponseDto,
+  UserFilterDto,
+  UserErrorResponseDto,
+} from '@heidi/contracts';
+```
+
+## DTO Best Practices
+
+1. **One DTO per operation** - Don't reuse DTOs for different operations
+2. **Validate at the boundary** - Validate all inputs with DTOs
+3. **Document everything** - Use Swagger decorators on all properties
+4. **Use examples** - Provide realistic examples in Swagger docs
+5. **Separate request/response** - Don't mix request and response DTOs
+6. **Type safety** - Use TypeScript types, not `any`
+7. **Optional fields** - Mark optional fields with `@IsOptional()`
+8. **Error messages** - Provide clear validation error messages
+
+## Creating New DTOs
+
+1. Create file in appropriate domain folder: `libs/contracts/src/dto/<domain>/<name>.dto.ts`
+2. Add validation decorators
+3. Add Swagger documentation
+4. Export from domain `index.ts`
+5. Export from main `dto/index.ts`
+6. Use in controllers/services

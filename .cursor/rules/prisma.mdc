@@ -1,0 +1,349 @@
+# Prisma Database Layer Guidelines
+
+## Multi-Database Architecture
+
+HEIDI uses a **multi-database architecture** where each microservice has its own database schema:
+
+- `heidi_auth` - Authentication service
+- `heidi_users` - User management service
+- `heidi_city` - City data service
+- `heidi_core` - Core business logic service
+- `heidi_notification` - Notification service
+- `heidi_scheduler` - Scheduler service
+- `heidi_integration` - Integration service
+- `heidi_admin` - Admin service
+- `heidi_terminal` - Terminal service (future)
+
+## Schema Location
+
+Each service schema is located at:
+
+```
+libs/prisma/src/schemas/<service-name>/schema.prisma
+```
+
+Example: `libs/prisma/src/schemas/auth/schema.prisma`
+
+## Prisma Service Naming
+
+Each service has a dedicated Prisma service class:
+
+- `PrismaAuthService` - For auth database
+- `PrismaUsersService` - For users database
+- `PrismaCityService` - For city database
+- `PrismaCoreService` - For core database
+- `PrismaNotificationService` - For notification database
+- `PrismaSchedulerService` - For scheduler database
+- `PrismaIntegrationService` - For integration database
+- `PrismaAdminService` - For admin database
+- `PrismaTerminalService` - For terminal database
+
+## Prisma Module Pattern
+
+```typescript
+import { Module, Global } from '@nestjs/common';
+import { PrismaAuthService } from './services/prisma-auth.service';
+import { PrismaAuthModule } from '@heidi/prisma';
+
+@Module({
+  imports: [PrismaAuthModule],
+  providers: [PrismaAuthService],
+  exports: [PrismaAuthService],
+})
+export class PrismaModule {}
+```
+
+## Using Prisma Services
+
+### In Services
+
+```typescript
+import { Injectable } from '@nestjs/common';
+import { PrismaCoreService } from '@heidi/prisma';
+import { Listing } from '@prisma/client-core';
+
+@Injectable()
+export class ListingService {
+  constructor(private readonly prisma: PrismaCoreService) {}
+
+  async findAll(): Promise<Listing[]> {
+    return this.prisma.listing.findMany({
+      where: { status: 'APPROVED' },
+    });
+  }
+}
+```
+
+### Importing Prisma Clients
+
+Use service-specific Prisma client imports:
+
+```typescript
+import { PrismaClient, User, UserRole } from '@prisma/client-auth';
+import { Listing, ListingStatus } from '@prisma/client-core';
+import { City } from '@prisma/client-city';
+```
+
+**Never use** `@prisma/client` directly. Always use service-specific clients.
+
+## Path Aliases for Prisma
+
+Use these aliases for Prisma services:
+
+- `@heidi/prisma` - Main Prisma library
+- `@heidi/prisma-auth` - Auth Prisma service
+- `@heidi/prisma-users` - Users Prisma service
+- `@heidi/prisma-city` - City Prisma service
+- `@heidi/prisma-core` - Core Prisma service
+- `@heidi/prisma-notification` - Notification Prisma service
+- `@heidi/prisma-scheduler` - Scheduler Prisma service
+- `@heidi/prisma-integration` - Integration Prisma service
+- `@heidi/prisma-admin` - Admin Prisma service
+- `@heidi/prisma-terminal` - Terminal Prisma service
+
+## Migration Workflow
+
+### Running Migrations
+
+**All services:**
+
+```bash
+yarn prisma:migrate
+# or
+./scripts/prisma-migrate-all.sh
+```
+
+**Production:**
+
+```bash
+yarn prisma:migrate:prod
+# or
+./scripts/prisma-migrate-prod.sh
+```
+
+### Creating Migrations
+
+1. Edit the schema file: `libs/prisma/src/schemas/<service>/schema.prisma`
+2. Generate migration: `npx prisma migrate dev --schema=libs/prisma/src/schemas/<service>/schema.prisma --name <migration-name>`
+3. Or use the migration script which handles all services
+
+### Migration Naming
+
+Use descriptive names:
+
+- `add_user_email_verification`
+- `create_listing_categories_table`
+- `add_city_metadata_field`
+
+## Generating Prisma Clients
+
+After schema changes, regenerate clients:
+
+```bash
+yarn prisma:generate
+# or
+./scripts/prisma-generate-all.sh
+```
+
+This generates clients for all services.
+
+## Schema Best Practices
+
+### Model Naming
+
+- Models: `PascalCase` (e.g., `User`, `CityAssignment`, `ListingCategory`)
+- Fields: `camelCase` (e.g., `firstName`, `emailVerified`, `createdAt`)
+- Relations: descriptive names (e.g., `user`, `city`, `parentCategory`)
+
+### Common Fields
+
+Include these fields in most models:
+
+```prisma
+model Example {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  // ... other fields
+}
+```
+
+### Soft Deletes
+
+For soft deletes, use:
+
+```prisma
+model Example {
+  id        String    @id @default(uuid())
+  deletedAt DateTime? // null = not deleted
+  // ... other fields
+}
+```
+
+### Enums
+
+Define enums in the schema:
+
+```prisma
+enum UserRole {
+  SUPER_ADMIN
+  CITY_ADMIN
+  CITIZEN
+}
+
+model User {
+  role UserRole @default(CITIZEN)
+}
+```
+
+### Relations
+
+Use explicit relation fields:
+
+```prisma
+model User {
+  id            String            @id @default(uuid())
+  assignments   UserCityAssignment[]
+}
+
+model UserCityAssignment {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+}
+```
+
+## Database Connection
+
+Each service connects to its own database via `DATABASE_URL`:
+
+```env
+# Auth service
+AUTH_DATABASE_URL=postgresql://user:pass@localhost:5432/heidi_auth?schema=public
+
+# Core service
+CORE_DATABASE_URL=postgresql://user:pass@localhost:5432/heidi_core?schema=public
+```
+
+The Prisma service reads from the appropriate `DATABASE_URL` environment variable.
+
+## Query Patterns
+
+### Find Many with Filters
+
+```typescript
+const listings = await this.prisma.listing.findMany({
+  where: {
+    status: ListingStatus.APPROVED,
+    isArchived: false,
+    primaryCityId: cityId,
+  },
+  include: {
+    categories: true,
+    cities: true,
+  },
+  orderBy: { createdAt: 'desc' },
+  take: limit,
+  skip: offset,
+});
+```
+
+### Find Unique
+
+```typescript
+const user = await this.prisma.user.findUnique({
+  where: { id: userId },
+  include: { assignments: true },
+});
+```
+
+### Create with Relations
+
+```typescript
+const listing = await this.prisma.listing.create({
+  data: {
+    title: 'Event Title',
+    categories: {
+      create: categoryIds.map((categoryId) => ({ categoryId })),
+    },
+    cities: {
+      create: [{ cityId, isPrimary: true }],
+    },
+  },
+});
+```
+
+### Update
+
+```typescript
+await this.prisma.user.update({
+  where: { id: userId },
+  data: { emailVerified: true },
+});
+```
+
+### Upsert
+
+```typescript
+const assignment = await this.prisma.userCityAssignment.upsert({
+  where: {
+    userId_cityId: { userId, cityId },
+  },
+  update: { role: newRole },
+  create: { userId, cityId, role: newRole },
+});
+```
+
+## Transaction Patterns
+
+### Simple Transaction
+
+```typescript
+await this.prisma.$transaction(async (tx) => {
+  await tx.listing.create({ data: listingData });
+  await tx.category.update({ where: { id }, data: { count: { increment: 1 } } });
+});
+```
+
+### Complex Transaction
+
+```typescript
+const result = await this.prisma.$transaction(
+  [
+    this.prisma.listing.create({ data: listingData }),
+    this.prisma.category.update({ where: { id }, data: { count: { increment: 1 } } }),
+  ],
+  { isolationLevel: 'Serializable' },
+);
+```
+
+## Error Handling
+
+Prisma errors should be caught and converted to appropriate HTTP exceptions:
+
+```typescript
+try {
+  return await this.prisma.user.create({ data });
+} catch (error) {
+  if (error.code === 'P2002') {
+    // Unique constraint violation
+    throw new ConflictException('User already exists');
+  }
+  this.logger.error('Failed to create user', error);
+  throw new InternalServerErrorException('Failed to create user');
+}
+```
+
+## Prisma Studio
+
+Open Prisma Studio for a specific service:
+
+```bash
+npx prisma studio --schema=libs/prisma/src/schemas/<service>/schema.prisma
+```
+
+Or use the script:
+
+```bash
+yarn prisma:studio
+```

@@ -1,0 +1,401 @@
+# Docker and Infrastructure Rules
+
+## Docker Compose Profiles
+
+HEIDI uses Docker Compose profiles for flexible deployment:
+
+- **`infra`** - Infrastructure services (PostgreSQL, Redis, RabbitMQ, Nginx, pgAdmin, Redis Commander)
+- **`services`** - Microservices (auth, users, city, core, notification, scheduler, integration, admin)
+- **`full`** - All services (infra + services)
+- **`monitoring`** - Monitoring stack (Prometheus, Grafana, Alertmanager, exporters)
+- **`production`** - Production profile (Nginx instead of Caddy)
+- **`future`** - Future services (terminal)
+
+## Starting Services
+
+### Infrastructure Only
+
+```bash
+# Start infrastructure services
+yarn docker:up:infra
+# or
+docker compose --profile infra up -d
+```
+
+### Microservices Only
+
+```bash
+# Start microservices (requires infra to be running)
+yarn docker:up:services
+# or
+docker compose --profile services up -d
+```
+
+### Full Stack
+
+```bash
+# Start everything
+yarn docker:up
+# or
+docker compose --profile full up -d
+```
+
+### With Monitoring
+
+```bash
+# Start with monitoring stack
+yarn docker:up:monitoring
+# or
+docker compose --profile full --profile monitoring up -d
+```
+
+## Service Ports
+
+### Infrastructure Services
+
+- PostgreSQL: `5432`
+- Redis: Internal only (not exposed)
+- RabbitMQ: Internal only (management UI: `15672` - localhost only)
+- Caddy (dev): `80`, `443`
+- Nginx (prod): `80`, `443`
+- pgAdmin: `127.0.0.1:5050` (localhost only)
+- Redis Commander: `127.0.0.1:8081` (localhost only)
+
+### Microservices
+
+- Auth: `3001` (internal only, accessed via reverse proxy)
+- Users: `3002` (internal only)
+- City: `3003` (internal only)
+- Core: `3004` (internal only)
+- Notification: `3005` (internal only)
+- Scheduler: `3006` (internal only)
+- Integration: `3007` (internal only)
+- Admin: `3008` (internal only)
+- Terminal: `3009` (internal only, future)
+
+### Monitoring Services
+
+- Prometheus: `127.0.0.1:9090` (localhost only)
+- Grafana: `127.0.0.1:3000` (localhost only)
+- Alertmanager: `127.0.0.1:9093` (localhost only)
+- Node Exporter: `127.0.0.1:9100` (localhost only)
+- PostgreSQL Exporter: `127.0.0.1:9187` (localhost only)
+- Redis Exporter: `127.0.0.1:9121` (localhost only)
+
+## Health Checks
+
+All services have health check endpoints:
+
+```bash
+# Check service health
+curl http://localhost:3001/healthz  # Auth
+curl http://localhost:3002/healthz # Users
+# ... etc
+```
+
+Health checks verify:
+- Database connectivity
+- Redis connectivity
+- RabbitMQ connectivity
+
+## Environment Variables
+
+### Database Configuration
+
+```env
+POSTGRES_USER=heidi
+POSTGRES_PASSWORD=heidi_password
+POSTGRES_DB=heidi_db
+DATABASE_URL=postgresql://heidi:heidi_password@postgres:5432/heidi_db?schema=public
+```
+
+### Service-Specific Database URLs
+
+Each service has its own database:
+
+```env
+AUTH_DATABASE_URL=postgresql://heidi:heidi_password@postgres:5432/heidi_auth?schema=public
+USERS_DATABASE_URL=postgresql://heidi:heidi_password@postgres:5432/heidi_users?schema=public
+CORE_DATABASE_URL=postgresql://heidi:heidi_password@postgres:5432/heidi_core?schema=public
+# ... etc
+```
+
+### Redis Configuration
+
+```env
+REDIS_URL=redis://:password@redis:6379
+REDIS_PASSWORD=your_redis_password  # MANDATORY in production
+```
+
+### RabbitMQ Configuration
+
+```env
+RABBITMQ_URL=amqp://heidi:heidi_password@rabbitmq:5672
+RABBITMQ_USER=heidi
+RABBITMQ_PASSWORD=heidi_password
+RABBITMQ_VHOST=/
+```
+
+### JWT Configuration
+
+```env
+JWT_SECRET=your_jwt_secret  # CHANGE IN PRODUCTION
+JWT_REFRESH_SECRET=your_refresh_secret  # CHANGE IN PRODUCTION
+JWT_EXPIRES_IN=15m
+JWT_REFRESH_EXPIRES_IN=7d
+```
+
+## Data Persistence
+
+All infrastructure data is stored in `./data/` directory using bind mounts:
+
+```
+data/
+├── postgres/      # PostgreSQL data
+├── redis/         # Redis data
+├── rabbitmq/      # RabbitMQ data
+├── prometheus/    # Prometheus metrics
+├── grafana/       # Grafana data
+├── alertmanager/  # Alertmanager data
+└── caddy/         # Caddy certificates and config
+```
+
+**Important:**
+- Data persists when containers are stopped
+- Data is visible on host machine
+- Easy to backup: just copy `./data/` folder
+- Safe from accidental `docker volume prune`
+
+## Building Images
+
+### Build All Services
+
+```bash
+yarn docker:build
+# or
+docker compose --profile full build
+```
+
+### Build Specific Service
+
+```bash
+docker compose build auth
+docker compose build users
+```
+
+### Sequential Build (Memory Optimization)
+
+If you encounter "cannot allocate memory" errors:
+
+```bash
+yarn docker:build:sequential
+# or
+bash scripts/docker-build-sequential.sh
+```
+
+### Build Without Cache
+
+```bash
+yarn docker:build:no-cache
+# or
+docker compose build --no-cache
+```
+
+## Viewing Logs
+
+### All Services
+
+```bash
+yarn docker:logs
+# or
+docker compose --profile full logs -f
+```
+
+### Specific Service
+
+```bash
+docker compose logs -f auth
+docker compose logs -f postgres
+```
+
+### Infrastructure Only
+
+```bash
+yarn docker:logs:infra
+# or
+docker compose --profile infra logs -f
+```
+
+### With Monitoring
+
+```bash
+yarn docker:logs:monitoring
+# or
+docker compose --profile monitoring logs -f
+```
+
+## Stopping Services
+
+### Stop All
+
+```bash
+yarn docker:down
+# or
+docker compose --profile full down
+```
+
+### Stop Infrastructure
+
+```bash
+yarn docker:down:infra
+# or
+docker compose --profile infra down
+```
+
+### Stop and Remove Volumes
+
+```bash
+docker compose down -v  # ⚠️ Destroys all data
+```
+
+## Service Dependencies
+
+Services have health check dependencies:
+
+```yaml
+depends_on:
+  postgres:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+  rabbitmq:
+    condition: service_healthy
+```
+
+Services wait for infrastructure to be healthy before starting.
+
+## Reverse Proxy
+
+### Development (Caddy)
+
+- Auto SSL with Let's Encrypt
+- Routes to services based on path
+- Frontend served from `REACT_BUILD_PATH`
+
+### Production (Nginx)
+
+- Manual SSL configuration
+- More control over routing
+- Better for production workloads
+
+## Security Considerations
+
+### Port Exposure
+
+- **Internal services** (Redis, RabbitMQ, microservices): NOT exposed to internet
+- **Reverse proxy** (Caddy/Nginx): Ports 80/443 exposed
+- **Admin tools** (pgAdmin, Redis Commander): Bound to `127.0.0.1` only
+- **Monitoring tools**: Bound to `127.0.0.1` only
+
+### Accessing Admin Tools
+
+In production, access admin tools via:
+- VPN
+- SSH tunnel
+- Local port forwarding
+
+### Redis Password
+
+**MANDATORY in production:**
+
+```env
+REDIS_PASSWORD=strong_password_here
+```
+
+Without password, Redis is vulnerable to unauthorized access.
+
+## Database Initialization
+
+Databases are automatically created on first startup via:
+
+```
+infra/postgres/init-databases.sh
+```
+
+This script creates all service databases:
+- `heidi_auth`
+- `heidi_users`
+- `heidi_city`
+- `heidi_core`
+- `heidi_notification`
+- `heidi_scheduler`
+- `heidi_integration`
+- `heidi_admin`
+- `heidi_terminal`
+
+## Monitoring Stack
+
+### Prometheus
+
+- Scrapes metrics from all services
+- Stores metrics for 30 days
+- Accessible at `http://localhost:9090`
+
+### Grafana
+
+- Pre-configured dashboards
+- Data source: Prometheus
+- Accessible at `http://localhost:3000`
+- Default credentials: `admin/admin` (change in production)
+
+### Alertmanager
+
+- Handles alerts from Prometheus
+- Routes alerts to notification channels
+- Accessible at `http://localhost:9093`
+
+## Scaling Services
+
+Scale a specific service:
+
+```bash
+docker compose --profile full up -d --scale users=3
+docker compose --profile full up -d --scale notification=2
+```
+
+## Cleanup Commands
+
+### Prune Unused Resources
+
+```bash
+yarn docker:prune
+# or
+docker system prune -f
+```
+
+### Prune Everything (Including Images)
+
+```bash
+yarn docker:prune:all
+# or
+docker system prune -a -f --volumes
+```
+
+### Clean Everything
+
+```bash
+yarn docker:clean
+# or
+docker compose down -v && docker system prune -f
+```
+
+## Best Practices
+
+1. **Start infrastructure first** - Always start infra before services
+2. **Check health** - Verify services are healthy before use
+3. **Use profiles** - Use profiles for flexible deployment
+4. **Secure passwords** - Change all default passwords in production
+5. **Backup data** - Regularly backup `./data/` directory
+6. **Monitor resources** - Use `docker stats` to monitor resource usage
+7. **Clean up** - Regularly prune unused Docker resources
+8. **Log management** - Use log rotation for production

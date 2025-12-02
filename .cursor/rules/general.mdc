@@ -1,0 +1,126 @@
+# General Project Conventions
+
+## Path Aliases
+
+Always use TypeScript path aliases defined in `tsconfig.json`:
+
+- `@heidi/prisma` - Prisma ORM library
+- `@heidi/prisma-<service>` - Service-specific Prisma aliases (e.g., `@heidi/prisma-auth`)
+- `@heidi/contracts` - DTOs and API contracts
+- `@heidi/logger` - Winston logger
+- `@heidi/rabbitmq` - RabbitMQ messaging
+- `@heidi/redis` - Redis caching
+- `@heidi/jwt` - JWT authentication
+- `@heidi/interceptors` - Common interceptors
+- `@heidi/metrics` - Prometheus metrics
+- `@heidi/config` - Configuration service
+- `@heidi/monitoring` - Monitoring utilities
+- `@heidi/health` - Health checks
+- `@heidi/errors` - Error handling
+- `@heidi/rbac` - Role-based access control
+- `@heidi/tenancy` - Multi-tenancy support
+- `@heidi/translations` - Translation service
+- `@heidi/saga` - Saga orchestration
+- `@heidi/i18n` - Internationalization
+- `@heidi/storage` - Storage service
+
+**Never use relative imports** like `../../../libs/prisma/src`. Always use path aliases.
+
+## TypeScript Configuration
+
+- Target: ES2021
+- Module: CommonJS
+- Strict null checks: enabled
+- Decorators: enabled
+- Source maps: enabled
+
+## Code Style
+
+### File Naming
+
+- Files: `kebab-case.ts` (e.g., `auth.service.ts`, `user-city-assignment.dto.ts`)
+- Directories: `kebab-case` (e.g., `modules/auth/`, `dto/users/`)
+- Classes: `PascalCase` (e.g., `AuthService`, `LoginDto`)
+- Interfaces/Types: `PascalCase` (e.g., `UserRole`, `CityAssignment`)
+- Constants: `UPPER_SNAKE_CASE` (e.g., `RABBITMQ_CLIENT`, `JWT_SECRET`)
+
+### Import Ordering
+
+1. External packages (NestJS, Prisma, etc.)
+2. Internal path aliases (`@heidi/*`)
+3. Relative imports (avoid when possible)
+4. Type-only imports (use `import type`)
+
+Example:
+```typescript
+import { Injectable, Inject } from '@nestjs/common';
+import { firstValueFrom, timeout } from 'rxjs';
+import { PrismaAuthService } from '@heidi/prisma';
+import { RabbitMQPatterns, RABBITMQ_CLIENT } from '@heidi/rabbitmq';
+import { LoggerService } from '@heidi/logger';
+import type { UserRole } from '@prisma/client-core';
+```
+
+### Prettier Configuration
+
+- Single quotes: `true`
+- Trailing comma: `all`
+- Print width: `100`
+- Tab width: `2`
+- Semicolons: `true`
+- Arrow parens: `always`
+- End of line: `lf`
+
+Run `yarn format` before committing.
+
+### ESLint Rules
+
+- `@typescript-eslint/no-unused-vars`: warn (ignore args starting with `_`)
+- `@typescript-eslint/no-explicit-any`: off (use sparingly, document why)
+- `prettier/prettier`: error
+
+Run `yarn lint` before committing.
+
+## Package Manager
+
+- Use `npm` (version 10.9.2 as specified in package.json)
+- Node.js version: >= 24.11.0
+- Use `yarn` commands defined in package.json scripts
+
+## Environment Variables
+
+- All environment variables must be documented in `.env.example`
+- Never commit `.env` files
+- Use `ConfigService` from `@heidi/config` to access env vars
+- Prefix service-specific vars with service name (e.g., `AUTH_JWT_SECRET`)
+
+## Logging
+
+- Use `LoggerService` from `@heidi/logger`
+- Set context in constructor: `this.logger.setContext(ServiceName.name)`
+- Use appropriate log levels:
+  - `error`: Errors that need attention
+  - `warn`: Warnings that don't break functionality
+  - `log`: Important business events
+  - `debug`: Detailed debugging information
+  - `verbose`: Very detailed tracing
+
+## Error Handling
+
+- Use NestJS HTTP exceptions (`BadRequestException`, `UnauthorizedException`, etc.)
+- Include error codes in error responses (e.g., `errorCode: 'ACCOUNT_NOT_FOUND'`)
+- Log errors with context before throwing
+- Use `@heidi/errors` for custom error types when needed
+
+## Testing
+
+- Test files: `*.spec.ts` in the same directory as source files
+- Use Jest for unit and integration tests
+- Run tests: `yarn test`
+- Coverage: `yarn test:cov`
+
+## Git Workflow
+
+- Use conventional commits (via `yarn commit`)
+- Branch naming: `feature/`, `fix/`, `chore/`, `docs/`
+- PRs should pass linting and tests before merge
