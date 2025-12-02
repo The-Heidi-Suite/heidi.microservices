@@ -49,6 +49,7 @@ import {
 } from '@heidi/contracts';
 import { Public, JwtAuthGuard, GetCurrentUser } from '@heidi/jwt';
 import { SuperAdminOnly, AdminOnlyGuard } from '@heidi/rbac';
+import { GetLanguage } from '@heidi/i18n';
 
 @ApiTags('auth')
 @Controller()
@@ -149,10 +150,14 @@ export class AuthController {
     type: EmailVerificationRequiredErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
-  async login(@Body() dto: LoginDto, @Req() req: Request) {
-    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    const userAgent = req.headers['user-agent'];
-    return this.authService.login(dto, ipAddress as string, userAgent);
+  async login(
+    @Body() dto: LoginDto,
+    @GetLanguage() detectedLanguage?: string,
+    @Req() req?: Request,
+  ) {
+    const ipAddress = req?.ip || req?.headers['x-forwarded-for'] || req?.socket.remoteAddress;
+    const userAgent = req?.headers['user-agent'];
+    return this.authService.login(dto, detectedLanguage, ipAddress as string, userAgent);
   }
 
   @Post('logout')

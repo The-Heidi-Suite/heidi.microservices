@@ -99,10 +99,12 @@ export class AuthService {
   /**
    * Check terms acceptance status (non-blocking)
    * Returns default values if check fails or times out
+   * Locale is used to get the correct terms ID for the user's language
    */
   private async checkTermsAcceptance(
     userId: string,
     cityAssignments: CityAssignment[],
+    locale?: string,
   ): Promise<{
     requiresTermsAcceptance: boolean;
     termsId: string | null;
@@ -127,6 +129,7 @@ export class AuthService {
             { userId: string; locale?: string; cityId?: string | null }
           >(RabbitMQPatterns.TERMS_CHECK_ACCEPTANCE, {
             userId,
+            locale, // Pass user's locale to check correct language terms
             cityId,
           })
           .pipe(timeout(TERMS_CHECK_TIMEOUT)),
@@ -136,14 +139,17 @@ export class AuthService {
         return defaultTermsInfo;
       }
 
-      // User hasn't accepted terms - get latest terms version
+      // User hasn't accepted terms - get latest terms version in their language
       try {
         const latestTerms = await firstValueFrom(
           this.client
-            .send<
-              any,
-              { locale?: string; cityId?: string | null }
-            >(RabbitMQPatterns.TERMS_GET_LATEST, { cityId })
+            .send<any, { locale?: string; cityId?: string | null }>(
+              RabbitMQPatterns.TERMS_GET_LATEST,
+              {
+                locale, // Pass user's locale to get correct language terms
+                cityId,
+              },
+            )
             .pipe(timeout(TERMS_CHECK_TIMEOUT)),
         );
 
@@ -168,7 +174,7 @@ export class AuthService {
       }
     } catch (error) {
       // Terms check failed or timed out - return defaults (non-blocking)
-      this.logger.debug('Terms acceptance check failed or timed out', { userId, error });
+      this.logger.debug('Terms acceptance check failed or timed out', { userId, locale, error });
       return defaultTermsInfo;
     }
   }
@@ -177,8 +183,8 @@ export class AuthService {
    * Login user - Using Saga pattern for distributed transaction
    * Login is now email-only since username is optional
    */
-  async login(dto: LoginDto, ipAddress?: string, userAgent?: string) {
-    this.logger.log(`Login attempt for email: ${dto.email}`);
+  async login(dto: LoginDto, locale?: string, ipAddress?: string, userAgent?: string) {
+    this.logger.log(`Login attempt for email: ${dto.email}, locale: ${locale || 'default'}`);
 
     let failureReason: string | undefined;
 
@@ -365,7 +371,8 @@ export class AuthService {
       this.logger.log(`User logged in successfully: ${user.id}`);
 
       // Check terms acceptance status (non-blocking - don't fail login if terms service is slow)
-      const finalTermsInfo = await this.checkTermsAcceptance(user.id, cityAssignments);
+      // Pass user's locale so they get the correct terms ID for their language
+      const finalTermsInfo = await this.checkTermsAcceptance(user.id, cityAssignments, locale);
 
       return {
         user: {
