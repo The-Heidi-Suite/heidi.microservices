@@ -51,7 +51,7 @@ import {
 import { CurrentUser, GetCurrentUser, JwtAuthGuard, Public } from '@heidi/jwt';
 import { CategoryRequestStatus, UserRole } from '@prisma/client-core';
 import { CategoriesService } from './categories.service';
-import { AdminOnlyGuard, SuperAdminOnly, CityAdminOnly } from '@heidi/rbac';
+import { AdminOnlyGuard, SuperAdminOnly, CityAdminOnly, numberToRole } from '@heidi/rbac';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileUploadService, StorageService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
@@ -71,6 +71,24 @@ export class CategoriesController {
     private readonly prisma: PrismaCoreService,
   ) {
     this.logger.setContext(CategoriesController.name);
+  }
+
+  private getRoles(role?: string | number): UserRole[] {
+    if (!role) {
+      return [];
+    }
+
+    // Handle number roles
+    if (typeof role === 'number') {
+      const roleEnum = numberToRole(role);
+      return roleEnum ? [roleEnum] : [];
+    }
+
+    // Handle string roles (backward compatibility)
+    const normalized = role.toUpperCase() as keyof typeof UserRole;
+    const mapped = UserRole[normalized];
+
+    return mapped ? [mapped] : [];
   }
 
   private extractKeyFromUrl(url: string): string {
@@ -704,7 +722,8 @@ export class CategoriesController {
     @GetCurrentUser() user: CurrentUser,
     @Body() dto: UpdateCityCategoryDisplayNameDto,
   ) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -792,7 +811,8 @@ export class CategoriesController {
       throw new BadRequestException('No file provided');
     }
 
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -886,7 +906,8 @@ export class CategoriesController {
     @Param('categoryId') categoryId: string,
     @GetCurrentUser() user: CurrentUser,
   ) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -988,7 +1009,8 @@ export class CategoriesController {
       throw new BadRequestException('No file provided');
     }
 
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -1082,7 +1104,8 @@ export class CategoriesController {
     @Param('categoryId') categoryId: string,
     @GetCurrentUser() user: CurrentUser,
   ) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -1165,7 +1188,8 @@ export class CategoriesController {
     @GetCurrentUser() user: CurrentUser,
     @Body() dto: RequestCategoryDto,
   ) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
@@ -1298,7 +1322,8 @@ export class CategoriesController {
     @GetCurrentUser() user: CurrentUser,
     @Query() query: CategoryRequestFilterDto,
   ) {
-    if (user.role !== UserRole.SUPER_ADMIN) {
+    const roles = this.getRoles(user?.role);
+    if (!roles.includes(UserRole.SUPER_ADMIN)) {
       const hasAccess = await this.categoriesService.cityAdminHasAccess(user.userId, cityId);
       if (!hasAccess) {
         throw new BadRequestException({ errorCode: 'CITY_ACCESS_DENIED' });
