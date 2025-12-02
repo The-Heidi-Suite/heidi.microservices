@@ -53,7 +53,7 @@ const KIEL_DISPLAY_NAMES: Record<string, string> = {
   'culture-excursions': 'Excursion Destinations',
   'culture-on-foot': 'Explore on Foot',
   'culture-bike-tours': 'Bike Tours',
-  'culture-museums': 'Museums & Collections',
+  'culture-museums': 'Museums',
 };
 
 // German translations for Kiel city categories (exact translations we want, not from DeepL)
@@ -107,9 +107,9 @@ const KIEL_GERMAN_TRANSLATIONS: Record<
 
   // Culture subcategories
   'culture-excursions': { displayName: 'Ausflugsziele' },
-  'culture-on-foot': { displayName: 'Zu Fuß erkunden' },
+  'culture-on-foot': { displayName: 'Zu Fuß erleben' },
   'culture-bike-tours': { displayName: 'Fahrradtouren' },
-  'culture-museums': { displayName: 'Museen & Sammlungen' },
+  'culture-museums': { displayName: 'Museen' },
 };
 
 // Slugs of categories (and their subcategories) that should be seeded for Kiel
