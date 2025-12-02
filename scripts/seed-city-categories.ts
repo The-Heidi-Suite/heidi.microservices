@@ -273,7 +273,7 @@ async function seedCityCategoryTranslations(cityId: string) {
   // Get all city categories for this city
   const cityCategories = await corePrisma.cityCategory.findMany({
     where: { cityId, isActive: true },
-    include: { category: { select: { slug: true } } },
+    include: { category: { select: { id: true, slug: true } } },
   });
 
   let translationsCreated = 0;
@@ -283,8 +283,13 @@ async function seedCityCategoryTranslations(cityId: string) {
     const germanTranslation = KIEL_GERMAN_TRANSLATIONS[cityCategory.category.slug];
     if (!germanTranslation) continue;
 
+    // The service uses 'city-category' as entityType and '{cityId}:{categoryId}' as entityId
+    // Field names: 'name' (for displayName), 'subtitle', 'description'
+    const entityType = 'city-category';
+    const entityId = `${cityId}:${cityCategory.category.id}`;
+
     const fields: Array<{ field: string; value: string }> = [
-      { field: 'displayName', value: germanTranslation.displayName },
+      { field: 'name', value: germanTranslation.displayName }, // Service looks for 'name', not 'displayName'
       { field: 'subtitle', value: germanTranslation.subtitle },
       { field: 'description', value: germanTranslation.description },
     ].filter((f): f is { field: string; value: string } => Boolean(f.value));
@@ -294,8 +299,8 @@ async function seedCityCategoryTranslations(cityId: string) {
         const existing = await corePrisma.translation.findUnique({
           where: {
             entityType_entityId_field_locale: {
-              entityType: 'city_category',
-              entityId: cityCategory.id,
+              entityType,
+              entityId,
               field,
               locale: 'de',
             },
@@ -315,8 +320,8 @@ async function seedCityCategoryTranslations(cityId: string) {
         } else {
           await corePrisma.translation.create({
             data: {
-              entityType: 'city_category',
-              entityId: cityCategory.id,
+              entityType,
+              entityId,
               field,
               locale: 'de',
               sourceLocale: 'en', // English is the source language
@@ -326,6 +331,7 @@ async function seedCityCategoryTranslations(cityId: string) {
           });
           translationsCreated++;
         }
+        console.log(`  ✓ ${cityCategory.category.slug}.${field} (${entityType}:${entityId})`);
       } catch (error) {
         console.error(
           `❌ Error saving translation for ${cityCategory.category.slug}.${field}:`,
