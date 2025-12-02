@@ -127,15 +127,15 @@ export class TilesService {
     dto: TileResponseDto,
   ): Promise<TileResponseDto> {
     const locale = this.i18nService.getLanguage();
-    const defaultLocale = this.configService.get<string>('i18n.defaultLanguage', 'en');
 
-    if (!locale || locale === defaultLocale) {
-      return dto;
-    }
-
-    // Get source language from tile
+    // Get source language from tile (the language the tile content is stored in)
     const sourceLocale =
       tile.languageCode || this.configService.get<string>('i18n.defaultLanguage', 'en');
+
+    // Skip translation if no locale requested or if requested locale matches the tile's source language
+    if (!locale || locale === sourceLocale) {
+      return dto;
+    }
 
     const [header, subheader, description] = await Promise.all([
       this.translationService.getTranslation(

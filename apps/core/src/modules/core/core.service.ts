@@ -1135,9 +1135,9 @@ export class CoreService implements OnModuleInit {
    */
   private async applyParkingSpaceTranslations(spaces: any[]): Promise<any[]> {
     const locale = this.i18nService.getLanguage();
-    const defaultLocale = this.configService.get<string>('i18n.defaultLanguage', 'en');
 
-    if (!locale || locale === defaultLocale) {
+    // If no locale requested, return without translation
+    if (!locale) {
       return spaces;
     }
 
@@ -1145,6 +1145,11 @@ export class CoreService implements OnModuleInit {
       spaces.map(async (space) => {
         // Get source language from parking space (defaults to 'de' for Mobilithek data)
         const sourceLocale = space.languageCode || 'de';
+
+        // Skip translation if requested locale matches the space's source language
+        if (locale === sourceLocale) {
+          return space;
+        }
 
         const [name, description] = await Promise.all([
           this.translationService.getTranslation(
