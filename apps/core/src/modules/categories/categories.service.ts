@@ -813,12 +813,15 @@ export class CategoriesService {
   }
 
   /**
-   * Transform CityCategory response to rename displayName to name
+   * Transform CityCategory response:
+   * - Rename displayName to name
+   * - Use categoryId as id, remove categoryId field
    */
   private transformCityCategoryResponse(cityCategory: any): any {
     if (!cityCategory) return cityCategory;
-    const { displayName, ...rest } = cityCategory;
+    const { displayName, categoryId, id: _originalId, ...rest } = cityCategory;
     return {
+      id: categoryId,
       ...rest,
       name: displayName,
     };
@@ -1045,6 +1048,8 @@ export class CategoriesService {
 
   /**
    * Get a single city category by cityId and categoryId
+   * Falls back to base category values for any null city-specific fields
+   * Uses categoryId as id field in response
    */
   async getCityCategoryById(cityId: string, categoryId: string) {
     const cityCategory = await this.prisma.cityCategory.findUnique({
@@ -1063,6 +1068,28 @@ export class CategoriesService {
       throw new NotFoundException({ errorCode: 'CITY_CATEGORY_MAPPING_NOT_FOUND' });
     }
 
-    return this.transformCityCategoryResponse(cityCategory);
+    const category = cityCategory.category;
+
+    // Build response with fallback to category defaults for null fields
+    // Use categoryId as id, exclude original id and categoryId fields
+    const {
+      displayName,
+      categoryId: catId,
+      id: _originalId,
+      ...rest
+    } = cityCategory;
+    return {
+      id: catId,
+      ...rest,
+      name: displayName ?? category?.name ?? null,
+      description: cityCategory.description ?? category?.description ?? null,
+      subtitle: cityCategory.subtitle ?? category?.subtitle ?? null,
+      imageUrl: cityCategory.imageUrl ?? category?.imageUrl ?? null,
+      iconUrl: cityCategory.iconUrl ?? category?.iconUrl ?? null,
+      headerBackgroundColor:
+        cityCategory.headerBackgroundColor ?? category?.headerBackgroundColor ?? null,
+      contentBackgroundColor:
+        cityCategory.contentBackgroundColor ?? category?.contentBackgroundColor ?? null,
+    };
   }
 }
