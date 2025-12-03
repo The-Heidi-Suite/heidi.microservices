@@ -1051,6 +1051,7 @@ export class CategoriesService {
    * Get a single city category by cityId and categoryId
    * Falls back to base category values for any null city-specific fields
    * Uses categoryId as id field in response
+   * Includes children categories if they are also assigned to the same city
    */
   async getCityCategoryById(cityId: string, categoryId: string) {
     const cityCategory = await this.prisma.cityCategory.findUnique({
@@ -1071,10 +1072,10 @@ export class CategoriesService {
 
     const category = cityCategory.category;
 
-    // Build response with fallback to category defaults for null fields
+    // Build base response with fallback to category defaults for null fields
     // Use categoryId as id, exclude original id and categoryId fields
     const { displayName, categoryId: catId, id: _originalId, ...rest } = cityCategory;
-    return {
+    const baseResponse = {
       id: catId,
       ...rest,
       name: displayName ?? category?.name ?? null,
@@ -1087,5 +1088,89 @@ export class CategoriesService {
       contentBackgroundColor:
         cityCategory.contentBackgroundColor ?? category?.contentBackgroundColor ?? null,
     };
+
+    // Fetch children categories that are assigned to this city
+    const childrenCategories = await this.prisma.category.findMany({
+      where: {
+        parentId: categoryId,
+        isActive: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    if (childrenCategories.length === 0) {
+      return baseResponse;
+    }
+
+    // Get CityCategory entries for all children to apply city-specific overrides
+    const childrenCategoryIds = childrenCategories.map((c) => c.id);
+    const childrenCityCategories = await this.prisma.cityCategory.findMany({
+      where: {
+        cityId,
+        categoryId: { in: childrenCategoryIds },
+        isActive: true,
+      },
+      select: {
+        categoryId: true,
+        displayOrder: true,
+        displayName: true,
+        description: true,
+        subtitle: true,
+        imageUrl: true,
+        iconUrl: true,
+        headerBackgroundColor: true,
+        contentBackgroundColor: true,
+      },
+    });
+
+    // Create a map for quick lookup of city-specific overrides for children
+    const childrenCityCategoryMap = new Map<string, (typeof childrenCityCategories)[number]>();
+    childrenCityCategories.forEach((cc) => {
+      childrenCityCategoryMap.set(cc.categoryId, cc);
+    });
+
+    // Only include children that are assigned to this city
+    const assignedChildrenIds = new Set(childrenCityCategories.map((cc) => cc.categoryId));
+    const assignedChildren = childrenCategories.filter((child) =>
+      assignedChildrenIds.has(child.id),
+    );
+
+    // Merge CityCategory overrides with base Category data for children
+    const childrenWithOverrides = assignedChildren.map((child) => {
+      const cityOverrides = childrenCityCategoryMap.get(child.id);
+      return {
+        ...child,
+        id: child.id,
+        name: cityOverrides?.displayName || child.name,
+        description: cityOverrides?.description ?? child.description,
+        subtitle: cityOverrides?.subtitle ?? child.subtitle,
+        imageUrl: cityOverrides?.imageUrl || child.imageUrl || baseResponse.imageUrl, // Inherit from parent if null
+        iconUrl: cityOverrides?.iconUrl || child.iconUrl,
+        headerBackgroundColor:
+          cityOverrides?.headerBackgroundColor || child.headerBackgroundColor,
+        contentBackgroundColor:
+          cityOverrides?.contentBackgroundColor || child.contentBackgroundColor,
+        cityCategoryDisplayOrder: cityOverrides?.displayOrder,
+        hasCityOverride: Boolean(cityOverrides?.displayName),
+        cityId,
+      };
+    });
+
+    // Sort children by displayOrder
+    childrenWithOverrides.sort((a, b) => {
+      const orderA = a.cityCategoryDisplayOrder ?? 0;
+      const orderB = b.cityCategoryDisplayOrder ?? 0;
+      return orderA - orderB;
+    });
+
+    // Translate the category tree (parent + children)
+    const tree = await this.translateCategoryTree([
+      {
+        ...baseResponse,
+        children: childrenWithOverrides,
+      },
+    ]);
+
+    return tree[0];
   }
 }
