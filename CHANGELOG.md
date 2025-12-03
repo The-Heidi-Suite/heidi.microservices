@@ -2,6 +2,66 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.22.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.21.0...v1.22.0) (2025-12-03)
+
+
+### 🔧 Chores
+
+* **release:** update version to 1.21.0 in package-lock.json ([9a246bb](https://github.com/The-Heidi-Suite/heidi.microservices/commit/9a246bbe31d2ab0b65dfdf15cd9782a92e2090c2))
+
+
+### 🐛 Bug Fixes
+
+* **auth:** update password minimum length requirement in LoginDto ([70029e9](https://github.com/The-Heidi-Suite/heidi.microservices/commit/70029e97689055acad93ac797fdcbc4cc7811046))
+* **category-assets:** update header background colors for categories ([a2fe5bd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/a2fe5bdc3cce54fafac21ddb7e0034596ded4ad5))
+* **translations:** improve translation handling in category and parking space services ([80d7bf6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/80d7bf67b70e92bcf06581540b8d9bccb0ec53b4))
+* **translations:** refine display names in city category seeding for clarity ([c8d65bc](https://github.com/The-Heidi-Suite/heidi.microservices/commit/c8d65bc041f91254c0516f1a3428191e903aac83))
+* **translations:** update entityId and field names in city category seeding ([d69e93b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d69e93b2b11cfb2955bbdc24ac2696f6ceb7bdd9))
+
+
+### ✨ Features
+
+* **assets:** add icon file names and SVG assets for categories ([959fb36](https://github.com/The-Heidi-Suite/heidi.microservices/commit/959fb36e4730247a179db6be8b447f5d79498ecc))
+* **assets:** implement category icon handling and upload functionality ([0838d6d](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0838d6d250de03dbcf9354825528de4730cd1f94))
+* **auth:** add language support to login and terms acceptance ([f028fe9](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f028fe9ee31b75835b9339ea8432c3e6c6f82637))
+* **categories:** add endpoint to retrieve main categories and enhance category service logic ([d909773](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d909773996a82021cc6a7dd25442cbe1a880a372))
+* **categories:** add rootOnly filter and success messages for main categories retrieval ([efe2764](https://github.com/The-Heidi-Suite/heidi.microservices/commit/efe27644d45ddd8f35cef7671574c8b2cab63fa6))
+* **categories:** enhance category filtering to exclude inactive parent categories ([95f9fe0](https://github.com/The-Heidi-Suite/heidi.microservices/commit/95f9fe02204444d7234f63a43ac072b50feb42b8))
+* **categories:** enhance city category listing with search and pagination ([3019265](https://github.com/The-Heidi-Suite/heidi.microservices/commit/301926569c0ceda8005fabf27ac6be1e1eca5e94))
+* **categories:** enhance city category retrieval to include children categories ([1c89f34](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1c89f3495f28a8587ef7a568d14e88288e6f2a7c))
+* **categories:** enhance role handling in category access checks ([e7c45c6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e7c45c60e9eb8ec53ca47e2d4d818911b0ca5b24))
+* **categories:** include parentId in category retrieval and adjust color assignment logic ([e17a6f8](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e17a6f8c350c259e6b7e545ab5826c3d1a1bdb7a))
+* **categories:** rename displayName to name and add endpoint for city category retrieval ([2be47ca](https://github.com/The-Heidi-Suite/heidi.microservices/commit/2be47ca9d168393304311b758b3558a0a408e448))
+* **categories:** update city category transformation and retrieval logic ([5f0ab25](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5f0ab255526734463eb78da352ed899ddc0a0c2b))
+* **categories:** update CityCategoryResponseDto to include description and modify categoryId handling ([29d9978](https://github.com/The-Heidi-Suite/heidi.microservices/commit/29d9978e62893c63d12d883deeb78dbf8ba431b8))
+* **copilot:** add comprehensive instructions for AI coding agents in the HEIDI microservices monorepo ([4ddfb59](https://github.com/The-Heidi-Suite/heidi.microservices/commit/4ddfb591ab61955d857d733a49e2d697872b3d16))
+* **docs:** add comprehensive AI Assistant guide for HEIDI microservices ([7921f46](https://github.com/The-Heidi-Suite/heidi.microservices/commit/7921f4605e928a5da61053e0e6f1b61fad7ef0ee))
+* **docs:** add comprehensive scaffolding guides for RabbitMQ patterns, DTOs, modules, services, and seed scripts ([732e77f](https://github.com/The-Heidi-Suite/heidi.microservices/commit/732e77f4b025a2516958ea50a21b518c84be392c))
+* **file-upload:** enhance SVG file handling in file upload service ([dd7a901](https://github.com/The-Heidi-Suite/heidi.microservices/commit/dd7a9019acdf46cdba68a4785d5a7a166fd36892))
+* **listings:** implement auto-publish and auto-approval for admin-created listings ([13cf69b](https://github.com/The-Heidi-Suite/heidi.microservices/commit/13cf69bf029f9615bef693d0cdf4f2dd622f8bf6))
+* **terms:** add language detection for terms retrieval endpoints ([6ecb420](https://github.com/The-Heidi-Suite/heidi.microservices/commit/6ecb420619125286796bdd60f5ca1a92d4146e5b))
+* **terms:** enhance terms retrieval with locale fallback and seed multiple languages ([f1fcdc4](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f1fcdc47827c658f68b9c4eb0c626b33e4b9b2b2))
+* **terms:** implement language validation for terms acceptance ([5a58894](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5a58894e223c480e76be8c9bd7b89ad73ee64d50))
+* **terms:** update terms acceptance logic to be version-based across all locales ([e6f0540](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e6f0540c79149593fc934956b0976917ae75c5b7))
+* **translations:** add German translations for Kiel city categories ([79ef591](https://github.com/The-Heidi-Suite/heidi.microservices/commit/79ef59100f6ac48ce1b01e0378ceaa30d6eceae2))
+* **translations:** add success messages for category management ([5a5a24a](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5a5a24aa0b02647878ea0c19ae95c0ca2910e262))
+* **users:** enhance device deletion logic to support client deviceId ([6c3fd5e](https://github.com/The-Heidi-Suite/heidi.microservices/commit/6c3fd5ede0f5849a270961b3fdf3d982a6bf12dd))
+* **users:** enhance device registration logic to reuse existing tokens ([9f5ca91](https://github.com/The-Heidi-Suite/heidi.microservices/commit/9f5ca91bcb946db54433631bbb874bffabf6ec01))
+
+
+### ♻️ Code Refactoring
+
+* **categories:** clean up code formatting in category service and seed scripts ([58d2915](https://github.com/The-Heidi-Suite/heidi.microservices/commit/58d29159732be6be22995a725b02a6e8cf1ac626))
+* **categories:** clear children for Events category in seed configuration ([e683355](https://github.com/The-Heidi-Suite/heidi.microservices/commit/e683355cb43d79849735718d013dc9a00bfe07ca))
+* **categories:** remove unused categories and streamline category assets ([d7e14c9](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d7e14c97357f64df4768e930247407cfde9179a4))
+* **destination-one:** simplify category assignment logic in destination-one.service.ts ([0353a38](https://github.com/The-Heidi-Suite/heidi.microservices/commit/0353a38ec113625349dbd99fae3911d2699c7361))
+* **destination-one:** update category mappings and remove unused types ([5202d45](https://github.com/The-Heidi-Suite/heidi.microservices/commit/5202d4555599470494ad4120b821a8f6acc53476))
+* **docs:** improve formatting and clarity in documentation files ([ed63bf3](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ed63bf3af65b70b48edf986d1e1c53966d7ab8f6))
+* **listings:** remove content search from listings service ([ababcda](https://github.com/The-Heidi-Suite/heidi.microservices/commit/ababcdac39c453a7319d1633c719b9b93cd2485d))
+* **notifications:** simplify language resolution in push notifications ([1a093fb](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1a093fb3e26418c7565be61897b7de7fadcc324d))
+* **notifications:** update event reminder messages to remove occurrence date ([321f1b2](https://github.com/The-Heidi-Suite/heidi.microservices/commit/321f1b236f625d0adbf4ecfd6cae4c44f6e4cc41))
+* **pagination:** standardize pagination logic across services ([592d028](https://github.com/The-Heidi-Suite/heidi.microservices/commit/592d028571bb11b141c3c75ce5a67b4ff1fe7048))
+
 ## [1.21.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.20.0...v1.21.0) (2025-12-01)
 
 
