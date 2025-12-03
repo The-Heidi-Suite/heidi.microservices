@@ -1289,12 +1289,36 @@ export class UsersService {
       where: { fcmToken: data.fcmToken },
     });
 
-    if (existingByToken && existingByToken.userId !== userId) {
-      // Token belongs to another user - deactivate it
-      await this.prisma.userDevice.update({
+    // If token exists (for same user or different user), reuse the same row
+    if (existingByToken) {
+      // Reuse the existing row - transfer ownership to new user if needed
+      const device = await this.prisma.userDevice.update({
         where: { fcmToken: data.fcmToken },
-        data: { isActive: false },
+        data: {
+          userId, // Transfer ownership to the new user
+          deviceId: data.deviceId || existingByToken.deviceId,
+          platform: data.platform,
+          appVersion: data.appVersion,
+          osVersion: data.osVersion,
+          language: data.language,
+          cityId: data.cityId,
+          isActive: true,
+          lastSeenAt: new Date(),
+        },
       });
+
+      this.logger.log(`Device registered (reused existing): ${device.id}`);
+      return {
+        id: device.id,
+        deviceId: device.deviceId,
+        platform: device.platform,
+        appVersion: device.appVersion,
+        osVersion: device.osVersion,
+        language: device.language,
+        cityId: device.cityId,
+        lastSeenAt: device.lastSeenAt,
+        createdAt: device.createdAt,
+      };
     }
 
     // If deviceId provided, check for existing device with same userId and deviceId
@@ -1314,22 +1338,7 @@ export class UsersService {
 
     // Determine which device to update/create
     let device;
-    if (existingByToken && existingByToken.userId === userId) {
-      // Update existing device with same token
-      device = await this.prisma.userDevice.update({
-        where: { fcmToken: data.fcmToken },
-        data: {
-          deviceId: data.deviceId || existingByToken.deviceId,
-          platform: data.platform,
-          appVersion: data.appVersion,
-          osVersion: data.osVersion,
-          language: data.language,
-          cityId: data.cityId,
-          isActive: true,
-          lastSeenAt: new Date(),
-        },
-      });
-    } else if (existingByDeviceId) {
+    if (existingByDeviceId) {
       // Update existing device with same deviceId
       device = await this.prisma.userDevice.update({
         where: { id: existingByDeviceId.id },
