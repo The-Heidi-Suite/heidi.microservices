@@ -1685,7 +1685,6 @@ export class ListingsService {
       where.OR = [
         { title: { contains: searchTerm, mode: 'insensitive' } },
         { summary: { contains: searchTerm, mode: 'insensitive' } },
-        { content: { contains: searchTerm, mode: 'insensitive' } },
       ];
     }
 
@@ -2310,7 +2309,6 @@ export class ListingsService {
       listingWhere.OR = [
         { title: { contains: searchTerm, mode: 'insensitive' } },
         { summary: { contains: searchTerm, mode: 'insensitive' } },
-        { content: { contains: searchTerm, mode: 'insensitive' } },
       ];
     }
 
