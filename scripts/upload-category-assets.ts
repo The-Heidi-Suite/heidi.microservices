@@ -124,6 +124,32 @@ async function uploadCategoryImage(
   return generatePublicUrl(bucket, key);
 }
 
+async function uploadCategoryIcon(
+  s3Client: S3Client,
+  bucket: string,
+  categoryId: string,
+  filePath: string,
+): Promise<string> {
+  const fileBuffer = await fs.readFile(filePath);
+
+  const key = `categories/${categoryId}/icon.svg`;
+
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: fileBuffer,
+      ContentType: 'image/svg+xml',
+      ACL: 'public-read',
+      Metadata: {
+        originalName: path.basename(filePath),
+      },
+    }),
+  );
+
+  return generatePublicUrl(bucket, key);
+}
+
 async function uploadCityHeader(
   s3Client: S3Client,
   bucket: string,
@@ -157,11 +183,12 @@ async function main() {
   console.log('==========================================\n');
 
   if (SKIP_EXISTING) {
-    console.log('⏭️  SKIP_EXISTING mode: Will skip categories/cities with existing imageUrl\n');
+    console.log('⏭️  SKIP_EXISTING mode: Will skip categories/cities with existing imageUrl/iconUrl\n');
   }
 
   const assetsDir = path.join(__dirname, 'assets');
   const categoriesDir = path.join(assetsDir, 'categories');
+  const iconsDir = path.join(assetsDir, 'icons');
   const cityHeadersDir = path.join(assetsDir, 'city-headers');
 
   // Check directories exist
@@ -223,12 +250,12 @@ async function main() {
 
       // Skip if already uploaded
       if (SKIP_EXISTING && category.imageUrl) {
-        console.log(`⏭️  Skipping ${slug} (already has imageUrl)`);
+        console.log(`⏭️  Skipping ${slug} image (already has imageUrl)`);
         skippedCount++;
         continue;
       }
 
-      console.log(`📤 Uploading ${slug}...`);
+      console.log(`📤 Uploading ${slug} image...`);
       const imageUrl = await uploadCategoryImage(s3Client, bucket, category.id, filePath);
 
       // Update database
@@ -241,7 +268,74 @@ async function main() {
       uploadedCount++;
     } catch (error) {
       console.error(
-        `  ❌ Failed to upload ${slug}:`,
+        `  ❌ Failed to upload ${slug} image:`,
+        error instanceof Error ? error.message : error,
+      );
+      errorCount++;
+    }
+  }
+
+  // Upload category icons
+  console.log('\n🎨 Uploading category icons...\n');
+  for (const [slug, asset] of Object.entries(CATEGORY_ASSETS)) {
+    const iconFileName = asset.iconFileName;
+    if (!iconFileName) {
+      continue; // No icon for this category
+    }
+
+    const iconFilePath = path.join(iconsDir, iconFileName);
+
+    // Check if file exists
+    if (
+      !(await fs
+        .access(iconFilePath)
+        .then(() => true)
+        .catch(() => false))
+    ) {
+      console.log(`⚠️  Icon not found: ${iconFileName} (slug: ${slug})`);
+      continue;
+    }
+
+    try {
+      // Find category by slug
+      const category = await corePrisma.category.findUnique({
+        where: { slug },
+        select: { id: true, iconUrl: true },
+      });
+
+      if (!category) {
+        console.log(`⚠️  Category not found in database: ${slug}`);
+        errorCount++;
+        continue;
+      }
+
+      // Skip if already uploaded
+      if (SKIP_EXISTING && category.iconUrl) {
+        console.log(`⏭️  Skipping ${slug} icon (already has iconUrl)`);
+        skippedCount++;
+        continue;
+      }
+
+      console.log(`📤 Uploading ${slug} icon...`);
+      const iconUrl = await uploadCategoryIcon(s3Client, bucket, category.id, iconFilePath);
+
+      // Update database - update category iconUrl
+      await corePrisma.category.update({
+        where: { id: category.id },
+        data: { iconUrl },
+      });
+
+      // Also update all city categories that reference this category
+      await corePrisma.cityCategory.updateMany({
+        where: { categoryId: category.id },
+        data: { iconUrl },
+      });
+
+      console.log(`  ✓ Uploaded: ${iconUrl}`);
+      uploadedCount++;
+    } catch (error) {
+      console.error(
+        `  ❌ Failed to upload ${slug} icon:`,
         error instanceof Error ? error.message : error,
       );
       errorCount++;

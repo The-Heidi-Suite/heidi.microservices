@@ -17,7 +17,11 @@
 import 'tsconfig-paths/register';
 
 import { PrismaClient, CategoryType } from '@prisma/client-core';
-import { CATEGORY_ASSETS, getCategoryImageUrl } from './assets/category-assets-mapping';
+import {
+  CATEGORY_ASSETS,
+  getCategoryImageUrl,
+  getCategoryIconUrl,
+} from './assets/category-assets-mapping';
 
 const prisma = new PrismaClient();
 const DEFAULT_CATEGORY_LANGUAGE = 'en';
@@ -167,6 +171,21 @@ async function seedCategoryTree(seed: CategorySeed, parentId?: string) {
       : seed.imageUrl || null;
   }
 
+  // Preserve existing icon storage URL if it's already set (starts with http/https)
+  let iconUrl: string | null = null;
+  if (
+    existing?.iconUrl &&
+    (existing.iconUrl.startsWith('http://') || existing.iconUrl.startsWith('https://'))
+  ) {
+    iconUrl = existing.iconUrl;
+  } else {
+    // Use local path from mapping (will be updated to storage URL by upload script)
+    iconUrl =
+      assetMapping?.iconFileName
+        ? getCategoryIconUrl(assetMapping.iconFileName)
+        : seed.iconUrl || null;
+  }
+
   let categoryId: string;
 
   const categoryData = {
@@ -178,7 +197,7 @@ async function seedCategoryTree(seed: CategorySeed, parentId?: string) {
     subtitle: seed.subtitle || assetMapping?.subtitle || null,
     description: seed.description || assetMapping?.description || null,
     imageUrl: imageUrl || null,
-    iconUrl: seed.iconUrl || null,
+    iconUrl: iconUrl || null,
     headerBackgroundColor:
       seed.headerBackgroundColor || assetMapping?.headerBackgroundColor || null,
     contentBackgroundColor:
