@@ -23,31 +23,15 @@ export class FCMTranslationService {
   }
 
   /**
-   * Resolve language priority: user.preferredLanguage → user.metadata.preferredLanguage → requestLanguage → default
+   * Resolve language priority: user.preferredLanguage → system default
    */
-  resolveLanguage(user: any, requestLanguage?: string): string {
-    // 1. Check user.preferredLanguage (from database)
+  resolveLanguage(user: any): string {
+    // Check user.preferredLanguage (from database)
     if (user?.preferredLanguage && typeof user.preferredLanguage === 'string') {
       return user.preferredLanguage;
     }
 
-    // 2. Check user.metadata.preferredLanguage (legacy support)
-    if (user?.metadata) {
-      const metadata = user.metadata;
-      if (typeof metadata === 'object' && !Array.isArray(metadata)) {
-        const preferred = metadata.preferredLanguage || metadata.language || metadata.locale;
-        if (preferred && typeof preferred === 'string' && preferred.trim() !== '') {
-          return preferred;
-        }
-      }
-    }
-
-    // 3. Check request language (Accept-Language header)
-    if (requestLanguage && requestLanguage.trim() !== '') {
-      return requestLanguage;
-    }
-
-    // 4. Use system default
+    // Use system default
     return this.defaultLanguage;
   }
 
@@ -64,9 +48,8 @@ export class FCMTranslationService {
   async getNotificationContent(
     dto: SendNotificationDto,
     user: any,
-    requestLanguage?: string,
   ): Promise<{ title: string; body: string }> {
-    const language = this.resolveLanguage(user, requestLanguage);
+    const language = this.resolveLanguage(user);
 
     // If translation key is provided, use translation
     if (dto.translationKey) {

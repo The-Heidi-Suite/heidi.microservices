@@ -25,7 +25,7 @@ export class FCMPushService {
    * Fetches user's FCM tokens from UserDevice table and city from users service
    * Supports multi-language notifications with translation
    */
-  async sendPushNotification(dto: SendNotificationDto, requestLanguage?: string): Promise<void> {
+  async sendPushNotification(dto: SendNotificationDto): Promise<void> {
     try {
       // Fetch user data including city and preferred language
       const user = await firstValueFrom(
@@ -84,11 +84,7 @@ export class FCMPushService {
       const targetCityId = dto.cityId || user.cityId || null;
 
       // Get translated notification content
-      const notification = await this.translationService.getNotificationContent(
-        dto,
-        user,
-        requestLanguage,
-      );
+      const notification = await this.translationService.getNotificationContent(dto, user);
 
       // Send notification and handle invalid tokens
       const invalidTokens: string[] = [];

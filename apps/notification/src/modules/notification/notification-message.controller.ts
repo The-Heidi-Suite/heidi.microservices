@@ -3,7 +3,6 @@ import { MessagePattern, Payload } from '@nestjs/microservices';
 import { RABBITMQ_CLIENT, RabbitMQPatterns, RmqClientWrapper } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
 import { PrismaNotificationService } from '@heidi/prisma';
-import { I18nService } from '@heidi/i18n';
 import { EmailService } from './email.service';
 import { FCMPushService } from '../fcm/fcm-push.service';
 import { SendNotificationDto } from '@heidi/contracts';
@@ -17,7 +16,6 @@ export class NotificationMessageController {
     private readonly prisma: PrismaNotificationService,
     private readonly emailService: EmailService,
     private readonly fcmPushService: FCMPushService,
-    private readonly i18nService: I18nService,
     @Inject(RABBITMQ_CLIENT) private readonly client: RmqClientWrapper,
     logger: LoggerService,
   ) {
@@ -146,9 +144,6 @@ export class NotificationMessageController {
     fcmData?: { [key: string]: string };
   }): Promise<void> {
     try {
-      // Get language from request context (if available) or metadata
-      const requestLanguage = this.i18nService.getLanguage();
-
       // Build SendNotificationDto from data
       const dto: SendNotificationDto = {
         userId: data.userId,
@@ -164,33 +159,11 @@ export class NotificationMessageController {
       };
 
       // Send push notification with translation support
-      await this.fcmPushService.sendPushNotification(dto, requestLanguage);
+      // Language is resolved from user.preferredLanguage in FCMTranslationService
+      await this.fcmPushService.sendPushNotification(dto);
 
       // Update notification status to SENT
       await this.updateNotificationStatus(data.notificationId, 'SENT');
-
-      // Store resolved language in metadata
-      const notification = await this.prisma.notification.findUnique({
-        where: { id: data.notificationId },
-        select: { metadata: true },
-      });
-
-      const existingMetadata =
-        notification?.metadata &&
-        typeof notification.metadata === 'object' &&
-        !Array.isArray(notification.metadata)
-          ? (notification.metadata as Record<string, any>)
-          : {};
-
-      await this.prisma.notification.update({
-        where: { id: data.notificationId },
-        data: {
-          metadata: {
-            ...existingMetadata,
-            resolvedLanguage: requestLanguage,
-          },
-        },
-      });
 
       // Emit NOTIFICATION_SENT event
       this.client.emit(RabbitMQPatterns.NOTIFICATION_SENT, {
