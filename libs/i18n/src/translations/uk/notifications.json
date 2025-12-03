@@ -30,11 +30,11 @@
   "event": {
     "reminder24h": {
       "title": "Нагадування про подію: {eventTitle}",
-      "body": "Не забудьте! {eventTitle} починається завтра о {eventDate}"
+      "body": "Не забудьте! \"{eventTitle}\" починається через 24 години"
     },
     "reminder2h": {
       "title": "Подія скоро почнеться: {eventTitle}",
-      "body": "{eventTitle} почнеться через 2 години о {eventDate}"
+      "body": "\"{eventTitle}\" почнеться через 2 години"
     }
   }
 }

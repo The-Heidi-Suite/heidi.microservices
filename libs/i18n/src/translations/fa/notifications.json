@@ -30,11 +30,11 @@
   "event": {
     "reminder24h": {
       "title": "یادآوری رویداد: {eventTitle}",
-      "body": "فراموش نکنید! {eventTitle} فردا در {eventDate} شروع می‌شود"
+      "body": "فراموش نکنید! \"{eventTitle}\" در 24 ساعت آینده شروع می‌شود"
     },
     "reminder2h": {
       "title": "رویداد به زودی شروع می‌شود: {eventTitle}",
-      "body": "{eventTitle} در 2 ساعت آینده در {eventDate} شروع می‌شود"
+      "body": "\"{eventTitle}\" در 2 ساعت آینده شروع می‌شود"
     }
   }
 }

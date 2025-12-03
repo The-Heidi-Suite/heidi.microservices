@@ -30,11 +30,11 @@
   "event": {
     "reminder24h": {
       "title": "Hendelsespåminnelse: {eventTitle}",
-      "body": "Ikke glem! {eventTitle} starter i morgen kl. {eventDate}"
+      "body": "Ikke glem! \"{eventTitle}\" starter om 24 timer"
     },
     "reminder2h": {
       "title": "Hendelse starter snart: {eventTitle}",
-      "body": "{eventTitle} starter om 2 timer kl. {eventDate}"
+      "body": "\"{eventTitle}\" starter om 2 timer"
     }
   }
 }

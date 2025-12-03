@@ -1679,16 +1679,6 @@ export class CoreService implements OnModuleInit {
         }
       }
 
-      // Format occurrence date
-      const occurrenceDate = occurrenceStart.toLocaleString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-
       // Determine translation key based on reminder type
       const translationKey =
         reminderType === ListingReminderType.H24
@@ -1703,7 +1693,6 @@ export class CoreService implements OnModuleInit {
         translationKey,
         translationParams: {
           eventTitle: listing.title,
-          eventDate: occurrenceDate,
           cityName: cityName || '',
         },
         cityId: cityId || undefined,
