@@ -183,7 +183,9 @@ async function main() {
   console.log('==========================================\n');
 
   if (SKIP_EXISTING) {
-    console.log('⏭️  SKIP_EXISTING mode: Will skip categories/cities with existing imageUrl/iconUrl\n');
+    console.log(
+      '⏭️  SKIP_EXISTING mode: Will skip categories/cities with existing imageUrl/iconUrl\n',
+    );
   }
 
   const assetsDir = path.join(__dirname, 'assets');

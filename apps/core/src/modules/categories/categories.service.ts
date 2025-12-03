@@ -1146,8 +1146,7 @@ export class CategoriesService {
         subtitle: cityOverrides?.subtitle ?? child.subtitle,
         imageUrl: cityOverrides?.imageUrl || child.imageUrl || baseResponse.imageUrl, // Inherit from parent if null
         iconUrl: cityOverrides?.iconUrl || child.iconUrl,
-        headerBackgroundColor:
-          cityOverrides?.headerBackgroundColor || child.headerBackgroundColor,
+        headerBackgroundColor: cityOverrides?.headerBackgroundColor || child.headerBackgroundColor,
         contentBackgroundColor:
           cityOverrides?.contentBackgroundColor || child.contentBackgroundColor,
         cityCategoryDisplayOrder: cityOverrides?.displayOrder,

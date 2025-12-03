@@ -180,10 +180,9 @@ async function seedCategoryTree(seed: CategorySeed, parentId?: string) {
     iconUrl = existing.iconUrl;
   } else {
     // Use local path from mapping (will be updated to storage URL by upload script)
-    iconUrl =
-      assetMapping?.iconFileName
-        ? getCategoryIconUrl(assetMapping.iconFileName)
-        : seed.iconUrl || null;
+    iconUrl = assetMapping?.iconFileName
+      ? getCategoryIconUrl(assetMapping.iconFileName)
+      : seed.iconUrl || null;
   }
 
   let categoryId: string;
