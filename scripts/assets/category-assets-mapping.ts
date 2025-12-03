@@ -15,6 +15,10 @@ export interface CategoryAssetMapping {
    * File name inside scripts/assets/categories after processing.
    */
   imageFileName: string;
+  /**
+   * Icon SVG file name inside scripts/assets/icons folder.
+   */
+  iconFileName?: string;
   displayName?: string; // Kiel-specific display name
   subtitle?: string;
   description?: string;
@@ -32,6 +36,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   tours: {
     slug: 'tours',
     imageFileName: 'tours.webp',
+    iconFileName: 'tours.svg',
     displayName: 'YOUR WAY THROUGH KIEL',
     subtitle: 'Blue line',
     description: '67 activities in your city',
@@ -44,6 +49,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   'food-and-drink': {
     slug: 'food-and-drink',
     imageFileName: 'food-and-drink.webp',
+    iconFileName: 'food-and-drink.svg',
     displayName: 'EATING & DRINKING',
     subtitle: "Kiel's diverse restaurant scene",
     description: 'North German and international cuisine',
@@ -56,6 +62,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   shopping: {
     slug: 'shopping',
     imageFileName: 'shopping.webp',
+    iconFileName: 'shopping.svg',
     displayName: "SHOP TO YOUR HEART'S CONTENT",
     subtitle: 'Over 400 stores',
     description: 'In your city center',
@@ -68,6 +75,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   culture: {
     slug: 'culture',
     imageFileName: 'culture.webp',
+    iconFileName: 'culture.svg',
     displayName: 'KIEL CULTURE',
     subtitle: 'Diverse, from the sea to museums',
     description: 'Art, history, music, water',
@@ -80,6 +88,7 @@ export const CATEGORY_ASSETS: Record<string, CategoryAssetMapping> = {
   'show-me-more': {
     slug: 'show-me-more',
     imageFileName: 'show-me-more.webp',
+    iconFileName: 'show-me-more.svg',
     displayName: 'SHOW ME MORE',
     subtitle: 'Everything at a glance',
     description: 'Discover your city with your filters',
@@ -142,6 +151,19 @@ export function getCategoryImageUrl(fileName: string): string {
   }
   // Otherwise, assume it's in the new categories/ folder structure
   return `${ASSETS_BASE_URL}/categories/${fileName}`;
+}
+
+/**
+ * Get asset URL for a category icon (local file path)
+ * Note: After upload to storage, this will return storage URLs instead
+ */
+export function getCategoryIconUrl(fileName: string): string {
+  // If fileName is already a full URL (from storage), return as-is
+  if (fileName.startsWith('http://') || fileName.startsWith('https://')) {
+    return fileName;
+  }
+  // Otherwise, assume it's in the icons/ folder structure
+  return `${ASSETS_BASE_URL}/icons/${fileName}`;
 }
 
 /**

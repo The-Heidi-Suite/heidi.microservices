@@ -34,7 +34,13 @@ export class FileUploadService {
   private readonly MAX_DOCUMENT_SIZE = 10 * 1024 * 1024; // 10MB
 
   // Allowed MIME types
-  private readonly ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  private readonly ALLOWED_IMAGE_TYPES = [
+    'image/jpeg',
+    'image/jpg',
+    'image/png',
+    'image/webp',
+    'image/svg+xml',
+  ];
 
   private readonly ALLOWED_VIDEO_TYPES = [
     'video/mp4',
@@ -79,7 +85,20 @@ export class FileUploadService {
 
     // Detect actual file type from buffer
     const fileType = await fromBuffer(file.buffer);
+
+    // Special handling for SVG files (text-based, file-type may not detect them)
     if (!fileType) {
+      const isSvg = this.isSvgFile(file.buffer);
+      if (isSvg && options.allowedMimeTypes.includes('image/svg+xml')) {
+        // SVG detected and allowed, proceed with extension check if provided
+        if (options.allowedExtensions) {
+          const extension = this.getFileExtension(file.originalname);
+          if (!options.allowedExtensions.includes(extension.toLowerCase())) {
+            throw new BadRequestException(`File extension .${extension} is not allowed`);
+          }
+        }
+        return;
+      }
       throw new BadRequestException('Unable to detect file type');
     }
 
@@ -107,7 +126,7 @@ export class FileUploadService {
     await this.validateFile(file, {
       maxSize: 0, // No size limit
       allowedMimeTypes: this.ALLOWED_IMAGE_TYPES,
-      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp'],
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'webp', 'svg'],
     });
   }
 
@@ -145,6 +164,17 @@ export class FileUploadService {
    * Process and optimize image
    */
   async processImage(file: any, options: ImageProcessingOptions = {}): Promise<ProcessedFile> {
+    // SVG files should not be processed - return as-is to preserve vector format
+    if (this.isSvgFile(file.buffer)) {
+      return {
+        buffer: file.buffer,
+        mimeType: 'image/svg+xml',
+        extension: 'svg',
+        originalName: file.originalname,
+        size: file.buffer.length,
+      };
+    }
+
     const {
       maxWidth = 1920,
       maxHeight = 1080,
@@ -352,6 +382,25 @@ export class FileUploadService {
   }
 
   /**
+   * Check if a buffer contains an SVG file
+   * SVGs are XML-based and may not be detected by file-type library
+   */
+  private isSvgFile(buffer: Buffer): boolean {
+    try {
+      const content = buffer.toString('utf8', 0, Math.min(buffer.length, 1024));
+      // Check for SVG markers - either starts with XML declaration or <svg tag
+      const trimmedContent = content.trim();
+      return (
+        trimmedContent.startsWith('<?xml') ||
+        trimmedContent.startsWith('<svg') ||
+        trimmedContent.includes('<svg')
+      );
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Get file extension from filename
    */
   private getFileExtension(filename: string): string {
@@ -388,7 +437,12 @@ export class FileUploadService {
     mimeType: string;
   }> {
     const fileType = await fromBuffer(file.buffer);
+
+    // Special handling for SVG files (text-based, file-type may not detect them)
     if (!fileType) {
+      if (this.isSvgFile(file.buffer)) {
+        return { type: 'IMAGE', mimeType: 'image/svg+xml' };
+      }
       return { type: 'OTHER', mimeType: file.mimetype };
     }
 

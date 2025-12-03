@@ -21,7 +21,11 @@ import 'tsconfig-paths/register';
 
 import { PrismaClient as CityPrismaClient } from '@prisma/client-city';
 import { PrismaClient as CorePrismaClient, UserRole } from '@prisma/client-core';
-import { CATEGORY_ASSETS, getCityHeaderImageUrl } from './assets/category-assets-mapping';
+import {
+  CATEGORY_ASSETS,
+  getCityHeaderImageUrl,
+  getCategoryIconUrl,
+} from './assets/category-assets-mapping';
 
 const cityPrisma = new CityPrismaClient();
 const corePrisma = new CorePrismaClient();
@@ -205,6 +209,12 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
       ? assetMapping?.contentBackgroundColor || null
       : null;
 
+    // Get icon URL if available (only for main categories with icons)
+    const iconUrl =
+      isMainCategory && assetMapping?.iconFileName
+        ? getCategoryIconUrl(assetMapping.iconFileName)
+        : null;
+
     try {
       const existing = await corePrisma.cityCategory.findUnique({
         where: {
@@ -214,6 +224,17 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
           },
         },
       });
+
+      // Preserve existing storage icon URL if it's already set (starts with http/https)
+      let finalIconUrl: string | null = null;
+      if (
+        existing?.iconUrl &&
+        (existing.iconUrl.startsWith('http://') || existing.iconUrl.startsWith('https://'))
+      ) {
+        finalIconUrl = existing.iconUrl;
+      } else {
+        finalIconUrl = iconUrl;
+      }
 
       if (existing) {
         await corePrisma.cityCategory.update({
@@ -226,6 +247,7 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
             displayOrder,
             headerBackgroundColor,
             contentBackgroundColor,
+            iconUrl: finalIconUrl,
             isActive: true,
             addedBy,
           },
@@ -246,6 +268,7 @@ async function seedCityCategories(cityId: string, addedBy?: string) {
             displayOrder,
             headerBackgroundColor,
             contentBackgroundColor,
+            iconUrl: finalIconUrl,
             isActive: true,
             addedBy,
           },
