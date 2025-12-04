@@ -22,6 +22,7 @@ export class UsersPreferencesController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @SuccessMessage('PREFERENCES_RETRIEVED')
   @ApiOperation({
     summary: 'Get user preferences',
     description:
@@ -46,18 +47,11 @@ export class UsersPreferencesController {
   async getPreferences(@GetCurrentUser('userId') userId: string) {
     const result = await this.usersService.getPreferences(userId);
     return {
-      success: true,
-      data: {
-        userId: result.userId,
-        newsletterSubscription: result.newsletterSubscription,
-        notificationsEnabled: result.notificationsEnabled,
-        preferredLanguage: result.preferredLanguage,
-        updatedAt: result.updatedAt,
-      },
-      message: 'Preferences retrieved successfully',
-      timestamp: new Date().toISOString(),
-      path: '/me/preferences',
-      statusCode: 200,
+      userId: result.userId,
+      newsletterSubscription: result.newsletterSubscription,
+      notificationsEnabled: result.notificationsEnabled,
+      preferredLanguage: result.preferredLanguage,
+      updatedAt: result.updatedAt,
     };
   }
 
@@ -102,18 +96,11 @@ export class UsersPreferencesController {
   ) {
     const result = await this.usersService.updatePreferences(userId, email, dto);
     return {
-      success: true,
-      data: {
-        userId: result.userId,
-        newsletterSubscription: result.newsletterSubscription,
-        notificationsEnabled: result.notificationsEnabled,
-        preferredLanguage: result.preferredLanguage,
-        updatedAt: result.updatedAt,
-      },
-      message: 'Preferences updated successfully',
-      timestamp: new Date().toISOString(),
-      path: '/me/preferences',
-      statusCode: 200,
+      userId: result.userId,
+      newsletterSubscription: result.newsletterSubscription,
+      notificationsEnabled: result.notificationsEnabled,
+      preferredLanguage: result.preferredLanguage,
+      updatedAt: result.updatedAt,
     };
   }
 }
