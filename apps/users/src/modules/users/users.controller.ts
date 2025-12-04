@@ -63,13 +63,9 @@ import {
   SubscribeTopicResponseDto,
   UnsubscribeTopicResponseDto,
   GetSalutationsResponseDto,
-  UpdateNotificationPreferencesDto,
-  GetNotificationPreferencesResponseDto,
-  UpdateNotificationPreferencesResponseDto,
   UpdatePreferencesDto,
   UpdatePreferencesResponseDto,
-  UpdateLanguagePreferenceDto,
-  UpdateLanguagePreferenceResponseDto,
+  GetPreferencesResponseDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { GetLanguage } from '@heidi/i18n';
@@ -78,7 +74,6 @@ import { FileUploadService } from '@heidi/storage';
 import { ConfigService } from '@heidi/config';
 import { SuccessMessage } from '@heidi/interceptors';
 
-@ApiTags('users')
 @Controller()
 @UseGuards(JwtAuthGuard, AdminOnlyGuard)
 export class UsersController {
@@ -90,6 +85,7 @@ export class UsersController {
 
   @Get('salutations')
   @Public()
+  @ApiTags('Users - Public')
   @ApiOperation({
     summary: 'Get available salutations',
     description:
@@ -115,6 +111,7 @@ export class UsersController {
 
   @Post('register')
   @Public()
+  @ApiTags('Users - Auth')
   @ApiOperation({
     summary: 'Register new user',
     description: 'Create a new user account (public endpoint)',
@@ -142,6 +139,7 @@ export class UsersController {
 
   @Get()
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Admin')
   @ApiOperation({
     summary: 'Get all users',
     description:
@@ -206,6 +204,7 @@ export class UsersController {
 
   @Get(':id')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Admin')
   @ApiOperation({
     summary: 'Get user by ID',
     description: 'Retrieve a specific user by their ID (Admin only)',
@@ -227,6 +226,7 @@ export class UsersController {
 
   @Post()
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Admin')
   @ApiOperation({ summary: 'Create user', description: 'Create a new user (Admin only)' })
   @ApiBody({ type: CreateUserDto })
   @ApiResponse({
@@ -250,6 +250,7 @@ export class UsersController {
 
   @Patch(':id')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Admin')
   @SuccessMessage('USER_UPDATED')
   @ApiOperation({ summary: 'Update user', description: 'Update a user by ID (Admin only)' })
   @ApiParam({ name: 'id', description: 'User ID (UUID)' })
@@ -270,6 +271,7 @@ export class UsersController {
 
   @Delete(':id')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Admin')
   @ApiOperation({ summary: 'Delete user', description: 'Delete a user by ID (Admin only)' })
   @ApiParam({ name: 'id', description: 'User ID (UUID)' })
   @ApiResponse({
@@ -288,6 +290,7 @@ export class UsersController {
 
   @Patch(':id/restore')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Admin')
   @SuperAdminOnly()
   @ApiOperation({
     summary: 'Restore user',
@@ -320,6 +323,7 @@ export class UsersController {
 
   @Get('profile/me')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Profile')
   @ApiOperation({
     summary: 'Get my profile',
     description: 'Get the current authenticated user profile',
@@ -341,6 +345,7 @@ export class UsersController {
 
   @Patch('profile/me')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Profile')
   @SuccessMessage('PROFILE_UPDATED')
   @ApiOperation({
     summary: 'Update my profile',
@@ -361,6 +366,7 @@ export class UsersController {
   @UseInterceptors(FileInterceptor('file'))
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Profile')
   @ApiOperation({
     summary: 'Upload profile photo',
     description: 'Upload and process a profile photo for the current authenticated user.',
@@ -462,6 +468,7 @@ export class UsersController {
 
   @Post('profile/me/change-password')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Profile')
   @ApiOperation({
     summary: 'Change password',
     description: 'Change the password for the current authenticated user',
@@ -489,6 +496,7 @@ export class UsersController {
 
   @Post('guest')
   @Public()
+  @ApiTags('Users - Auth')
   @ApiOperation({
     summary: 'Create guest user (internal)',
     description:
@@ -511,6 +519,7 @@ export class UsersController {
 
   @Post('guest/convert')
   @Public()
+  @ApiTags('Users - Auth')
   @ApiOperation({
     summary: 'Convert guest to registered user',
     description:
@@ -550,6 +559,7 @@ export class UsersController {
 
   @Post('reset-password/request')
   @Public()
+  @ApiTags('Users - Auth')
   @ApiOperation({
     summary: 'Request password reset',
     description: 'Request a password reset email to be sent',
@@ -574,6 +584,7 @@ export class UsersController {
 
   @Post('reset-password/confirm')
   @Public()
+  @ApiTags('Users - Auth')
   @ApiOperation({
     summary: 'Reset password',
     description: 'Reset password using the token from the email',
@@ -608,6 +619,7 @@ export class UsersController {
   // Device Management Endpoints
   @Get('me/devices')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Devices')
   @ApiOperation({
     summary: 'Get my devices',
     description: 'Get all active devices for the current authenticated user',
@@ -630,6 +642,7 @@ export class UsersController {
 
   @Post('me/devices')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Devices')
   @ApiOperation({
     summary: 'Register device',
     description: 'Register or update a device for the current authenticated user',
@@ -653,6 +666,7 @@ export class UsersController {
 
   @Delete('me/devices/:deviceId')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Devices')
   @ApiOperation({
     summary: 'Delete device',
     description: 'Deactivate a device for the current authenticated user',
@@ -688,6 +702,7 @@ export class UsersController {
   // Topic Subscription Endpoints
   @Get('me/topics')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Topics')
   @ApiOperation({
     summary: 'Get my topic subscriptions',
     description: 'Get all active topic subscriptions for the current authenticated user',
@@ -710,6 +725,7 @@ export class UsersController {
 
   @Post('me/topics')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Topics')
   @ApiOperation({
     summary: 'Subscribe to topic',
     description: 'Subscribe the current authenticated user to a topic',
@@ -733,6 +749,7 @@ export class UsersController {
 
   @Delete('me/topics/:topicKey')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Topics')
   @ApiOperation({
     summary: 'Unsubscribe from topic',
     description: 'Unsubscribe the current authenticated user from a topic',
@@ -765,20 +782,19 @@ export class UsersController {
     return this.usersService.unsubscribeTopic(userId, topicKey);
   }
 
-  // Notification Preferences Endpoint
-  @Patch('me/notifications')
+  // Preferences Endpoints (unified: notifications, language, newsletter)
+  @Get('me/preferences')
   @ApiBearerAuth('JWT-auth')
-  @SuccessMessage('NOTIFICATION_PREFERENCES_UPDATED')
+  @ApiTags('Users - Preferences')
   @ApiOperation({
-    summary: 'Update notification preferences',
+    summary: 'Get user preferences',
     description:
-      'Enable or disable push notifications for favorite event reminders. When disabled, the user will not receive Firebase notifications for upcoming favorite events.',
+      'Get all user preferences including notification preferences, preferred language, and newsletter subscription status.',
   })
-  @ApiBody({ type: UpdateNotificationPreferencesDto })
   @ApiResponse({
     status: 200,
-    description: 'Notification preferences updated successfully',
-    type: UpdateNotificationPreferencesResponseDto,
+    description: 'Preferences retrieved successfully',
+    type: GetPreferencesResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -791,92 +807,43 @@ export class UsersController {
     type: NotFoundErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
-  async updateNotificationPreferences(
-    @GetCurrentUser('userId') userId: string,
-    @Body() dto: UpdateNotificationPreferencesDto,
-  ) {
-    return this.usersService.updateNotificationPreferences(userId, dto.notificationsEnabled);
+  async getPreferences(@GetCurrentUser('userId') userId: string) {
+    const result = await this.usersService.getPreferences(userId);
+    return {
+      success: true,
+      data: {
+        userId: result.userId,
+        newsletterSubscription: result.newsletterSubscription,
+        notificationsEnabled: result.notificationsEnabled,
+        preferredLanguage: result.preferredLanguage,
+        updatedAt: result.updatedAt,
+      },
+      message: 'Preferences retrieved successfully',
+      timestamp: new Date().toISOString(),
+      path: '/me/preferences',
+      statusCode: 200,
+    };
   }
 
-  @Get('me/notifications')
-  @ApiBearerAuth('JWT-auth')
-  @SuccessMessage('NOTIFICATION_PREFERENCES_RETRIEVED')
-  @ApiOperation({
-    summary: 'Get notification preferences',
-    description: 'Get the current notification preferences for the authenticated user',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Notification preferences retrieved successfully',
-    type: GetNotificationPreferencesResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-    type: UnauthorizedErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User not found',
-    type: NotFoundErrorResponseDto,
-  })
-  @HttpCode(HttpStatus.OK)
-  async getNotificationPreferences(@GetCurrentUser('userId') userId: string) {
-    return this.usersService.getNotificationPreferences(userId);
-  }
-
-  // Language Preference Endpoint
-  @Patch('me/language')
-  @ApiBearerAuth('JWT-auth')
-  @SuccessMessage('LANGUAGE_PREFERENCE_UPDATED')
-  @ApiOperation({
-    summary: 'Update language preference',
-    description:
-      'Update the preferred language for the authenticated user. This language will be used for push notifications and other communications.',
-  })
-  @ApiBody({ type: UpdateLanguagePreferenceDto })
-  @ApiResponse({
-    status: 200,
-    description: 'Language preference updated successfully',
-    type: UpdateLanguagePreferenceResponseDto,
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid language code',
-    type: BadRequestErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized',
-    type: UnauthorizedErrorResponseDto,
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'User not found',
-    type: NotFoundErrorResponseDto,
-  })
-  @HttpCode(HttpStatus.OK)
-  async updateLanguagePreference(
-    @GetCurrentUser('userId') userId: string,
-    @Body() dto: UpdateLanguagePreferenceDto,
-  ) {
-    return this.usersService.updatePreferredLanguage(userId, dto.preferredLanguage);
-  }
-
-  // Preferences Endpoint (merged newsletter subscription and notification preferences)
   @Patch('me/preferences')
   @ApiBearerAuth('JWT-auth')
+  @ApiTags('Users - Preferences')
   @SuccessMessage('PREFERENCES_UPDATED')
   @ApiOperation({
     summary: 'Update user preferences',
     description:
-      'Update newsletter subscription and/or notification preferences. Both fields are optional. Newsletter subscription uses JWT userId and email.',
+      'Update user preferences including notification preferences, preferred language, and/or newsletter subscription. All fields are optional.',
   })
   @ApiBody({ type: UpdatePreferencesDto })
   @ApiResponse({
     status: 200,
     description: 'Preferences updated successfully',
     type: UpdatePreferencesResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - invalid language code or validation failed',
+    type: BadRequestErrorResponseDto,
   })
   @ApiResponse({
     status: 401,
@@ -906,6 +873,7 @@ export class UsersController {
         userId: result.userId,
         newsletterSubscription: result.newsletterSubscription,
         notificationsEnabled: result.notificationsEnabled,
+        preferredLanguage: result.preferredLanguage,
         updatedAt: result.updatedAt,
       },
       message: 'Preferences updated successfully',

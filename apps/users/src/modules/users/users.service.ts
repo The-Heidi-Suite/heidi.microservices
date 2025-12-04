@@ -783,39 +783,6 @@ export class UsersService {
   }
 
   /**
-   * Update user's preferred language
-   */
-  async updatePreferredLanguage(userId: string, language: string) {
-    this.logger.log(`Updating preferred language for user: ${userId} to ${language}`);
-
-    // Validate language
-    const supportedLanguages = this.i18nService.getSupportedLanguages();
-    if (!supportedLanguages.includes(language)) {
-      throw new BadRequestException(
-        `Unsupported language: ${language}. Supported languages: ${supportedLanguages.join(', ')}`,
-      );
-    }
-
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { preferredLanguage: language },
-      select: {
-        id: true,
-        preferredLanguage: true,
-        updatedAt: true,
-      },
-    });
-
-    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
-      userId: user.id,
-      timestamp: new Date().toISOString(),
-    });
-
-    this.logger.log(`Preferred language updated for user: ${userId}`);
-    return user;
-  }
-
-  /**
    * Change user password
    */
   async changePassword(userId: string, dto: ChangePasswordDto) {
@@ -1577,60 +1544,23 @@ export class UsersService {
   }
 
   /**
-   * Update user's notification preferences
+   * Get user preferences (notifications, language, newsletter status)
    */
-  async updateNotificationPreferences(userId: string, notificationsEnabled: boolean) {
-    this.logger.log(
-      `Updating notification preferences for user: ${userId} to ${notificationsEnabled}`,
-    );
-
-    // Check if user exists first
-    const existingUser = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true },
-    });
-
-    if (!existingUser) {
-      throw new NotFoundException({ errorCode: 'AUTH_USER_NOT_FOUND' });
-    }
-
-    const user = await this.prisma.user.update({
-      where: { id: userId },
-      data: { notificationsEnabled },
-      select: {
-        id: true,
-        notificationsEnabled: true,
-        updatedAt: true,
-      },
-    });
-
-    // Emit user updated event
-    this.client.emit(RabbitMQPatterns.USER_UPDATED, {
-      userId: user.id,
-      action: 'NOTIFICATION_PREFERENCES_UPDATED',
-      notificationsEnabled,
-      timestamp: new Date().toISOString(),
-    });
-
-    this.logger.log(`Notification preferences updated for user: ${userId}`);
-    return {
-      userId: user.id,
-      notificationsEnabled: user.notificationsEnabled,
-      updatedAt: user.updatedAt.toISOString(),
-    };
-  }
-
-  /**
-   * Get user's notification preferences
-   */
-  async getNotificationPreferences(userId: string) {
-    this.logger.log(`Getting notification preferences for user: ${userId}`);
+  async getPreferences(userId: string): Promise<{
+    userId: string;
+    newsletterSubscription: any | null;
+    notificationsEnabled: boolean;
+    preferredLanguage: string | null;
+    updatedAt: string;
+  }> {
+    this.logger.log(`Getting preferences for user: ${userId}`);
 
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         notificationsEnabled: true,
+        preferredLanguage: true,
         updatedAt: true,
       },
     });
@@ -1639,15 +1569,19 @@ export class UsersService {
       throw new NotFoundException({ errorCode: 'AUTH_USER_NOT_FOUND' });
     }
 
+    // Newsletter subscription status would need to be fetched from integration service
+    // For now, return null as we don't have a GET endpoint for it
     return {
       userId: user.id,
-      notificationsEnabled: user.notificationsEnabled,
+      newsletterSubscription: null,
+      notificationsEnabled: user.notificationsEnabled ?? true,
+      preferredLanguage: user.preferredLanguage ?? null,
       updatedAt: user.updatedAt.toISOString(),
     };
   }
 
   /**
-   * Update user preferences (newsletter subscription and/or notification preferences)
+   * Update user preferences (newsletter subscription, notification preferences, and/or language)
    */
   async updatePreferences(
     userId: string,
@@ -1657,6 +1591,7 @@ export class UsersService {
     userId: string;
     newsletterSubscription: any | null;
     notificationsEnabled: boolean;
+    preferredLanguage: string | null;
     updatedAt: string;
   }> {
     this.logger.log(`Updating preferences for user: ${userId}`);
@@ -1673,6 +1608,7 @@ export class UsersService {
 
     let newsletterSubscription: any | null = null;
     let notificationsEnabled: boolean | undefined = undefined;
+    let preferredLanguage: string | null | undefined = undefined;
 
     // Handle newsletter subscription if provided
     if (dto.newsletterSubscribed !== undefined) {
@@ -1713,40 +1649,65 @@ export class UsersService {
       }
     }
 
+    // Build update data object
+    const updateData: any = {};
+
     // Handle notification preferences if provided
     if (dto.notificationsEnabled !== undefined) {
+      updateData.notificationsEnabled = dto.notificationsEnabled;
+    }
+
+    // Handle language preference if provided
+    if (dto.preferredLanguage !== undefined) {
+      // Validate language
+      const supportedLanguages = this.i18nService.getSupportedLanguages();
+      if (!supportedLanguages.includes(dto.preferredLanguage)) {
+        throw new BadRequestException(
+          `Unsupported language: ${dto.preferredLanguage}. Supported languages: ${supportedLanguages.join(', ')}`,
+        );
+      }
+      updateData.preferredLanguage = dto.preferredLanguage;
+    }
+
+    // Update user if there are any database fields to update
+    if (Object.keys(updateData).length > 0) {
       const user = await this.prisma.user.update({
         where: { id: userId },
-        data: { notificationsEnabled: dto.notificationsEnabled },
+        data: updateData,
         select: {
           id: true,
           notificationsEnabled: true,
+          preferredLanguage: true,
           updatedAt: true,
         },
       });
 
       notificationsEnabled = user.notificationsEnabled;
+      preferredLanguage = user.preferredLanguage;
 
       // Emit user updated event
       this.client.emit(RabbitMQPatterns.USER_UPDATED, {
         userId: user.id,
-        action: 'NOTIFICATION_PREFERENCES_UPDATED',
+        action: 'PREFERENCES_UPDATED',
         notificationsEnabled: user.notificationsEnabled,
+        preferredLanguage: user.preferredLanguage,
         timestamp: new Date().toISOString(),
       });
     } else {
-      // Get current notification preferences if not being updated
+      // Get current preferences if not being updated
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         select: {
           id: true,
           notificationsEnabled: true,
+          preferredLanguage: true,
           updatedAt: true,
         },
       });
 
       if (user) {
         notificationsEnabled = user.notificationsEnabled;
+        preferredLanguage = user.preferredLanguage;
       }
     }
 
@@ -1756,6 +1717,7 @@ export class UsersService {
       select: {
         id: true,
         notificationsEnabled: true,
+        preferredLanguage: true,
         updatedAt: true,
       },
     });
@@ -1768,7 +1730,8 @@ export class UsersService {
     return {
       userId: user.id,
       newsletterSubscription,
-      notificationsEnabled: notificationsEnabled ?? user.notificationsEnabled,
+      notificationsEnabled: notificationsEnabled ?? user.notificationsEnabled ?? true,
+      preferredLanguage: preferredLanguage ?? user.preferredLanguage ?? null,
       updatedAt: user.updatedAt.toISOString(),
     };
   }

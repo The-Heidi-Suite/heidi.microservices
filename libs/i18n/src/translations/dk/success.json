@@ -92,7 +92,6 @@
   "CATEGORY_REQUESTS_RETRIEVED": "Kategorianmodninger hentet succesfuldt",
   "CATEGORY_REQUEST_RESOLVED": "Kategorianmodning behandlet succesfuldt",
   "OPERATION_SUCCESS": "Handling gennemført succesfuldt",
-  "NOTIFICATION_PREFERENCES_UPDATED": "Notifikationsindstillinger opdateret succesfuldt",
-  "NOTIFICATION_PREFERENCES_RETRIEVED": "Notifikationsindstillinger hentet succesfuldt",
-  "LANGUAGE_PREFERENCE_UPDATED": "Sprogindstilling opdateret succesfuldt"
+  "PREFERENCES_UPDATED": "Indstillinger opdateret succesfuldt",
+  "PREFERENCES_RETRIEVED": "Indstillinger hentet succesfuldt"
 }

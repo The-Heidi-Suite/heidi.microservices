@@ -77,7 +77,6 @@
   "CATEGORY_REQUESTS_RETRIEVED": "Запити категорій успішно отримано",
   "CATEGORY_REQUEST_RESOLVED": "Запит категорії успішно оброблено",
   "OPERATION_SUCCESS": "Операцію успішно завершено",
-  "NOTIFICATION_PREFERENCES_UPDATED": "Налаштування сповіщень успішно оновлено",
-  "NOTIFICATION_PREFERENCES_RETRIEVED": "Налаштування сповіщень успішно отримано",
-  "LANGUAGE_PREFERENCE_UPDATED": "Мовні налаштування успішно оновлено"
+  "PREFERENCES_UPDATED": "Налаштування успішно оновлено",
+  "PREFERENCES_RETRIEVED": "Налаштування успішно отримано"
 }

@@ -77,7 +77,6 @@
   "CATEGORY_REQUESTS_RETRIEVED": "Kategoriforespørsler hentet vellykket",
   "CATEGORY_REQUEST_RESOLVED": "Kategoriforespørsel løst vellykket",
   "OPERATION_SUCCESS": "Operasjon fullført vellykket",
-  "NOTIFICATION_PREFERENCES_UPDATED": "Varslingsinnstillinger oppdatert vellykket",
-  "NOTIFICATION_PREFERENCES_RETRIEVED": "Varslingsinnstillinger hentet vellykket",
-  "LANGUAGE_PREFERENCE_UPDATED": "Språkinnstillinger oppdatert vellykket"
+  "PREFERENCES_UPDATED": "Innstillinger oppdatert vellykket",
+  "PREFERENCES_RETRIEVED": "Innstillinger hentet vellykket"
 }

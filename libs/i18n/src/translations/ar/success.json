@@ -92,7 +92,6 @@
   "CATEGORY_REQUESTS_RETRIEVED": "تم استرجاع طلبات الفئات بنجاح",
   "CATEGORY_REQUEST_RESOLVED": "تم معالجة طلب الفئة بنجاح",
   "OPERATION_SUCCESS": "تمت العملية بنجاح",
-  "NOTIFICATION_PREFERENCES_UPDATED": "تم تحديث إعدادات الإشعارات بنجاح",
-  "NOTIFICATION_PREFERENCES_RETRIEVED": "تم استرجاع إعدادات الإشعارات بنجاح",
-  "LANGUAGE_PREFERENCE_UPDATED": "تم تحديث تفضيل اللغة بنجاح"
+  "PREFERENCES_UPDATED": "تم تحديث الإعدادات بنجاح",
+  "PREFERENCES_RETRIEVED": "تم استرجاع الإعدادات بنجاح"
 }

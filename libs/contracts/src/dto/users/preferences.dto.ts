@@ -1,6 +1,8 @@
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsIn } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { NewsletterSubscriptionDto } from '../integrations/newsletter-subscription-response.dto';
+
+const SUPPORTED_LANGUAGES = ['de', 'en', 'dk', 'no', 'se', 'ar', 'fa', 'tr', 'ru', 'uk'] as const;
 
 export class UpdatePreferencesDto {
   @ApiPropertyOptional({
@@ -20,6 +22,18 @@ export class UpdatePreferencesDto {
   @IsOptional()
   @IsBoolean()
   notificationsEnabled?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Preferred language code (ISO 639-1)',
+    example: 'de',
+    enum: SUPPORTED_LANGUAGES,
+  })
+  @IsOptional()
+  @IsString()
+  @IsIn(SUPPORTED_LANGUAGES, {
+    message: `Language must be one of: ${SUPPORTED_LANGUAGES.join(', ')}`,
+  })
+  preferredLanguage?: string;
 }
 
 // Data payload for preferences
@@ -43,11 +57,42 @@ export class PreferencesDataDto {
   })
   notificationsEnabled: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Preferred language code (ISO 639-1)',
+    example: 'de',
+    enum: SUPPORTED_LANGUAGES,
+  })
+  preferredLanguage?: string | null;
+
   @ApiProperty({
     description: 'Timestamp of last update',
     example: '2025-01-01T00:00:00.000Z',
   })
   updatedAt: string;
+}
+
+// Full response wrapper for GET /me/preferences
+export class GetPreferencesResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: PreferencesDataDto })
+  data: PreferencesDataDto;
+
+  @ApiProperty({
+    example: 'Preferences retrieved successfully',
+    description: 'Success message',
+  })
+  message: string;
+
+  @ApiProperty({ example: '2025-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/me/preferences' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
 }
 
 // Full response wrapper for PATCH /me/preferences

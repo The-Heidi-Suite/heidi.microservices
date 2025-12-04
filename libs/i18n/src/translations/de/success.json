@@ -92,7 +92,6 @@
   "CATEGORY_REQUESTS_RETRIEVED": "Kategorieanfragen erfolgreich abgerufen",
   "CATEGORY_REQUEST_RESOLVED": "Kategorieanfrage erfolgreich bearbeitet",
   "OPERATION_SUCCESS": "Vorgang erfolgreich abgeschlossen",
-  "NOTIFICATION_PREFERENCES_UPDATED": "Benachrichtigungseinstellungen erfolgreich aktualisiert",
-  "NOTIFICATION_PREFERENCES_RETRIEVED": "Benachrichtigungseinstellungen erfolgreich abgerufen",
-  "LANGUAGE_PREFERENCE_UPDATED": "Spracheinstellung erfolgreich aktualisiert"
+  "PREFERENCES_UPDATED": "Einstellungen erfolgreich aktualisiert",
+  "PREFERENCES_RETRIEVED": "Einstellungen erfolgreich abgerufen"
 }
