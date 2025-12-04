@@ -105,12 +105,15 @@ services:
       - .env
     environment:
       DEV_IP: ${DEV_IP:-localhost}
+      API_DOMAIN: ${API_DOMAIN:-api.${DEV_IP:-localhost}.nip.io}
+      API_DOMAIN_LEGACY: ${API_DOMAIN_LEGACY:-}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@heidi.com}
       LETSENCRYPT_STAGING: ${LETSENCRYPT_STAGING:-false}
     command: >
       sh -c "
         apk add --no-cache gettext &&
         envsubst < /etc/caddy/Caddyfile > /tmp/Caddyfile &&
+        sed -i 's/  {/ {/g' /tmp/Caddyfile &&
         caddy run --config /tmp/Caddyfile
       "
     ports:

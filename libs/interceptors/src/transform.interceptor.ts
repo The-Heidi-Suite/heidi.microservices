@@ -2,7 +2,7 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler } from '@nes
 import { Reflector } from '@nestjs/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import { I18nService } from '@heidi/i18n';
+import { I18nService, I18N_CONTEXT_KEY, I18nContext } from '@heidi/i18n';
 import { SuccessMessageService } from './success-message.service';
 import { SUCCESS_MESSAGE_KEY } from './decorators/success-message.decorator';
 import { Request } from 'express';
@@ -28,6 +28,11 @@ export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> 
     const request = context.switchToHttp().getRequest<Request>();
     const response = context.switchToHttp().getResponse();
 
+    // Get language from request object (set by LanguageInterceptor)
+    // This is more reliable than AsyncLocalStorage with RxJS Observable pipelines
+    const i18nContext = (request as any)[I18N_CONTEXT_KEY] as I18nContext | undefined;
+    const language = i18nContext?.language;
+
     return next.handle().pipe(
       map((data) => {
         // Check for explicit message key from @SuccessMessage decorator
@@ -43,8 +48,13 @@ export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> 
               response.statusCode,
             );
 
-        // Translate the message using i18n
-        const translatedMessage = this.i18nService.translate(`success.${messageKey}`);
+        // Translate the message using i18n, passing language explicitly from request context
+        // This bypasses AsyncLocalStorage which doesn't propagate reliably through RxJS
+        const translatedMessage = this.i18nService.translate(
+          `success.${messageKey}`,
+          undefined,
+          language,
+        );
 
         // Use translated message if available, otherwise fallback to key or default
         const message =
