@@ -149,8 +149,12 @@ export class FCMPushService {
     }
 
     // Check device info (if tokens are stored per device)
+    // Only include active devices (isActive: true or isActive not set for backwards compatibility)
     if (user.devices && Array.isArray(user.devices)) {
-      devices.push(...user.devices);
+      const activeDevices = user.devices.filter(
+        (device: any) => device.isActive === true || device.isActive === undefined,
+      );
+      devices.push(...activeDevices);
     }
 
     return devices;

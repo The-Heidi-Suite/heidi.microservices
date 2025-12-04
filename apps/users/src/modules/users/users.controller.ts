@@ -248,6 +248,7 @@ export class UsersController {
 
   @Patch(':id')
   @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('USER_UPDATED')
   @ApiOperation({ summary: 'Update user', description: 'Update a user by ID (Admin only)' })
   @ApiParam({ name: 'id', description: 'User ID (UUID)' })
   @ApiBody({ type: UpdateUserDto })
@@ -338,6 +339,7 @@ export class UsersController {
 
   @Patch('profile/me')
   @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('PROFILE_UPDATED')
   @ApiOperation({
     summary: 'Update my profile',
     description: 'Update the current authenticated user profile',
