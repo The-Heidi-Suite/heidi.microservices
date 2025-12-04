@@ -1,7 +1,15 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CategoryRequestStatus, CategoryType } from '@prisma/client-core';
 import { Transform, Type } from 'class-transformer';
-import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+} from 'class-validator';
 
 export class CategoryResponseDto {
   @ApiProperty({ example: 'c1a2b3c4-d5e6-7890-abcd-ef1234567890' })
@@ -332,7 +340,8 @@ export class UpdateCityCategoryDisplayNameDto {
 
   @ApiPropertyOptional({
     example: true,
-    description: 'Whether this city category is active. Set to false to hide the category in this city.',
+    description:
+      'Whether this city category is active. Set to false to hide the category in this city.',
   })
   @IsOptional()
   @IsBoolean()

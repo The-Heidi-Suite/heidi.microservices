@@ -150,10 +150,7 @@ export class CategoriesController {
     description: 'Categories retrieved successfully',
     type: CategoryListResponseDto,
   })
-  async list(
-    @Query() filter: CategoryFilterDto,
-    @Query('showAll') showAll?: string,
-  ) {
+  async list(@Query() filter: CategoryFilterDto, @Query('showAll') showAll?: string) {
     const showAllBool = showAll === 'true';
     return this.categoriesService.listCategories(filter, showAllBool);
   }
