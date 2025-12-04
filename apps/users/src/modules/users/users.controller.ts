@@ -68,6 +68,8 @@ import {
   UpdateNotificationPreferencesResponseDto,
   UpdatePreferencesDto,
   UpdatePreferencesResponseDto,
+  UpdateLanguagePreferenceDto,
+  UpdateLanguagePreferenceResponseDto,
 } from '@heidi/contracts';
 import { Public, GetCurrentUser, JwtAuthGuard } from '@heidi/jwt';
 import { GetLanguage } from '@heidi/i18n';
@@ -821,6 +823,44 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   async getNotificationPreferences(@GetCurrentUser('userId') userId: string) {
     return this.usersService.getNotificationPreferences(userId);
+  }
+
+  // Language Preference Endpoint
+  @Patch('me/language')
+  @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('LANGUAGE_PREFERENCE_UPDATED')
+  @ApiOperation({
+    summary: 'Update language preference',
+    description:
+      'Update the preferred language for the authenticated user. This language will be used for push notifications and other communications.',
+  })
+  @ApiBody({ type: UpdateLanguagePreferenceDto })
+  @ApiResponse({
+    status: 200,
+    description: 'Language preference updated successfully',
+    type: UpdateLanguagePreferenceResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid language code',
+    type: BadRequestErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'User not found',
+    type: NotFoundErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async updateLanguagePreference(
+    @GetCurrentUser('userId') userId: string,
+    @Body() dto: UpdateLanguagePreferenceDto,
+  ) {
+    return this.usersService.updatePreferredLanguage(userId, dto.preferredLanguage);
   }
 
   // Preferences Endpoint (merged newsletter subscription and notification preferences)

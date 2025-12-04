@@ -13,3 +13,4 @@ export * from './topic-subscription.dto';
 export * from './salutation-response.dto';
 export * from './notification-preferences.dto';
 export * from './preferences.dto';
+export * from './language-preferences.dto';

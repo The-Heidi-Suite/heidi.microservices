@@ -78,5 +78,6 @@
   "CATEGORY_REQUEST_RESOLVED": "Kategoriförfrågan löst framgångsrikt",
   "OPERATION_SUCCESS": "Åtgärd slutförd framgångsrikt",
   "NOTIFICATION_PREFERENCES_UPDATED": "Aviseringsinställningar uppdaterade framgångsrikt",
-  "NOTIFICATION_PREFERENCES_RETRIEVED": "Aviseringsinställningar hämtade framgångsrikt"
+  "NOTIFICATION_PREFERENCES_RETRIEVED": "Aviseringsinställningar hämtade framgångsrikt",
+  "LANGUAGE_PREFERENCE_UPDATED": "Språkinställningar uppdaterade framgångsrikt"
 }

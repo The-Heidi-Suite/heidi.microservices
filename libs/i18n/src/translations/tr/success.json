@@ -78,5 +78,6 @@
   "CATEGORY_REQUEST_RESOLVED": "Kategori talebi başarıyla çözüldü",
   "OPERATION_SUCCESS": "İşlem başarıyla tamamlandı",
   "NOTIFICATION_PREFERENCES_UPDATED": "Bildirim tercihleri başarıyla güncellendi",
-  "NOTIFICATION_PREFERENCES_RETRIEVED": "Bildirim tercihleri başarıyla alındı"
+  "NOTIFICATION_PREFERENCES_RETRIEVED": "Bildirim tercihleri başarıyla alındı",
+  "LANGUAGE_PREFERENCE_UPDATED": "Dil tercihi başarıyla güncellendi"
 }
