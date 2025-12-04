@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.23.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.22.0...v1.23.0) (2025-12-04)
+
+
+### ✨ Features
+
+* **users:** add success message for profile update endpoint ([1bee0a1](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1bee0a149bf671120d57f175a7730fd5940cb23a))
+* **users:** add success message for user update endpoint ([d13ba62](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d13ba62892c22967a2aa1d7946ed9ae3bbe54b42))
+
+
+### ♻️ Code Refactoring
+
+* **categories:** filter only active subcategories in category service ([95da372](https://github.com/The-Heidi-Suite/heidi.microservices/commit/95da372920fad2a6c2b8cf77df3f0f603285f425))
+* **i18n:** enhance language handling in TransformInterceptor ([d63e616](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d63e6167aadf19a1a2e8218db7b5f0a66de793ab))
+* **i18n:** improve translation loading and error handling ([62611e6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/62611e6b4515bcb3f107506c681c1e6ef21259a8))
+* **users:** improve device management logic for user ownership transfer ([b0d456d](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b0d456d28208e72958b50ef15ee24dd3b94d18fa))
+
 ## [1.22.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.21.0...v1.22.0) (2025-12-03)
 
 
