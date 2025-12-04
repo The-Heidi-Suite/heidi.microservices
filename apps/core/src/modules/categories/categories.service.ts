@@ -145,13 +145,14 @@ export class CategoriesService {
   /**
    * Fetch and attach children to parent categories
    * Also handles imageUrl inheritance (children inherit parent's imageUrl if their own is null)
+   * Only includes active children by default
    */
   private async attachChildrenToCategories(categories: any[]): Promise<any[]> {
     if (categories.length === 0) return categories;
 
     const categoryIds = categories.map((c) => c.id);
     const children = await this.prisma.category.findMany({
-      where: { parentId: { in: categoryIds } },
+      where: { parentId: { in: categoryIds }, isActive: true },
       orderBy: [{ name: 'asc' }],
     });
 
@@ -794,9 +795,9 @@ export class CategoriesService {
       throw new NotFoundException({ errorCode: 'CATEGORY_NOT_FOUND' });
     }
 
-    // Get all subcategories (children)
+    // Get all active subcategories (children)
     const children = await this.prisma.category.findMany({
-      where: { parentId: categoryId },
+      where: { parentId: categoryId, isActive: true },
       orderBy: { name: 'asc' },
     });
 
