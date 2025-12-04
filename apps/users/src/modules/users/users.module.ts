@@ -25,13 +25,13 @@ import { TermsModule } from '../terms/terms.module';
     TermsModule, // Terms of use module
   ],
   controllers: [
+    UsersPublicController,
     UsersAdminController,
     UsersAuthController,
     UsersProfileController,
     UsersDevicesController,
     UsersTopicsController,
     UsersPreferencesController,
-    UsersPublicController,
     UsersMessageController,
   ],
   providers: [UsersService],
