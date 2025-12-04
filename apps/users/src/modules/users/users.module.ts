@@ -1,5 +1,13 @@
 import { Module } from '@nestjs/common';
-import { UsersController } from './users.controller';
+import {
+  UsersAdminController,
+  UsersAuthController,
+  UsersProfileController,
+  UsersDevicesController,
+  UsersTopicsController,
+  UsersPreferencesController,
+  UsersPublicController,
+} from './controllers';
 import { UsersMessageController } from './users-message.controller';
 import { UsersService } from './users.service';
 import { RBACModule } from '@heidi/rbac';
@@ -16,7 +24,16 @@ import { TermsModule } from '../terms/terms.module';
     StorageModule, // For file uploads
     TermsModule, // Terms of use module
   ],
-  controllers: [UsersController, UsersMessageController],
+  controllers: [
+    UsersAdminController,
+    UsersAuthController,
+    UsersProfileController,
+    UsersDevicesController,
+    UsersTopicsController,
+    UsersPreferencesController,
+    UsersPublicController,
+    UsersMessageController,
+  ],
   providers: [UsersService],
   exports: [UsersService],
 })

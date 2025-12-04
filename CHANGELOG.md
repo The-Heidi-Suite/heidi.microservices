@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.24.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.22.0...v1.24.0) (2025-12-04)
+
+
+### 🔧 Chores
+
+* **release:** 1.23.0 ([f73d714](https://github.com/The-Heidi-Suite/heidi.microservices/commit/f73d714ff3a3ba7865af63b3e679a8265e0c1bbe))
+
+
+### ✨ Features
+
+* **config:** add API_DOMAIN configuration for dynamic and static environments ([086f196](https://github.com/The-Heidi-Suite/heidi.microservices/commit/086f196d456245bda519e3cb81d538c9f856515e))
+* **config:** add support for legacy API domain during transition ([d502457](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d5024571ac4f1b753be4fe53b46dd58c408da180))
+* **notifications:** enhance logging and language handling in FCMTranslationService ([2ee64fd](https://github.com/The-Heidi-Suite/heidi.microservices/commit/2ee64fd0edd3d303ded50aedf7807605d0e411a7))
+* **users:** add language preference update endpoint and DTOs ([97bcf50](https://github.com/The-Heidi-Suite/heidi.microservices/commit/97bcf507f44d530154c5ea6ad5db80355b2a3525))
+* **users:** add success message for profile update endpoint ([1bee0a1](https://github.com/The-Heidi-Suite/heidi.microservices/commit/1bee0a149bf671120d57f175a7730fd5940cb23a))
+* **users:** add success message for user update endpoint ([d13ba62](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d13ba62892c22967a2aa1d7946ed9ae3bbe54b42))
+* **users:** implement user management controllers for admin and public access ([8719854](https://github.com/The-Heidi-Suite/heidi.microservices/commit/8719854f3b1a3f0f398d3a7bb3029d77e7ee9ab1))
+
+
+### ♻️ Code Refactoring
+
+* **categories:** filter only active subcategories in category service ([95da372](https://github.com/The-Heidi-Suite/heidi.microservices/commit/95da372920fad2a6c2b8cf77df3f0f603285f425))
+* **i18n:** consolidate success message translations for user preferences ([2215a75](https://github.com/The-Heidi-Suite/heidi.microservices/commit/2215a758f0fd3231eed4b7721a9de5a6f56ae027))
+* **i18n:** enhance language handling in TransformInterceptor ([d63e616](https://github.com/The-Heidi-Suite/heidi.microservices/commit/d63e6167aadf19a1a2e8218db7b5f0a66de793ab))
+* **i18n:** improve translation loading and error handling ([62611e6](https://github.com/The-Heidi-Suite/heidi.microservices/commit/62611e6b4515bcb3f107506c681c1e6ef21259a8))
+* **users:** improve device management logic for user ownership transfer ([b0d456d](https://github.com/The-Heidi-Suite/heidi.microservices/commit/b0d456d28208e72958b50ef15ee24dd3b94d18fa))
+* **users:** remove deprecated language and notification preference DTOs ([98d0210](https://github.com/The-Heidi-Suite/heidi.microservices/commit/98d02105315bb933525852dd67b1c17254960b04))
+* **users:** remove UsersController and restructure user management ([dda40bb](https://github.com/The-Heidi-Suite/heidi.microservices/commit/dda40bb4dab7b93360ef06c50d9f66256f3fa22c))
+* **users:** unify user preferences management and streamline endpoints ([eada964](https://github.com/The-Heidi-Suite/heidi.microservices/commit/eada964b6153c35f5918ab49a6f223a4025f37c4))
+
 ## [1.23.0](https://github.com/The-Heidi-Suite/heidi.microservices/compare/v1.22.0...v1.23.0) (2025-12-04)
 
 
