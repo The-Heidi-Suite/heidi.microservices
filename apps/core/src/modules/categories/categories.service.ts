@@ -145,14 +145,20 @@ export class CategoriesService {
   /**
    * Fetch and attach children to parent categories
    * Also handles imageUrl inheritance (children inherit parent's imageUrl if their own is null)
-   * Only includes active children by default
+   * Only includes active children by default, unless showAll is true
    */
-  private async attachChildrenToCategories(categories: any[]): Promise<any[]> {
+  private async attachChildrenToCategories(
+    categories: any[],
+    showAll: boolean = false,
+  ): Promise<any[]> {
     if (categories.length === 0) return categories;
 
     const categoryIds = categories.map((c) => c.id);
     const children = await this.prisma.category.findMany({
-      where: { parentId: { in: categoryIds }, isActive: true },
+      where: {
+        parentId: { in: categoryIds },
+        ...(showAll ? {} : { isActive: true }),
+      },
       orderBy: [{ name: 'asc' }],
     });
 
@@ -272,6 +278,7 @@ export class CategoriesService {
 
   async listCategories(
     filter?: CategoryFilterDto,
+    showAll: boolean = false,
   ): Promise<CategoryListResponseDto | CategoryResponseDto[]> {
     // Determine if we should only return root categories (default: true)
     // rootOnly=true means: only fetch root categories (parentId=null), then attach their children
@@ -308,9 +315,12 @@ export class CategoriesService {
       where.parentId = null;
     }
 
-    // Active status filter
+    // Active status filter - only apply if showAll is false and isActive is not explicitly set
     if (filter?.isActive !== undefined) {
       where.isActive = filter.isActive;
+    } else if (!showAll) {
+      // Default: only show active categories unless showAll is true
+      where.isActive = true;
     }
 
     // Category IDs filter
@@ -318,17 +328,21 @@ export class CategoriesService {
       where.id = { in: filter.categoryIds };
     }
 
-    // Exclude children of inactive parents:
+    // Exclude children of inactive parents (only when not showing all):
     // - include all root categories (parentId = null)
     // - include non-root categories only if their parent is active
     const andConditions: Prisma.CategoryWhereInput[] = [];
     if (where.AND) {
       andConditions.push(...(Array.isArray(where.AND) ? where.AND : [where.AND]));
     }
-    andConditions.push({
-      OR: [{ parentId: null }, { parent: { isActive: true } }],
-    });
-    where.AND = andConditions;
+    if (!showAll) {
+      andConditions.push({
+        OR: [{ parentId: null }, { parent: { isActive: true } }],
+      });
+    }
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
 
     // Build orderBy clause
     const orderBy: Prisma.CategoryOrderByWithRelationInput[] = [];
@@ -360,7 +374,7 @@ export class CategoriesService {
       // If rootOnly, fetch children for each root category
       let categoriesWithChildren: any[] = categories;
       if (rootOnly && categories.length > 0) {
-        categoriesWithChildren = await this.attachChildrenToCategories(categories);
+        categoriesWithChildren = await this.attachChildrenToCategories(categories, showAll);
       }
 
       const tree = rootOnly
@@ -390,7 +404,7 @@ export class CategoriesService {
     // If rootOnly, fetch children for each root category
     let categoriesWithChildren: any[] = categories;
     if (rootOnly && categories.length > 0) {
-      categoriesWithChildren = await this.attachChildrenToCategories(categories);
+      categoriesWithChildren = await this.attachChildrenToCategories(categories, showAll);
     }
 
     const tree = rootOnly
@@ -548,10 +562,14 @@ export class CategoriesService {
   async listCityCategories(
     cityId: string,
     filter?: CategoryFilterDto,
+    showAll: boolean = false,
   ): Promise<CategoryListResponseDto | CategoryResponseDto[]> {
     // First, get all CityCategory entries for this city including city-specific overrides
     const cityCategories = await this.prisma.cityCategory.findMany({
-      where: { cityId, isActive: true },
+      where: {
+        cityId,
+        ...(showAll ? {} : { isActive: true }),
+      },
       select: {
         categoryId: true,
         displayOrder: true,
@@ -563,6 +581,7 @@ export class CategoriesService {
         iconUrl: true,
         headerBackgroundColor: true,
         contentBackgroundColor: true,
+        isActive: true,
       },
     });
 
@@ -576,26 +595,32 @@ export class CategoriesService {
     const assignedCategoryIds = cityCategories.map((cc) => cc.categoryId);
 
     // Only fetch categories that are explicitly assigned via CityCategory
-    // and exclude children of inactive parents or parents not assigned to this city:
+    // and exclude children of inactive parents or parents not assigned to this city (when not showing all):
     // - include all root categories (parentId = null)
     // - include non-root categories only if:
     //   - their parent category is active AND
     //   - their parent is also assigned to this city (has active CityCategory)
+    const categoryWhereCondition: Prisma.CategoryWhereInput = {
+      id: { in: assignedCategoryIds },
+      ...(showAll ? {} : { isActive: true }),
+    };
+
+    // Only add the parent active check when not showing all
+    if (!showAll) {
+      categoryWhereCondition.AND = [
+        {
+          OR: [
+            { parentId: null },
+            {
+              AND: [{ parent: { isActive: true } }, { parentId: { in: assignedCategoryIds } }],
+            },
+          ],
+        },
+      ];
+    }
+
     const categories = await this.prisma.category.findMany({
-      where: {
-        id: { in: assignedCategoryIds },
-        isActive: true,
-        AND: [
-          {
-            OR: [
-              { parentId: null },
-              {
-                AND: [{ parent: { isActive: true } }, { parentId: { in: assignedCategoryIds } }],
-              },
-            ],
-          },
-        ],
-      },
+      where: categoryWhereCondition,
     });
 
     // Merge CityCategory overrides with base Category data
@@ -786,7 +811,7 @@ export class CategoriesService {
     return categories;
   }
 
-  async getCategoryById(categoryId: string) {
+  async getCategoryById(categoryId: string, showAll: boolean = false) {
     const category = await this.prisma.category.findUnique({
       where: { id: categoryId },
     });
@@ -795,9 +820,12 @@ export class CategoriesService {
       throw new NotFoundException({ errorCode: 'CATEGORY_NOT_FOUND' });
     }
 
-    // Get all active subcategories (children)
+    // Get subcategories (children) - all or only active based on showAll parameter
     const children = await this.prisma.category.findMany({
-      where: { parentId: categoryId, isActive: true },
+      where: {
+        parentId: categoryId,
+        ...(showAll ? {} : { isActive: true }),
+      },
       orderBy: { name: 'asc' },
     });
 
@@ -992,6 +1020,7 @@ export class CategoriesService {
     displayOrder?: number,
     headerBackgroundColor?: string | null,
     contentBackgroundColor?: string | null,
+    isActive?: boolean,
   ) {
     const existing = await this.prisma.cityCategory.findUnique({
       where: {
@@ -1033,6 +1062,10 @@ export class CategoriesService {
       updateData.contentBackgroundColor = contentBackgroundColor;
     }
 
+    if (isActive !== undefined) {
+      updateData.isActive = isActive;
+    }
+
     const result = await this.prisma.cityCategory.update({
       where: {
         cityId_categoryId: {
@@ -1054,7 +1087,7 @@ export class CategoriesService {
    * Uses categoryId as id field in response
    * Includes children categories if they are also assigned to the same city
    */
-  async getCityCategoryById(cityId: string, categoryId: string) {
+  async getCityCategoryById(cityId: string, categoryId: string, showAll: boolean = false) {
     const cityCategory = await this.prisma.cityCategory.findUnique({
       where: {
         cityId_categoryId: {
@@ -1091,10 +1124,11 @@ export class CategoriesService {
     };
 
     // Fetch children categories that are assigned to this city
+    // Show all or only active based on showAll parameter
     const childrenCategories = await this.prisma.category.findMany({
       where: {
         parentId: categoryId,
-        isActive: true,
+        ...(showAll ? {} : { isActive: true }),
       },
       orderBy: { name: 'asc' },
     });
@@ -1109,7 +1143,7 @@ export class CategoriesService {
       where: {
         cityId,
         categoryId: { in: childrenCategoryIds },
-        isActive: true,
+        ...(showAll ? {} : { isActive: true }),
       },
       select: {
         categoryId: true,
@@ -1121,6 +1155,7 @@ export class CategoriesService {
         iconUrl: true,
         headerBackgroundColor: true,
         contentBackgroundColor: true,
+        isActive: true,
       },
     });
 
