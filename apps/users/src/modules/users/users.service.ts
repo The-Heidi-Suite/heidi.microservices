@@ -1321,16 +1321,17 @@ export class UsersService {
       };
     }
 
-    // If deviceId provided, check for existing device with same userId and deviceId
-    let existingByDeviceId: { id: string } | null = null;
+    // If deviceId provided, check for existing device with same deviceId (for ANY user)
+    // This handles the case where a different user logs in on the same physical device
+    let existingByDeviceId: { id: string; userId: string } | null = null;
     if (data.deviceId) {
       const found = await this.prisma.userDevice.findFirst({
         where: {
-          userId,
           deviceId: data.deviceId,
         },
         select: {
           id: true,
+          userId: true,
         },
       });
       existingByDeviceId = found;
@@ -1339,10 +1340,11 @@ export class UsersService {
     // Determine which device to update/create
     let device;
     if (existingByDeviceId) {
-      // Update existing device with same deviceId
+      // Update existing device - transfer ownership to new user if needed
       device = await this.prisma.userDevice.update({
         where: { id: existingByDeviceId.id },
         data: {
+          userId, // Transfer ownership to new user
           fcmToken: data.fcmToken,
           platform: data.platform,
           appVersion: data.appVersion,
@@ -1353,6 +1355,12 @@ export class UsersService {
           lastSeenAt: new Date(),
         },
       });
+
+      if (existingByDeviceId.userId !== userId) {
+        this.logger.log(
+          `Device ${data.deviceId} transferred from user ${existingByDeviceId.userId} to user ${userId}`,
+        );
+      }
     } else {
       // Create new device
       device = await this.prisma.userDevice.create({
