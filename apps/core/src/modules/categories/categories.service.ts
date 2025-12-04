@@ -643,6 +643,8 @@ export class CategoriesService {
         // Use CityCategory's languageCode for translation source if available
         languageCode: cityOverrides?.languageCode || category.languageCode,
         cityCategoryDisplayOrder: cityOverrides?.displayOrder,
+        // Use CityCategory's isActive status (city-specific active state)
+        isActive: cityOverrides?.isActive ?? category.isActive,
         // Flag to indicate this category has city-specific text that needs city-specific translation
         hasCityOverride,
         cityId, // Pass cityId for translation lookup
@@ -1186,6 +1188,8 @@ export class CategoriesService {
         contentBackgroundColor:
           cityOverrides?.contentBackgroundColor || child.contentBackgroundColor,
         cityCategoryDisplayOrder: cityOverrides?.displayOrder,
+        // Use CityCategory's isActive status (city-specific active state)
+        isActive: cityOverrides?.isActive ?? child.isActive,
         hasCityOverride: Boolean(cityOverrides?.displayName),
         cityId,
       };
