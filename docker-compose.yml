@@ -105,6 +105,7 @@ services:
       - .env
     environment:
       DEV_IP: ${DEV_IP:-localhost}
+      API_DOMAIN: ${API_DOMAIN:-api.${DEV_IP:-localhost}.nip.io}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-admin@heidi.com}
       LETSENCRYPT_STAGING: ${LETSENCRYPT_STAGING:-false}
     command: >
