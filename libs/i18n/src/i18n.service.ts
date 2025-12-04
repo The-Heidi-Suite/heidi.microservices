@@ -32,32 +32,28 @@ export class I18nService implements OnModuleInit {
     const supportedLanguages = this.getSupportedLanguages();
 
     for (const lang of supportedLanguages) {
-      try {
-        const errorsPath = join(this.translationsPath, lang, 'errors.json');
-        const validationPath = join(this.translationsPath, lang, 'validation.json');
-        const successPath = join(this.translationsPath, lang, 'success.json');
-        const emailsPath = join(this.translationsPath, lang, 'emails.json');
-        const notificationsPath = join(this.translationsPath, lang, 'notifications.json');
-        const quickFilterPath = join(this.translationsPath, lang, 'quickFilter.json');
+      // Load each namespace separately so a failure in one doesn't block others
+      const namespaces = [
+        'errors',
+        'validation',
+        'success',
+        'emails',
+        'notifications',
+        'quickFilter',
+      ];
 
-        const errorsData = this.loadJsonFile(errorsPath);
-        const validationData = this.loadJsonFile(validationPath);
-        const successData = this.loadJsonFile(successPath);
-        const emailsData = this.loadJsonFile(emailsPath);
-        const notificationsData = this.loadJsonFile(notificationsPath);
-        const quickFilterData = this.loadJsonFile(quickFilterPath);
-
-        this.translations.set(`${lang}:errors`, errorsData);
-        this.translations.set(`${lang}:validation`, validationData);
-        this.translations.set(`${lang}:success`, successData);
-        this.translations.set(`${lang}:emails`, emailsData);
-        this.translations.set(`${lang}:notifications`, notificationsData);
-        this.translations.set(`${lang}:quickFilter`, quickFilterData);
-      } catch (error) {
-        console.warn(
-          `Failed to load translations for language '${lang}':`,
-          error instanceof Error ? error.message : error,
-        );
+      for (const namespace of namespaces) {
+        try {
+          const filePath = join(this.translationsPath, lang, `${namespace}.json`);
+          const data = this.loadJsonFile(filePath);
+          this.translations.set(`${lang}:${namespace}`, data);
+        } catch (error) {
+          console.warn(
+            `Failed to load ${namespace} translations for language '${lang}':`,
+            error instanceof Error ? error.message : error,
+          );
+          // Continue loading other namespaces even if one fails
+        }
       }
     }
   }

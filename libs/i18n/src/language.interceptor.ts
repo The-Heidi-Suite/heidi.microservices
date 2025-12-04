@@ -5,6 +5,13 @@ import { LanguageDetectorService } from './language-detector.service';
 import { i18nAsyncLocalStorage } from './i18n-async-storage';
 import { I18nContext } from './interfaces/translation.interface';
 
+/**
+ * Key for storing i18n context on the request object.
+ * This provides a reliable way to access language context that works
+ * even when AsyncLocalStorage doesn't propagate through RxJS pipelines.
+ */
+export const I18N_CONTEXT_KEY = '__i18nContext';
+
 @Injectable()
 export class LanguageInterceptor implements NestInterceptor {
   private readonly logger = new Logger(LanguageInterceptor.name);
@@ -26,7 +33,11 @@ export class LanguageInterceptor implements NestInterceptor {
       locale: acceptLanguage ? this.extractLocale(acceptLanguage) : undefined,
     };
 
-    // Set context in AsyncLocalStorage for the duration of the request
+    // Store context on request object for reliable access by other interceptors
+    // This is necessary because AsyncLocalStorage doesn't propagate through RxJS Observable pipelines
+    (request as any)[I18N_CONTEXT_KEY] = i18nContext;
+
+    // Also set context in AsyncLocalStorage for backwards compatibility
     return new Observable((subscriber) => {
       i18nAsyncLocalStorage.run(i18nContext, () => {
         next.handle().subscribe({
