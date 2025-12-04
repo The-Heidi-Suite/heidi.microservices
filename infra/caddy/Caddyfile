@@ -4,6 +4,8 @@
 # Development: Set DEV_IP in .env (e.g., 192.168.1.100)
 #   - API_DOMAIN defaults to api.$DEV_IP.nip.io
 # Production: Set API_DOMAIN=kiel.heidi-app.de in .env
+# Transition: Set both API_DOMAIN and API_DOMAIN_LEGACY=api.$DEV_IP.nip.io
+#   - Serves both domains simultaneously during migration
 #
 # Caddy automatically handles HTTPS and HTTP to HTTPS redirects
 # Admin tools (pgAdmin, Grafana, etc.) use nip.io subdomains in both environments
@@ -18,9 +20,9 @@
     # acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
 }
 
-# Single domain with path-based routing
+# Single domain with path-based routing (supports dual domains during transition)
 # Caddy will automatically issue SSL certificate and redirect HTTP to HTTPS
-$API_DOMAIN {
+$API_DOMAIN $API_DOMAIN_LEGACY {
 
     # Health check endpoint
     handle /health {
