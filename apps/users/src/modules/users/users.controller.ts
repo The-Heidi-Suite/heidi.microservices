@@ -338,6 +338,7 @@ export class UsersController {
 
   @Patch('profile/me')
   @ApiBearerAuth('JWT-auth')
+  @SuccessMessage('PROFILE_UPDATED')
   @ApiOperation({
     summary: 'Update my profile',
     description: 'Update the current authenticated user profile',
