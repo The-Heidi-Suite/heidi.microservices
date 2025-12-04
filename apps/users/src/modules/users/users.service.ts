@@ -1596,15 +1596,18 @@ export class UsersService {
   }> {
     this.logger.log(`Updating preferences for user: ${userId}`);
 
-    // Check if user exists first
+    // Check if user exists and get email for newsletter subscription
     const existingUser = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true },
+      select: { id: true, email: true },
     });
 
     if (!existingUser) {
       throw new NotFoundException({ errorCode: 'AUTH_USER_NOT_FOUND' });
     }
+
+    // Use email from database if not provided (JWT might not have it)
+    const userEmail = email || existingUser.email;
 
     let newsletterSubscription: any | null = null;
     let notificationsEnabled: boolean | undefined = undefined;
@@ -1613,6 +1616,13 @@ export class UsersService {
     // Handle newsletter subscription if provided
     if (dto.newsletterSubscribed !== undefined) {
       if (dto.newsletterSubscribed) {
+        // Validate email exists for newsletter subscription
+        if (!userEmail) {
+          throw new BadRequestException(
+            'Email is required for newsletter subscription. Please update your profile with an email address first.',
+          );
+        }
+
         // Subscribe to newsletter via RabbitMQ
         try {
           newsletterSubscription = await firstValueFrom(
@@ -1621,7 +1631,7 @@ export class UsersService {
                 RabbitMQPatterns.INTEGRATION_SUBSCRIBE_NEWSLETTER,
                 {
                   userId,
-                  email,
+                  email: userEmail,
                 },
               )
               .pipe(timeout(30000)),
