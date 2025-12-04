@@ -20,6 +20,9 @@ export class FCMTranslationService {
     this.logger = logger;
     this.logger.setContext(FCMTranslationService.name);
     this.defaultLanguage = this.configService.pushNotificationDefaultLanguage;
+    this.logger.log(
+      `FCMTranslationService initialized with defaultLanguage: ${this.defaultLanguage}`,
+    );
   }
 
   /**
@@ -28,18 +31,25 @@ export class FCMTranslationService {
   resolveLanguage(user: any): string {
     // Check user.preferredLanguage (from database)
     if (user?.preferredLanguage && typeof user.preferredLanguage === 'string') {
+      this.logger.debug(`Using user preferred language: ${user.preferredLanguage}`);
       return user.preferredLanguage;
     }
 
-    // Use system default
+    // Use system default (from PUSH_NOTIFICATION_DEFAULT_LANGUAGE env var)
+    this.logger.debug(
+      `User has no preferred language (value: ${user?.preferredLanguage}), using default: ${this.defaultLanguage}`,
+    );
     return this.defaultLanguage;
   }
 
   /**
    * Translate notification using translation key
+   * Always passes language explicitly to prevent fallback to i18n service default
    */
   translateNotification(key: string, params?: Record<string, any>, language?: string): string {
-    return this.i18nService.translate(key, params, language);
+    // Ensure language is always passed to prevent fallback to 'en'
+    const lang = language || this.defaultLanguage;
+    return this.i18nService.translate(key, params, lang);
   }
 
   /**
@@ -50,6 +60,10 @@ export class FCMTranslationService {
     user: any,
   ): Promise<{ title: string; body: string }> {
     const language = this.resolveLanguage(user);
+
+    this.logger.debug(
+      `getNotificationContent - userId: ${user?.id}, resolvedLanguage: ${language}, translationKey: ${dto.translationKey || 'none'}`,
+    );
 
     // If translation key is provided, use translation
     if (dto.translationKey) {
@@ -71,10 +85,15 @@ export class FCMTranslationService {
       // Get title and body from the base key
       const titleKey = `${baseKey}.title`;
       const bodyKey = `${baseKey}.body`;
-      return {
-        title: this.translateNotification(titleKey, translationParams, language),
-        body: this.translateNotification(bodyKey, translationParams, language),
-      };
+
+      const title = this.translateNotification(titleKey, translationParams, language);
+      const body = this.translateNotification(bodyKey, translationParams, language);
+
+      this.logger.debug(
+        `Translated notification - key: ${baseKey}, language: ${language}, title: "${title.substring(0, 50)}..."`,
+      );
+
+      return { title, body };
     }
 
     // Fallback to provided subject/content or use generic translation
