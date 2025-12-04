@@ -92,7 +92,6 @@
   "CATEGORY_REQUESTS_RETRIEVED": "Category requests retrieved successfully",
   "CATEGORY_REQUEST_RESOLVED": "Category request resolved successfully",
   "OPERATION_SUCCESS": "Operation completed successfully",
-  "NOTIFICATION_PREFERENCES_UPDATED": "Notification preferences updated successfully",
-  "NOTIFICATION_PREFERENCES_RETRIEVED": "Notification preferences retrieved successfully",
-  "LANGUAGE_PREFERENCE_UPDATED": "Language preference updated successfully"
+  "PREFERENCES_UPDATED": "Preferences updated successfully",
+  "PREFERENCES_RETRIEVED": "Preferences retrieved successfully"
 }

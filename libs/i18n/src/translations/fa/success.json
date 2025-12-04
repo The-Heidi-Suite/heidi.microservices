@@ -92,7 +92,6 @@
   "CATEGORY_REQUESTS_RETRIEVED": "درخواست‌های دسته‌بندی با موفقیت بازیابی شدند",
   "CATEGORY_REQUEST_RESOLVED": "درخواست دسته‌بندی با موفقیت پردازش شد",
   "OPERATION_SUCCESS": "عملیات با موفقیت انجام شد",
-  "NOTIFICATION_PREFERENCES_UPDATED": "تنظیمات اعلان‌ها با موفقیت به‌روزرسانی شد",
-  "NOTIFICATION_PREFERENCES_RETRIEVED": "تنظیمات اعلان‌ها با موفقیت بازیابی شد",
-  "LANGUAGE_PREFERENCE_UPDATED": "تنظیمات زبان با موفقیت به‌روزرسانی شد"
+  "PREFERENCES_UPDATED": "تنظیمات با موفقیت به‌روزرسانی شد",
+  "PREFERENCES_RETRIEVED": "تنظیمات با موفقیت بازیابی شد"
 }
