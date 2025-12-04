@@ -138,13 +138,24 @@ export class CategoriesController {
       'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), category text fields are translated where translations exist.',
     example: 'de',
   })
+  @ApiQuery({
+    name: 'showAll',
+    required: false,
+    type: Boolean,
+    description:
+      'When true, returns both active and inactive categories/subcategories. When false or omitted, returns only active categories.',
+  })
   @ApiResponse({
     status: 200,
     description: 'Categories retrieved successfully',
     type: CategoryListResponseDto,
   })
-  async list(@Query() filter: CategoryFilterDto) {
-    return this.categoriesService.listCategories(filter);
+  async list(
+    @Query() filter: CategoryFilterDto,
+    @Query('showAll') showAll?: string,
+  ) {
+    const showAllBool = showAll === 'true';
+    return this.categoriesService.listCategories(filter, showAllBool);
   }
 
   @Public()
@@ -380,8 +391,20 @@ export class CategoriesController {
   @ApiQuery({ name: 'search', required: false, type: String })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'pageSize', required: false, type: Number })
-  async listCityCategories(@Param('cityId') cityId: string, @Query() filter: CategoryFilterDto) {
-    return this.categoriesService.listCityCategories(cityId, filter);
+  @ApiQuery({
+    name: 'showAll',
+    required: false,
+    type: Boolean,
+    description:
+      'When true, returns both active and inactive categories/subcategories. When false or omitted, returns only active categories.',
+  })
+  async listCityCategories(
+    @Param('cityId') cityId: string,
+    @Query() filter: CategoryFilterDto,
+    @Query('showAll') showAll?: string,
+  ) {
+    const showAllBool = showAll === 'true';
+    return this.categoriesService.listCityCategories(cityId, filter, showAllBool);
   }
 
   @Public()
@@ -650,11 +673,20 @@ export class CategoriesController {
     description: 'City/category assignment not found',
     type: CategoryAssignmentNotFoundErrorResponseDto,
   })
+  @ApiQuery({
+    name: 'showAll',
+    required: false,
+    type: Boolean,
+    description:
+      'When true, returns both active and inactive subcategories. When false or omitted, returns only active subcategories.',
+  })
   async getCityCategoryById(
     @Param('cityId') cityId: string,
     @Param('categoryId') categoryId: string,
+    @Query('showAll') showAll?: string,
   ) {
-    return this.categoriesService.getCityCategoryById(cityId, categoryId);
+    const showAllBool = showAll === 'true';
+    return this.categoriesService.getCityCategoryById(cityId, categoryId, showAllBool);
   }
 
   @ApiBearerAuth('JWT-auth')
@@ -770,6 +802,7 @@ export class CategoriesController {
       dto.displayOrder,
       dto.headerBackgroundColor,
       dto.contentBackgroundColor,
+      dto.isActive,
     );
   }
 
@@ -1681,13 +1714,21 @@ export class CategoriesController {
       'Preferred response language (e.g. de, en, dk). When set (or when selected via the Swagger language selector), category and subcategory text fields are translated where translations exist.',
     example: 'de',
   })
+  @ApiQuery({
+    name: 'showAll',
+    required: false,
+    type: Boolean,
+    description:
+      'When true, returns both active and inactive subcategories. When false or omitted, returns only active subcategories.',
+  })
   @ApiResponse({
     status: 404,
     description: 'Category not found',
     type: CategoryNotFoundErrorResponseDto,
   })
-  async getById(@Param('id') id: string) {
-    return this.categoriesService.getCategoryById(id);
+  async getById(@Param('id') id: string, @Query('showAll') showAll?: string) {
+    const showAllBool = showAll === 'true';
+    return this.categoriesService.getCategoryById(id, showAllBool);
   }
 
   @ApiBearerAuth('JWT-auth')
