@@ -63,6 +63,7 @@
     "docker:restart": "docker compose down && docker compose up -d",
     "docker:restart:monitoring": "docker compose --profile monitoring down && docker compose --profile monitoring up -d",
     "docker:logs": "docker compose logs -f",
+    "docker:logs:recent": "docker compose logs -f --since 5m",
     "docker:logs:monitoring": "docker compose --profile monitoring logs -f",
     "docker:status": "docker compose ps && echo '' && docker system df",
     "docker:cleanup": "./scripts/docker-cleanup.sh",
