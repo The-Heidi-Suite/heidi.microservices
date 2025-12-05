@@ -26,6 +26,32 @@ echo "HEIDI Microservices - Database Setup"
 echo "========================================="
 echo ""
 
+# =========================================
+# Create 'postgres' role for compatibility
+# =========================================
+# Many database tools (pgAdmin, DBeaver, monitoring exporters) expect a 'postgres'
+# superuser to exist. This creates it if the primary user is different.
+if [ "$POSTGRES_USER" != "postgres" ]; then
+    echo "Creating 'postgres' role for tool compatibility..."
+    if ! psql -U "$POSTGRES_USER" -d postgres -tc "SELECT 1 FROM pg_roles WHERE rolname = 'postgres'" | grep -q 1; then
+        psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d postgres <<-EOSQL
+            CREATE ROLE postgres WITH
+                LOGIN
+                SUPERUSER
+                CREATEDB
+                CREATEROLE
+                INHERIT
+                REPLICATION
+                CONNECTION LIMIT -1
+                PASSWORD '${POSTGRES_PASSWORD:-heidi_password}';
+EOSQL
+        echo "  ✓ Role 'postgres' created successfully (password same as primary user)"
+    else
+        echo "  ✓ Role 'postgres' already exists, skipping..."
+    fi
+    echo ""
+fi
+
 # Ensure default database exists (from POSTGRES_DB env var, or create heidi_db as fallback)
 DEFAULT_DB="${POSTGRES_DB:-heidi_db}"
 if ! psql -U "$POSTGRES_USER" -d postgres -tc "SELECT 1 FROM pg_database WHERE datname = '$DEFAULT_DB'" | grep -q 1; then
