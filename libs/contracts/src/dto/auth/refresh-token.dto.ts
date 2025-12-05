@@ -1,5 +1,5 @@
-import { IsString, IsNotEmpty } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
+import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RefreshTokenDto {
   @ApiProperty({
@@ -9,4 +9,12 @@ export class RefreshTokenDto {
   @IsString()
   @IsNotEmpty()
   refreshToken: string;
+
+  @ApiPropertyOptional({
+    description: 'Device ID for multi-device support (extracted from token if not provided)',
+    example: 'device_abc123',
+  })
+  @IsString()
+  @IsOptional()
+  deviceId?: string;
 }
