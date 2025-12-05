@@ -9,7 +9,7 @@ FROM node:${NODE_VERSION}-alpine AS base
 
 # Install essential runtime dependencies
 # OpenSSL is required for Prisma Client at runtime
-RUN apk add --no-cache dumb-init curl wget openssl libc6-compat ca-certificates
+RUN apk add --no-cache dumb-init curl openssl libc6-compat ca-certificates
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
@@ -22,7 +22,6 @@ FROM base AS deps
 
 # Copy package files for dependency installation
 COPY package.json package-lock.json* ./
-COPY tsconfig.json nest-cli.json ./
 
 # Install production dependencies only
 # npm ci is faster and more reliable than npm install for Docker builds
@@ -33,50 +32,46 @@ RUN npm ci --omit=dev --legacy-peer-deps && \
 # Stage 3: Build stage
 FROM base AS build
 
-# Install build dependencies (including bash for scripts)
+# Build argument for service name - declared early for layer caching
+ARG APP_NAME
+ENV APP_NAME=${APP_NAME}
+
+# Install build dependencies
 # Prisma requires openssl, libc6-compat (glibc compatibility), and ca-certificates
-# Note: If libc6-compat package is not found, replace with gcompat (Alpine equivalent)
 RUN apk add --no-cache --virtual .build-deps \
     python3 \
     make \
     g++ \
-    bash \
     openssl \
     libc6-compat \
-    ca-certificates \
-    && rm -rf /var/cache/apk/*
+    ca-certificates
 
 # Copy package files
 COPY package.json package-lock.json* ./
 COPY tsconfig.json nest-cli.json ./
 
 # Install all dependencies (including dev dependencies for building)
-# npm ci is faster and more reliable than npm install for Docker builds
-# Using --legacy-peer-deps to match Yarn's peer dependency handling
-RUN npm ci --legacy-peer-deps
+RUN npm ci --legacy-peer-deps && \
+    npm cache clean --force
 
-# Copy source code
-COPY apps/ ./apps/
+# Copy only the Prisma schema for this specific service (optimized layer caching)
+# This prevents cache invalidation when other services' schemas change
+COPY libs/prisma/src/schemas/${APP_NAME}/ ./libs/prisma/src/schemas/${APP_NAME}/
+
+# Generate Prisma Client for this service ONLY (not all services)
+# This significantly reduces build time - from ~8 services to just 1
+RUN npx prisma generate --schema="libs/prisma/src/schemas/${APP_NAME}/schema.prisma"
+
+# Now copy the rest of libs (Prisma modules, aliases, services, other shared libs)
 COPY libs/ ./libs/
 
-# Copy scripts directory (needed for prisma:generate)
-COPY scripts/ ./scripts/
-# Ensure scripts are executable and verify they exist
-RUN chmod +x scripts/*.sh
-
-# Build argument for service name
-ARG APP_NAME
-ENV APP_NAME=${APP_NAME}
-
-# Generate Prisma Client (required for build)
-# Script uses bash arrays, so we need bash (installed in build-deps)
-RUN bash scripts/prisma-generate-all.sh
+# Copy source code for apps
+COPY apps/ ./apps/
 
 # Build the specific app
-# Limit Node.js memory to prevent resource exhaustion during builds
 RUN npm run build:${APP_NAME}
 
-# Remove build dependencies to reduce image size
+# Clean up build dependencies
 RUN apk del .build-deps
 
 # Stage 4: Production runtime (minimal image)
@@ -94,12 +89,12 @@ COPY --from=deps --chown=nestjs:nodejs /app/node_modules ./node_modules
 # Copy built application from build stage
 COPY --from=build --chown=nestjs:nodejs /app/dist/apps/${APP_NAME} ./dist
 
-# Copy Prisma generated client (required at runtime)
+# Copy Prisma generated client for this service (required at runtime)
 COPY --from=build --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build --chown=nestjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy necessary libs that might be needed at runtime (includes Prisma schemas at libs/prisma/src/schemas/)
-COPY --from=build --chown=nestjs:nodejs /app/libs ./libs
+# Copy only the specific service's Prisma schema (if needed at runtime for migrations)
+COPY --from=build --chown=nestjs:nodejs /app/libs/prisma/src/schemas/${APP_NAME}/ ./libs/prisma/src/schemas/${APP_NAME}/
 
 # Create logs directory
 RUN mkdir -p /app/logs && chown -R nestjs:nodejs /app/logs
