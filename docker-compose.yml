@@ -417,7 +417,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3001/healthz || curl -f http://localhost:3001/healthz || exit 1']
+      test: ['CMD-SHELL', 'curl -sf http://localhost:3001/healthz']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -449,7 +449,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3002/healthz || curl -f http://localhost:3002/healthz || exit 1']
+      test: ['CMD-SHELL', 'curl -sf http://localhost:3002/healthz']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -481,7 +481,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3003/healthz || curl -f http://localhost:3003/healthz || exit 1']
+      test: ['CMD-SHELL', 'curl -sf http://localhost:3003/healthz']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -513,7 +513,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3004/healthz || curl -f http://localhost:3004/healthz || exit 1']
+      test: ['CMD-SHELL', 'curl -sf http://localhost:3004/healthz']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -545,7 +545,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3005/healthz || curl -f http://localhost:3005/healthz || exit 1']
+      test: ['CMD-SHELL', 'curl -sf http://localhost:3005/healthz']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -577,7 +577,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3006/healthz || curl -f http://localhost:3006/healthz || exit 1']
+      test: ['CMD-SHELL', 'curl -sf http://localhost:3006/healthz']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -609,7 +609,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3007/healthz || curl -f http://localhost:3007/healthz || exit 1']
+      test: ['CMD-SHELL', 'curl -sf http://localhost:3007/healthz']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -641,7 +641,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3008/healthz || curl -f http://localhost:3008/healthz || exit 1']
+      test: ['CMD-SHELL', 'curl -sf http://localhost:3008/healthz']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -683,7 +683,7 @@ services:
     networks:
       - backend
     healthcheck:
-      test: ['CMD-SHELL', 'wget --spider -q http://localhost:3009/healthz || curl -f http://localhost:3009/healthz || exit 1']
+      test: ['CMD-SHELL', 'curl -sf http://localhost:3009/healthz']
       interval: 30s
       timeout: 10s
       retries: 3
