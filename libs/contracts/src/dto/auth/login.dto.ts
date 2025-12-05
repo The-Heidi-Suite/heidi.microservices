@@ -28,4 +28,12 @@ export class LoginDto {
   @IsOptional()
   @IsBoolean()
   rememberMe?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Unique device identifier for multi-device support',
+    example: 'device_web_chrome_abc123',
+  })
+  @IsString()
+  @IsOptional()
+  deviceId?: string;
 }

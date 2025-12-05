@@ -164,7 +164,8 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'User logout',
-    description: 'Log out the current user and invalidate session',
+    description:
+      'Log out the current user from the current device. To logout from all devices, use the revoke-all-sessions endpoint.',
   })
   @ApiResponse({
     status: 200,
@@ -177,10 +178,14 @@ export class AuthController {
     type: AuthUnauthorizedErrorResponseDto,
   })
   @HttpCode(HttpStatus.OK)
-  async logout(@GetCurrentUser('userId') userId: string, @Req() req: Request) {
+  async logout(
+    @GetCurrentUser('userId') userId: string,
+    @GetCurrentUser('deviceId') deviceId: string,
+    @Req() req: Request,
+  ) {
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress;
     const userAgent = req.headers['user-agent'];
-    return this.authService.logout(userId, ipAddress as string, userAgent);
+    return this.authService.logout(userId, deviceId, ipAddress as string, userAgent);
   }
 
   @Post('refresh')
@@ -207,7 +212,7 @@ export class AuthController {
   })
   @HttpCode(HttpStatus.OK)
   async refresh(@Body() dto: RefreshTokenDto) {
-    return this.authService.refreshTokens(dto.refreshToken);
+    return this.authService.refreshTokens(dto.refreshToken, dto.deviceId);
   }
 
   @Post('validate')

@@ -340,25 +340,35 @@ export class AuthService {
         effectiveRole as UserRole,
       );
 
+      // Generate a deviceId if not provided (for multi-device support)
+      const deviceId =
+        dto.deviceId || `device_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+
       // Generate tokens with city context and permissions
       const selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
       const tokens = await this.jwtService.generateTokenPair(user.id, user.email, user.role, {
         selectedCityId,
         cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
         permissions: permissions.length > 0 ? permissions : undefined,
+        deviceId,
       });
 
-      // Store refresh token in Redis
+      // Store refresh token in Redis with device-specific key (multi-device support)
       // Use 30 days if rememberMe is true, otherwise 7 days
       const refreshTokenExpiry = dto.rememberMe
         ? 30 * 24 * 60 * 60 // 30 days for remember me
         : 7 * 24 * 60 * 60; // 7 days for regular login
-      await this.redis.set(`refresh_token:${user.id}`, tokens.refreshToken, refreshTokenExpiry);
+      await this.redis.set(
+        `refresh_token:${user.id}:${deviceId}`,
+        tokens.refreshToken,
+        refreshTokenExpiry,
+      );
 
       // Store session in auth database (for audit and future OAuth/BIND_ID)
       const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
       await this.storeSession(user.id, TokenType.JWT, expiresAt, AuthProvider.LOCAL, {
         rememberMe: dto.rememberMe || false,
+        deviceId,
       });
 
       // Create audit log for successful login
@@ -414,12 +424,20 @@ export class AuthService {
 
   /**
    * Logout user
+   * @param deviceId - If provided, only logout from specific device. Otherwise logout from all devices.
    */
-  async logout(userId: string, ipAddress?: string, userAgent?: string) {
-    this.logger.log(`Logging out user: ${userId}`);
+  async logout(userId: string, deviceId?: string, ipAddress?: string, userAgent?: string) {
+    this.logger.log(`Logging out user: ${userId}, device: ${deviceId || 'all'}`);
 
-    // Remove refresh token from Redis
-    await this.redis.del(`refresh_token:${userId}`);
+    if (deviceId) {
+      // Logout specific device only
+      await this.redis.del(`refresh_token:${userId}:${deviceId}`);
+    } else {
+      // Logout all devices - delete all tokens for this user
+      await this.redis.delPattern(`refresh_token:${userId}:*`);
+      // Also try legacy key format for backward compatibility
+      await this.redis.del(`refresh_token:${userId}`);
+    }
 
     // Revoke active sessions
     await this.prismaAuth.session.updateMany({
@@ -445,14 +463,25 @@ export class AuthService {
 
   /**
    * Refresh tokens
+   * @param providedDeviceId - Optional device ID (extracted from token if not provided)
    */
-  async refreshTokens(refreshToken: string) {
+  async refreshTokens(refreshToken: string, providedDeviceId?: string) {
     try {
       // Verify refresh token
       const payload = await this.jwtService.verifyRefreshToken(refreshToken);
 
-      // Check if refresh token exists in Redis
-      const storedToken = await this.redis.get<string>(`refresh_token:${payload.sub}`);
+      // Get deviceId from token payload or use provided one
+      const deviceId = payload.deviceId || providedDeviceId;
+
+      // Check if refresh token exists in Redis (device-specific key for multi-device support)
+      let storedToken: string | null = null;
+      if (deviceId) {
+        storedToken = await this.redis.get<string>(`refresh_token:${payload.sub}:${deviceId}`);
+      }
+      // Fallback for legacy tokens without deviceId
+      if (!storedToken) {
+        storedToken = await this.redis.get<string>(`refresh_token:${payload.sub}`);
+      }
       if (!storedToken || storedToken !== refreshToken) {
         throw new UnauthorizedException('Invalid refresh token');
       }
@@ -518,6 +547,9 @@ export class AuthService {
         selectedCityId = cityAssignments.length > 0 ? cityAssignments[0].cityId : undefined;
       }
 
+      // Use deviceId from payload, provided value, or user record
+      const effectiveDeviceId = deviceId || user.deviceId;
+
       // Generate new tokens with appropriate flags
       const tokens = await this.jwtService.generateTokenPair(
         user.id,
@@ -525,17 +557,20 @@ export class AuthService {
         user.role,
         {
           isGuest,
-          deviceId: payload.deviceId || user.deviceId, // Preserve deviceId for guest users
+          deviceId: effectiveDeviceId,
           selectedCityId,
           cityAssignments: cityAssignments.length > 0 ? cityAssignments : undefined,
           permissions: permissions.length > 0 ? permissions : undefined,
         },
       );
 
-      // Update refresh token in Redis
+      // Update refresh token in Redis with device-specific key (multi-device support)
       // Guest users get 30 days, registered users get 7 days
       const refreshTokenExpiry = isGuest ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60;
-      await this.redis.set(`refresh_token:${user.id}`, tokens.refreshToken, refreshTokenExpiry);
+      const redisKey = effectiveDeviceId
+        ? `refresh_token:${user.id}:${effectiveDeviceId}`
+        : `refresh_token:${user.id}`;
+      await this.redis.set(redisKey, tokens.refreshToken, refreshTokenExpiry);
 
       // Update session expiry
       const expiresAt = new Date(Date.now() + refreshTokenExpiry * 1000);
@@ -544,8 +579,8 @@ export class AuthService {
         TokenType.REFRESH,
         expiresAt,
         AuthProvider.LOCAL,
-        undefined,
-        user.deviceId,
+        { deviceId: effectiveDeviceId },
+        effectiveDeviceId,
         user.devicePlatform,
       );
 

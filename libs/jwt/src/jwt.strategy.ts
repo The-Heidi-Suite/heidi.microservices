@@ -71,6 +71,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       cityIds: cityIds.length > 0 ? cityIds : payload.cityIds || [],
       cityAssignments,
       permissions: permissions.length > 0 ? permissions : [],
+      deviceId: payload.deviceId,
+      isGuest: payload.isGuest,
     };
   }
 }
