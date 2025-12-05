@@ -99,6 +99,9 @@ COPY --from=build --chown=nestjs:nodejs /app/node_modules/@prisma ./node_modules
 # Copy Prisma schemas (may be needed at runtime for migrations)
 COPY --from=build --chown=nestjs:nodejs /app/libs/prisma/src/schemas/ ./libs/prisma/src/schemas/
 
+# Copy i18n translation files (required for response message translations)
+COPY --from=build --chown=nestjs:nodejs /app/libs/i18n/src/translations/ ./libs/i18n/src/translations/
+
 # Create logs directory
 RUN mkdir -p /app/logs && chown -R nestjs:nodejs /app/logs
 
