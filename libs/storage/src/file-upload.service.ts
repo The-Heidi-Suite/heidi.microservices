@@ -257,13 +257,16 @@ export class FileUploadService {
    */
   async uploadFile(processedFile: ProcessedFile, bucket: string, key: string): Promise<string> {
     try {
+      // Sanitize originalName for S3 metadata (must be ASCII-safe)
+      const safeOriginalName = this.sanitizeMetadataValue(processedFile.originalName);
+
       await this.storageService.uploadFile({
         bucket,
         key,
         body: processedFile.buffer,
         contentType: processedFile.mimeType,
         metadata: {
-          originalName: processedFile.originalName,
+          originalName: safeOriginalName,
           processed: 'true',
         },
         acl: 'public-read',
@@ -427,6 +430,14 @@ export class FileUploadService {
       .replace(/[^a-zA-Z0-9.-]/g, '_')
       .replace(/_{2,}/g, '_')
       .toLowerCase();
+  }
+
+  /**
+   * Sanitize a string for use in S3 metadata (must be US-ASCII)
+   * URL encodes non-ASCII characters to make them safe for S3 metadata
+   */
+  private sanitizeMetadataValue(value: string): string {
+    return encodeURIComponent(value);
   }
 
   /**

@@ -31,7 +31,7 @@ const defaultSchedules: ScheduleDefinition[] = [
     name: 'Favorite Event Reminders',
     description:
       'Sends push notifications to users for their favorite events - 24 hours and 2 hours before event start. Runs hourly to check for upcoming events.',
-    cronExpression: '0 * * * *', // Every hour at minute 0
+    cronExpression: '*/5 * * * *', // Every hour at minute 0
     payload: {
       kind: 'favorite-event-reminders',
     },
