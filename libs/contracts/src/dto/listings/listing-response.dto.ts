@@ -26,6 +26,9 @@ export class ListingCategoryDto {
 
   @ApiPropertyOptional({ enum: CategoryType, example: CategoryType.EVENT })
   type?: CategoryType | null;
+
+  @ApiPropertyOptional({ example: 'p1a2b3c4-d5e6-7890-abcd-ef1234567890' })
+  parentId?: string | null;
 }
 
 export class ListingCityDto {

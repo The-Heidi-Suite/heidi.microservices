@@ -213,6 +213,7 @@ export class ListingsService {
         name: category.category?.name,
         slug: category.category?.slug,
         type: category.category?.type ?? null,
+        parentId: category.category?.parentId ?? null,
       })),
       cities: listing.cities.map<ListingCityDto>((city) => ({
         id: city.id,
