@@ -54,15 +54,18 @@ COPY tsconfig.json nest-cli.json ./
 RUN npm ci --legacy-peer-deps && \
     npm cache clean --force
 
-# Copy only the Prisma schema for this specific service (optimized layer caching)
-# This prevents cache invalidation when other services' schemas change
-COPY libs/prisma/src/schemas/${APP_NAME}/ ./libs/prisma/src/schemas/${APP_NAME}/
+# Copy all Prisma schemas (required because shared libs use barrel exports)
+# The @heidi/prisma barrel export resolves all Prisma services at build time
+COPY libs/prisma/src/schemas/ ./libs/prisma/src/schemas/
 
-# Generate Prisma Client for this service ONLY (not all services)
-# This significantly reduces build time - from ~8 services to just 1
-RUN npx prisma generate --schema="libs/prisma/src/schemas/${APP_NAME}/schema.prisma"
+# Generate ALL Prisma clients (required due to barrel exports in @heidi/prisma and @heidi/rbac)
+# Each service's build resolves the entire @heidi/prisma module which imports all clients
+RUN for schema in libs/prisma/src/schemas/*/schema.prisma; do \
+      echo "Generating Prisma client for: $schema"; \
+      npx prisma generate --schema="$schema"; \
+    done
 
-# Now copy the rest of libs (Prisma modules, aliases, services, other shared libs)
+# Copy the rest of libs (Prisma modules, aliases, services, other shared libs)
 COPY libs/ ./libs/
 
 # Copy source code for apps
@@ -93,8 +96,8 @@ COPY --from=build --chown=nestjs:nodejs /app/dist/apps/${APP_NAME} ./dist
 COPY --from=build --chown=nestjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=build --chown=nestjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy only the specific service's Prisma schema (if needed at runtime for migrations)
-COPY --from=build --chown=nestjs:nodejs /app/libs/prisma/src/schemas/${APP_NAME}/ ./libs/prisma/src/schemas/${APP_NAME}/
+# Copy Prisma schemas (may be needed at runtime for migrations)
+COPY --from=build --chown=nestjs:nodejs /app/libs/prisma/src/schemas/ ./libs/prisma/src/schemas/
 
 # Create logs directory
 RUN mkdir -p /app/logs && chown -R nestjs:nodejs /app/logs
