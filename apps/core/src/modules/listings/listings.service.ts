@@ -45,7 +45,11 @@ const listingWithRelations = Prisma.validator<Prisma.ListingDefaultArgs>()({
   include: {
     categories: {
       include: {
-        category: true,
+        category: {
+          include: {
+            parent: true,
+          },
+        },
       },
     },
     cities: true,
@@ -143,6 +147,31 @@ export class ListingsService {
     };
   }
 
+  /**
+   * Get the headerBackgroundColor from parent categories.
+   * - If a category has a parent, use the parent's headerBackgroundColor
+   * - If a category has no parent, use its own headerBackgroundColor
+   * - Returns the first non-null color found
+   */
+  private getHeaderBackgroundColor(listing: ListingWithRelations): string | null {
+    for (const lc of listing.categories) {
+      const category = lc.category as any;
+      if (!category) continue;
+
+      // If category has a parent, use parent's headerBackgroundColor
+      if (category.parent?.headerBackgroundColor) {
+        return category.parent.headerBackgroundColor;
+      }
+
+      // If category has no parent (it's a top-level category), use its own headerBackgroundColor
+      if (!category.parentId && category.headerBackgroundColor) {
+        return category.headerBackgroundColor;
+      }
+    }
+
+    return null;
+  }
+
   private mapListing(
     listing: ListingWithRelations,
     options: { isFavorite?: boolean; defaultImageUrl?: string | null } = {},
@@ -152,6 +181,7 @@ export class ListingsService {
       listing,
       options.defaultImageUrl,
     );
+    const headerBackgroundColor = this.getHeaderBackgroundColor(listing);
     return {
       id: listing.id,
       slug: listing.slug,
@@ -168,6 +198,7 @@ export class ListingsService {
       languageCode: listing.languageCode,
       sourceUrl: listing.sourceUrl,
       heroImageUrl: effectiveHeroImageUrl,
+      headerBackgroundColor,
       metadata: listing.metadata as Record<string, unknown> | null,
       viewCount: listing.viewCount,
       likeCount: listing.likeCount,
