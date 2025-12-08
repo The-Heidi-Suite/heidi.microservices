@@ -84,7 +84,7 @@ export class RmqSetupService implements OnModuleInit {
   private getRoutingKeysForService(serviceName: string): string[] {
     const routingMap: Record<string, string[]> = {
       users: ['user.*', 'verification.verified'], // Add verification.verified for email verification updates
-      core: ['core.*'],
+      core: ['core.*', 'user.deleted'], // Add user.deleted for cleanup of user favorites/reminders
       city: ['city.*'],
       notification: [
         'user.created',

@@ -98,6 +98,38 @@ export class CoreService implements OnModuleInit {
     };
   }
 
+  /**
+   * Clean up all user-related data when account is permanently deleted
+   * This includes favorites, reminders, and city assignments
+   */
+  async cleanupUserData(userId: string) {
+    this.logger.log(`Cleaning up user data for userId: ${userId}`);
+
+    // Delete user favorites
+    const deletedFavorites = await this.prisma.userFavorite.deleteMany({
+      where: { userId },
+    });
+    this.logger.log(`Deleted ${deletedFavorites.count} favorites for user: ${userId}`);
+
+    // Delete listing reminders
+    const deletedReminders = await this.prisma.listingReminder.deleteMany({
+      where: { userId },
+    });
+    this.logger.log(`Deleted ${deletedReminders.count} reminders for user: ${userId}`);
+
+    // Delete city assignments
+    const deletedAssignments = await this.prisma.userCityAssignment.deleteMany({
+      where: { userId },
+    });
+    this.logger.log(`Deleted ${deletedAssignments.count} city assignments for user: ${userId}`);
+
+    return {
+      deletedFavorites: deletedFavorites.count,
+      deletedReminders: deletedReminders.count,
+      deletedAssignments: deletedAssignments.count,
+    };
+  }
+
   async getUserAssignments(userId: string, role?: string) {
     this.logger.log(`Getting user assignments for userId: ${userId}, role: ${role || 'all'}`);
 
