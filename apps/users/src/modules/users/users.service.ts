@@ -1581,6 +1581,57 @@ export class UsersService {
   }
 
   /**
+   * Permanently delete the current user's account
+   * This is an irreversible operation that removes all user data
+   */
+  async permanentDeleteAccount(userId: string) {
+    this.logger.log(`Permanently deleting account for user: ${userId}`);
+
+    // Verify user exists
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException({ errorCode: ErrorCode.AUTH_USER_NOT_FOUND });
+    }
+
+    // Delete all related data in a transaction
+    await this.prisma.$transaction(async (tx) => {
+      // Delete user devices
+      await tx.userDevice.deleteMany({
+        where: { userId },
+      });
+
+      // Delete topic subscriptions
+      await tx.userTopicSubscription.deleteMany({
+        where: { userId },
+      });
+
+      // Permanently delete the user
+      await tx.user.delete({
+        where: { id: userId },
+      });
+    });
+
+    // Emit user deleted event
+    this.client.emit(RabbitMQPatterns.USER_DELETED, {
+      userId,
+      email: user.email,
+      permanent: true,
+      timestamp: new Date().toISOString(),
+    });
+
+    this.logger.log(`Account permanently deleted for user: ${userId}`);
+    return { message: 'Account permanently deleted successfully' };
+  }
+
+  /**
    * Update user preferences (newsletter subscription, notification preferences, and/or language)
    */
   async updatePreferences(

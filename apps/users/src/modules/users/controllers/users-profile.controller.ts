@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   HttpCode,
   HttpStatus,
@@ -20,6 +21,7 @@ import {
   GetProfileResponseDto,
   UpdateProfileResponseDto,
   ChangePasswordResponseDto,
+  DeleteAccountResponseDto,
   ValidationErrorResponseDto,
   UnauthorizedErrorResponseDto,
   BadRequestErrorResponseDto,
@@ -205,5 +207,27 @@ export class UsersProfileController {
   @HttpCode(HttpStatus.OK)
   async changePassword(@GetCurrentUser('userId') userId: string, @Body() dto: ChangePasswordDto) {
     return this.usersService.changePassword(userId, dto);
+  }
+
+  @Delete('me')
+  @SuccessMessage('ACCOUNT_DELETED')
+  @ApiOperation({
+    summary: 'Permanently delete my account',
+    description:
+      'Permanently delete the current authenticated user account. This action is irreversible and will remove all associated data including devices and subscriptions.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Account permanently deleted successfully',
+    type: DeleteAccountResponseDto,
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized',
+    type: UnauthorizedErrorResponseDto,
+  })
+  @HttpCode(HttpStatus.OK)
+  async deleteAccount(@GetCurrentUser('userId') userId: string) {
+    return this.usersService.permanentDeleteAccount(userId);
   }
 }

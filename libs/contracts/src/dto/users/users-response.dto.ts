@@ -513,3 +513,29 @@ export class ChangePasswordResponseDto {
   @ApiProperty({ example: 200 })
   statusCode: number;
 }
+
+// Delete Account Response
+export class DeleteAccountResponseDataDto {
+  @ApiProperty({ example: 'Account permanently deleted successfully' })
+  message: string;
+}
+
+export class DeleteAccountResponseDto {
+  @ApiProperty({ example: true })
+  success: boolean;
+
+  @ApiProperty({ type: DeleteAccountResponseDataDto })
+  data: DeleteAccountResponseDataDto;
+
+  @ApiProperty({ example: 'Account permanently deleted successfully', description: 'Success message' })
+  message: string;
+
+  @ApiProperty({ example: '2024-01-01T00:00:00.000Z' })
+  timestamp: string;
+
+  @ApiProperty({ example: '/profile/me' })
+  path: string;
+
+  @ApiProperty({ example: 200 })
+  statusCode: number;
+}

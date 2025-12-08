@@ -78,5 +78,6 @@
   "CATEGORY_REQUEST_RESOLVED": "Kategoriförfrågan löst framgångsrikt",
   "OPERATION_SUCCESS": "Åtgärd slutförd framgångsrikt",
   "PREFERENCES_UPDATED": "Inställningar uppdaterade framgångsrikt",
-  "PREFERENCES_RETRIEVED": "Inställningar hämtade framgångsrikt"
+  "PREFERENCES_RETRIEVED": "Inställningar hämtade framgångsrikt",
+  "ACCOUNT_DELETED": "Konto permanent raderat framgångsrikt"
 }

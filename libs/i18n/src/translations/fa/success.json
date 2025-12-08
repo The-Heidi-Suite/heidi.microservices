@@ -93,5 +93,6 @@
   "CATEGORY_REQUEST_RESOLVED": "درخواست دسته‌بندی با موفقیت پردازش شد",
   "OPERATION_SUCCESS": "عملیات با موفقیت انجام شد",
   "PREFERENCES_UPDATED": "تنظیمات با موفقیت به‌روزرسانی شد",
-  "PREFERENCES_RETRIEVED": "تنظیمات با موفقیت بازیابی شد"
+  "PREFERENCES_RETRIEVED": "تنظیمات با موفقیت بازیابی شد",
+  "ACCOUNT_DELETED": "حساب کاربری با موفقیت به طور دائم حذف شد"
 }

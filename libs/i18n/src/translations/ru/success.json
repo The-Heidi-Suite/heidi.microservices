@@ -78,5 +78,6 @@
   "CATEGORY_REQUEST_RESOLVED": "Запрос категории успешно обработан",
   "OPERATION_SUCCESS": "Операция успешно завершена",
   "PREFERENCES_UPDATED": "Настройки успешно обновлены",
-  "PREFERENCES_RETRIEVED": "Настройки успешно получены"
+  "PREFERENCES_RETRIEVED": "Настройки успешно получены",
+  "ACCOUNT_DELETED": "Аккаунт успешно удалён навсегда"
 }

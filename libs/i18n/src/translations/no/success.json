@@ -78,5 +78,6 @@
   "CATEGORY_REQUEST_RESOLVED": "Kategoriforespørsel løst vellykket",
   "OPERATION_SUCCESS": "Operasjon fullført vellykket",
   "PREFERENCES_UPDATED": "Innstillinger oppdatert vellykket",
-  "PREFERENCES_RETRIEVED": "Innstillinger hentet vellykket"
+  "PREFERENCES_RETRIEVED": "Innstillinger hentet vellykket",
+  "ACCOUNT_DELETED": "Konto permanent slettet vellykket"
 }
