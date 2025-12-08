@@ -1,5 +1,5 @@
 import { Controller } from '@nestjs/common';
-import { MessagePattern, Payload } from '@nestjs/microservices';
+import { MessagePattern, EventPattern, Payload } from '@nestjs/microservices';
 import { CoreService } from './core.service';
 import { RabbitMQPatterns } from '@heidi/rabbitmq';
 import { LoggerService } from '@heidi/logger';
@@ -195,6 +195,28 @@ export class CoreMessageController {
         error,
       );
       throw error; // Throwing error causes NestJS to NACK the message
+    }
+  }
+
+  @EventPattern(RabbitMQPatterns.USER_DELETED)
+  async handleUserDeleted(
+    @Payload() data: { userId: string; email?: string; permanent?: boolean; timestamp: string },
+  ) {
+    this.logger.log(
+      `Received event: ${RabbitMQPatterns.USER_DELETED} for userId: ${data.userId}, permanent: ${data.permanent}`,
+    );
+
+    // Only clean up data for permanent deletions
+    if (!data.permanent) {
+      this.logger.log(`Skipping cleanup for userId: ${data.userId} - not a permanent deletion`);
+      return;
+    }
+
+    try {
+      await this.coreService.cleanupUserData(data.userId);
+      this.logger.log(`User data cleanup completed for userId: ${data.userId}`);
+    } catch (error) {
+      this.logger.error(`Failed to clean up user data for userId: ${data.userId}`, error);
     }
   }
 }

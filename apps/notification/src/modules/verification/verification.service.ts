@@ -166,8 +166,10 @@ export class VerificationService {
       });
     }
 
+    // For verification, prioritize the stored language from registration over browser's Accept-Language
     const metadataLanguage = this.extractLanguageFromMetadata(verificationToken.metadata);
-    const effectiveLanguage = this.resolveLanguage(language, metadataLanguage);
+    const storedLanguage = this.getLanguageFromMetadata(metadataLanguage);
+    const effectiveLanguage = storedLanguage || language;
 
     if (verificationToken.isUsed || verificationToken.status === 'VERIFIED') {
       const msg = this.i18nService.translate(
@@ -254,6 +256,7 @@ export class VerificationService {
       userId: verificationToken.userId,
       verifiedAt: new Date(),
       message: this.i18nService.translate('success.EMAIL_VERIFIED', undefined, effectiveLanguage),
+      language: effectiveLanguage,
     };
   }
 
@@ -440,5 +443,29 @@ export class VerificationService {
     }
 
     return metadata as Record<string, any>;
+  }
+
+  /**
+   * Extract language string from metadata object
+   */
+  private getLanguageFromMetadata(
+    metadata: Record<string, any> | string | null,
+  ): string | undefined {
+    if (!metadata) {
+      return undefined;
+    }
+
+    if (typeof metadata === 'string' && metadata.trim() !== '') {
+      return metadata;
+    }
+
+    if (typeof metadata === 'object') {
+      const preferred = metadata.preferredLanguage || metadata.language || metadata.locale;
+      if (typeof preferred === 'string' && preferred.trim() !== '') {
+        return preferred;
+      }
+    }
+
+    return undefined;
   }
 }

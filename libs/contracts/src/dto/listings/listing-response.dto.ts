@@ -186,6 +186,13 @@ export class ListingResponseDto {
   @ApiPropertyOptional({ example: 'https://cdn.example.com/listings/hero.jpg' })
   heroImageUrl?: string | null;
 
+  @ApiPropertyOptional({
+    example: '#7C3AED',
+    description:
+      'Header background color from the parent category. If the listing belongs to multiple categories with different parents, one is selected. If a category has no parent, the category\'s own headerBackgroundColor is used.',
+  })
+  headerBackgroundColor?: string | null;
+
   @ApiPropertyOptional({ example: { tags: ['cleanup', 'volunteer'] } })
   metadata?: Record<string, unknown> | null;
 
