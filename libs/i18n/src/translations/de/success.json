@@ -93,5 +93,6 @@
   "CATEGORY_REQUEST_RESOLVED": "Kategorieanfrage erfolgreich bearbeitet",
   "OPERATION_SUCCESS": "Vorgang erfolgreich abgeschlossen",
   "PREFERENCES_UPDATED": "Einstellungen erfolgreich aktualisiert",
-  "PREFERENCES_RETRIEVED": "Einstellungen erfolgreich abgerufen"
+  "PREFERENCES_RETRIEVED": "Einstellungen erfolgreich abgerufen",
+  "ACCOUNT_DELETED": "Konto erfolgreich dauerhaft gelöscht"
 }

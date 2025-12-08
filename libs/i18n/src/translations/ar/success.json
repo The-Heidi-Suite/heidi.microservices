@@ -93,5 +93,6 @@
   "CATEGORY_REQUEST_RESOLVED": "تم معالجة طلب الفئة بنجاح",
   "OPERATION_SUCCESS": "تمت العملية بنجاح",
   "PREFERENCES_UPDATED": "تم تحديث الإعدادات بنجاح",
-  "PREFERENCES_RETRIEVED": "تم استرجاع الإعدادات بنجاح"
+  "PREFERENCES_RETRIEVED": "تم استرجاع الإعدادات بنجاح",
+  "ACCOUNT_DELETED": "تم حذف الحساب نهائيًا بنجاح"
 }

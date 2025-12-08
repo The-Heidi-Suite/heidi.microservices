@@ -78,5 +78,6 @@
   "CATEGORY_REQUEST_RESOLVED": "Kategori talebi başarıyla çözüldü",
   "OPERATION_SUCCESS": "İşlem başarıyla tamamlandı",
   "PREFERENCES_UPDATED": "Tercihler başarıyla güncellendi",
-  "PREFERENCES_RETRIEVED": "Tercihler başarıyla alındı"
+  "PREFERENCES_RETRIEVED": "Tercihler başarıyla alındı",
+  "ACCOUNT_DELETED": "Hesap kalıcı olarak başarıyla silindi"
 }

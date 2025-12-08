@@ -93,5 +93,6 @@
   "CATEGORY_REQUEST_RESOLVED": "Kategorianmodning behandlet succesfuldt",
   "OPERATION_SUCCESS": "Handling gennemført succesfuldt",
   "PREFERENCES_UPDATED": "Indstillinger opdateret succesfuldt",
-  "PREFERENCES_RETRIEVED": "Indstillinger hentet succesfuldt"
+  "PREFERENCES_RETRIEVED": "Indstillinger hentet succesfuldt",
+  "ACCOUNT_DELETED": "Konto permanent slettet succesfuldt"
 }
