@@ -112,15 +112,18 @@ export class VerificationController {
     try {
       const result = await this.verificationService.verifyToken({ token }, language);
 
+      // Use the language from verification metadata (stored during registration)
+      const effectiveLanguage = result.language || language;
+
       // Get translated messages - use specific keys for each text element
       const title =
-        this.i18nService.translate('success.EMAIL_VERIFIED_TITLE', undefined, language) ||
+        this.i18nService.translate('success.EMAIL_VERIFIED_TITLE', undefined, effectiveLanguage) ||
         'Email Verified!';
       const message =
-        this.i18nService.translate('success.EMAIL_VERIFIED_MESSAGE', undefined, language) ||
+        this.i18nService.translate('success.EMAIL_VERIFIED_MESSAGE', undefined, effectiveLanguage) ||
         'Your email has been verified successfully!';
       const subtitle =
-        this.i18nService.translate('success.EMAIL_VERIFIED_SUBTITLE', undefined, language) ||
+        this.i18nService.translate('success.EMAIL_VERIFIED_SUBTITLE', undefined, effectiveLanguage) ||
         'You can now close this window and continue using the app.';
 
       // Return HTML page
