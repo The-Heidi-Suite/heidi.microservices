@@ -429,7 +429,7 @@ export class CategoriesService {
     return this.translateCategoryTree(categories);
   }
 
-  async createCategory(dto: CreateCategoryDto) {
+  async createCategory(dto: CreateCategoryDto, createdBy?: string) {
     const baseSlugCandidate = dto.slug ? this.slugify(dto.slug) : this.slugify(dto.name);
     const baseSlug = baseSlugCandidate || this.slugify(`${dto.name}-${Date.now()}`);
     const slug = await this.ensureUniqueCategorySlug(baseSlug);
@@ -457,7 +457,24 @@ export class CategoriesService {
       };
     }
 
-    return this.prisma.category.create({ data });
+    const category = await this.prisma.category.create({ data });
+
+    // If cities are provided, create city_category mappings
+    if (dto.cities && dto.cities.length > 0) {
+      const cityCategoryData = dto.cities.map((city) => ({
+        cityId: city.cityId,
+        categoryId: category.id,
+        addedBy: createdBy ?? null,
+        isActive: dto.isActive ?? true,
+      }));
+
+      await this.prisma.cityCategory.createMany({
+        data: cityCategoryData,
+        skipDuplicates: true,
+      });
+    }
+
+    return category;
   }
 
   async updateCategory(categoryId: string, dto: UpdateCategoryDto) {

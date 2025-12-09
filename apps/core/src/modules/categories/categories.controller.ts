@@ -196,6 +196,15 @@ export class CategoriesController {
           isActive: true,
         },
       },
+      withCities: {
+        summary: 'Create category and assign to cities',
+        value: {
+          name: 'Community Events',
+          type: 'EVENT',
+          isActive: true,
+          cities: [{ cityId: '22a7b284-76aa-43a7-a3ec-797f0c045182' }],
+        },
+      },
     },
   })
   @ApiResponse({
@@ -240,7 +249,7 @@ export class CategoriesController {
   })
   @SuperAdminOnly()
   async create(@GetCurrentUser() user: CurrentUser, @Body() dto: CreateCategoryDto) {
-    return this.categoriesService.createCategory(dto);
+    return this.categoriesService.createCategory(dto, user.userId);
   }
 
   @ApiBearerAuth('JWT-auth')
