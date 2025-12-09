@@ -6,6 +6,15 @@ interface LanguagePreference {
   quality: number;
 }
 
+/**
+ * Language code mapping from standard ISO 639-1 codes to internal codes
+ * Maps incoming Accept-Language header codes to backend internal codes
+ */
+const LANGUAGE_CODE_MAP: Record<string, string> = {
+  da: 'dk', // Danish: da (ISO 639-1) → dk (internal)
+  sv: 'se', // Swedish: sv (ISO 639-1) → se (internal)
+};
+
 @Injectable()
 export class LanguageDetectorService {
   private readonly defaultLanguage: string;
@@ -92,7 +101,20 @@ export class LanguageDetectorService {
   private extractBaseLanguage(langTag: string): string {
     // Remove any whitespace and take the part before hyphen
     const base = langTag.split('-')[0].toLowerCase();
-    return base || langTag.toLowerCase();
+    const baseCode = base || langTag.toLowerCase();
+    
+    // Map standard ISO 639-1 codes to internal codes
+    return this.normalizeLanguageCode(baseCode);
+  }
+
+  /**
+   * Normalize language code from standard ISO 639-1 to internal code
+   * @param code Language code from Accept-Language header
+   * @returns Internal language code
+   */
+  private normalizeLanguageCode(code: string): string {
+    const normalized = LANGUAGE_CODE_MAP[code.toLowerCase()];
+    return normalized || code;
   }
 
   /**

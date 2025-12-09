@@ -158,9 +158,13 @@ SWAGGER_VERSION=1.0
 # Default language code (ISO 639-1) used when Accept-Language header is missing
 I18N_DEFAULT_LANGUAGE=en
 
-# Supported languages (comma-separated ISO 639-1 codes)
+# Supported languages (comma-separated internal codes)
 # Languages: de (German), en (English), dk (Danish), no (Norwegian), se (Swedish),
 #            ar (Arabic), fa (Persian/Farsi), tr (Turkish), ru (Russian), uk (Ukrainian)
+#
+# Note: The backend automatically maps standard ISO 639-1 codes from Accept-Language header:
+#   - da (Danish ISO 639-1) → dk (internal code)
+#   - sv (Swedish ISO 639-1) → se (internal code)
 I18N_SUPPORTED_LANGUAGES=de,en,dk,no,se,ar,fa,tr,ru,uk
 
 # ============================================================================
