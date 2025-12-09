@@ -1,6 +1,25 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CategoryType } from '@prisma/client-core';
-import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class CategoryCityAssignmentDto {
+  @ApiProperty({
+    description: 'City ID to assign the category to',
+    example: '22a7b284-76aa-43a7-a3ec-797f0c045182',
+  })
+  @IsUUID()
+  cityId: string;
+}
 
 export class CreateCategoryDto {
   @ApiProperty({
@@ -78,4 +97,15 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsString()
   contentBackgroundColor?: string;
+
+  @ApiPropertyOptional({
+    description: 'Array of cities to assign this category to',
+    type: [CategoryCityAssignmentDto],
+    example: [{ cityId: '22a7b284-76aa-43a7-a3ec-797f0c045182' }],
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CategoryCityAssignmentDto)
+  cities?: CategoryCityAssignmentDto[];
 }

@@ -1708,16 +1708,25 @@ export class ListingsService {
 
   private buildListingWhere(
     filter: ListingFilterDto = {} as ListingFilterDto,
+    searchListingIds?: string[],
   ): Prisma.ListingWhereInput {
     const where: Prisma.ListingWhereInput = {};
     const andConditions: Prisma.ListingWhereInput[] = [];
 
+    // Search handling: includes original fields and translated content matches
     if (filter.search) {
       const searchTerm = filter.search.trim();
-      where.OR = [
+      const searchConditions: Prisma.ListingWhereInput[] = [
         { title: { contains: searchTerm, mode: 'insensitive' } },
         { summary: { contains: searchTerm, mode: 'insensitive' } },
       ];
+
+      // Include listings found via translated content search
+      if (searchListingIds && searchListingIds.length > 0) {
+        searchConditions.push({ id: { in: searchListingIds } });
+      }
+
+      where.OR = searchConditions;
     }
 
     if (filter.status) {
@@ -1851,7 +1860,32 @@ export class ListingsService {
     const pageSizeCandidate = filter.pageSize && filter.pageSize > 0 ? filter.pageSize : 20;
     const pageSize = Math.min(pageSizeCandidate, 100);
     const skip = (page - 1) * pageSize;
-    const where = this.buildListingWhere(filter);
+
+    // Search in translations table for matching listing IDs (for translated content search)
+    let translatedListingIds: string[] = [];
+    if (filter.search) {
+      const searchTerm = filter.search.trim();
+      const locale = this.i18nService.getLanguage();
+
+      // Only search translations for the current user's locale to ensure relevant results
+      if (locale) {
+        const matchingTranslations = await this.prisma.translation.findMany({
+          where: {
+            entityType: 'listing',
+            field: { in: ['title', 'summary'] },
+            locale: locale, // Restrict to current locale only
+            value: { contains: searchTerm, mode: 'insensitive' },
+          },
+          select: { entityId: true },
+          distinct: ['entityId'],
+        });
+        translatedListingIds = matchingTranslations
+          .map((t) => t.entityId)
+          .filter((id): id is string => id !== null);
+      }
+    }
+
+    const where = this.buildListingWhere(filter, translatedListingIds);
 
     const allowedSortFields = new Set([
       'createdAt',
