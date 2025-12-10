@@ -300,8 +300,9 @@ export class ListingsService {
 
   /**
    * Compute the effective hero image URL for a listing.
-   * If the listing has no heroImageUrl AND no media images, returns the city category image as default.
+   * If the listing has no heroImageUrl, returns the city category image as default.
    * Uses the provided defaultImageUrl (from city category) or falls back to the category's imageUrl.
+   * Returns default image even if listing has media images - frontend can decide which to prioritize.
    */
   private computeEffectiveHeroImageUrl(
     listing: ListingWithRelations,
@@ -312,14 +313,7 @@ export class ListingsService {
       return listing.heroImageUrl;
     }
 
-    // If listing has media images, don't override (app will use media)
-    const hasMediaImages =
-      listing.media && listing.media.length > 0 && listing.media.some((m) => m.type === 'IMAGE');
-    if (hasMediaImages) {
-      return null;
-    }
-
-    // No images at all - use default from city category
+    // No hero image - use default from city category
     if (providedDefaultImageUrl) {
       return providedDefaultImageUrl;
     }
@@ -342,20 +336,15 @@ export class ListingsService {
    * Looks up CityCategory.imageUrl for each listing's primaryCityId and categories.
    * Falls back to Category.imageUrl if CityCategory doesn't have an image.
    * Returns a map of listingId -> defaultImageUrl
+   * Now returns default images for all listings without heroImageUrl, regardless of media presence.
    */
   private async getDefaultImagesForListings(
     listings: ListingWithRelations[],
   ): Promise<Map<string, string | null>> {
     const result = new Map<string, string | null>();
 
-    // Filter listings that actually need default images
-    const listingsNeedingDefaults = listings.filter(
-      (listing) =>
-        !listing.heroImageUrl &&
-        (!listing.media ||
-          listing.media.length === 0 ||
-          !listing.media.some((m) => m.type === 'IMAGE')),
-    );
+    // Filter listings that need default images (no heroImageUrl)
+    const listingsNeedingDefaults = listings.filter((listing) => !listing.heroImageUrl);
 
     if (listingsNeedingDefaults.length === 0) {
       return result;
