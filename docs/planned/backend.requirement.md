@@ -1,146 +1,455 @@
-# HEIDI — Backend Requirements & Implementation Plan (Backend-first)
+# HEIDI — Backend Requirements & Implementation Plan
 
 **Purpose**
 This document defines the concrete backend requirements, responsibilities, service catalogue, tenancy model, feature surface, and high-level infrastructure plan for the Heidi App Factory. Use this as the authoritative reference for scoping, implementation, and client sign-off.
 
-> Diagram: refer to attached architecture image (provided) for logical layout and service placement.
+**Version:** 2.0
+**Last Updated:** 2025-06-10
+**Status:** Draft
+
+> **Note:** This document is synchronized with [Architecture Document](./architecture.md) for technical specifications.
 
 ---
 
-## 1. Core Backend Responsibilities (what backend must deliver)
+## Table of Contents
 
-The backend implements the following platform capabilities (core responsibilities):
-
-1. **Template & Feature Registry**
-   - Store template metadata and versions (Template A / Template B).
-   - Store feature module metadata, dependencies, and compatibility matrix.
-   - Provide APIs for CMS to list, validate and select templates & features.
-
-2. **App Configuration & Project Orchestration**
-   - Persist app configuration (app name, bundle id, assets, theme, selected features).
-   - Orchestrate project generation jobs (create reproducible workspace, merge template + features, inject config).
-   - Provide build status tracking and artifact management.
-
-3. **Core Business Logic & Listings**
-   - Implement the primary domain logic for cities → categories → sub-categories → listings.
-   - Provide CRUD + approval workflows for listings, categories, and hierarchical taxonomy.
-   - Expose search and filtering APIs used by mobile and web frontends.
-
-4. **Authentication & RBAC**
-   - JWT-based authentication, refresh tokens, tenant-aware sessions.
-   - Role-based access control covering: Super Admin, Super City Admin, City Admin, Citizen.
-   - Enforce tenant isolation in API layer and data layer.
-
-5. **Tenant Management**
-   - Tenant lifecycle: onboarding, activation/deactivation, configuration, and metadata.
-   - Manage tenant-scoped resources (registered apps, credentials, quotas).
-
-6. **Notification & Scheduler**
-   - Multi-channel notifications (push & email).
-   - Scheduler for jobs, recurring tasks, and background processing.
-
-7. **Integration & External Connectors**
-   - Integration service to connect with DeepL, Payment providers, Destination.One, and other third parties.
-   - Standardized connectors and retry / reconciliation logic.
-
-8. **Analytics, Monitoring & Audit**
-   - Capture usage metrics, dashboards, and admin insights.
-   - System-wide audit trail capturing configuration changes, generation events, role changes and administrative actions.
-
-9. **App Factory Supporting Services**
-   - Artifact storage (signed APK/AAB/IPA), build metadata, signing coordination (keystores stored securely).
-   - Worker orchestration (queueing, worker pods) for generation jobs and heavy background tasks (embeddings, indexing).
-
-10. **Chatbot (Feature Add-on)**
-    - Embedding pipeline, vector index management (per-tenant namespace), retrieval layer and query API.
-    - Ingestion endpoints for document scraping and chunking; RAG integration for tenant-specific knowledge bases.
+1. [System Context & Actors](#1-system-context--actors)
+2. [Core Backend Responsibilities](#2-core-backend-responsibilities)
+3. [Feature Model & Business Rules](#3-feature-model--business-rules)
+4. [Tenant Isolation Strategy](#4-tenant-isolation-strategy)
+5. [Microservices Catalog](#5-microservices-catalog)
+6. [Component Architecture](#6-component-architecture)
+7. [Technology Stack & Libraries](#7-technology-stack--libraries)
+8. [Shared Libraries Architecture](#8-shared-libraries-architecture)
+9. [API Interaction Flows](#9-api-interaction-flows)
+10. [Data Flow Pipelines](#10-data-flow-pipelines)
+11. [Integration Patterns](#11-integration-patterns)
+12. [Security Architecture](#12-security-architecture)
+13. [Docker & Container Architecture](#13-docker--container-architecture)
+14. [Kubernetes Deployment Strategy](#14-kubernetes-deployment-strategy)
+15. [Monitoring & Observability](#15-monitoring--observability)
+16. [Cross-Cutting Concerns](#16-cross-cutting-concerns)
+17. [CI/CD Pipeline](#17-cicd-pipeline)
+18. [Feature Modules Catalog](#18-feature-modules-catalog)
+19. [Third-Party Services](#19-third-party-services)
+20. [Acceptance Criteria](#20-acceptance-criteria)
+21. [Appendices](#appendices)
 
 ---
 
-## 2. Feature Model & Responsibilities (core domain)
+## 1. System Context & Actors
 
-The platform must model and expose the following core content hierarchy and business rules:
+### 1.1 Actors
 
-- **City (tenant)**
-  - Top-level tenant container. Each city is a tenant and owns its data, templates selection, feature toggles and app builds.
+| Actor                    | Description                                                                               | Access Level     |
+| ------------------------ | ----------------------------------------------------------------------------------------- | ---------------- |
+| **Super Admin**          | Platform-level operator managing cities, global templates, and platform-wide settings     | All tenants      |
+| **Super City Admin**     | City-level operator managing local CMS data, city admins, and city configurations         | Own tenant       |
+| **City Admin**           | Operational manager handling listings approvals, content publishing, and local dashboards | Own tenant       |
+| **Editor / Contributor** | Authenticated citizen submitting content for approval                                     | Create (pending) |
+| **Anonymous Citizen**    | Public visitor browsing listings, using chatbot, viewing news/events                      | Read only        |
 
-- **Category (level 1)**
-  - City-managed categories for content grouping (e.g., Services, Businesses, Events).
+### 1.2 Systems Interaction
 
-- **Sub-category (level 2)**
-  - Child categories to refine classification (e.g., Service → Waste Collection).
+```mermaid
+graph TB
+    %% Actors
+    SuperAdmin[Super Admin] --> WebCMS[Web CMS<br/>React SPA]
+    SuperCityAdmin[Super City Admin] --> WebCMS
+    CityAdmin[City Admin] --> WebCMS
+    Editor[Editor/Contributor] --> WebCMS
+    Citizen[Anonymous Citizen] --> WebApp[Citizen Web App<br/>Next.js]
+    Citizen --> MobileApp[Mobile App<br/>iOS/Android]
 
-- **Listings (core feature)**
-  - Items under sub-categories representing services, businesses, or points-of-interest.
-  - Listing attributes: title, description, contact, location, opening hours, tags, media, category, approval status.
-  - Workflows:
-    - Admin/City Admin approvals and moderation
-    - Public listing visibility states
-    - Versioning (audit trail) on edits and approvals
+    %% Backend
+    subgraph "HEIDI Backend (NestJS Monorepo)"
+        APIGateway[API Gateway<br/>Routing, auth, tenant resolution]
+    end
 
-**Placement:** The Listings capability will reside in the **Core Service** (core microservice) to ensure consistent functionality across the platform and reduce duplication.
+    %% External Systems
+    ObjectStorage[Object Storage<br/>S3-compatible]
+    EmailService[Email Service<br/>SMTP provider]
+    PushService[Push Service<br/>FCM/APNS]
 
----
+    %% Connections
+    WebCMS --> APIGateway
+    WebApp --> APIGateway
+    MobileApp --> APIGateway
+    APIGateway --> ObjectStorage
+    APIGateway --> EmailService
+    APIGateway --> PushService
+```
 
-## 3. Tenant Isolation Strategy
+### 1.3 System Boundaries
 
-Design goals:
+**Backend Boundary:**
 
-- Data isolation, per-tenant scoping, and GDPR compliance.
-- Strong separation for tenant-scoped data, with flexibility for both shared and isolated models.
-
-Approach (recommended):
-
-1. **Per-Service Databases (Primary)**
-   - Each microservice uses its own PostgreSQL logical database instance (or schema) to limit blast radius and enable independent scaling.
-   - Tenant data is scoped via `tenant_id` column inside service DB. For stronger isolation, services may use tenant-specific schemas or database instances if required per client SLA.
-
-2. **Namespaces for Vector/Index Storage**
-   - Vector DB (Pinecone or equivalent) must use tenant-specific namespaces to avoid cross-tenant leakage.
-
-3. **RBAC & Gateway Enforcement**
-   - Tenant identification at API Gateway (header / token claim) and cookie/sessions; all services must use tenant context to enforce tenant-scoped access.
-
-4. **Secrets per Tenant**
-   - Keystores, provisioning profiles and other sensitive tenant credentials stored in Vault/KMS under tenant-specific paths and access policies.
-
----
-
-## 4. Microservices Catalog (NestJS monorepo)
-
-All services will be implemented in a NestJS monorepo. Each service has a separate Postgres database (or schema) and uses shared libs for common concerns.
-
-### Microservices (current + new)
-
-| Service                  | Port | Database             | Description                                                                   |
-| ------------------------ | ---- | -------------------- | ----------------------------------------------------------------------------- |
-| **Auth Service**         | 3001 | `heidi_auth`         | Authentication, JWT, sessions, RBAC                                           |
-| **Users Service**        | 3002 | `heidi_users`        | Profiles, permissions, user management, terms acceptance                      |
-| **City Service**         | 3003 | `heidi_city`         | City metadata, boundaries, tenant config                                      |
-| **Core Service**         | 3004 | `heidi_core`         | Business orchestration, Listings, Categories, Tags, Tiles, approval workflows |
-| **Notification Service** | 3005 | `heidi_notification` | Push (FCM/APNS), email delivery, templates, verification                      |
-| **Scheduler Service**    | 3006 | `heidi_scheduler`    | Cron jobs, queue scheduling, retries, translation tasks                       |
-| **Integration Service**  | 3007 | `heidi_integration`  | External API adapters (DeepL, Destination.One, Mobilithek)                    |
-| **Admin Service**        | 3008 | `heidi_admin`        | Business metrics, admin dashboards, KPIs                                      |
-| **Terminal Service**     | 3009 | `heidi_terminal`     | Kiosk/device registration & management (future)                               |
-
-### Future Services (planned)
-
-- **Project Generation Service** — App Factory orchestration, build job metadata, artifacts registry
-- **Template Service** — Template versions, template metadata, compatibility checks
-- **Feature Service** — Feature versions, dependencies, toggles, compatibility matrix
-- **Theme Service** — Theme configs, fonts, colors, asset references
-- **Audit Service / Logging Service** — Centralized audit trail, search, retention policies
-- **Chatbot Service** — RAG orchestration, ingestion endpoints, embedding workers
-- **Payment Service** — Payment orchestration, SEPA/GDPR-compliant flows
-
-**Monorepo note:** Shared libraries for logging, db access (Prisma), tenant context, RBAC guards, message queue clients (RabbitMQ), S3 wrapper, and common DTOs.
+- All services communicate through API Gateway
+- No direct external access to internal services
+- All requests require tenant context
+- RBAC enforced at gateway and service levels
 
 ---
 
-## 5. Technology Stack & Libraries
+## 2. Core Backend Responsibilities
 
-### Runtime Environment
+The backend implements the following platform capabilities:
+
+| #   | Capability                            | Description                                                                                                                                                                    |
+| --- | ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | **Template & Feature Registry**       | Store template metadata/versions (A/B), feature module metadata, dependencies, compatibility matrix. Provide APIs for CMS to list, validate and select templates & features.   |
+| 2   | **App Configuration & Orchestration** | Persist app configuration (app name, bundle id, assets, theme, selected features). Orchestrate project generation jobs, provide build status tracking and artifact management. |
+| 3   | **Core Business Logic & Listings**    | Cities → Categories → Sub-categories → Listings hierarchy. CRUD + approval workflows, search and filtering APIs for mobile and web frontends.                                  |
+| 4   | **Authentication & RBAC**             | JWT-based authentication, refresh tokens, tenant-aware sessions. Role-based access control for all defined roles. Tenant isolation in API and data layers.                     |
+| 5   | **Tenant Management**                 | Tenant lifecycle (onboarding, activation/deactivation, configuration, metadata). Manage tenant-scoped resources (registered apps, credentials, quotas).                        |
+| 6   | **Notification & Scheduler**          | Multi-channel notifications (push & email). Scheduler for jobs, recurring tasks, and background processing.                                                                    |
+| 7   | **Integration & External Connectors** | Connect with DeepL, Payment providers, Destination.One, Mobilithek. Standardized connectors and retry/reconciliation logic.                                                    |
+| 8   | **Analytics, Monitoring & Audit**     | Usage metrics, dashboards, admin insights. System-wide audit trail for configuration changes, generation events, role changes.                                                 |
+| 9   | **App Factory Services**              | Artifact storage (signed APK/AAB/IPA), build metadata, signing coordination. Worker orchestration for generation jobs and background tasks.                                    |
+| 10  | **Chatbot (RAG Feature)**             | Embedding pipeline, vector index management (per-tenant namespace), retrieval layer and query API. Ingestion endpoints for document scraping and chunking.                     |
+
+---
+
+## 3. Feature Model & Business Rules
+
+### 3.1 Content Hierarchy
+
+```mermaid
+graph TD
+    City[City / Tenant] --> Category[Category Level 1]
+    Category --> SubCategory[Sub-category Level 2]
+    SubCategory --> Listing[Listing]
+
+    Listing --> |attributes| Attrs[Title, Description, Contact<br/>Location, Hours, Tags<br/>Media, Status]
+    Listing --> |workflow| Workflow[Draft → Pending → Published]
+```
+
+### 3.2 Entity Definitions
+
+| Entity                     | Description                                                                                               |
+| -------------------------- | --------------------------------------------------------------------------------------------------------- |
+| **City (Tenant)**          | Top-level tenant container. Each city owns its data, templates selection, feature toggles and app builds. |
+| **Category (Level 1)**     | City-managed categories for content grouping (e.g., Services, Businesses, Events).                        |
+| **Sub-category (Level 2)** | Child categories to refine classification (e.g., Service → Waste Collection).                             |
+| **Listings**               | Items under sub-categories representing services, businesses, or points-of-interest.                      |
+
+### 3.3 Listing Attributes
+
+- Title, description, contact information
+- Location (geospatial data), opening hours
+- Tags, media attachments
+- Category assignment, approval status
+
+### 3.4 Approval Workflows
+
+| Workflow                | Description                                              |
+| ----------------------- | -------------------------------------------------------- |
+| **Create → Pending**    | Editor submits content, status set to `pending_approval` |
+| **Pending → Published** | Admin approves, status updated to `published`            |
+| **Pending → Rejected**  | Admin rejects with reason, contributor notified          |
+| **Published → Draft**   | Admin can unpublish content                              |
+| **Versioning**          | Audit trail on edits and approvals                       |
+
+**Placement:** The Listings capability resides in the **Core Service** to ensure consistent functionality across the platform.
+
+---
+
+## 4. Tenant Isolation Strategy
+
+### 4.1 Design Goals
+
+- Data isolation, per-tenant scoping, and GDPR compliance
+- Strong separation for tenant-scoped data
+- Flexibility for both shared and isolated models
+
+### 4.2 Implementation Approach
+
+| Layer              | Strategy                   | Implementation                                                                                  |
+| ------------------ | -------------------------- | ----------------------------------------------------------------------------------------------- |
+| **Database**       | Per-Service Databases      | Each microservice uses its own PostgreSQL database. Tenant data scoped via `tenant_id` column.  |
+| **Vector Storage** | Namespace Isolation        | Vector DB uses tenant-specific namespaces to avoid cross-tenant leakage.                        |
+| **API Layer**      | RBAC & Gateway Enforcement | Tenant identification at API Gateway (header/token claim). All services enforce tenant context. |
+| **Secrets**        | Per-Tenant Paths           | Keystores, provisioning profiles stored in Vault/KMS under tenant-specific paths.               |
+| **Cache**          | Key Prefixing              | All cache keys include tenant ID (`tenant:city1:resource:id`).                                  |
+
+### 4.3 Multi-Tenant Data Access Pattern
+
+```sql
+-- Automatic tenant filtering (via middleware/ORM)
+SELECT * FROM listings
+WHERE tenant_id = :tenantId AND status = 'published';
+```
+
+### 4.4 Request Flow with Tenant Isolation
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant Gateway as API Gateway
+    participant Service as Microservice
+    participant DB as PostgreSQL
+
+    Client->>Gateway: Request<br/>Host: city1.heidi.app<br/>Authorization: Bearer token
+    Gateway->>Gateway: Extract tenantId (subdomain/header)
+    Gateway->>Gateway: Validate JWT, verify tenantId matches
+    Gateway->>Gateway: Add X-Tenant-ID header
+    Gateway->>Service: Forward request with tenant context
+    Service->>Service: Apply tenant filter to query
+    Service->>DB: Execute query WHERE tenant_id = 'city1'
+    DB-->>Service: Results scoped to tenant
+    Service-->>Gateway: Response (tenant-scoped)
+    Gateway-->>Client: Response
+```
+
+---
+
+## 5. Microservices Catalog
+
+### 5.1 NestJS Monorepo Structure
+
+```
+heidi-backend/
+├── apps/
+│   ├── auth/                 # Authentication microservice
+│   ├── users/                # User management microservice
+│   ├── city/                 # City management microservice
+│   ├── core/                 # Core business logic microservice
+│   ├── notification/         # Notification microservice
+│   ├── scheduler/            # Task scheduling microservice
+│   ├── integration/          # External API adapters
+│   ├── admin/                # Admin dashboard microservice
+│   └── terminal/             # Kiosk/terminal management (future)
+├── libs/
+│   ├── config/               # Configuration management
+│   ├── contracts/            # Shared DTOs, interfaces
+│   ├── errors/               # Error handling
+│   ├── health/               # Health check indicators
+│   ├── i18n/                 # Internationalization
+│   ├── interceptors/         # Response transform, logging
+│   ├── jwt/                  # JWT module, guards
+│   ├── logger/               # Winston logger
+│   ├── metrics/              # Prometheus metrics
+│   ├── monitoring/           # Monitoring integration
+│   ├── prisma/               # Per-service Prisma modules
+│   ├── rabbitmq/             # Message queue
+│   ├── rbac/                 # Role-based access control
+│   ├── redis/                # Redis module
+│   ├── saga/                 # Distributed transactions
+│   ├── storage/              # S3 storage abstraction
+│   ├── tenancy/              # Multi-tenant utilities
+│   └── translations/         # DeepL integration
+├── scripts/                  # Build and deployment scripts
+└── infra/                    # Infrastructure configs
+```
+
+### 5.2 Current Microservices
+
+| Service                  | Port | Database             | Description                                                                 |
+| ------------------------ | ---- | -------------------- | --------------------------------------------------------------------------- |
+| **Auth Service**         | 3001 | `heidi_auth`         | Authentication, JWT issuance, session management, password management       |
+| **Users Service**        | 3002 | `heidi_users`        | User profiles, roles, permissions, user lifecycle, terms acceptance         |
+| **City Service**         | 3003 | `heidi_city`         | City metadata, boundaries, tenant config, activation/deactivation           |
+| **Core Service**         | 3004 | `heidi_core`         | Listings CRUD, Categories, Tags, Tiles, POIs, search, approval workflows    |
+| **Notification Service** | 3005 | `heidi_notification` | Push (FCM/APNS), email delivery, templates, verification, delivery tracking |
+| **Scheduler Service**    | 3006 | `heidi_scheduler`    | Cron jobs, queue scheduling, retries, translation tasks                     |
+| **Integration Service**  | 3007 | `heidi_integration`  | External API adapters (DeepL, Destination.One, Mobilithek)                  |
+| **Admin Service**        | 3008 | `heidi_admin`        | Business metrics, admin dashboards, KPIs                                    |
+| **Terminal Service**     | 3009 | `heidi_terminal`     | Kiosk/device registration & management (future)                             |
+
+### 5.3 Future Services (Planned)
+
+| Service                        | Purpose                                                           |
+| ------------------------------ | ----------------------------------------------------------------- |
+| **Project Generation Service** | App Factory orchestration, build job metadata, artifacts registry |
+| **Template Service**           | Template versions, metadata, compatibility checks                 |
+| **Feature Service**            | Feature versions, dependencies, toggles, compatibility matrix     |
+| **Theme Service**              | Theme configs, fonts, colors, asset references                    |
+| **Audit Service**              | Centralized audit trail, search, retention policies               |
+| **Chatbot Service**            | RAG orchestration, ingestion endpoints, embedding workers         |
+| **Payment Service**            | Payment orchestration, SEPA/GDPR-compliant flows                  |
+| **AppConfig Service**          | Per-tenant app configurations, branding                           |
+| **Analytics Service**          | Usage metrics collection, dashboard aggregation, reporting        |
+
+---
+
+## 6. Component Architecture
+
+### 6.1 Auth Service Components
+
+```mermaid
+graph TB
+    subgraph "Auth Service (NestJS)"
+        AuthController[Auth Controller<br/>@Controller]
+        AuthService[Auth Service<br/>@Injectable]
+
+        subgraph "Components"
+            TokenIssuer[Token Issuer<br/>JWT generation, signing]
+            TokenValidator[Token Validator<br/>JWT validation, parsing]
+            SessionManager[Session Manager<br/>Redis-backed sessions]
+            RBACEnforcer[RBAC Enforcer<br/>Role/permission checks]
+            PasswordManager[Password Manager<br/>Hashing, validation]
+            TenantResolver[Tenant Resolver<br/>Extract tenant from token]
+        end
+    end
+
+    subgraph "Infrastructure"
+        Postgres[(PostgreSQL)]
+        Redis[(Redis)]
+    end
+
+    AuthController --> AuthService
+    AuthService --> TokenIssuer
+    AuthService --> TokenValidator
+    AuthService --> SessionManager
+    AuthService --> RBACEnforcer
+    AuthService --> PasswordManager
+    AuthService --> TenantResolver
+    TokenIssuer --> Postgres
+    TokenValidator --> Redis
+    SessionManager --> Redis
+    RBACEnforcer --> Postgres
+```
+
+**Component Responsibilities:**
+
+| Component            | Responsibility                                                            |
+| -------------------- | ------------------------------------------------------------------------- |
+| **Token Issuer**     | Generates JWT tokens with claims (user ID, tenant ID, roles, permissions) |
+| **Token Validator**  | Validates incoming JWT tokens, checks expiration, verifies signature      |
+| **Session Manager**  | Manages user sessions in Redis, handles session refresh, logout           |
+| **RBAC Enforcer**    | Evaluates role-based access control rules for API endpoints               |
+| **Password Manager** | Handles password hashing (bcrypt), validation, reset flows                |
+| **Tenant Resolver**  | Extracts tenant context from JWT claims or request headers                |
+
+### 6.2 Core Service Components
+
+```mermaid
+graph TB
+    subgraph "Core Service (NestJS)"
+        CoreController[Core Controller<br/>@Controller]
+
+        subgraph "NestJS Modules"
+            ListingsModule[Listings Module<br/>CRUD, search, filtering]
+            CategoriesModule[Categories Module<br/>Hierarchical taxonomy]
+            POIModule[POI Module<br/>Geospatial queries]
+            MediaModule[Media Module<br/>S3 upload orchestration]
+            SearchModule[Search Module<br/>Full-text search]
+            ApprovalModule[Approval Module<br/>Draft/publish state]
+            EventModule[Event Module<br/>Publish to RabbitMQ]
+        end
+    end
+
+    subgraph "Infrastructure"
+        Postgres[(PostgreSQL)]
+        S3[(S3 Storage)]
+        RabbitMQ[(RabbitMQ)]
+    end
+
+    CoreController --> ListingsModule
+    CoreController --> CategoriesModule
+    CoreController --> POIModule
+    CoreController --> MediaModule
+
+    ListingsModule --> SearchModule
+    ListingsModule --> ApprovalModule
+    ListingsModule --> EventModule
+
+    ListingsModule --> Postgres
+    CategoriesModule --> Postgres
+    POIModule --> Postgres
+    MediaModule --> S3
+    EventModule --> RabbitMQ
+```
+
+**Component Responsibilities:**
+
+| Component             | Responsibility                                                                 |
+| --------------------- | ------------------------------------------------------------------------------ |
+| **Listings Module**   | Manages listing entities (CRUD), status workflow (draft → pending → published) |
+| **Categories Module** | Handles hierarchical category structures, category assignments                 |
+| **POI Module**        | Manages Points of Interest with geospatial data, location-based queries        |
+| **Media Module**      | Orchestrates file uploads to S3, generates thumbnails, manages media metadata  |
+| **Search Module**     | Provides full-text search across listings with filtering and sorting           |
+| **Approval Module**   | Manages approval states, tracks approver, timestamps, rejection reasons        |
+| **Event Publisher**   | Publishes events to RabbitMQ for downstream processing                         |
+
+### 6.3 Chatbot Service Components (Planned)
+
+```mermaid
+graph TB
+    subgraph "Chatbot Service (NestJS)"
+        ChatbotController[Chatbot Controller]
+        ChatbotService[Chatbot Service]
+
+        subgraph "Components"
+            IngestionPipeline[Ingestion Pipeline<br/>Content extraction]
+            EmbeddingGenerator[Embedding Generator<br/>Vector creation]
+            RAGQueryEngine[RAG Query Engine<br/>Context retrieval + LLM]
+            CitationFormatter[Citation Formatter<br/>Source attribution]
+            ConversationManager[Conversation Manager<br/>Session history]
+            TenantIsolator[Tenant Isolator<br/>Scopes to tenant]
+        end
+    end
+
+    subgraph "Infrastructure"
+        Postgres[(PostgreSQL)]
+        VectorDB[(Vector Database)]
+        Redis[(Redis)]
+        LLM[LLM Provider<br/>OpenAI/Local]
+    end
+
+    ChatbotController --> ChatbotService
+    ChatbotService --> IngestionPipeline
+    ChatbotService --> RAGQueryEngine
+    IngestionPipeline --> EmbeddingGenerator
+    EmbeddingGenerator --> VectorDB
+    RAGQueryEngine --> VectorDB
+    RAGQueryEngine --> LLM
+    ConversationManager --> Redis
+```
+
+### 6.4 ProjectGen Service Components (Planned)
+
+```mermaid
+graph TB
+    subgraph "ProjectGen Service (NestJS)"
+        ProjectGenController[ProjectGen Controller]
+        ProjectGenService[ProjectGen Service]
+
+        subgraph "Components"
+            BuildOrchestrator[Build Orchestrator<br/>Queue management]
+            TemplateResolver[Template Resolver<br/>A/B selection]
+            AssetCompiler[Asset Compiler<br/>Icons, splash, branding]
+            ArtifactPublisher[Artifact Publisher<br/>Build outputs]
+            BuildMonitor[Build Monitor<br/>Status tracking]
+            ConfigGenerator[Config Generator<br/>App config files]
+        end
+    end
+
+    subgraph "Infrastructure"
+        Postgres[(PostgreSQL)]
+        S3[(S3 Storage)]
+        RabbitMQ[(RabbitMQ)]
+    end
+
+    subgraph "External"
+        AppFactory[App Factory<br/>CI/CD Pipeline]
+    end
+
+    ProjectGenController --> ProjectGenService
+    ProjectGenService --> BuildOrchestrator
+    ProjectGenService --> TemplateResolver
+    BuildOrchestrator --> RabbitMQ
+    AssetCompiler --> S3
+    ArtifactPublisher --> S3
+    RabbitMQ --> AppFactory
+```
+
+---
+
+## 7. Technology Stack & Libraries
+
+### 7.1 Runtime Environment
 
 | Component      | Version  | Purpose              |
 | -------------- | -------- | -------------------- |
@@ -148,7 +457,7 @@ All services will be implemented in a NestJS monorepo. Each service has a separa
 | **npm**        | ≥10.0.0  | Package manager      |
 | **TypeScript** | ^5.9.3   | Type-safe JavaScript |
 
-### Core Framework
+### 7.2 Core Framework
 
 | Library                      | Version | Purpose                  |
 | ---------------------------- | ------- | ------------------------ |
@@ -159,14 +468,14 @@ All services will be implemented in a NestJS monorepo. Each service has a separa
 | **@nestjs/microservices**    | ^11.1.8 | Microservices support    |
 | **@nestjs/swagger**          | 11.0.7  | OpenAPI documentation    |
 
-### Database & ORM
+### 7.3 Database & ORM
 
 | Library            | Version | Purpose                       |
 | ------------------ | ------- | ----------------------------- |
 | **@prisma/client** | ^6.19.0 | Type-safe database client     |
 | **prisma**         | ^6.19.0 | Database toolkit & migrations |
 
-### Authentication & Security
+### 7.4 Authentication & Security
 
 | Library               | Version | Purpose                   |
 | --------------------- | ------- | ------------------------- |
@@ -178,7 +487,7 @@ All services will be implemented in a NestJS monorepo. Each service has a separa
 | **helmet**            | ^8.1.0  | Security headers          |
 | **@nestjs/throttler** | ^6.4.0  | Rate limiting             |
 
-### Messaging & Caching
+### 7.5 Messaging & Caching
 
 | Library                     | Version | Purpose                        |
 | --------------------------- | ------- | ------------------------------ |
@@ -186,7 +495,7 @@ All services will be implemented in a NestJS monorepo. Each service has a separa
 | **amqplib**                 | ^0.10.9 | AMQP protocol client           |
 | **ioredis**                 | ^5.8.2  | Redis client                   |
 
-### External Services & Storage
+### 7.6 External Services & Storage
 
 | Library                           | Version  | Purpose                         |
 | --------------------------------- | -------- | ------------------------------- |
@@ -197,7 +506,7 @@ All services will be implemented in a NestJS monorepo. Each service has a separa
 | **axios**                         | ^1.13.2  | HTTP client                     |
 | **@nestjs/axios**                 | ^4.0.1   | NestJS HTTP module              |
 
-### Monitoring & Logging
+### 7.7 Monitoring & Logging
 
 | Library                       | Version | Purpose                    |
 | ----------------------------- | ------- | -------------------------- |
@@ -207,7 +516,7 @@ All services will be implemented in a NestJS monorepo. Each service has a separa
 | **nest-winston**              | ^1.10.2 | NestJS Winston integration |
 | **@nestjs/terminus**          | ^11.0.0 | Health checks              |
 
-### Utilities
+### 7.8 Utilities
 
 | Library               | Version | Purpose                 |
 | --------------------- | ------- | ----------------------- |
@@ -220,7 +529,7 @@ All services will be implemented in a NestJS monorepo. Each service has a separa
 | **rxjs**              | ^7.8.2  | Reactive programming    |
 | **@nestjs/schedule**  | ^6.0.1  | Task scheduling         |
 
-### Development Tools
+### 7.9 Development Tools
 
 | Library              | Version  | Purpose                   |
 | -------------------- | -------- | ------------------------- |
@@ -238,9 +547,9 @@ All services will be implemented in a NestJS monorepo. Each service has a separa
 
 ---
 
-## 6. Shared Libraries Architecture
+## 8. Shared Libraries Architecture
 
-The monorepo uses shared libraries under `libs/` with `@heidi/*` path aliases:
+### 8.1 Library Catalog
 
 | Library          | Path Alias            | Purpose                                          |
 | ---------------- | --------------------- | ------------------------------------------------ |
@@ -263,26 +572,445 @@ The monorepo uses shared libraries under `libs/` with `@heidi/*` path aliases:
 | **tenancy**      | `@heidi/tenancy`      | Multi-tenant context, guards, interceptors       |
 | **translations** | `@heidi/translations` | DeepL integration, translation providers         |
 
-### Supported Languages (i18n)
+### 8.2 Supported Languages (i18n)
 
-- German (de) — Primary
-- English (en)
-- Arabic (ar)
-- Danish (dk)
-- Farsi/Persian (fa)
-- Norwegian (no)
-- Russian (ru)
-- Swedish (se)
-- Turkish (tr)
-- Ukrainian (uk)
+| Language      | Code | Status  |
+| ------------- | ---- | ------- |
+| German        | de   | Primary |
+| English       | en   | Active  |
+| Arabic        | ar   | Active  |
+| Danish        | dk   | Active  |
+| Farsi/Persian | fa   | Active  |
+| Norwegian     | no   | Active  |
+| Russian       | ru   | Active  |
+| Swedish       | se   | Active  |
+| Turkish       | tr   | Active  |
+| Ukrainian     | uk   | Active  |
 
 ---
 
-## 7. Docker & Container Architecture
+## 9. API Interaction Flows
 
-### Base Image Strategy
+### 9.1 Authentication Flow
 
-Multi-stage Dockerfile optimized for production:
+```mermaid
+sequenceDiagram
+    participant Client as Client (Web/Mobile)
+    participant Gateway as API Gateway
+    participant Auth as Auth Service
+    participant Users as Users Service
+    participant Redis
+    participant Postgres as PostgreSQL
+
+    Client->>Gateway: POST /auth/login<br/>{email, password, tenantId}
+    Gateway->>Gateway: Rate limit check
+    Gateway->>Auth: Forward login request
+
+    Auth->>Postgres: Validate credentials<br/>(email, tenantId)
+    Postgres-->>Auth: User record with hash
+
+    Auth->>Auth: Verify password hash
+
+    alt Invalid credentials
+        Auth-->>Gateway: 401 Unauthorized
+        Gateway-->>Client: 401 Unauthorized
+    else Valid credentials
+        Auth->>Users: Get user roles & permissions
+        Users->>Postgres: Query user roles
+        Postgres-->>Users: Roles & permissions
+        Users-->>Auth: User roles & permissions
+
+        Auth->>Auth: Generate JWT token<br/>(userId, tenantId, roles)
+        Auth->>Redis: Store session<br/>(sessionId, userId, TTL)
+        Auth->>Auth: Generate refresh token
+
+        Auth-->>Gateway: {accessToken, refreshToken, expiresIn}
+        Gateway-->>Client: 200 OK
+    end
+```
+
+**Key Points:**
+
+- API Gateway performs rate limiting before forwarding
+- Password verification happens in Auth Service (never transmit plain passwords)
+- JWT contains all necessary claims (userId, tenantId, roles, permissions)
+- Session stored in Redis for revocation and session management
+- Refresh token allows token renewal without re-authentication
+
+### 9.2 Listing Creation with Approval Flow
+
+```mermaid
+sequenceDiagram
+    participant Editor as Editor/Contributor
+    participant CMS as Web CMS
+    participant Gateway as API Gateway
+    participant Core as Core Service
+    participant RabbitMQ
+    participant Admin as City Admin
+    participant Notification as Notification Service
+    participant Postgres as PostgreSQL
+
+    Editor->>CMS: Create listing (form data, media)
+    CMS->>Gateway: POST /api/listings<br/>Authorization: Bearer token
+    Gateway->>Gateway: Validate JWT, extract tenantId
+    Gateway->>Gateway: RBAC check (Editor role)
+    Gateway->>Core: POST /listings
+
+    Core->>Core: Validate listing data
+    Core->>Postgres: Save listing as DRAFT<br/>(status: 'pending_approval')
+    Postgres-->>Core: Listing created (id)
+
+    Core->>RabbitMQ: Publish event<br/>(listing.pending_approval)
+
+    Core-->>Gateway: 201 Created
+    Gateway-->>CMS: 201 Created
+    CMS-->>Editor: Listing submitted for approval
+
+    RabbitMQ->>Notification: Consume event
+    Notification->>Notification: Send email to admin<br/>"New listing pending approval"
+
+    Note over Admin,CMS: Admin reviews listing
+
+    Admin->>CMS: Approve listing (id: 123)
+    CMS->>Gateway: PATCH /api/listings/123/approve
+    Gateway->>Core: PATCH /listings/123/approve
+
+    Core->>Postgres: Update listing<br/>(status: 'published')
+    Core->>RabbitMQ: Publish event<br/>(listing.published)
+
+    Core-->>Gateway: 200 OK
+    Gateway-->>CMS: 200 OK
+
+    RabbitMQ->>Notification: Consume event
+    Notification->>Notification: Notify contributor<br/>"Your listing approved"
+```
+
+### 9.3 App Build Trigger Flow
+
+```mermaid
+sequenceDiagram
+    participant Admin as City Admin
+    participant CMS as Web CMS
+    participant Gateway as API Gateway
+    participant ProjectGen as ProjectGen Service
+    participant RabbitMQ
+    participant AppFactory as App Factory
+    participant S3 as Object Storage
+    participant Postgres as PostgreSQL
+
+    Admin->>CMS: Trigger build (platform: ios/android)
+    CMS->>Gateway: POST /api/builds<br/>{platform, tenantId, config}
+    Gateway->>Gateway: Validate JWT, RBAC
+    Gateway->>ProjectGen: POST /builds
+
+    ProjectGen->>Postgres: Get app config (tenantId)
+    ProjectGen->>Postgres: Get template & features
+    ProjectGen->>S3: Load branding assets
+    ProjectGen->>ProjectGen: Generate build config
+
+    ProjectGen->>Postgres: Create build record (status: 'queued')
+    ProjectGen->>RabbitMQ: Publish build job
+
+    ProjectGen-->>Gateway: 202 Accepted {buildId}
+    Gateway-->>CMS: 202 Accepted
+    CMS-->>Admin: Build queued
+
+    RabbitMQ->>AppFactory: Consume build job
+    AppFactory->>AppFactory: Build process (5-15 min)
+
+    alt Build successful
+        AppFactory->>S3: Upload artifact (APK/IPA)
+        AppFactory->>ProjectGen: Webhook (status: 'completed')
+        ProjectGen->>Postgres: Update build status
+    else Build failed
+        AppFactory->>ProjectGen: Webhook (status: 'failed')
+        ProjectGen->>Postgres: Update build status
+    end
+
+    Admin->>CMS: Check build status
+    CMS->>Gateway: GET /api/builds/{buildId}
+    Gateway->>ProjectGen: GET /builds/{buildId}
+    ProjectGen-->>Gateway: {status, artifactUrl}
+    Gateway-->>CMS: 200 OK
+    CMS-->>Admin: Display status & download link
+```
+
+### 9.4 Chatbot Query Flow
+
+```mermaid
+sequenceDiagram
+    participant User as User (Web/Mobile)
+    participant Widget as Chatbot Widget
+    participant Gateway as API Gateway
+    participant Chatbot as Chatbot Service
+    participant VectorDB as Vector Database
+    participant Postgres as PostgreSQL
+    participant LLM as LLM Provider
+    participant Redis
+
+    User->>Widget: Submit question
+    Widget->>Gateway: POST /api/chatbot/query<br/>{question, conversationId, tenantId}
+    Gateway->>Chatbot: POST /query
+
+    Chatbot->>Redis: Load conversation history
+    Chatbot->>Chatbot: Generate embedding (question)
+    Chatbot->>VectorDB: Similarity search<br/>(query vector, tenantId, topK: 5)
+    VectorDB-->>Chatbot: Relevant chunks with scores
+
+    alt No relevant context found
+        Chatbot-->>Gateway: {response: "I don't have information..."}
+    else Context found
+        Chatbot->>Postgres: Load source metadata
+        Chatbot->>Chatbot: Format prompt (question + context)
+        Chatbot->>LLM: Generate response
+        LLM-->>Chatbot: Generated response
+        Chatbot->>Chatbot: Extract citations
+        Chatbot->>Redis: Store conversation
+
+        Chatbot-->>Gateway: {response, citations: [...]}
+    end
+
+    Gateway-->>Widget: 200 OK
+    Widget-->>User: Display response with citations
+```
+
+---
+
+## 10. Data Flow Pipelines
+
+### 10.1 Content Publishing Pipeline
+
+```mermaid
+flowchart LR
+    A[Editor Creates Content] --> B[Core Service]
+    B --> C[(Draft DB<br/>Status: pending)]
+    C --> D[RabbitMQ Event<br/>content.pending]
+    D --> E[Notification Service]
+    E --> F[City Admin Notified]
+
+    F --> G[Admin Reviews]
+    G --> H{Approval Decision}
+
+    H -->|Approve| I[Core Service<br/>Update Status]
+    H -->|Reject| J[Core Service<br/>Status: rejected]
+
+    I --> K[(Published DB<br/>Status: published)]
+    K --> L[RabbitMQ Event<br/>content.published]
+    L --> M[CDN Cache Invalidation]
+    M --> N[Public Available]
+
+    L --> O[Notification Service]
+    O --> P[Contributor Notified]
+
+    J --> Q[Notification Service]
+    Q --> R[Contributor Notified<br/>with rejection reason]
+```
+
+### 10.2 Notification Delivery Pipeline
+
+```mermaid
+flowchart TB
+    A[Event Trigger<br/>e.g., listing.published] --> B[RabbitMQ Queue]
+    B --> C[Notification Service<br/>Consumer]
+
+    C --> D{Notification Type}
+
+    D -->|Push| E[Push Notification Handler]
+    D -->|Email| F[Email Handler]
+
+    E --> H[Get Device Tokens<br/>from Users Service]
+    H --> I[FCM/APNS API]
+    I --> J[(Delivery Status DB)]
+
+    F --> K[Get Email Templates]
+    K --> L[Render Template<br/>with context]
+    L --> M[SMTP Provider]
+    M --> J
+
+    J --> O[Analytics Event<br/>notification.delivered]
+    O --> P[RabbitMQ Event]
+```
+
+### 10.3 Analytics Collection Pipeline
+
+```mermaid
+flowchart TB
+    A[Client Action<br/>e.g., listing.view] --> B[Analytics SDK<br/>Client-side]
+    B --> C[API Gateway<br/>POST /analytics/events]
+
+    C --> D[Analytics Service]
+    D --> E{Event Type}
+
+    E -->|Real-time| F[Real-time Processor]
+    E -->|Batch| G[Batch Queue]
+
+    F --> H[Time-series DB<br/>PostgreSQL/TimescaleDB]
+
+    G --> I[Batch Processor<br/>Hourly/Daily]
+    I --> J[Aggregation Tables]
+    J --> H
+
+    H --> K[Dashboard Query]
+    K --> L[Analytics Dashboard<br/>Web CMS]
+```
+
+---
+
+## 11. Integration Patterns
+
+### 11.1 Synchronous Patterns
+
+| Pattern              | Implementation                                                                        | Use Cases                                                  |
+| -------------------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **API Gateway**      | Single entry point, tenant resolution, JWT validation, rate limiting, request routing | All external requests                                      |
+| **Request/Response** | REST APIs for inter-service communication, HTTP/HTTPS with JSON payloads              | User authentication, data retrieval, configuration queries |
+
+### 11.2 Asynchronous Patterns
+
+| Pattern            | Implementation                                                              | Use Cases                                                           |
+| ------------------ | --------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **Pub/Sub**        | RabbitMQ topic-based routing, guaranteed delivery, dead letter queues       | Content approval notifications, build job queuing, analytics events |
+| **Event Sourcing** | All admin actions published as events, append-only log, time-travel queries | Audit trail, compliance                                             |
+
+### 11.3 Resilience Patterns
+
+| Pattern             | Implementation                                                             | Use Cases                                         |
+| ------------------- | -------------------------------------------------------------------------- | ------------------------------------------------- |
+| **Circuit Breaker** | Monitor external calls, states (Closed/Open/Half-Open), fallback responses | LLM API calls, email/SMS providers, external APIs |
+| **Saga**            | Choreography-based saga, local transactions, compensating actions          | App build orchestration, distributed transactions |
+
+### 11.4 Data Patterns
+
+| Pattern                  | Implementation                                                       | Use Cases                                             |
+| ------------------------ | -------------------------------------------------------------------- | ----------------------------------------------------- |
+| **Database per Service** | Each service has dedicated schema, no direct cross-service DB access | Service autonomy, independent scaling                 |
+| **CQRS**                 | Separate read/write operations, optimized read models via events     | Analytics dashboards, search functionality, reporting |
+
+### 11.5 NestJS-Specific Patterns
+
+| Pattern                  | Implementation                                                                     |
+| ------------------------ | ---------------------------------------------------------------------------------- |
+| **Dependency Injection** | `@Injectable()` decorators, constructor-based injection, module organization       |
+| **Guard Pattern**        | `@UseGuards()` for route protection, JWT auth guard, RBAC guard, tenant guard      |
+| **Interceptor Pattern**  | Logging interceptor, transform interceptor, timeout interceptor, cache interceptor |
+| **Pipe Pattern**         | `ValidationPipe` for DTO validation, `ParseIntPipe` for type conversion            |
+| **Exception Filter**     | Global exception filter, HTTP exception filter, business logic error handling      |
+
+### 11.6 Event Topics
+
+| Topic                 | Description                  |
+| --------------------- | ---------------------------- |
+| `listing.created`     | New listing submitted        |
+| `listing.approved`    | Listing approved by admin    |
+| `listing.rejected`    | Listing rejected by admin    |
+| `build.queued`        | Build job queued             |
+| `build.completed`     | Build completed successfully |
+| `build.failed`        | Build failed                 |
+| `user.created`        | New user registered          |
+| `user.updated`        | User profile updated         |
+| `content.published`   | Content published            |
+| `notification.sent`   | Notification delivered       |
+| `notification.failed` | Notification delivery failed |
+
+---
+
+## 12. Security Architecture
+
+### 12.1 JWT Token Structure
+
+**Access Token Claims:**
+
+```json
+{
+  "sub": "user123", // Subject (user ID)
+  "tenantId": "city1", // Tenant identifier
+  "roles": ["city_admin"], // User roles
+  "permissions": ["listings:write"], // Granular permissions
+  "iat": 1705315200, // Issued at
+  "exp": 1705322400, // Expiration (2 hours)
+  "jti": "token-id-123" // JWT ID (for revocation)
+}
+```
+
+**Token Lifecycle:**
+
+1. User logs in → Access token (2h) + Refresh token (30d) issued
+2. Access token expires → Client uses refresh token to get new access token
+3. Refresh token expires → User must re-authenticate
+4. User logs out → Both tokens revoked (blacklisted in Redis)
+
+### 12.2 RBAC Permission Matrix
+
+| Permission             | Super Admin | Super City Admin | City Admin |      Editor      | Anonymous |
+| ---------------------- | :---------: | :--------------: | :--------: | :--------------: | :-------: |
+| **City Management**    | All tenants |    Own tenant    |     -      |        -         |     -     |
+| **Template Selection** |     All     |    Own tenant    |    Read    |        -         |     -     |
+| **Feature Toggles**    |     All     |    Own tenant    |    Read    |        -         |     -     |
+| **User Management**    |     All     |    Own tenant    | Own tenant |        -         |     -     |
+| **Listings CRUD**      |     All     |    Own tenant    | Own tenant | Create (pending) |   Read    |
+| **Listings Approval**  |     All     |    Own tenant    | Own tenant |        -         |     -     |
+| **Build Triggers**     |     All     |    Own tenant    |    Read    |        -         |     -     |
+| **Analytics**          | All tenants |    Own tenant    | Own tenant |        -         |     -     |
+| **Audit Logs**         |     All     |    Own tenant    | Own tenant |        -         |     -     |
+| **Impersonation**      |      ✓      |        -         |     -      |        -         |     -     |
+
+**Permission Granularity:**
+
+- Resource-level: `listings:read`, `listings:write`, `listings:delete`
+- Action-level: `users:create`, `users:update`, `users:delete`
+- Scope-level: `own_tenant`, `all_tenants`
+
+### 12.3 API Gateway Security
+
+| Security Control       | Implementation                                                                     |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| **Rate Limiting**      | Per tenant: 1000 req/min, Per user: 100 req/min, Per IP: 50 req/min                |
+| **Request Validation** | Input sanitization, SQL injection prevention, size limits (10MB uploads, 1MB JSON) |
+| **CORS**               | Configured origins per environment, credentials required                           |
+| **WAF**                | SQL injection, XSS, CSRF, DDoS protection                                          |
+
+### 12.4 Data Encryption
+
+| Type           | Implementation                                                          |
+| -------------- | ----------------------------------------------------------------------- |
+| **At Rest**    | PostgreSQL encryption (LUKS/TDE), S3 server-side encryption             |
+| **In Transit** | TLS 1.3 for all external communications, mTLS optional between services |
+| **Secrets**    | Kubernetes Secrets encrypted at rest, optional Vault integration        |
+
+### 12.5 Input Validation & Sanitization
+
+| Category         | Implementation                                 |
+| ---------------- | ---------------------------------------------- |
+| **Rich Text**    | Sanitize HTML (whitelist tags, remove scripts) |
+| **File Uploads** | Validate file type, size, malware scanning     |
+| **API Input**    | JSON Schema validation, type enforcement       |
+| **SQL**          | Parameterized queries, ORM usage               |
+| **XSS**          | Output encoding, CSP headers, HttpOnly cookies |
+
+### 12.6 Secure File Uploads
+
+| Step           | Implementation                                                                      |
+| -------------- | ----------------------------------------------------------------------------------- |
+| **Validation** | Whitelist MIME types, size limits (10MB images, 50MB documents), sanitize filenames |
+| **Storage**    | Separate buckets per tenant, presigned URLs for access                              |
+| **Processing** | Generate thumbnails, strip EXIF data, async processing                              |
+
+### 12.7 GDPR Compliance
+
+| Requirement                | Implementation                                                                              |
+| -------------------------- | ------------------------------------------------------------------------------------------- |
+| **Data Residency**         | All data in EU data centers (Hetzner Germany)                                               |
+| **Right to Access**        | Data export endpoint (JSON/CSV)                                                             |
+| **Right to Deletion**      | User deletion API with cascade                                                              |
+| **Right to Rectification** | User profile update endpoints                                                               |
+| **Consent Management**     | Cookie consent, data processing consent, marketing opt-in                                   |
+| **Data Retention**         | User data: 30 days after deletion, Audit logs: 7 years, Analytics: anonymized after 2 years |
+
+---
+
+## 13. Docker & Container Architecture
+
+### 13.1 Multi-Stage Dockerfile
 
 ```dockerfile
 # Stage 1: Base - Node.js 24.11.0 Alpine with essential deps
@@ -307,14 +1035,16 @@ ENTRYPOINT ["dumb-init", "--"]
 CMD ["node", "dist/main.js"]
 ```
 
-### Container Security
+### 13.2 Container Security
 
-- **Non-root user**: `nestjs` user (UID 1001)
-- **Minimal attack surface**: Alpine-based images
-- **Signal handling**: `dumb-init` for proper PID 1 behavior
-- **Health checks**: Built-in HTTP health check on `/healthz`
+| Feature                    | Implementation                           |
+| -------------------------- | ---------------------------------------- |
+| **Non-root user**          | `nestjs` user (UID 1001)                 |
+| **Minimal attack surface** | Alpine-based images                      |
+| **Signal handling**        | `dumb-init` for proper PID 1 behavior    |
+| **Health checks**          | Built-in HTTP health check on `/healthz` |
 
-### Docker Compose Services
+### 13.3 Docker Compose Services
 
 #### Infrastructure Services
 
@@ -343,7 +1073,7 @@ CMD ["node", "dist/main.js"]
 | **pgadmin**         | dpage/pgadmin4:latest          | 5050 | PostgreSQL admin |
 | **redis-commander** | rediscommander/redis-commander | 8081 | Redis admin      |
 
-### Network Architecture
+### 13.4 Network Architecture
 
 ```yaml
 networks:
@@ -359,7 +1089,7 @@ networks:
 - Admin tools bound to `127.0.0.1` only
 - Internal services communicate via Docker DNS
 
-### Data Persistence
+### 13.5 Data Persistence
 
 ```
 ./data/
@@ -375,9 +1105,9 @@ networks:
 
 ---
 
-## 8. Kubernetes (K8s) Deployment Strategy
+## 14. Kubernetes Deployment Strategy
 
-### Cluster Architecture (Hetzner Cloud)
+### 14.1 Cluster Architecture (Hetzner Cloud)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -410,7 +1140,7 @@ networks:
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Namespace Strategy
+### 14.2 Namespace Strategy
 
 | Namespace          | Purpose                           | Resource Quotas          |
 | ------------------ | --------------------------------- | ------------------------ |
@@ -420,7 +1150,18 @@ networks:
 | `heidi-monitoring` | Prometheus, Grafana, Alertmanager | Dedicated resources      |
 | `heidi-infra`      | PostgreSQL, Redis, RabbitMQ       | Persistent storage       |
 
-### Kubernetes Resources (per microservice)
+### 14.3 Resource Allocation
+
+| Service Category   | Replicas             | Memory     | CPU       |
+| ------------------ | -------------------- | ---------- | --------- |
+| **Auth Service**   | 2-3                  | 256Mi      | 0.25      |
+| **Core Service**   | 3-5                  | 512Mi      | 0.5       |
+| **Other Services** | 2-3                  | 256-512Mi  | 0.25-0.5  |
+| **PostgreSQL**     | Primary + 2 replicas | 4-8Gi      | 2-4       |
+| **Redis**          | 3-node cluster       | 1Gi/node   | 0.5/node  |
+| **RabbitMQ**       | 3-node cluster       | 512Mi/node | 0.25/node |
+
+### 14.4 Kubernetes Resources Example
 
 ```yaml
 # Deployment
@@ -430,7 +1171,7 @@ metadata:
   name: heidi-auth
   namespace: heidi-prod
 spec:
-  replicas: 2 # Minimum for HA
+  replicas: 2
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -460,17 +1201,9 @@ spec:
               port: 3001
             initialDelaySeconds: 10
             periodSeconds: 10
-          env:
-            - name: NODE_ENV
-              value: 'production'
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: heidi-secrets
-                  key: auth-database-url
 ```
 
-### Horizontal Pod Autoscaler (HPA)
+### 14.5 Horizontal Pod Autoscaler
 
 ```yaml
 apiVersion: autoscaling/v2
@@ -499,92 +1232,27 @@ spec:
           averageUtilization: 80
 ```
 
-### Ingress Configuration
+### 14.6 Deployment Strategies
 
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: heidi-api-ingress
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.middlewares: heidi-prod-rate-limit@kubernetescrd
-spec:
-  tls:
-    - hosts:
-        - api.heidi-app.de
-      secretName: heidi-tls
-  rules:
-    - host: api.heidi-app.de
-      http:
-        paths:
-          - path: /api/auth
-            pathType: Prefix
-            backend:
-              service:
-                name: heidi-auth
-                port:
-                  number: 3001
-          # ... other services
-```
+| Strategy           | Description                                                     | Use Case                  |
+| ------------------ | --------------------------------------------------------------- | ------------------------- |
+| **Blue-Green**     | Deploy to "green", switch traffic from "blue", keep as rollback | Zero-downtime deployments |
+| **Canary**         | Deploy to subset (10%), monitor, gradually increase             | Feature releases          |
+| **Rolling Update** | Gradually replace pods                                          | Default strategy          |
 
-### ConfigMaps & Secrets
+### 14.7 Environment Tiers
 
-```yaml
-# ConfigMap for non-sensitive config
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: heidi-config
-data:
-  NODE_ENV: 'production'
-  LOG_LEVEL: 'info'
-  RABBITMQ_VHOST: '/'
-
----
-# External Secrets (from Vault/KMS)
-apiVersion: external-secrets.io/v1beta1
-kind: ExternalSecret
-metadata:
-  name: heidi-secrets
-spec:
-  refreshInterval: 1h
-  secretStoreRef:
-    name: vault-backend
-    kind: ClusterSecretStore
-  target:
-    name: heidi-secrets
-  data:
-    - secretKey: jwt-secret
-      remoteRef:
-        key: heidi/prod/jwt
-        property: secret
-```
-
-### Persistent Volume Claims
-
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: postgres-pvc
-  namespace: heidi-infra
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: hcloud-volumes
-  resources:
-    requests:
-      storage: 100Gi
-```
+| Environment     | Purpose               | Configuration                           |
+| --------------- | --------------------- | --------------------------------------- |
+| **Development** | Local/feature testing | Single-node, 1 replica, debug logging   |
+| **Staging**     | Integration testing   | Multi-node, 2 replicas, production-like |
+| **Production**  | Live traffic          | Multi-AZ, 3+ replicas, HA, monitoring   |
 
 ---
 
-## 9. Monitoring & Observability Stack
+## 15. Monitoring & Observability
 
-### Metrics Collection (Prometheus)
-
-**Scrape Targets:**
+### 15.1 Prometheus Scrape Targets
 
 | Job            | Target                    | Metrics                        |
 | -------------- | ------------------------- | ------------------------------ |
@@ -601,7 +1269,7 @@ spec:
 | `rabbitmq`     | rabbitmq:15692            | Queue depth, messages          |
 | `node`         | node-exporter:9100        | CPU, memory, disk, network     |
 
-### Alert Rules
+### 15.2 Alert Rules
 
 ```yaml
 groups:
@@ -635,7 +1303,7 @@ groups:
         labels:
           severity: warning
 
-      # Database/Redis/RabbitMQ connectivity
+      # Database connectivity
       - alert: DatabaseConnectionFailure
         expr: up{type="database"} == 0
         for: 1m
@@ -643,24 +1311,14 @@ groups:
           severity: critical
 ```
 
-### Grafana Dashboards
+### 15.3 Grafana Dashboards
 
-Pre-configured dashboards in `infra/grafana/provisioning/dashboards/`:
+| Dashboard          | Contents                                                            |
+| ------------------ | ------------------------------------------------------------------- |
+| **Infrastructure** | PostgreSQL connections, Redis memory, RabbitMQ queues, Host metrics |
+| **Microservices**  | Request rates, response time histograms, error rates, Node.js heap  |
 
-1. **Infrastructure Dashboard** (`infrastructure.json`)
-   - PostgreSQL connections, query rates, replication lag
-   - Redis memory usage, hit rates, commands/sec
-   - RabbitMQ queue depths, message rates
-   - Host CPU, memory, disk, network
-
-2. **Microservices Dashboard** (`microservices.json`)
-   - Request rates per service
-   - Response time histograms
-   - Error rates and types
-   - Active connections
-   - Node.js heap usage
-
-### Alertmanager Routing
+### 15.4 Alertmanager Routing
 
 ```yaml
 route:
@@ -680,9 +1338,127 @@ route:
 
 ---
 
-## 10. CI/CD Pipeline
+## 16. Cross-Cutting Concerns
 
-### Pipeline Stages
+### 16.1 Logging Strategy
+
+**Structured Logging Format:**
+
+```json
+{
+  "timestamp": "2024-01-15T10:30:00.000Z",
+  "level": "INFO",
+  "service": "core-service",
+  "tenantId": "city1",
+  "userId": "user123",
+  "correlationId": "req-abc-123",
+  "message": "Listing created",
+  "context": {
+    "listingId": "listing456",
+    "status": "pending_approval"
+  }
+}
+```
+
+**Log Levels:**
+
+- **ERROR**: Application errors requiring attention
+- **WARN**: Warning conditions (degraded functionality)
+- **INFO**: Informational messages (request processing, state changes)
+- **DEBUG**: Detailed debugging information (development only)
+
+**Log Aggregation:**
+
+- Centralized in Loki or ELK stack
+- Retention: 30 days application logs, 7 years audit logs
+- Correlation IDs for cross-service tracing
+
+### 16.2 Distributed Tracing
+
+| Component       | Implementation                               |
+| --------------- | -------------------------------------------- |
+| **Standard**    | OpenTelemetry for instrumentation            |
+| **Protocol**    | OTLP (OpenTelemetry Protocol)                |
+| **Backend**     | Jaeger or Tempo for trace storage            |
+| **Propagation** | W3C Trace Context (traceparent header)       |
+| **Sampling**    | 100% for errors, 10% for successful requests |
+
+### 16.3 Health Checks
+
+| Probe         | Endpoint              | Purpose                  | Configuration                           |
+| ------------- | --------------------- | ------------------------ | --------------------------------------- |
+| **Liveness**  | `GET /health/live`    | Container running        | Interval: 30s, Timeout: 5s, Failures: 3 |
+| **Readiness** | `GET /health/ready`   | Accept traffic           | Interval: 10s, Timeout: 5s, Failures: 3 |
+| **Startup**   | `GET /health/startup` | Slow-starting containers | Period: 10s, Timeout: 5s, Failures: 30  |
+
+**Dependency Health Checks:**
+
+- Database: `SELECT 1`
+- Redis: `PING` command
+- RabbitMQ: Connection check
+- External APIs: Lightweight connectivity test
+
+### 16.4 Configuration Management
+
+**Configuration Sources (Priority Order):**
+
+1. Environment Variables (override)
+2. ConfigMaps (Kubernetes)
+3. Secrets (sensitive data)
+4. Service defaults (base configuration)
+
+**NestJS Configuration:**
+
+- `ConfigModule` with environment validation
+- Joi validation schemas for all configuration
+- `.env` files for development, ConfigMaps for production
+
+### 16.5 Error Handling
+
+**Error Response Format:**
+
+```json
+{
+  "error": {
+    "code": "LISTING_NOT_FOUND",
+    "message": "Listing with ID '123' not found",
+    "details": { "listingId": "123", "tenantId": "city1" },
+    "timestamp": "2024-01-15T10:30:00Z",
+    "correlationId": "req-abc-123",
+    "path": "/api/listings/123"
+  }
+}
+```
+
+**HTTP Status Codes:**
+| Code | Usage |
+|------|-------|
+| 200 | Successful request |
+| 201 | Resource created |
+| 202 | Accepted for async processing |
+| 400 | Invalid request parameters |
+| 401 | Authentication required |
+| 403 | Insufficient permissions |
+| 404 | Resource not found |
+| 409 | Resource conflict |
+| 422 | Validation errors |
+| 429 | Rate limit exceeded |
+| 500 | Unexpected server error |
+| 502 | Upstream service error |
+| 503 | Service temporarily unavailable |
+
+**Retry Strategy:**
+
+- Transient errors: Exponential backoff (1s, 2s, 4s)
+- Permanent errors: Fail immediately
+- Max retries: 3 attempts
+- Ensure operations are idempotent
+
+---
+
+## 17. CI/CD Pipeline
+
+### 17.1 Pipeline Stages
 
 ```
 ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐
@@ -691,7 +1467,7 @@ route:
 └─────────┘    └─────────┘    └─────────┘    └─────────┘    └─────────┘
 ```
 
-### Build Scripts
+### 17.2 Build Scripts
 
 | Script               | Command                   | Purpose                    |
 | -------------------- | ------------------------- | -------------------------- |
@@ -704,7 +1480,7 @@ route:
 | `build:integration`  | `nest build integration`  | Build Integration service  |
 | `build:admin`        | `nest build admin`        | Build Admin service        |
 
-### Docker Build Commands
+### 17.3 Docker Build Commands
 
 ```bash
 # Build all services
@@ -720,7 +1496,7 @@ npm run docker:build:sequential
 npm run docker:build:no-cache
 ```
 
-### Database Migrations
+### 17.4 Database Operations
 
 ```bash
 # Generate Prisma clients for all services
@@ -733,7 +1509,7 @@ npm run prisma:migrate
 npm run prisma:migrate:prod
 ```
 
-### Seeding Scripts
+### 17.5 Seeding Scripts
 
 ```bash
 # Run all seeds
@@ -750,7 +1526,7 @@ npm run seed:firebase-project # FCM configuration
 npm run seed:schedules       # Scheduled tasks
 ```
 
-### Release Management
+### 17.6 Release Management
 
 ```bash
 # Create release with conventional commits
@@ -765,225 +1541,132 @@ npm run commit
 
 ---
 
-## 11. Feature Modules (Add-on, city opt-in)
+## 18. Feature Modules Catalog
 
-As per the proposal, cities can opt-in to feature modules. Backend must provide support for each feature as separate packages/services or clear integration contracts:
+### 18.1 Core Features (Always Available)
 
-Feature list (to be offered as opt-in modules):
+| Feature             | Backend Service | Description                       |
+| ------------------- | --------------- | --------------------------------- |
+| **Listings**        | Core Service    | Listings CRUD, search, filtering  |
+| **Categories**      | Core Service    | Hierarchical taxonomy             |
+| **Search**          | Core Service    | Full-text search across listings  |
+| **User Management** | Users Service   | User profiles, roles, permissions |
+| **Authentication**  | Auth Service    | JWT-based authentication          |
 
-- User Onboarding
-- POI Map
-- Theme Design
-- Admin Management
-- Search Function
-- Multilingualism
-- Multiple Location Selection
-- Channel Function
-- Job Matching (Wunsiedel)
-- Interface to SpotAR (Gera)
-- Pre-Planning Function
-- Simplycard Integration
-- Waste Collection Calendar
-- Live Chat
-- Advertisement Feature
-- Mobile Dashboard
-- Defect Reporter
-- Survey Tool
-- Business Community
-- Chatbot (RAG-based)
-- Any future feature module will be registered in Feature Service with declared dependencies and compatible template versions.
+### 18.2 Opt-in Feature Modules
 
-**Backend role:** Provide feature metadata, lifecycle, enable/disable APIs, per-tenant toggles, and feature-level permissions.
+| Feature Module                  | Description                         | Dependencies                |
+| ------------------------------- | ----------------------------------- | --------------------------- |
+| **User Onboarding**             | Guided onboarding flow              | Auth                        |
+| **POI Map**                     | Map-based service view with markers | Core, Maps Provider         |
+| **Theme Design**                | Custom theme configuration          | AppConfig                   |
+| **Admin Management**            | Extended admin capabilities         | Users, RBAC                 |
+| **Multilingualism**             | Multi-language content support      | Core, DeepL Integration     |
+| **Multiple Location Selection** | Multi-location filtering            | Core, Maps                  |
+| **Channel Function**            | Content channels/categories         | Core                        |
+| **Job Matching**                | Job listings and applications       | Core                        |
+| **SpotAR Interface**            | AR integration (Gera)               | External API                |
+| **Pre-Planning Function**       | Appointment/visit planning          | Core, Scheduler             |
+| **Simplycard Integration**      | Loyalty card integration            | External API                |
+| **Waste Collection Calendar**   | Waste pickup schedules              | Core, Scheduler             |
+| **Live Chat**                   | Real-time chat support              | WebSocket, External Service |
+| **Advertisement Feature**       | Ad placements and management        | Core, Analytics             |
+| **Mobile Dashboard**            | Admin dashboard in mobile           | Analytics                   |
+| **Defect Reporter**             | Issue/defect submission             | Core, Media Upload          |
+| **Survey Tool**                 | Survey creation and responses       | Core                        |
+| **Business Community**          | Community feed and posts            | Core, Users                 |
+| **Chatbot (RAG)**               | AI-powered Q&A                      | Chatbot Service, Vector DB  |
 
----
+### 18.3 Feature Lifecycle
 
-## 12. High-level Infrastructure Plan (future-ready)
-
-This is the high-level infra blueprint required to host and operate the backend:
-
-### Cloud / Hosting
-
-| Component          | Provider        | Purpose                         |
-| ------------------ | --------------- | ------------------------------- |
-| **Kubernetes**     | Hetzner Cloud   | Container orchestration         |
-| **Load Balancer**  | Hetzner LB      | Traffic distribution            |
-| **Block Storage**  | Hetzner Volumes | Persistent storage              |
-| **Object Storage** | Hetzner S3      | Assets & artifacts              |
-| **DNS**            | Cloudflare      | DNS management, DDoS protection |
-
-### Databases
-
-| Service        | Technology           | Configuration                                |
-| -------------- | -------------------- | -------------------------------------------- |
-| **PostgreSQL** | PostgreSQL 16 Alpine | Per-service databases with automated backups |
-| **Redis**      | Redis 7.4 Alpine     | Clustering for HA, AOF persistence           |
-| **RabbitMQ**   | RabbitMQ 4.1.5       | Clustered with management plugin             |
-
-### Storage Buckets
-
-| Bucket            | Purpose                   | Access         |
-| ----------------- | ------------------------- | -------------- |
-| `heidi-assets`    | User uploads, images      | Presigned URLs |
-| `heidi-artifacts` | Build artifacts (APK/IPA) | Private        |
-| `heidi-backups`   | Database backups          | Private        |
-
-### Queueing (RabbitMQ)
-
-| Exchange              | Type   | Queues                        |
-| --------------------- | ------ | ----------------------------- |
-| `heidi.events`        | Topic  | Service-specific event queues |
-| `heidi.notifications` | Direct | Push, email delivery queues   |
-| `heidi.scheduler`     | Direct | Task execution queues         |
-
-### Caching Strategy (Redis)
-
-| Use Case          | TTL | Key Pattern                 |
-| ----------------- | --- | --------------------------- |
-| Session cache     | 24h | `session:{userId}`          |
-| Rate limiting     | 1m  | `ratelimit:{ip}:{endpoint}` |
-| City config       | 1h  | `city:{cityId}:config`      |
-| Translation cache | 24h | `translation:{lang}:{key}`  |
-
-### Vector DB (Future)
-
-- Pinecone (or equivalent) for embeddings — tenant namespace strategy
-- Per-tenant namespace isolation
-- Index lifecycle management
-
-### Secrets Management
-
-- HashiCorp Vault (or Kubernetes Secrets with External Secrets Operator)
-- Per-tenant keystores and provisioning profiles
-- Automatic rotation policies
-
-### CI/CD
-
-| Stage          | Tool              | Purpose                      |
-| -------------- | ----------------- | ---------------------------- |
-| **Source**     | GitHub/GitLab     | Code repository              |
-| **Build**      | GitHub Actions    | Docker image builds          |
-| **Registry**   | Harbor/GHCR       | Container registry           |
-| **Deploy**     | ArgoCD/Flux       | GitOps deployment            |
-| **iOS Builds** | Bitrise/Codemagic | macOS builds for App Factory |
-
-### Monitoring & Observability
-
-| Tool             | Purpose            | Retention |
-| ---------------- | ------------------ | --------- |
-| **Prometheus**   | Metrics collection | 30 days   |
-| **Grafana**      | Visualization      | —         |
-| **Alertmanager** | Alert routing      | —         |
-| **Loki**         | Log aggregation    | 14 days   |
-| **Sentry**       | Error tracking     | 90 days   |
+1. **Registration**: Feature registered in Feature Service with metadata
+2. **Enable/Disable**: Per-tenant toggle via CMS
+3. **Build-time Inclusion**: Mobile app builds include selected features
+4. **Runtime Toggles**: Some features toggleable via remote config
+5. **Version Compatibility**: Checks against template versions
 
 ---
 
-## 13. Third-Party Services – High-Level Plan
+## 19. Third-Party Services
 
-Plan the integration tiers and responsibilities:
+### 19.1 Service Integrations
 
-| Service               | Provider                 | Purpose                     | Integration          |
-| --------------------- | ------------------------ | --------------------------- | -------------------- |
-| **Embeddings & LLMs** | OpenAI/Azure             | Text embeddings for chatbot | Integration Service  |
-| **Vector DB**         | Pinecone                 | Semantic search storage     | Chatbot Service      |
-| **Translation**       | DeepL API                | Multi-language support      | Translation lib      |
-| **Push (Android)**    | Firebase Cloud Messaging | Android notifications       | Notification Service |
-| **Push (iOS)**        | Apple Push Notification  | iOS notifications           | Notification Service |
-| **Email**             | SMTP (Sendgrid/Postmark) | Transactional emails        | Notification Service |
-| **Payment**           | SEPA-compliant provider  | Payment processing          | Payment Service      |
-| **Events**            | Destination.One          | Event data import           | Integration Service  |
-| **Parking**           | Mobilithek               | Parking data                | Integration Service  |
-| **iOS Builds**        | Bitrise/Codemagic        | macOS CI for App Factory    | External             |
+| Service              | Provider                 | Purpose                      | Integration Point         |
+| -------------------- | ------------------------ | ---------------------------- | ------------------------- |
+| **Embeddings & LLM** | OpenAI / Local           | Chatbot RAG                  | Chatbot Service           |
+| **Vector Storage**   | Pinecone                 | Tenant-namespaced embeddings | Chatbot Service           |
+| **Translation**      | DeepL API                | Multilingual content         | Integration Service       |
+| **Push (Android)**   | Firebase Cloud Messaging | Mobile notifications         | Notification Service      |
+| **Push (iOS)**       | Apple Push Notification  | Mobile notifications         | Notification Service      |
+| **Email**            | SMTP (Sendgrid/Postmark) | Transactional emails         | Notification Service      |
+| **Payment**          | German/SEPA provider     | Payment processing           | Payment Service (planned) |
+| **Events**           | Destination.One          | Event data import            | Integration Service       |
+| **Parking**          | Mobilithek               | Parking data                 | Integration Service       |
+| **iOS Builds**       | Bitrise / Codemagic      | macOS CI runners             | App Factory               |
 
----
+### 19.2 Infrastructure Services
 
-## 14. Security & Compliance (EU-only)
-
-All design and implementation will respect EU/German data protection standards:
-
-### Data Residency
-
-- All persistent data and backups must be stored in EU data centers (Hetzner Germany)
-- No data transfer to non-EU regions without explicit consent
-
-### GDPR Compliance
-
-| Requirement            | Implementation                  |
-| ---------------------- | ------------------------------- |
-| **Right to erasure**   | User deletion API with cascade  |
-| **Right to export**    | Data export endpoint (JSON/CSV) |
-| **Consent management** | Terms acceptance tracking       |
-| **Data minimization**  | Only essential data collected   |
-| **Privacy by design**  | Tenant isolation, encryption    |
-
-### Security Controls
-
-| Control              | Implementation                         |
-| -------------------- | -------------------------------------- |
-| **Authentication**   | JWT with RS256, refresh token rotation |
-| **Authorization**    | RBAC with permission matrix            |
-| **Rate limiting**    | Per-IP and per-user throttling         |
-| **Input validation** | class-validator on all DTOs            |
-| **SQL injection**    | Prisma parameterized queries           |
-| **XSS prevention**   | Helmet security headers                |
-| **HTTPS**            | TLS 1.3 via Caddy/Let's Encrypt        |
-| **Secrets**          | Vault/KMS, no plaintext in env         |
-
-### Audit Trail
-
-| Event Type     | Data Captured                          |
-| -------------- | -------------------------------------- |
-| Authentication | Login/logout, failed attempts          |
-| Authorization  | Role changes, permission grants        |
-| Data changes   | CRUD operations on sensitive entities  |
-| Admin actions  | Configuration changes, user management |
-| Build events   | App generation, artifact signing       |
+| Component                   | Technology              | Purpose                                |
+| --------------------------- | ----------------------- | -------------------------------------- |
+| **Container Orchestration** | Kubernetes (Hetzner)    | Service deployment, scaling            |
+| **Databases**               | PostgreSQL 16           | Per-service databases, WAL archiving   |
+| **Object Storage**          | S3-compatible (Hetzner) | Media files, build artifacts           |
+| **Message Queue**           | RabbitMQ 4.1.5          | Inter-service messaging, events        |
+| **Caching**                 | Redis 7.4               | Sessions, rate limiting, cache         |
+| **Vector Database**         | Pinecone                | Chatbot embeddings (tenant namespaces) |
+| **Secrets Management**      | HashiCorp Vault         | Keystores, API keys, credentials       |
+| **Monitoring**              | Prometheus + Grafana    | Metrics, dashboards                    |
+| **Logging**                 | Loki                    | Log aggregation                        |
+| **Error Tracking**          | Sentry (self-hosted)    | Crash reporting                        |
 
 ---
 
-## 15. Acceptance Criteria (backend)
+## 20. Acceptance Criteria
 
-To sign off on backend readiness, the following must be demonstrable:
+### 20.1 Backend Acceptance Criteria
 
-- Template & Feature APIs exist and return expected metadata with versioning.
-- Core Service implements cities → categories → sub-categories → listings with CRUD, approval flows and tenant isolation.
-- Auth & RBAC enforced across endpoints for roles defined.
-- Project Generation service can accept a build request and create a reproducible build workspace (no build required at this stage but orchestration flow validated).
-- Audit Trail records configuration changes, admin actions, and build events with query endpoints.
-- Chatbot feature supports ingestion, embedding upsert to per-tenant index and tenant-scoped query endpoint.
-- Observability: Prometheus/Grafana dashboards for service health, job queue length and build durations.
-- Secrets: Vault integration demonstrated for one tenant signing workflow.
+| Criteria                | Validation                                                              |
+| ----------------------- | ----------------------------------------------------------------------- |
+| Template & Feature APIs | Return expected metadata with versioning                                |
+| Core Service            | Cities → Categories → Listings with CRUD, approval, tenant isolation    |
+| Auth & RBAC             | Enforced across all endpoints for defined roles                         |
+| Project Generation      | Accept build request, create reproducible workspace                     |
+| Audit Trail             | Record config changes, admin actions, build events with query endpoints |
+| Chatbot                 | Ingestion, embedding upsert to per-tenant index, tenant-scoped query    |
+| Observability           | Prometheus/Grafana dashboards for health, queue length, build durations |
+| Secrets                 | Vault integration for tenant signing workflow                           |
+
+### 20.2 Implementation Checklist
+
+| #   | Task                                                                                | Status |
+| --- | ----------------------------------------------------------------------------------- | ------ |
+| 1   | Confirm and freeze backend scope & non-functional targets (SLA, QPS)                | ✅     |
+| 2   | Finalize microservice owners and repo links in NestJS monorepo                      | ✅     |
+| 3   | Implement Template & Feature Service contracts (OpenAPI)                            | ✅     |
+| 4   | Implement Core Service Listings & approval flows                                    | ✅     |
+| 5   | Implement Auth & RBAC; enable tenant-aware middleware in API Gateway                | ✅     |
+| 6   | Implement Audit Service & integrate with all services                               | ⏳     |
+| 7   | Implement Project Generation orchestration skeleton and worker contract             | ⏳     |
+| 8   | Implement Chatbot ingestion pipeline and per-tenant index test (staging)            | ⏳     |
+| 9   | Provision infra: Postgres instances, object storage buckets, RabbitMQ, Redis, Vault | ✅     |
+| 10  | Implement CI/CD skeleton for backend (build/test/deploy)                            | ✅     |
+| 11  | Create operational runbooks for backups, secret rotations, and emergency rebuilds   | ⏳     |
+
+### 20.3 Deliverables
+
+- [ ] NestJS monorepo with all microservices
+- [ ] OpenAPI specifications for all services
+- [ ] Database migrations and seed data
+- [ ] RabbitMQ event schemas
+- [ ] Kubernetes manifests and Helm charts
+- [ ] CI/CD pipeline configuration
+- [ ] Operational runbooks
 
 ---
 
-## 16. Next Steps — Project Tracking & Deliverables
+## Appendices
 
-Use the following checklist to track implementation progress and client sign-off:
-
-1. ✅ Confirm and freeze backend scope & non-functional targets (SLA, QPS).
-2. ✅ Finalize microservice owners and repo links in NestJS monorepo.
-3. ✅ Implement Template & Feature Service contracts (OpenAPI).
-4. ✅ Implement Core Service Listings & approval flows.
-5. ✅ Implement Auth & RBAC; enable tenant-aware middleware in API Gateway.
-6. ⏳ Implement Audit Service & integrate with all services.
-7. ⏳ Implement Project Generation orchestration skeleton and worker contract.
-8. ⏳ Implement Chatbot ingestion pipeline and per-tenant index test (staging).
-9. ✅ Provision infra: Postgres instances, object storage buckets, RabbitMQ, Redis, Vault.
-10. ✅ Implement CI/CD skeleton for backend (build/test/deploy).
-11. ⏳ Create operational runbooks for backups, secret rotations, and emergency rebuilds.
-
----
-
-## Appendix A — Artifacts to attach
-
-- Architecture screenshot (attached) — use as canonical logical diagram.
-- List of feature modules (proposal).
-- Role matrix (Super Admin, Super City Admin, City Admin, Citizen).
-- Example build/job payload (for Orchestrator API).
-
----
-
-## Appendix B — API Documentation
+### Appendix A — API Documentation
 
 All services expose Swagger/OpenAPI documentation:
 
@@ -998,11 +1681,7 @@ All services expose Swagger/OpenAPI documentation:
 | Integration  | `https://{domain}/api/integration/docs`  |
 | Admin        | `https://{domain}/api/admin/docs`        |
 
----
-
-## Appendix C — Environment Variables
-
-### Required Variables
+### Appendix B — Environment Variables
 
 ```bash
 # Database
@@ -1047,9 +1726,7 @@ DEEPL_API_KEY=<api-key>
 DESTINATION_ONE_API_KEY=<api-key>
 ```
 
----
-
-## Appendix D — Quick Start Commands
+### Appendix C — Quick Start Commands
 
 ```bash
 # Install dependencies
@@ -1077,3 +1754,28 @@ npm run docker:logs
 # Clean up
 npm run docker:cleanup
 ```
+
+### Appendix D — Artifacts
+
+- Architecture screenshot (attached) — canonical logical diagram
+- List of feature modules (proposal)
+- Role matrix (Super Admin, Super City Admin, City Admin, Citizen)
+- Example build/job payload (for Orchestrator API)
+
+---
+
+**Related Documents:**
+
+- [Architecture Document](./architecture.md) - Technical architecture specifications
+- [Web Requirements](./web.requirement.md) - Web CMS and Citizen Web App specifications
+- [Mobile Requirements](./mobile.requirement.md) - Flutter mobile app specifications
+
+**Document Maintenance:**
+
+- Review and update quarterly or when major architecture changes occur
+- Version control all changes
+- Keep diagrams synchronized with implementation
+
+---
+
+**End of Document**
