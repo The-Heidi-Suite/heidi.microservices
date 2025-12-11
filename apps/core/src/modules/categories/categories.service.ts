@@ -446,7 +446,7 @@ export class CategoriesService {
       subtitle: dto.subtitle ?? null,
       type: dto.type ?? null,
       languageCode: sourceLanguage,
-      isActive: dto.isActive ?? true,
+      isActive: true, // Always set to true for main category
       headerBackgroundColor: dto.headerBackgroundColor ?? null,
       contentBackgroundColor: dto.contentBackgroundColor ?? null,
     };
