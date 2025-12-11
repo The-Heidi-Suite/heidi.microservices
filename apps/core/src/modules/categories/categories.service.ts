@@ -668,10 +668,35 @@ export class CategoriesService {
       };
     });
 
-    // Sort categories by their CityCategory displayOrder before building hierarchy
+    // Sort categories using caller-provided sortBy when available; otherwise fallback to displayOrder
     const sortedCategories = [...categoriesWithOrder].sort((a, b) => {
-      const orderA = a.cityCategoryDisplayOrder ?? 0;
-      const orderB = b.cityCategoryDisplayOrder ?? 0;
+      if (filter?.sortBy) {
+        const dir = filter.sortDirection === 'desc' ? -1 : 1;
+        const field = filter.sortBy as keyof typeof a;
+        const valA = a[field] as any;
+        const valB = b[field] as any;
+
+        // Handle equality and nulls
+        if (valA === valB) {
+          // tie-breaker: displayOrder then name
+          const orderA = a.cityCategoryDisplayOrder ?? 100;
+          const orderB = b.cityCategoryDisplayOrder ?? 100;
+          if (orderA === orderB) {
+            return (a.name || '').localeCompare(b.name || '');
+          }
+          return orderA - orderB;
+        }
+        if (valA === null || valA === undefined) return 1 * dir;
+        if (valB === null || valB === undefined) return -1 * dir;
+        return valA < valB ? -1 * dir : 1 * dir;
+      }
+
+      // Default: displayOrder, then name
+      const orderA = a.cityCategoryDisplayOrder ?? 100;
+      const orderB = b.cityCategoryDisplayOrder ?? 100;
+      if (orderA === orderB) {
+        return (a.name || '').localeCompare(b.name || '');
+      }
       return orderA - orderB;
     });
 
