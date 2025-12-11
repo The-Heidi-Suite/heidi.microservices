@@ -586,72 +586,112 @@ graph TB
 - **Conversation Manager**: Maintains conversation history per user session, enables follow-up questions
 - **Tenant Isolator**: Ensures all queries and embeddings are scoped to specific tenant
 
-## 3.4 ProjectGen Service Components
+## 3.4 App Factory Services (ProjectGen + Template + Feature) 🔮
 
-The ProjectGen Service orchestrates mobile app builds through the App Factory.
+> **Detailed Documentation:** See [App Factory Process](./app.factory.process.md) for comprehensive implementation details.
+
+The App Factory is a planned white-label multi-tenant mobile application delivery system consisting of multiple services that work together to automatically generate, build, sign, and distribute city-specific Flutter applications.
+
+### App Factory Service Architecture
 
 ```mermaid
 graph TB
-    subgraph "ProjectGen Service (NestJS)"
-        ProjectGenController[ProjectGen Controller<br/>@Controller]
-        ProjectGenService[ProjectGen Service<br/>@Injectable]
-
-        subgraph "NestJS Components"
-            BuildOrchestrator[Build Orchestrator<br/>@Injectable<br/>Queue management]
-            TemplateResolver[Template Resolver<br/>@Injectable<br/>A/B selection]
-            AssetCompiler[Asset Compiler<br/>@Injectable<br/>Icons, splash, branding]
-            ArtifactPublisher[Artifact Publisher<br/>@Injectable<br/>Build outputs]
-            BuildMonitor[Build Monitor<br/>@Injectable<br/>Status tracking]
-            ConfigGenerator[Config Generator<br/>@Injectable<br/>App config files]
+    subgraph "App Factory Services 🔮"
+        subgraph "Template Service"
+            TemplateRegistry[Template Registry<br/>A/B variants]
+            TemplateVersioning[Version Management<br/>SemVer]
         end
+
+        subgraph "Feature Service"
+            FeatureRegistry[Feature Registry<br/>Module catalog]
+            CompatibilityMatrix[Compatibility Matrix<br/>Version checks]
+        end
+
+        subgraph "ProjectGen Service (Orchestrator)"
+            BuildAPI[Build API<br/>POST /builds]
+            Validator[Configuration Validator]
+            JobGenerator[Job Bundle Generator]
+            StatusTracker[Status Tracker]
+        end
+    end
+
+    subgraph "Build Workers 🔮"
+        AndroidWorker[Android Worker<br/>Docker/Linux]
+        iOSWorker[iOS Worker<br/>macOS Runner]
     end
 
     subgraph "Infrastructure"
         Postgres[(PostgreSQL)]
-        S3[(S3 Storage)]
         RabbitMQ[(RabbitMQ)]
+        S3[(S3 Storage)]
+        Vault[(HashiCorp Vault)]
     end
 
-    subgraph "External"
-        AppFactory[App Factory<br/>CI/CD Pipeline]
-    end
+    BuildAPI --> Validator
+    Validator --> CompatibilityMatrix
+    Validator --> TemplateRegistry
+    Validator --> FeatureRegistry
+    Validator --> JobGenerator
 
-    %% Controller to Service
-    ProjectGenController --> ProjectGenService
+    JobGenerator --> Postgres
+    JobGenerator --> RabbitMQ
 
-    %% Service to Components
-    ProjectGenService --> BuildOrchestrator
-    ProjectGenService --> TemplateResolver
-    ProjectGenService --> AssetCompiler
-    ProjectGenService --> ArtifactPublisher
-    ProjectGenService --> BuildMonitor
-    ProjectGenService --> ConfigGenerator
+    RabbitMQ --> AndroidWorker
+    RabbitMQ --> iOSWorker
 
-    %% Component interactions
-    BuildOrchestrator --> BuildMonitor
-    AssetCompiler --> ArtifactPublisher
-
-    %% Components to Infrastructure
-    BuildOrchestrator --> RabbitMQ
-    TemplateResolver --> Postgres
-    AssetCompiler --> S3
-    ArtifactPublisher --> S3
-    BuildMonitor --> Postgres
-    ConfigGenerator --> Postgres
-
-    %% External connections
-    RabbitMQ --> AppFactory
-    AppFactory --> BuildMonitor
+    AndroidWorker --> Vault
+    iOSWorker --> Vault
+    AndroidWorker --> S3
+    iOSWorker --> S3
+    AndroidWorker --> StatusTracker
+    iOSWorker --> StatusTracker
 ```
 
-**Component Responsibilities:**
+### Service Responsibilities
 
-- **Build Orchestrator**: Manages build queue, handles build requests, coordinates with App Factory
-- **Template Resolver**: Resolves template selection (A/B), loads template metadata, validates compatibility
-- **Asset Compiler**: Processes app icons, splash screens, branding assets, generates platform-specific formats
-- **Artifact Publisher**: Stores build artifacts (APK, IPA) in S3, provides download URLs, manages versions
-- **Build Monitor**: Tracks build status, polls App Factory, updates build history, notifies on completion
-- **Config Generator**: Generates app configuration files (Info.plist, AndroidManifest.xml, app.json)
+| Service                | Status     | Responsibility                                                       |
+| ---------------------- | ---------- | -------------------------------------------------------------------- |
+| **Template Service**   | 🔮 Planned | Manage Flutter app templates (A/B variants), versioning, metadata    |
+| **Feature Service**    | 🔮 Planned | Feature module registry, compatibility matrix, dependency validation |
+| **AppConfig Service**  | 🔮 Planned | Tenant-specific configurations, themes, branding, feature toggles    |
+| **ProjectGen Service** | 🔮 Planned | Build orchestration, job queue management, artifact handling         |
+
+### Build Status State Machine
+
+```mermaid
+stateDiagram-v2
+    [*] --> QUEUED: Build requested
+    QUEUED --> VALIDATING: Worker picks up
+    VALIDATING --> ASSEMBLING: Validation passed
+    VALIDATING --> FAILED: Validation failed
+    ASSEMBLING --> BUILDING: Source assembled
+    BUILDING --> SIGNING: Compilation complete
+    SIGNING --> UPLOADING: Signing complete
+    UPLOADING --> COMPLETED: Artifact uploaded
+    COMPLETED --> [*]
+    FAILED --> [*]
+```
+
+### Component Details
+
+| Component                | Description                                                                               |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| **Build Orchestrator**   | Manages build queue, validates requests, generates job bundles, coordinates with workers  |
+| **Template Resolver**    | Resolves template selection (A/B), loads template metadata, validates compatibility       |
+| **Compatibility Matrix** | Ensures feature versions are compatible with template and Flutter SDK versions            |
+| **Asset Compiler**       | Processes app icons, splash screens, branding assets, generates platform-specific formats |
+| **Artifact Publisher**   | Stores build artifacts (APK/AAB, IPA) in S3, provides pre-signed download URLs            |
+| **Build Monitor**        | Tracks build status via webhooks from workers, updates build history                      |
+
+### Integration with Existing Services
+
+The App Factory integrates with current HEIDI services:
+
+- **City Service** → Provides tenant configuration for app customization
+- **Core Service** → Content data for chatbot embeddings
+- **Notification Service** → Build completion/failure alerts
+- **Storage Library** (`@heidi/storage`) → S3 artifact management
+- **RabbitMQ** → Job queue messaging for build workers
 
 ---
 
@@ -782,7 +822,9 @@ sequenceDiagram
 - Contributor notified of approval via async notification
 - All actions logged to Audit Service
 
-## 4.3 App Build Trigger Flow
+## 4.3 App Build Trigger Flow 🔮
+
+> **Detailed Documentation:** See [App Factory Process](./app.factory.process.md) for comprehensive workflow details.
 
 Complete flow from build request to artifact availability.
 
@@ -790,81 +832,84 @@ Complete flow from build request to artifact availability.
 sequenceDiagram
     participant Admin as City Admin
     participant CMS as Web CMS
-    participant Gateway as API Gateway
-    participant ProjectGen as ProjectGen Service
+    participant Gateway as Caddy Gateway
+    participant ProjectGen as ProjectGen Service<br/>(Orchestrator)
+    participant Template as Template Service
+    participant Feature as Feature Service
     participant RabbitMQ
-    participant AppFactory as App Factory
+    participant Worker as Build Worker<br/>(Docker/macOS)
+    participant Vault as HashiCorp Vault
     participant S3 as Object Storage
     participant Postgres as PostgreSQL
 
-    Admin->>CMS: Trigger build<br/>(platform: ios/android)
-    CMS->>Gateway: POST /api/builds<br/>{platform, tenantId, config}
-    Gateway->>Gateway: Validate JWT, RBAC
-    Gateway->>ProjectGen: POST /builds<br/>{platform, tenantId, config}
+    Admin->>CMS: Configure build<br/>(template, features, theme)
+    CMS->>Gateway: POST /api/builds<br/>{tenantId, platform, config}
+    Gateway->>ProjectGen: Forward request
 
-    ProjectGen->>Postgres: Get app config<br/>(tenantId)
-    Postgres-->>ProjectGen: App configuration
-
-    ProjectGen->>Postgres: Get template & features<br/>(tenantId)
-    Postgres-->>ProjectGen: Template A/B, enabled features
-
-    ProjectGen->>S3: Load branding assets<br/>(logos, icons, splash)
-    S3-->>ProjectGen: Assets
-
-    ProjectGen->>ProjectGen: Generate build config<br/>(app.json, Info.plist, etc.)
-
-    ProjectGen->>Postgres: Create build record<br/>(status: 'queued')
-    Postgres-->>ProjectGen: Build ID
-
-    ProjectGen->>RabbitMQ: Publish build job<br/>(build.job.queued, buildId, platform, config)
-
-    ProjectGen-->>Gateway: 202 Accepted<br/>{buildId, status: 'queued'}
-    Gateway-->>CMS: 202 Accepted
-    CMS-->>Admin: Build queued (buildId)
-
-    RabbitMQ->>AppFactory: Consume build job
-    AppFactory->>AppFactory: Start build process<br/>(iOS/Android CI/CD)
-
-    AppFactory->>AppFactory: Build in progress...
-    AppFactory->>ProjectGen: Webhook callback<br/>(buildId, status: 'building')
-
-    ProjectGen->>Postgres: Update build status<br/>(status: 'building')
-    ProjectGen-->>AppFactory: 200 OK
-
-    Note over AppFactory: Build completes (5-15 minutes)
-
-    alt Build successful
-        AppFactory->>S3: Upload artifact<br/>(APK/IPA file)
-        S3-->>AppFactory: Upload URL
-        AppFactory->>ProjectGen: Webhook callback<br/>(buildId, status: 'completed', artifactUrl)
-        ProjectGen->>Postgres: Update build<br/>(status: 'completed', artifactUrl)
-        ProjectGen-->>AppFactory: 200 OK
-    else Build failed
-        AppFactory->>ProjectGen: Webhook callback<br/>(buildId, status: 'failed', error)
-        ProjectGen->>Postgres: Update build<br/>(status: 'failed', error)
-        ProjectGen-->>AppFactory: 200 OK
+    rect rgb(240, 248, 255)
+        Note over ProjectGen,Feature: Validation Phase
+        ProjectGen->>Template: Get template metadata<br/>(version, commit SHA)
+        Template-->>ProjectGen: Template info
+        ProjectGen->>Feature: Check compatibility matrix<br/>(template ↔ features)
+        Feature-->>ProjectGen: Compatibility result
     end
 
-    Note over Admin,CMS: Admin polls for status
+    alt Validation Failed
+        ProjectGen-->>Gateway: 400 Bad Request<br/>{error: "Incompatible versions"}
+        Gateway-->>CMS: 400 Bad Request
+        CMS-->>Admin: Show error
+    else Validation Passed
+        ProjectGen->>ProjectGen: Generate job bundle<br/>(versions, commit SHAs, config)
+        ProjectGen->>Postgres: Create build record<br/>(status: QUEUED)
+        Postgres-->>ProjectGen: Build ID
+        ProjectGen->>RabbitMQ: Publish job<br/>(build.jobs queue)
+        ProjectGen-->>Gateway: 202 Accepted<br/>{buildId}
+        Gateway-->>CMS: 202 Accepted
+        CMS-->>Admin: Build queued
+    end
+
+    rect rgb(255, 248, 240)
+        Note over Worker,S3: Build Phase
+        RabbitMQ->>Worker: Consume job
+        Worker->>Worker: Clone template + features
+        Worker->>Worker: Inject configuration<br/>(bundle ID, theme, assets)
+        Worker->>Worker: flutter pub get
+        Worker->>ProjectGen: Webhook: BUILDING
+        ProjectGen->>Postgres: Update status
+
+        Worker->>Vault: Fetch signing credentials
+        Vault-->>Worker: Keystore/Certs (ephemeral)
+        Worker->>Worker: flutter build<br/>(appbundle/ipa)
+        Worker->>Worker: Sign artifact
+        Worker->>S3: Upload artifact
+        S3-->>Worker: Artifact URL
+    end
+
+    Worker->>ProjectGen: Webhook: COMPLETED<br/>{artifactUrl}
+    ProjectGen->>Postgres: Update build record
 
     Admin->>CMS: Check build status
     CMS->>Gateway: GET /api/builds/{buildId}
     Gateway->>ProjectGen: GET /builds/{buildId}
-    ProjectGen->>Postgres: Query build status
-    Postgres-->>ProjectGen: Build record
-    ProjectGen-->>Gateway: 200 OK<br/>{status, artifactUrl}
-    Gateway-->>CMS: 200 OK
-    CMS-->>Admin: Display status & download link
+    ProjectGen-->>CMS: {status: COMPLETED, artifactUrl}
+    CMS-->>Admin: Download artifact
 ```
 
 **Key Points:**
 
-- Build request creates queued record immediately
-- Build job dispatched to App Factory via RabbitMQ
-- App Factory updates status via webhook callbacks
-- Artifacts stored in S3 with signed URLs for download
-- Admin can poll build status or receive notifications
-- All build attempts logged for audit
+- **Compatibility Validation**: Template ↔ Feature versions checked before queuing
+- **Job Bundle**: Contains exact versions (commit SHAs) for reproducibility
+- **Ephemeral Secrets**: Signing credentials fetched from Vault, destroyed after use
+- **Status Webhooks**: Workers report status changes in real-time
+- **Artifact Storage**: Signed APK/AAB/IPA stored in S3 with pre-signed URLs
+- **Full Traceability**: Build metadata enables exact reproduction
+
+**Build Workers:**
+
+| Platform    | Environment                      | Build Time |
+| ----------- | -------------------------------- | ---------- |
+| **Android** | Docker/Linux container           | 5-10 min   |
+| **iOS**     | macOS runner (Bitrise/Codemagic) | 10-15 min  |
 
 ## 4.4 Chatbot Query Flow
 
@@ -2622,6 +2667,8 @@ graph TB
 
 # 13. Feature Modules Catalog
 
+> **App Factory Integration:** Feature modules are managed by the [Feature Service](./app.factory.process.md#4-code-model-and-customization-strategy) and integrated into mobile apps at build time through the App Factory.
+
 ## 13.1 Core Features (Always Available)
 
 | Feature             | Backend Service | Web CMS | Web App | Mobile |
@@ -2656,43 +2703,58 @@ graph TB
 | **Business Community**          | Community feed and posts             | Core, Users                 |
 | **Chatbot (RAG)**               | AI-powered Q&A                       | Chatbot Service, Vector DB  |
 
-## 13.3 Feature Module Architecture
+## 13.3 Feature Module Architecture 🔮
+
+> **Implementation Details:** See [App Factory Process - Code Model](./app.factory.process.md#4-code-model-and-customization-strategy)
 
 ```mermaid
 graph TB
-    subgraph "Feature Service"
-        Registry[Feature Registry]
-        Compatibility[Compatibility Matrix]
-        Dependencies[Dependency Graph]
-        Toggles[Tenant Toggles]
+    subgraph "Feature Service (Planned)"
+        Registry[Feature Registry<br/>Module catalog]
+        Compatibility[Compatibility Matrix<br/>Template ↔ Feature versions]
+        Dependencies[Dependency Graph<br/>Feature ↔ Feature deps]
+        Toggles[Tenant Toggles<br/>Enable/disable per city]
     end
 
-    subgraph "Per Feature"
-        Metadata[Feature Metadata]
-        Version[Version Info]
-        Config[Configuration Schema]
-        Permissions[Required Permissions]
+    subgraph "Per Feature Package (Flutter)"
+        Metadata[Feature Metadata<br/>name, version, description]
+        Version[Version Info<br/>SemVer + commit SHA]
+        Config[Configuration Schema<br/>Required settings]
+        Permissions[Required Permissions<br/>RBAC integration]
+        Routes[Routes & Widgets<br/>Integration points]
     end
 
     Registry --> Metadata
     Compatibility --> Version
     Dependencies --> Config
     Toggles --> Permissions
+    Metadata --> Routes
 ```
 
 **Feature Registration:**
 
-- Each feature registered in Feature Service
+- Each feature registered in Feature Service with SemVer versioning
 - Declares dependencies and compatible template versions
-- Provides configuration schema
-- Specifies required permissions
+- Provides configuration schema for CMS integration
+- Specifies required backend permissions (RBAC)
 
 **Feature Lifecycle:**
 
-- Enable/disable per tenant via CMS
-- Build-time inclusion for mobile
-- Runtime toggles where safe
-- Version compatibility checks
+| Phase                 | Location             | Control                                  |
+| --------------------- | -------------------- | ---------------------------------------- |
+| **Registration**      | Feature Service      | Admin registers new features             |
+| **Compatibility**     | Compatibility Matrix | Validates template ↔ feature versions   |
+| **Tenant Enable**     | AppConfig Service    | City Admin enables for their tenant      |
+| **Build Integration** | App Factory          | Features included at build time          |
+| **Runtime Toggles**   | Remote Config        | Some features toggleable without rebuild |
+
+**Compatibility Matrix Example:**
+
+| Feature                | Template A | Template B | Flutter SDK |
+| ---------------------- | ---------- | ---------- | ----------- |
+| `listings_feature@3.x` | ≥2.0.0     | ≥1.5.0     | ≥3.19.0     |
+| `chatbot_feature@1.x`  | ≥2.1.0     | ≥1.6.0     | ≥3.22.0     |
+| `maps_feature@2.x`     | ≥2.0.0     | ≥1.4.0     | ≥3.19.0     |
 
 ---
 
@@ -2955,6 +3017,7 @@ This document serves as the authoritative reference for development teams, opera
 - [Backend Requirements](./backend.requirement.md) - Detailed backend specifications
 - [Web Requirements](./web.requirement.md) - Web CMS and Citizen Web App specifications
 - [Mobile Requirements](./mobile.requirement.md) - Flutter mobile app specifications
+- [App Factory Process](./app.factory.process.md) - White-label app generation system
 
 **Document Maintenance:**
 
