@@ -9,8 +9,8 @@ This detailed master document provides a comprehensive blueprint for the HEIDI A
 > **Related Documents:**
 >
 > - [Architecture Document](./architecture.md) - Overall system architecture
-> - [Backend Requirements](./backend.requirement.md) - Backend service specifications
-> - [Mobile Requirements](./mobile.requirement.md) - Mobile app specifications
+> - [Backend Requirements](./backend/backend.requirement.md) - Backend service specifications
+> - [Mobile Requirements](./app/mobile.requirement.md) - Mobile app specifications
 
 ---
 
@@ -1050,7 +1050,7 @@ The complexity of orchestrating an automated app factory—where different platf
 **Related Documents:**
 
 - [Architecture Document](./architecture.md) - Overall system architecture
-- [Backend Requirements](./backend.requirement.md) - Backend service specifications
-- [Mobile Requirements](./mobile.requirement.md) - Mobile app specifications
+- [Backend Requirements](./backend/backend.requirement.md) - Backend service specifications
+- [Mobile Requirements](./app/mobile.requirement.md) - Mobile app specifications
 
 **End of Document**

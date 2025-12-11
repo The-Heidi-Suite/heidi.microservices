@@ -6,7 +6,7 @@ This document defines the technical architecture for the HEIDI platform, coverin
 **Last Updated:** 2025-12-10
 **Status:** Draft
 
-> **Note:** This document consolidates requirements from [Backend](./backend.requirement.md), [Web](./web.requirement.md), and [Mobile](./mobile.requirement.md) requirement documents.
+> **Note:** This document consolidates requirements from [Backend](./backend/backend.requirement.md), [Web](./web/web.requirement.md), and [Mobile](./app/mobile.requirement.md) requirement documents.
 
 ---
 
@@ -3014,9 +3014,11 @@ This document serves as the authoritative reference for development teams, opera
 
 **Related Documents:**
 
-- [Backend Requirements](./backend.requirement.md) - Detailed backend specifications
-- [Web Requirements](./web.requirement.md) - Web CMS and Citizen Web App specifications
-- [Mobile Requirements](./mobile.requirement.md) - Flutter mobile app specifications
+- [Backend Requirements](./backend/backend.requirement.md) - Detailed backend specifications
+- [Web Requirements](./web/web.requirement.md) - Web CMS and Citizen Web App specifications
+  - [CMS Requirements](./web/cms.requirement.md) - Detailed Web CMS features and flows
+  - [Citizen Web App](./web/citizen-web.requirement.md) - Detailed Citizen Web App features and flows
+- [Mobile Requirements](./app/mobile.requirement.md) - Flutter mobile app specifications
 - [App Factory Process](./app.factory.process.md) - White-label app generation system
 
 **Document Maintenance:**
